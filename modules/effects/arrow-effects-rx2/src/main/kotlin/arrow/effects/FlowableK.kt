@@ -5,9 +5,9 @@ import arrow.core.Either
 import arrow.core.Eval
 import arrow.core.Left
 import arrow.core.Right
-import arrow.deriving
+import arrow.effects.typeclasses.Proc
 import arrow.higherkind
-import arrow.typeclasses.*
+import arrow.typeclasses.Applicative
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.FlowableEmitter
@@ -17,13 +17,6 @@ fun <A> Flowable<A>.k(): FlowableK<A> = FlowableK(this)
 fun <A> FlowableKOf<A>.value(): Flowable<A> = this.fix().flowable
 
 @higherkind
-@deriving(
-        Functor::class,
-        Applicative::class,
-        Monad::class,
-        Foldable::class,
-        Traverse::class
-)
 data class FlowableK<A>(val flowable: Flowable<A>) : FlowableKOf<A>, FlowableKKindedJ<A> {
 
     fun <B> map(f: (A) -> B): FlowableK<B> =
@@ -52,23 +45,27 @@ data class FlowableK<A>(val flowable: Flowable<A>) : FlowableKOf<A>, FlowableKKi
         return Eval.defer { loop(this) }
     }
 
-    fun <G, B> traverse(f: (A) -> Kind<G, B>, GA: Applicative<G>): Kind<G, FlowableK<B>> =
-            foldRight(Eval.always { GA.pure(Flowable.empty<B>().k()) }) { a, eval ->
-                GA.map2Eval(f(a), eval) { Flowable.concat(Flowable.just<B>(it.a), it.b.flowable).k() }
-            }.value()
+    fun <G, B> traverse(GA: Applicative<G>, f: (A) -> Kind<G, B>): Kind<G, FlowableK<B>> = GA.run {
+        foldRight(Eval.always { just(Flowable.empty<B>().k()) }) { a, eval ->
+            f(a).map2Eval(eval) { Flowable.concat(Flowable.just<B>(it.a), it.b.flowable).k() }
+        }.value()
+    }
+
+    fun handleErrorWith(function: (Throwable) -> FlowableK<A>): FlowableK<A> =
+            flowable.onErrorResumeNext { t: Throwable -> function(t).flowable }.k()
 
     fun runAsync(cb: (Either<Throwable, A>) -> FlowableKOf<Unit>): FlowableK<Unit> =
             flowable.flatMap { cb(Right(it)).value() }.onErrorResumeNext(io.reactivex.functions.Function { cb(Left(it)).value() }).k()
 
     companion object {
-        fun <A> pure(a: A): FlowableK<A> =
+        fun <A> just(a: A): FlowableK<A> =
                 Flowable.just(a).k()
 
         fun <A> raiseError(t: Throwable): FlowableK<A> =
                 Flowable.error<A>(t).k()
 
         operator fun <A> invoke(fa: () -> A): FlowableK<A> =
-                suspend { pure(fa()) }
+                suspend { just(fa()) }
 
         fun <A> suspend(fa: () -> FlowableKOf<A>): FlowableK<A> =
                 Flowable.defer { fa().value() }.k()
@@ -94,49 +91,49 @@ data class FlowableK<A>(val flowable: Flowable<A>) : FlowableKOf<A>, FlowableKKi
             }
         }
 
-        fun monadFlat(): FlowableKMonadInstance = FlowableKMonadInstanceImplicits.instance()
+        fun monadFlat(): FlowableKMonadInstance = monad()
 
         fun monadConcat(): FlowableKMonadInstance = object : FlowableKMonadInstance {
-            override fun <A, B> flatMap(fa: FlowableKOf<A>, f: (A) -> FlowableKOf<B>): FlowableK<B> =
-                    fa.fix().concatMap { f(it).fix() }
+            override fun <A, B> Kind<ForFlowableK, A>.flatMap(f: (A) -> Kind<ForFlowableK, B>): FlowableK<B> =
+                    fix().concatMap { f(it).fix() }
         }
 
         fun monadSwitch(): FlowableKMonadInstance = object : FlowableKMonadInstance {
-            override fun <A, B> flatMap(fa: FlowableKOf<A>, f: (A) -> FlowableKOf<B>): FlowableK<B> =
-                    fa.fix().switchMap { f(it).fix() }
+            override fun <A, B> Kind<ForFlowableK, A>.flatMap(f: (A) -> Kind<ForFlowableK, B>): FlowableK<B> =
+                    fix().switchMap { f(it).fix() }
         }
 
-        fun monadErrorFlat(): FlowableKMonadErrorInstance = FlowableKMonadErrorInstanceImplicits.instance()
+        fun monadErrorFlat(): FlowableKMonadErrorInstance = monadError()
 
         fun monadErrorConcat(): FlowableKMonadErrorInstance = object : FlowableKMonadErrorInstance {
-            override fun <A, B> flatMap(fa: FlowableKOf<A>, f: (A) -> FlowableKOf<B>): FlowableK<B> =
-                    fa.fix().concatMap { f(it).fix() }
+            override fun <A, B> Kind<ForFlowableK, A>.flatMap(f: (A) -> Kind<ForFlowableK, B>): FlowableK<B> =
+                    fix().concatMap { f(it).fix() }
         }
 
         fun monadErrorSwitch(): FlowableKMonadErrorInstance = object : FlowableKMonadErrorInstance {
-            override fun <A, B> flatMap(fa: FlowableKOf<A>, f: (A) -> FlowableKOf<B>): FlowableK<B> =
-                    fa.fix().switchMap { f(it).fix() }
+            override fun <A, B> Kind<ForFlowableK, A>.flatMap(f: (A) -> Kind<ForFlowableK, B>): FlowableK<B> =
+                    fix().switchMap { f(it).fix() }
         }
 
-        fun syncBuffer(): FlowableKMonadSuspendInstance = FlowableKMonadSuspendInstanceImplicits.instance()
+        fun monadSuspendBuffer(): FlowableKMonadSuspendInstance = monadSuspend()
 
-        fun syncDrop(): FlowableKMonadSuspendInstance = object : FlowableKMonadSuspendInstance {
+        fun monadSuspendDrop(): FlowableKMonadSuspendInstance = object : FlowableKMonadSuspendInstance {
             override fun BS(): BackpressureStrategy = BackpressureStrategy.DROP
         }
 
-        fun syncError(): FlowableKMonadSuspendInstance = object : FlowableKMonadSuspendInstance {
+        fun monadSuspendError(): FlowableKMonadSuspendInstance = object : FlowableKMonadSuspendInstance {
             override fun BS(): BackpressureStrategy = BackpressureStrategy.ERROR
         }
 
-        fun syncLatest(): FlowableKMonadSuspendInstance = object : FlowableKMonadSuspendInstance {
+        fun monadSuspendLatest(): FlowableKMonadSuspendInstance = object : FlowableKMonadSuspendInstance {
             override fun BS(): BackpressureStrategy = BackpressureStrategy.LATEST
         }
 
-        fun syncMissing(): FlowableKMonadSuspendInstance = object : FlowableKMonadSuspendInstance {
+        fun monadSuspendMissing(): FlowableKMonadSuspendInstance = object : FlowableKMonadSuspendInstance {
             override fun BS(): BackpressureStrategy = BackpressureStrategy.MISSING
         }
 
-        fun asyncBuffer(): FlowableKAsyncInstance = FlowableKAsyncInstanceImplicits.instance()
+        fun asyncBuffer(): FlowableKAsyncInstance = async()
 
         fun asyncDrop(): FlowableKAsyncInstance = object : FlowableKAsyncInstance {
             override fun BS(): BackpressureStrategy = BackpressureStrategy.DROP
@@ -154,7 +151,7 @@ data class FlowableK<A>(val flowable: Flowable<A>) : FlowableKOf<A>, FlowableKKi
             override fun BS(): BackpressureStrategy = BackpressureStrategy.MISSING
         }
 
-        fun effectBuffer(): FlowableKEffectInstance = FlowableKEffectInstanceImplicits.instance()
+        fun effectBuffer(): FlowableKEffectInstance = effect()
 
         fun effectDrop(): FlowableKEffectInstance = object : FlowableKEffectInstance {
             override fun BS(): BackpressureStrategy = BackpressureStrategy.DROP
@@ -173,6 +170,3 @@ data class FlowableK<A>(val flowable: Flowable<A>) : FlowableKOf<A>, FlowableKKi
         }
     }
 }
-
-fun <A> FlowableKOf<A>.handleErrorWith(function: (Throwable) -> FlowableK<A>): FlowableK<A> =
-        this.fix().flowable.onErrorResumeNext { t: Throwable -> function(t).flowable }.k()

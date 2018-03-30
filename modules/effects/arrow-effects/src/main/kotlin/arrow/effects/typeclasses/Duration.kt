@@ -1,4 +1,4 @@
-package arrow.effects
+package arrow.effects.typeclasses
 
 import java.util.concurrent.TimeUnit
 

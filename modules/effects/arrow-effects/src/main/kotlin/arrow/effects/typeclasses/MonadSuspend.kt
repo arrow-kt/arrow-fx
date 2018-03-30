@@ -1,25 +1,24 @@
-package arrow.effects
+package arrow.effects.typeclasses
 
 import arrow.Kind
-import arrow.TC
 import arrow.core.Either
 import arrow.core.Tuple2
 import arrow.core.toT
 import arrow.effects.data.internal.BindingCancellationException
-import arrow.typeclass
 import arrow.typeclasses.MonadError
-import arrow.typeclasses.MonadErrorSyntax
 import kotlin.coroutines.experimental.startCoroutine
 
+inline operator fun <F, A> MonadSuspend<F>.invoke(ff: MonadSuspend<F>.() -> A) =
+        run(ff)
+
 /** The context required to defer evaluating a safe computation. **/
-@typeclass(syntax = false)
-interface MonadSuspend<F> : MonadError<F, Throwable>, TC {
+interface MonadSuspend<F> : MonadError<F, Throwable> {
     fun <A> suspend(fa: () -> Kind<F, A>): Kind<F, A>
 
     operator fun <A> invoke(fa: () -> A): Kind<F, A> =
             suspend {
                 try {
-                    pure(fa())
+                    just(fa())
                 } catch (t: Throwable) {
                     raiseError<A>(t)
                 }
@@ -28,32 +27,8 @@ interface MonadSuspend<F> : MonadError<F, Throwable>, TC {
     fun lazy(): Kind<F, Unit> = invoke { }
 
     fun <A> deferUnsafe(f: () -> Either<Throwable, A>): Kind<F, A> =
-            suspend { f().fold({ raiseError<A>(it) }, { pure(it) }) }
+            suspend { f().fold({ raiseError<A>(it) }, { just(it) }) }
 }
-
-interface MonadSuspendSyntax<F> : MonadErrorSyntax<F, Throwable> {
-
-    fun monadSuspend(): MonadSuspend<F>
-
-    override fun monadError() : MonadError <F, Throwable> = monadSuspend()
-
-    fun <A> kotlin.Function0<arrow.core.Either<kotlin.Throwable, A>>.`deferUnsafe`(dummy: Unit = Unit): arrow.Kind<F, A> =
-            this@MonadSuspendSyntax.monadSuspend().`deferUnsafe`(this)
-
-    fun <A> kotlin.Function0<A>.`invoke`(dummy: Unit = Unit): arrow.Kind<F, A> =
-            this@MonadSuspendSyntax.monadSuspend().`invoke`(this)
-
-    fun `lazy`(): arrow.Kind<F, kotlin.Unit> =
-            this@MonadSuspendSyntax.monadSuspend().`lazy`()
-
-    fun <A> kotlin.Function0<arrow.Kind<F, A>>.`suspend`(dummy: Unit = Unit): arrow.Kind<F, A> =
-            this@MonadSuspendSyntax.monadSuspend().`suspend`(this)
-}
-
-inline fun <reified F, A> (() -> A).defer(SC: MonadSuspend<F> = monadSuspend()): Kind<F, A> = SC(this)
-
-inline fun <reified F, A> (() -> Either<Throwable, A>).deferUnsafe(SC: MonadSuspend<F> = monadSuspend()): Kind<F, A> =
-        SC.deferUnsafe(this)
 
 /**
  * Entry point for monad bindings which enables for comprehensions. The underlying impl is based on coroutines.
@@ -68,7 +43,7 @@ inline fun <reified F, A> (() -> Either<Throwable, A>).deferUnsafe(SC: MonadSusp
  */
 fun <F, B> MonadSuspend<F>.bindingCancellable(c: suspend MonadSuspendCancellableContinuation<F, *>.() -> B): Tuple2<Kind<F, B>, Disposable> {
     val continuation = MonadSuspendCancellableContinuation<F, B>(this)
-    val wrapReturn: suspend MonadSuspendCancellableContinuation<F, *>.() -> Kind<F, B> = { pure(c()) }
+    val wrapReturn: suspend MonadSuspendCancellableContinuation<F, *>.() -> Kind<F, B> = { just(c()) }
     wrapReturn.startCoroutine(continuation, continuation)
     return continuation.returnedMonad() toT continuation.disposable()
 }
