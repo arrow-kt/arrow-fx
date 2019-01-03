@@ -1,11 +1,12 @@
 dependencies {
-    compile project(':arrow-effects-data')
+    compile project(':arrow-effects-kotlinx-coroutines-data')
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion"
     compile project(':arrow-annotations')
     kapt project(':arrow-meta')
     kaptTest project(':arrow-meta')
     compileOnly project(':arrow-meta')
     testCompileOnly project(':arrow-meta')
+    testCompile project(':arrow-extras-extensions')
     testCompile "io.kotlintest:kotlintest:$kotlinTestVersion"
     testCompile project(':arrow-test')
 
