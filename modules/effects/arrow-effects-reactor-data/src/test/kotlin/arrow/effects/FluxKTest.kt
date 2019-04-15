@@ -1,6 +1,9 @@
 package arrow.effects
 
-import arrow.effects.reactor.*
+import arrow.effects.reactor.FluxK
+import arrow.effects.reactor.FluxKOf
+import arrow.effects.reactor.ForFluxK
+import arrow.effects.reactor.k
 import arrow.effects.reactor.extensions.fluxk.async.async
 import arrow.effects.reactor.extensions.fluxk.foldable.foldable
 import arrow.effects.reactor.extensions.fluxk.functor.functor
@@ -8,6 +11,7 @@ import arrow.effects.reactor.extensions.fluxk.fx.fx
 import arrow.effects.reactor.extensions.fluxk.monad.flatMap
 import arrow.effects.reactor.extensions.fluxk.monadThrow.bindingCatch
 import arrow.effects.reactor.extensions.fluxk.traverse.traverse
+import arrow.effects.reactor.value
 import arrow.effects.typeclasses.ExitCase
 import arrow.test.UnitSpec
 import arrow.test.laws.AsyncLaws
@@ -21,9 +25,9 @@ import org.hamcrest.CoreMatchers.not
 import org.hamcrest.CoreMatchers.startsWith
 import org.hamcrest.MatcherAssert.assertThat
 import org.junit.runner.RunWith
+import reactor.test.expectError
 import reactor.core.publisher.Flux
 import reactor.core.scheduler.Schedulers
-import reactor.test.expectError
 import reactor.test.test
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
@@ -181,6 +185,5 @@ class FluxKTest : UnitSpec() {
         .test()
         .expectError(ConnectionCancellationException::class)
     }
-
   }
 }
