@@ -206,10 +206,10 @@ interface FlowableKConcurrent : Concurrent<ForFlowableK>, FlowableKAsync {
     }).subscribeOn(asScheduler()))
 
   override fun <A> cancellable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForFlowableK>): FlowableK<A> =
-    FlowableK.cancelable(k, BS())
+    FlowableK.cancellable(k, BS())
 
   override fun <A> cancellableF(k: ((Either<Throwable, A>) -> Unit) -> FlowableKOf<CancelToken<ForFlowableK>>): FlowableK<A> =
-    FlowableK.cancelableF(k, BS())
+    FlowableK.cancellableF(k, BS())
 
   override fun <A, B> CoroutineContext.racePair(fa: FlowableKOf<A>, fb: FlowableKOf<B>): FlowableK<RacePair<ForFlowableK, A, B>> =
     asScheduler().let { scheduler ->

@@ -297,7 +297,7 @@ println(safeComputation)
 
 #### guarantee/guaranteeCase - onCancel/onError
 
-Ignores the acquisition and focuses on using a resource and performing an action whenever it finishes in any way (completed, error, canceled).
+Ignores the acquisition and focuses on using a resource and performing an action whenever it finishes in any way (completed, error, cancelled).
 
 Similarly as for `bracketCase`, `guaranteeCase` works in the same way as `guarantee` but uses `ExitCase` to distinguish between different exit cases when
 releasing the acquired resource.

@@ -79,7 +79,7 @@ data class FlowableK<out A>(val flowable: Flowable<out A>) : FlowableKOf<A> {
    *     release = { file, exitCase ->
    *       when (exitCase) {
    *         is ExitCase.Completed -> { /* do something */ }
-   *         is ExitCase.Canceled -> { /* do something */ }
+   *         is ExitCase.Cancelled -> { /* do something */ }
    *         is ExitCase.Error -> { /* do something */ }
    *       }
    *       closeFile(file)
@@ -224,7 +224,11 @@ data class FlowableK<out A>(val flowable: Flowable<out A>) : FlowableKOf<A> {
         emitter.setCancellable { dispose.dispose() }
       }, mode).k()
 
+    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(fa)"))
     fun <A> cancelable(fa: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForFlowableK>, mode: BackpressureStrategy = BackpressureStrategy.BUFFER): FlowableK<A> =
+      cancellable(fa)
+
+    fun <A> cancellable(fa: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForFlowableK>, mode: BackpressureStrategy = BackpressureStrategy.BUFFER): FlowableK<A> =
       Flowable.create<A>({ emitter ->
         val token = fa { either: Either<Throwable, A> ->
           either.fold({ e ->
@@ -237,7 +241,11 @@ data class FlowableK<out A>(val flowable: Flowable<out A>) : FlowableKOf<A> {
         emitter.setCancellable { token.value().subscribe({}, { e -> emitter.tryOnError(e) }) }
       }, mode).k()
 
+    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellableF(fa)"))
     fun <A> cancelableF(fa: ((Either<Throwable, A>) -> Unit) -> FlowableKOf<CancelToken<ForFlowableK>>, mode: BackpressureStrategy = BackpressureStrategy.BUFFER): FlowableK<A> =
+      cancellableF(fa)
+
+    fun <A> cancellableF(fa: ((Either<Throwable, A>) -> Unit) -> FlowableKOf<CancelToken<ForFlowableK>>, mode: BackpressureStrategy = BackpressureStrategy.BUFFER): FlowableK<A> =
       Flowable.create({ emitter: FlowableEmitter<A> ->
         val cb = { either: Either<Throwable, A> ->
           either.fold({

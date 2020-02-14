@@ -177,10 +177,10 @@ interface ObservableKConcurrent : Concurrent<ForObservableK>, ObservableKAsync {
     }).subscribeOn(asScheduler()))
 
   override fun <A> cancellable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForObservableK>): ObservableKOf<A> =
-    ObservableK.cancelable(k)
+    ObservableK.cancellable(k)
 
   override fun <A> cancellableF(k: ((Either<Throwable, A>) -> Unit) -> ObservableKOf<CancelToken<ForObservableK>>): ObservableK<A> =
-    ObservableK.cancelableF(k)
+    ObservableK.cancellableF(k)
 
   override fun <A, B> CoroutineContext.racePair(fa: ObservableKOf<A>, fb: ObservableKOf<B>): ObservableK<RacePair<ForObservableK, A, B>> =
     asScheduler().let { scheduler ->

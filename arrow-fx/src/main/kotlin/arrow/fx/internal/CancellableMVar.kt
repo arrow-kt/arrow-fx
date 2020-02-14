@@ -9,8 +9,8 @@ import arrow.core.Some
 import arrow.core.Tuple2
 
 import arrow.fx.MVar
-import arrow.fx.internal.CancelableMVar.Companion.State.WaitForPut
-import arrow.fx.internal.CancelableMVar.Companion.State.WaitForTake
+import arrow.fx.internal.CancellableMVar.Companion.State.WaitForPut
+import arrow.fx.internal.CancellableMVar.Companion.State.WaitForTake
 import arrow.fx.typeclasses.CancelToken
 import arrow.fx.typeclasses.Concurrent
 import arrow.fx.typeclasses.Fiber
@@ -19,19 +19,19 @@ import arrow.fx.typeclasses.rightUnit
 import kotlinx.atomicfu.atomic
 import kotlin.coroutines.EmptyCoroutineContext
 
-internal class CancelableMVar<F, A> private constructor(initial: State<A>, private val CF: Concurrent<F>) : MVar<F, A>, Concurrent<F> by CF {
+internal class CancellableMVar<F, A> private constructor(initial: State<A>, private val CF: Concurrent<F>) : MVar<F, A>, Concurrent<F> by CF {
 
   private val state = atomic(initial)
 
   companion object {
-    /** Builds an [UncancelableMVar] instance with an [initial] value. */
+    /** Builds an [UncancellableMVar] instance with an [initial] value. */
     operator fun <F, A> invoke(initial: A, CF: Concurrent<F>): Kind<F, MVar<F, A>> = CF.later {
-      CancelableMVar(State(initial), CF)
+      CancellableMVar(State(initial), CF)
     }
 
-    /** Returns an empty [UncancelableMVar] instance. */
+    /** Returns an empty [UncancellableMVar] instance. */
     fun <F, A> empty(CF: Concurrent<F>): Kind<F, MVar<F, A>> = CF.later {
-      CancelableMVar(State.empty<A>(), CF)
+      CancellableMVar(State.empty<A>(), CF)
     }
 
     internal sealed class State<out A> {

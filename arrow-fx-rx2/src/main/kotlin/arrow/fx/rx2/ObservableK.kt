@@ -78,7 +78,7 @@ data class ObservableK<out A>(val observable: Observable<out A>) : ObservableKOf
    *     release = { file, exitCase ->
    *       when (exitCase) {
    *         is ExitCase.Completed -> { /* do something */ }
-   *         is ExitCase.Canceled -> { /* do something */ }
+   *         is ExitCase.Cancelled -> { /* do something */ }
    *         is ExitCase.Error -> { /* do something */ }
    *       }
    *       closeFile(file)
@@ -229,7 +229,7 @@ data class ObservableK<out A>(val observable: Observable<out A>) : ObservableKOf
       }.k()
 
     /**
-     * Creates a [ObservableK] that'll run a cancelable operation.
+     * Creates a [ObservableK] that'll run a cancellable operation.
      *
      * ```kotlin:ank:playground
      * import arrow.core.*
@@ -245,7 +245,7 @@ data class ObservableK<out A>(val observable: Observable<out A>) : ObservableKOf
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   val result = ObservableK.cancelable { cb: (Either<Throwable, String>) -> Unit ->
+     *   val result = ObservableK.cancellable { cb: (Either<Throwable, String>) -> Unit ->
      *     val nw = NetworkApi()
      *     val disposable = nw.async { result -> cb(Right(result)) }
      *     ObservableK { disposable.invoke() }
@@ -255,7 +255,7 @@ data class ObservableK<out A>(val observable: Observable<out A>) : ObservableKOf
      * }
      * ```
      */
-    fun <A> cancelable(fa: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForObservableK>): ObservableK<A> =
+    fun <A> cancellable(fa: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForObservableK>): ObservableK<A> =
       Observable.create<A> { emitter ->
         val token = fa { either: Either<Throwable, A> ->
           either.fold({ e ->
@@ -268,7 +268,15 @@ data class ObservableK<out A>(val observable: Observable<out A>) : ObservableKOf
         emitter.setCancellable { token.value().subscribe({}, { e -> emitter.tryOnError(e) }) }
       }.k()
 
+    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(fa)"))
+    fun <A> cancelable(fa: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForObservableK>): ObservableK<A> =
+      cancellable(fa)
+
+    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellableF(fa)"))
     fun <A> cancelableF(fa: ((Either<Throwable, A>) -> Unit) -> ObservableKOf<CancelToken<ForObservableK>>): ObservableK<A> =
+      cancellableF(fa)
+
+    fun <A> cancellableF(fa: ((Either<Throwable, A>) -> Unit) -> ObservableKOf<CancelToken<ForObservableK>>): ObservableK<A> =
       Observable.create { emitter: ObservableEmitter<A> ->
         val cb = { either: Either<Throwable, A> ->
           either.fold({

@@ -32,7 +32,7 @@ object BracketLaws {
       Law("Bracket: bracketCase with just Unit is eqv to Map") { BF.bracketCaseWithJustUnitEqvMap(EQ) },
       Law("Bracket: bracketCase with just Unit is uncancellable") { BF.bracketCaseWithJustUnitIsUncancellable(EQ) },
       Law("Bracket: bracketCase failure in acquisition remains failure") { BF.bracketCaseFailureInAcquisitionRemainsFailure(EQ) },
-      Law("Bracket: uncancellable prevents Cancelled case") { BF.uncancelablePreventsCancelledCase(BF.just(Unit), BF.just(Unit), EQ) },
+      Law("Bracket: uncancellable prevents Cancelled case") { BF.uncancellablePreventsCancelledCase(BF.just(Unit), BF.just(Unit), EQ) },
       Law("Bracket: acquire and release are uncancellable") { BF.acquireAndReleaseAreUncancellable({ BF.just(Unit) }, EQ) },
       Law("Bracket: bracket propagates transformer effects") { BF.bracketPropagatesTransformerEffects(EQ) },
       Law("Bracket: bracket must run release task on use error") { BF.bracketMustRunReleaseTaskOnUseError(EQ) },
@@ -101,7 +101,7 @@ object BracketLaws {
       fa.bracket(release = { just<Unit>(Unit) }, use = { just(it) }).equalUnderTheLaw(fa.bracketCase(release = { _, _ -> just<Unit>(Unit) }, use = { just(it) }), EQ)
     }
 
-  fun <F> Bracket<F, Throwable>.uncancelablePreventsCancelledCase(
+  fun <F> Bracket<F, Throwable>.uncancellablePreventsCancelledCase(
     onCancel: Kind<F, Unit>,
     onFinish: Kind<F, Unit>,
     EQ: Eq<Kind<F, Int>>

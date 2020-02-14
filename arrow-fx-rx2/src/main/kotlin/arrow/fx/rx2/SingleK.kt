@@ -83,7 +83,7 @@ data class SingleK<out A>(val single: Single<out A>) : SingleKOf<A> {
    *     release = { file, exitCase ->
    *       when (exitCase) {
    *         is ExitCase.Completed -> { /* do something */ }
-   *         is ExitCase.Canceled -> { /* do something */ }
+   *         is ExitCase.Cancelled -> { /* do something */ }
    *         is ExitCase.Error -> { /* do something */ }
    *       }
    *       closeFile(file)
@@ -202,7 +202,7 @@ data class SingleK<out A>(val single: Single<out A>) : SingleKOf<A> {
       }.k()
 
     /**
-     * Creates a [SingleK] that'll run a cancelable operation.
+     * Creates a [SingleK] that'll run a cancellable operation.
      *
      * ```kotlin:ank:playground
      * import arrow.core.*
@@ -218,7 +218,7 @@ data class SingleK<out A>(val single: Single<out A>) : SingleKOf<A> {
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   val result = SingleK.cancelable { cb: (Either<Throwable, String>) -> Unit ->
+     *   val result = SingleK.cancellable { cb: (Either<Throwable, String>) -> Unit ->
      *     val nw = NetworkApi()
      *     val disposable = nw.async { result -> cb(Right(result)) }
      *     SingleK { disposable.invoke() }
@@ -228,7 +228,7 @@ data class SingleK<out A>(val single: Single<out A>) : SingleKOf<A> {
      * }
      * ```
      */
-    fun <A> cancelable(fa: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForSingleK>): SingleK<A> =
+    fun <A> cancellable(fa: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForSingleK>): SingleK<A> =
       Single.create { emitter: SingleEmitter<A> ->
         val cb = { either: Either<Throwable, A> ->
           either.fold({
@@ -248,7 +248,15 @@ data class SingleK<out A>(val single: Single<out A>) : SingleKOf<A> {
         emitter.setCancellable { token.value().subscribe({}, { e -> emitter.tryOnError(e) }) }
       }.k()
 
+    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(fa)"))
+    fun <A> cancelable(fa: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForSingleK>): SingleK<A> =
+      cancellable(fa)
+
+    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellableF(fa)"))
     fun <A> cancelableF(fa: ((Either<Throwable, A>) -> Unit) -> SingleKOf<CancelToken<ForSingleK>>): SingleK<A> =
+      cancellableF(fa)
+
+    fun <A> cancellableF(fa: ((Either<Throwable, A>) -> Unit) -> SingleKOf<CancelToken<ForSingleK>>): SingleK<A> =
       Single.create { emitter: SingleEmitter<A> ->
         val cb = { either: Either<Throwable, A> ->
           either.fold({

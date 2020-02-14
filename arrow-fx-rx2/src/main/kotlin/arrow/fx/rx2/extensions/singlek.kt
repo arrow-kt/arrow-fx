@@ -11,7 +11,6 @@ import arrow.fx.Timer
 import arrow.fx.rx2.ForSingleK
 import arrow.fx.rx2.SingleK
 import arrow.fx.rx2.SingleKOf
-import arrow.fx.rx2.extensions.singlek.async.async
 import arrow.fx.rx2.fix
 import arrow.fx.rx2.k
 import arrow.fx.rx2.value
@@ -173,10 +172,10 @@ interface SingleKConcurrent : Concurrent<ForSingleK>, SingleKAsync {
     }).subscribeOn(asScheduler()))
 
   override fun <A> cancellable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForSingleK>): SingleK<A> =
-    SingleK.cancelable(k)
+    SingleK.cancellable(k)
 
   override fun <A> cancellableF(k: ((Either<Throwable, A>) -> Unit) -> SingleKOf<CancelToken<ForSingleK>>): SingleK<A> =
-    SingleK.cancelableF(k)
+    SingleK.cancellableF(k)
 
   override fun <A, B> CoroutineContext.racePair(fa: SingleKOf<A>, fb: SingleKOf<B>): SingleK<RacePair<ForSingleK, A, B>> =
     asScheduler().let { scheduler ->
