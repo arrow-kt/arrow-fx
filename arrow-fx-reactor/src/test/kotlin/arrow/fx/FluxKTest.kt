@@ -41,7 +41,7 @@ class FluxKTest : UnitSpec() {
 
   init {
     testLaws(
-      TimerLaws.laws(FluxK.async(), FluxK.timer(), FluxK.eq()),
+      TimerLaws.laws(FluxK.async(), FluxK.timer(), FluxK.eqK()),
       AsyncLaws.laws(
         FluxK.async(),
         FluxK.functor(),

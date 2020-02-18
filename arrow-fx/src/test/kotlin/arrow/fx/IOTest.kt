@@ -18,6 +18,7 @@ import arrow.fx.extensions.io.concurrent.parMapN
 import arrow.fx.extensions.io.dispatchers.dispatchers
 import arrow.fx.extensions.io.functor.functor
 import arrow.fx.extensions.io.monad.monad
+import arrow.fx.extensions.timer
 import arrow.fx.extensions.toIO
 import arrow.fx.extensions.toIOException
 import arrow.fx.internal.parMap2
@@ -49,7 +50,7 @@ class IOTest : UnitSpec() {
   private val NonBlocking = IO.dispatchers<Nothing>().default()
 
   init {
-    testLaws(ConcurrentLaws.laws(IO.concurrent(), IO.functor(), IO.applicative(), IO.monad(), IO.genK(), IO.eqK()))
+    testLaws(ConcurrentLaws.laws(IO.concurrent(), IO.timer(), IO.functor(), IO.applicative(), IO.monad(), IO.genK(), IO.eqK()))
 
     "should defer evaluation until run" {
       var run = false
@@ -907,7 +908,7 @@ internal fun <E> IO.Companion.eqK() = object : EqK<IOPartialOf<E>> {
   }
 }
 
-private fun IO.Companion.genK() = object : GenK<IOPartialOf<Nothing>> {
+internal fun IO.Companion.genK() = object : GenK<IOPartialOf<Nothing>> {
   override fun <A> genK(gen: Gen<A>): Gen<Kind<IOPartialOf<Nothing>, A>> =
     Gen.oneOf(
       gen.map(IO.Companion::just),
