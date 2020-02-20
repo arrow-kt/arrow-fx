@@ -29,7 +29,6 @@ jobs:
     - name: Build with Gradle
       run: |
         ./arrow/scripts/project-build.sh
-        cd $BASEDIR/arrow-fx-repository
         ./gradlew :arrow-benchmarks-fx:jmhClasses
     - name: Publish artifacts
       env:
