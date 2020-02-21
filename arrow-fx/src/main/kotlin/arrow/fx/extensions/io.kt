@@ -14,8 +14,11 @@ import arrow.fx.IOOf
 import arrow.fx.MVar
 import arrow.fx.OnCancel
 import arrow.fx.Promise
+import arrow.fx.Race2
+import arrow.fx.Race3
 import arrow.fx.RacePair
 import arrow.fx.RaceTriple
+import arrow.fx.Ref
 import arrow.fx.Semaphore
 import arrow.fx.Timer
 import arrow.fx.extensions.io.dispatchers.dispatchers
@@ -28,6 +31,7 @@ import arrow.fx.typeclasses.Concurrent
 import arrow.fx.typeclasses.ConcurrentSyntax
 import arrow.fx.typeclasses.Dispatchers
 import arrow.fx.typeclasses.Disposable
+import arrow.fx.typeclasses.Duration
 import arrow.fx.typeclasses.Environment
 import arrow.fx.typeclasses.ExitCase
 import arrow.fx.typeclasses.Fiber
@@ -304,6 +308,12 @@ interface IOConcurrent<EE> : Concurrent<IOPartialOf<EE>>, IOAsync<EE> {
 
   override fun <A, B, C, D> CoroutineContext.parMapN(fa: Kind<IOPartialOf<EE>, A>, fb: Kind<IOPartialOf<EE>, B>, fc: Kind<IOPartialOf<EE>, C>, f: (A, B, C) -> D): IO<EE, D> =
     IO.parMapN(this@parMapN, fa, fb, fc, f)
+
+  override fun <A, B> CoroutineContext.raceN(fa: Kind<IOPartialOf<EE>, A>, fb: Kind<IOPartialOf<EE>, B>): IO<EE, Race2<A, B>> =
+    IO.raceN(this@raceN, fa, fb)
+
+  override fun <A, B, C> CoroutineContext.raceN(fa: Kind<IOPartialOf<EE>, A>, fb: Kind<IOPartialOf<EE>, B>, fc: Kind<IOPartialOf<EE>, C>): IO<EE, Race3<A, B, C>> =
+    IO.raceN(this@raceN, fa, fb, fc)
 }
 
 fun <EE> IO.Companion.concurrent(dispatchers: Dispatchers<IOPartialOf<EE>>): Concurrent<IOPartialOf<EE>> = object : IOConcurrent<EE> {
@@ -316,20 +326,17 @@ fun <EE> IO.Companion.timer(CF: Concurrent<IOPartialOf<EE>>): Timer<IOPartialOf<
 @extension
 interface IOSemigroup<E, A> : Semigroup<IO<E, A>> {
 
-  fun SG(): Semigroup<A>
+  fun AI(): Semigroup<A>
 
   override fun IO<E, A>.combine(b: IO<E, A>): IO<E, A> =
-    FlatMap { a1: A -> b.map { a2: A -> SG().run { a1.combine(a2) } } }
+    FlatMap { a1: A -> b.map { a2: A -> AI().run { a1.combine(a2) } } }
 }
 
 @extension
 interface IOMonoid<E, A> : Monoid<IO<E, A>>, IOSemigroup<E, A> {
+  override fun AI(): Monoid<A>
 
-  override fun SG(): Semigroup<A> = SM()
-
-  fun SM(): Monoid<A>
-
-  override fun empty(): IO<E, A> = IO.just(SM().empty())
+  override fun empty(): IO<E, A> = IO.just(AI().empty())
 }
 
 interface IOUnsafeRun : UnsafeRun<IOPartialOf<Nothing>> {
@@ -452,6 +459,9 @@ interface IOSyntax<E> : BindSyntax<IOPartialOf<E>> {
   fun <A, B> Iterable<A>.parTraverse(f: (A) -> IOOf<E, B>): IO<E, List<B>> =
     parTraverse(IO.dispatchers<E>().default(), f)
 
+  fun <A> Ref(a: A): IO<Nothing, Ref<IOPartialOf<Nothing>, A>> =
+    Ref.invoke(IO.concurrent<Nothing>(), a).fix()
+
   fun <A> Promise(): IO<Nothing, Promise<IOPartialOf<Nothing>, A>> =
     Promise<IOPartialOf<Nothing>, A>(IO.concurrent<Nothing>()).fix()
 
@@ -469,6 +479,14 @@ interface IOSyntax<E> : BindSyntax<IOPartialOf<E>> {
    */
   fun <A> MVar(): IO<Nothing, MVar<IOPartialOf<Nothing>, A>> =
     MVar.empty<IOPartialOf<Nothing>, A>(IO.concurrent<Nothing>()).fix()
+
+  fun <E, A> IOOf<E, A>.waitFor(duration: Duration, default: IOOf<E, A>): IO<E, A> =
+    IO.raceN(EmptyCoroutineContext, IO.sleep(duration), this).FlatMap {
+      it.fold(
+        { default },
+        { a -> IO.just(a) }
+      )
+    }
 }
 
 open class IOContinuation<E, A>(override val context: CoroutineContext = EmptyCoroutineContext) : Continuation<IO<E, A>>, IOSyntax<E> {

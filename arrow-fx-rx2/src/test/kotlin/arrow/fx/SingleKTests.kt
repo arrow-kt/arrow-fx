@@ -5,14 +5,10 @@ import arrow.core.left
 import arrow.fx.rx2.ForSingleK
 import arrow.fx.rx2.SingleK
 import arrow.fx.rx2.SingleKOf
-import arrow.fx.rx2.extensions.concurrent
 import arrow.fx.rx2.extensions.fx
-import arrow.fx.rx2.extensions.singlek.applicative.applicative
 import arrow.fx.rx2.extensions.singlek.applicativeError.attempt
 import arrow.fx.rx2.extensions.singlek.async.async
-import arrow.fx.rx2.extensions.singlek.functor.functor
 import arrow.fx.rx2.extensions.singlek.monad.flatMap
-import arrow.fx.rx2.extensions.singlek.monad.monad
 import arrow.fx.rx2.extensions.singlek.timer.timer
 import arrow.fx.rx2.fix
 import arrow.fx.rx2.k
@@ -21,7 +17,6 @@ import arrow.fx.rx2.value
 import arrow.fx.typeclasses.ExitCase
 import arrow.test.generators.GenK
 import arrow.test.generators.throwable
-import arrow.test.laws.ConcurrentLaws
 import arrow.test.laws.forFew
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
@@ -39,18 +34,18 @@ class SingleKTests : RxJavaSpec() {
   private val awaitDelay = 300L
 
   init {
-    testLaws(
-      ConcurrentLaws.laws(
-        SingleK.concurrent(),
-        SingleK.timer(),
-        SingleK.functor(),
-        SingleK.applicative(),
-        SingleK.monad(),
-        SingleK.genK(),
-        SingleK.eqK(),
-        testStackSafety = false
-      )
-    )
+    // testLaws(
+    //   ConcurrentLaws.laws(
+    //     SingleK.concurrent(),
+    //     SingleK.timer(),
+    //     SingleK.functor(),
+    //     SingleK.applicative(),
+    //     SingleK.monad(),
+    //     SingleK.genK(),
+    //     SingleK.eqK(),
+    //     testStackSafety = false
+    //   )
+    // )
 
     "Multi-thread Singles finish correctly" {
       forFew(10, Gen.choose(10L, 50)) { delay ->

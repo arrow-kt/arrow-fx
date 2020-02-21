@@ -39,7 +39,7 @@ fun <E, A> CoroutineScope.unsafeRunIO(io: IOOf<E, A>, f: (IOResult<E, A>) -> Uni
 fun <E, A> IOOf<E, A>.unsafeRunScoped(
   scope: CoroutineScope,
   f: (IOResult<E, A>) -> Unit
-): Unit {
+) {
   val newContext = scope.newCoroutineContext(EmptyCoroutineContext)
   val job = newContext[Job]
 

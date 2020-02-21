@@ -9,6 +9,7 @@ import arrow.core.Tuple4
 import arrow.core.Tuple7
 import arrow.core.toT
 import arrow.fx.extensions.fx
+import arrow.fx.extensions.io.apply.map2
 import arrow.fx.extensions.io.async.async
 import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.concurrent.parSequence
@@ -280,20 +281,20 @@ class MVarTest : UnitSpec() {
         }.equalUnderTheLaw(IO.unit, EQ())
       }
 
-      // "!$label - concurrent take and put" {
-      //   val count = 10000
-      //   IO.fx<Nothing, Int> {
-      //     val mvar = !mvar.empty<Int>()
-      //     val ref = !Ref<Nothing, Int>(0)
-      //     val takes = (0 until count).map { mvar.read().map2(mvar.take()) { (a, b) -> a + b }.flatMap { x -> ref.update { it + x } } }.parSequence()
-      //     val puts = (0 until count).map { mvar.put(1) }.parSequence()
-      //     val f1 = !takes.fork()
-      //     val f2 = !puts.fork()
-      //     !f1.join()
-      //     !f2.join()
-      //     !ref.get()
-      //   }.equalUnderTheLaw(IO.just(count), EQ())
-      // }
+      "!$label - concurrent take and put" {
+        val count = 5000
+        IO.fx<Nothing, Int> {
+          val mVar = !mvar.empty<Int>()
+          val ref = !Ref<Int>(0)
+          val takes = (0 until count).map { mVar.read().map2(mVar.take()) { (a, b) -> a + b }.flatMap { x -> ref.update { it + x } } }.parSequence()
+          val puts = (0 until count).map { mVar.put(1) }.parSequence()
+          val f1 = !takes.fork()
+          val f2 = !puts.fork()
+          !f1.join()
+          !f2.join()
+          !ref.get()
+        }.equalUnderTheLaw(IO.just(count), EQ())
+      }
     }
 
     fun concurrentTests(label: String, mvar: MVarFactory<IOPartialOf<Nothing>>) {

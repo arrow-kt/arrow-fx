@@ -73,7 +73,7 @@ internal class UncancellableMVar<F, A> private constructor(initial: State<A>, pr
           }
 
         if (!stateRef.compareAndSet(current, update)) unsafeTryPut(a) // retry
-        else if ((first != null) || reads.nonEmpty()) streamPutAndReads(a, reads, first)
+        else if ((first != null) || reads.isNotEmpty()) streamPutAndReads(a, reads, first)
         else justTrue
       }
     }

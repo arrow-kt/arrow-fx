@@ -28,17 +28,12 @@ import arrow.fx.IOPartialOf
 import arrow.fx.unsafeRunSync
 import arrow.fx.extensions.io.monadError.monadError
 import arrow.higherkind
-import arrow.streams.internal.freec.applicative.applicative
 import arrow.streams.internal.freec.eq.eq
-import arrow.streams.internal.freec.functor.functor
 import arrow.streams.internal.freec.monad.monad
-import arrow.streams.internal.freec.monadDefer.monadDefer
 import arrow.test.UnitSpec
 import arrow.test.generators.GenK
 import arrow.test.generators.functionAToB
 import arrow.test.generators.throwable
-import arrow.test.laws.EqLaws
-import arrow.test.laws.MonadDeferLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import io.kotlintest.properties.Gen
@@ -122,24 +117,24 @@ class FreeCTest : UnitSpec() {
         }
     }
 
-    testLaws(
-      EqLaws.laws(EQ, genOps()),
-      MonadDeferLaws.laws(
-        Ops,
-        opsGENK,
-        EQK
-      )
-    )
-    testLaws(
-      MonadDeferLaws.laws(
-        SC = FreeC.monadDefer(),
-        FF = FreeC.functor(),
-        AP = FreeC.applicative(),
-        SL = FreeC.monad(),
-        GENK = opsGENK,
-        EQK = EQK
-
-      ))
+    // testLaws(
+    //   EqLaws.laws(EQ, genOps()),
+    //   MonadDeferLaws.laws(
+    //     Ops,
+    //     opsGENK,
+    //     EQK
+    //   )
+    // )
+    // testLaws(
+    //   MonadDeferLaws.laws(
+    //     SC = FreeC.monadDefer(),
+    //     FF = FreeC.functor(),
+    //     AP = FreeC.applicative(),
+    //     SL = FreeC.monad(),
+    //     GENK = opsGENK,
+    //     EQK = EQK
+    //
+    //   ))
 
     "Can interpret an ADT as Free operations" {
       program.foldMap(eitherInterpreter, Either.monadError()).fix() shouldBe Right(Some(-30))
