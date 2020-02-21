@@ -167,6 +167,9 @@ interface Queue<F, A> : QueueOf<F, A>, Dequeue<F, A>, Enqueue<F, A> {
     fun <F, A> unbounded(CF: Concurrent<F>): Kind<F, Queue<F, A>> = CF.later {
       ConcurrentQueue<F, A>(Queue.BackpressureStrategy.Unbounded, ConcurrentQueue.State.empty(), CF)
     }
+
+    fun <F> factory(CF: Concurrent<F>): QueueFactory<F> =
+      QueueFactory(CF)
   }
 
   /** Internal model that represent the Queue strategies **/
@@ -187,15 +190,16 @@ object QueueShutdown : RuntimeException() {
  *
  * ```kotlin:ank:playground
  * import arrow.fx.*
+ * import arrow.fx.extensions.fx
  * import arrow.fx.extensions.io.concurrent.concurrent
  *
  * //sampleStart
  * suspend fun main(): Unit = IO.fx {
  *   val factory: QueueFactory<ForIO> = Queue.factory(IO.concurrent())
- *   val unbounded = !factory.unbounded()
- *   val bounded = !factory.bounded(10)
- *   val sliding = !factory.sliding(4)
- *   val dropping = !factory.dropping(4)
+ *   val unbounded = !factory.unbounded<Int>()
+ *   val bounded = !factory.bounded<String>(10)
+ *   val sliding = !factory.sliding<Double>(4)
+ *   val dropping = !factory.dropping<Float>(4)
  * }.suspended()
  * //sampleEnd
  * ```
@@ -237,4 +241,10 @@ interface QueueFactory<F> {
    */
   fun <A> unbounded(): Kind<F, Queue<F, A>> =
     Queue.unbounded(CF())
+
+  companion object {
+    operator fun <F> invoke(CF: Concurrent<F>): QueueFactory<F> = object : QueueFactory<F> {
+      override fun CF(): Concurrent<F> = CF
+    }
+  }
 }
