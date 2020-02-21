@@ -1,10 +1,16 @@
 plugins {
-    id 'scala'
+    id "base"
+    id "org.jetbrains.kotlin.jvm"
+    id "org.jetbrains.kotlin.kapt"
+    id "net.rdrei.android.buildtimetracker"
+    id "org.jetbrains.dokka"
+    id "org.jlleitschuh.gradle.ktlint"
+    id "ru.vyarus.animalsniffer"
+    id "scala"
 }
 
-repositories {
-    mavenCentral()
-}
+apply from: "$SUBPROJECT_CONF"
+apply from: "$DOC_CONF"
 
 dependencies {
     api "org.scala-lang:scala-library:$SCALA_LIBRARY_VERSION"
