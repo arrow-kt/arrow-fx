@@ -1240,6 +1240,9 @@ fun <A, B> IOOf<Nothing, A>.repeat(schedule: Schedule<IOPartialOf<Nothing>, A, B
 fun <A, B> IOOf<Nothing, A>.retry(schedule: Schedule<IOPartialOf<Nothing>, Throwable, B>): IO<Nothing, A> =
   retry(IO.concurrent(), schedule).fix()
 
+fun <E, A> IOOf<E, A>.void(): IO<E, Unit> =
+  map(mapUnit)
+
 internal object IONothingYieldsError : ArrowInternalException() {
   override fun fillInStackTrace(): Throwable = this
 }
