@@ -194,10 +194,15 @@ class QueueTest : UnitSpec() {
       }
 
       "$label - capacity must be a positive integer" {
-        queue(0).attempt().suspended().fold(
-          { err -> err.shouldBeInstanceOf<IllegalArgumentException>() },
-          { fail("Expected Left<IllegalArgumentException>") }
-        )
+        IO.fx<Nothing, Unit> {
+          val attempted = !queue(0).attempt()
+          !IO.effect {
+            attempted.fold(
+              { err -> err.shouldBeInstanceOf<IllegalArgumentException>() },
+              { fail("Expected Left<IllegalArgumentException>") }
+            )
+          }
+        }.test()
       }
 
       "$label - suspended offers called on an full queue complete when take calls made to queue" {
@@ -251,10 +256,15 @@ class QueueTest : UnitSpec() {
       allStrategyTests(label, ctx, queue)
 
       "$label - capacity must be a positive integer" {
-        queue(0).attempt().suspended().fold(
-          { err -> err.shouldBeInstanceOf<IllegalArgumentException>() },
-          { fail("Expected Left<IllegalArgumentException>") }
-        )
+        IO.fx<Nothing, Unit> {
+          val attempted = !queue(0).attempt()
+          !IO.effect {
+            attempted.fold(
+              { err -> err.shouldBeInstanceOf<IllegalArgumentException>() },
+              { fail("Expected Left<IllegalArgumentException>") }
+            )
+          }
+        }.test()
       }
 
       "$label - removes first element after offering to a queue at capacity" {
@@ -281,10 +291,15 @@ class QueueTest : UnitSpec() {
       allStrategyTests(label, ctx, queue)
 
       "$label - capacity must be a positive integer" {
-        queue(0).attempt().suspended().fold(
-          { err -> err.shouldBeInstanceOf<IllegalArgumentException>() },
-          { fail("Expected Left<IllegalArgumentException>") }
-        )
+        IO.fx<Nothing, Unit> {
+          val attempted = !queue(0).attempt()
+          !IO.effect {
+            attempted.fold(
+              { err -> err.shouldBeInstanceOf<IllegalArgumentException>() },
+              { fail("Expected Left<IllegalArgumentException>") }
+            )
+          }
+        }.test()
       }
 
       "$label - drops elements offered to a queue at capacity" {

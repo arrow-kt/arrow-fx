@@ -1241,7 +1241,7 @@ fun <A, B> IOOf<Nothing, A>.retry(schedule: Schedule<IOPartialOf<Nothing>, Throw
   retry(IO.concurrent(), schedule).fix()
 
 fun <E, A> IOOf<E, A>.void(): IO<E, Unit> =
-  map(mapUnit)
+  fix().map(mapUnit)
 
 internal object IONothingYieldsError : ArrowInternalException() {
   override fun fillInStackTrace(): Throwable = this
