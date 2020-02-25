@@ -3,9 +3,6 @@ package arrow.fx.typeclasses
 import arrow.Kind
 import arrow.core.Eval
 import arrow.core.Tuple2
-import arrow.fx.ForIO
-import arrow.fx.IO
-import arrow.fx.fix
 import arrow.typeclasses.Applicative
 import kotlin.coroutines.CoroutineContext
 
