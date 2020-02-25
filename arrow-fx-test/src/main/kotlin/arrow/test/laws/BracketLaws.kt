@@ -8,7 +8,9 @@ import arrow.fx.typeclasses.ExitCase
 import arrow.test.generators.GenK
 import arrow.test.generators.applicativeError
 import arrow.test.generators.functionAToB
+import arrow.test.generators.raiseError
 import arrow.test.generators.throwable
+import arrow.test.generators.unit
 import arrow.typeclasses.Apply
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
@@ -21,6 +23,7 @@ object BracketLaws {
 
   private fun <F> bracketLaws(
     BF: Bracket<F, Throwable>,
+    GENK: GenK<F>,
     EQK: EqK<F>
   ): List<Law> {
     val EQ = EQK.liftEq(Int.eq())
@@ -29,15 +32,17 @@ object BracketLaws {
       Law("Bracket: bracketCase with just Unit is eqv to Map") { BF.bracketCaseWithJustUnitEqvMap(EQ) },
       Law("Bracket: bracketCase with just Unit is uncancelable") { BF.bracketCaseWithJustUnitIsUncancelable(EQ) },
       Law("Bracket: bracketCase failure in acquisition remains failure") { BF.bracketCaseFailureInAcquisitionRemainsFailure(EQ) },
-      Law("Bracket: bracket is derived from bracketCase") { BF.bracketIsDerivedFromBracketCase(EQ) },
       Law("Bracket: uncancelable prevents Canceled case") { BF.uncancelablePreventsCanceledCase(BF.just(Unit), BF.just(Unit), EQ) },
       Law("Bracket: acquire and release are uncancelable") { BF.acquireAndReleaseAreUncancelable({ BF.just(Unit) }, EQ) },
-      Law("Bracket: guarantee is derived from bracket") { BF.guaranteeIsDerivedFromBracket(BF.just(Unit), EQ) },
-      Law("Bracket: guaranteeCase is derived from bracketCase") { BF.guaranteeCaseIsDerivedFromBracketCase({ BF.just(Unit) }, EQ) },
       Law("Bracket: bracket propagates transformer effects") { BF.bracketPropagatesTransformerEffects(EQ) },
       Law("Bracket: bracket must run release task on use error") { BF.bracketMustRunReleaseTaskOnUseError(EQ) },
       Law("Bracket: bracket must not run release task on acquire error") { BF.bracketMustNotRunReleaseTaskOnAcquireError(EQ) },
-      Law("Bracket: guarantee must run finalizer task") { BF.guaranteeMustRunFinalizerOnError(EQ) }
+      Law("Bracket: guaranteeCase must run finalizer task") { BF.guaranteeCaseMustRunFinalizerOnError(EQ) },
+      Law("Bracket: bracket is derived from bracketCase") { BF.bracketIsDerivedFromBracketCase(EQ) },
+      Law("Bracket: guarantee is derived from bracket") { BF.guaranteeIsDerivedFromBracket(BF.just(Unit), EQ) },
+      Law("Bracket: guaranteeCase is derived from bracketCase") { BF.guaranteeCaseIsDerivedFromBracketCase({ BF.just(Unit) }, EQ) },
+      // On cancel derivation cannot be tested as Bracket doesn't have the power to cancel
+      Law("Bracket: onError is derived from guaranteeCase") { BF.onErrorIsDerivedFromGuaranteeCase(GENK, EQ) }
     )
   }
 
@@ -47,7 +52,7 @@ object BracketLaws {
     EQK: EqK<F>
   ): List<Law> =
     MonadErrorLaws.laws(BF, GENK, EQK) +
-      bracketLaws(BF, EQK)
+      bracketLaws(BF, GENK, EQK)
 
   fun <F> laws(
     BF: Bracket<F, Throwable>,
@@ -58,7 +63,7 @@ object BracketLaws {
     EQK: EqK<F>
   ): List<Law> =
     MonadErrorLaws.laws(BF, FF, AP, SL, GENK, EQK) +
-      bracketLaws(BF, EQK)
+      bracketLaws(BF, GENK, EQK)
 
   fun <F> Bracket<F, Throwable>.bracketCaseWithJustUnitEqvMap(EQ: Eq<Kind<F, Int>>): Unit =
     forAll(Gen.int().applicativeError(this), Gen.functionAToB<Int, Int>(Gen.int())
@@ -154,15 +159,31 @@ object BracketLaws {
         .equalUnderTheLaw(just(expected), EQ)
     }
 
-  fun <F> Bracket<F, Throwable>.guaranteeMustRunFinalizerOnError(
+  fun <F> Bracket<F, Throwable>.guaranteeCaseMustRunFinalizerOnError(
     EQ: Eq<Kind<F, Int>>
   ): Unit =
     forAll(Gen.int(), Gen.throwable()) { i, t ->
       val msg = AtomicIntW(0)
       raiseError<Int>(t)
-        .guarantee(unit().map { msg.value = i })
+        .guaranteeCase { unit().map { msg.value = i } }
         .attempt()
         .map { msg.value }
         .equalUnderTheLaw(just(i), EQ)
+    }
+
+  fun <F> Bracket<F, Throwable>.onErrorIsDerivedFromGuaranteeCase(
+    GENK: GenK<F>,
+    EQ: Eq<Kind<F, Int>>
+  ): Unit =
+    forAll(
+      Gen.throwable().raiseError<F, Int, Throwable>(this),
+      Gen.functionAToB<Throwable, Kind<F, Unit>>(GENK.genK(Gen.unit()))
+    ) { fe: Kind<F, Int>, ff: (Throwable) -> Kind<F, Unit> ->
+      fe.onError { ff(it) }.equalUnderTheLaw(fe.guaranteeCase {
+        when (it) {
+          is ExitCase.Error -> ff(it.e)
+          else -> unit()
+        }
+      }, EQ)
     }
 }
