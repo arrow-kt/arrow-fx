@@ -168,7 +168,7 @@ interface MVar<F, A> {
   fun tryTake(): Kind<F, Option<A>>
 
   /**
-   * Reads the current value without touching it, assuming there is one, or otherwise it blocks until there is a value available.
+   * Reads the current value without emptying the MVar, assuming there is one, or otherwise it blocks until there is a value available.
    *
    * ```kotlin:ank:playground
    * import arrow.core.toT
