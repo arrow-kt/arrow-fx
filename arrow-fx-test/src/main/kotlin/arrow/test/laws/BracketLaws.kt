@@ -10,7 +10,6 @@ import arrow.test.generators.applicativeError
 import arrow.test.generators.functionAToB
 import arrow.test.generators.raiseError
 import arrow.test.generators.throwable
-import arrow.test.generators.unit
 import arrow.typeclasses.Apply
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
@@ -23,7 +22,6 @@ object BracketLaws {
 
   private fun <F> bracketLaws(
     BF: Bracket<F, Throwable>,
-    GENK: GenK<F>,
     EQK: EqK<F>
   ): List<Law> {
     val EQ = EQK.liftEq(Int.eq())
@@ -42,7 +40,7 @@ object BracketLaws {
       Law("Bracket: guarantee is derived from bracket") { BF.guaranteeIsDerivedFromBracket(BF.just(Unit), EQ) },
       Law("Bracket: guaranteeCase is derived from bracketCase") { BF.guaranteeCaseIsDerivedFromBracketCase({ BF.just(Unit) }, EQ) },
       // On cancel derivation cannot be tested as Bracket doesn't have the power to cancel
-      Law("Bracket: onError is derived from guaranteeCase") { BF.onErrorIsDerivedFromGuaranteeCase(GENK, EQ) }
+      Law("Bracket: onError must run finalizer task") { BF.onErrorMustRunFinalizerOnError(EQ) }
     )
   }
 
@@ -52,7 +50,7 @@ object BracketLaws {
     EQK: EqK<F>
   ): List<Law> =
     MonadErrorLaws.laws(BF, GENK, EQK) +
-      bracketLaws(BF, GENK, EQK)
+      bracketLaws(BF, EQK)
 
   fun <F> laws(
     BF: Bracket<F, Throwable>,
@@ -63,7 +61,7 @@ object BracketLaws {
     EQK: EqK<F>
   ): List<Law> =
     MonadErrorLaws.laws(BF, FF, AP, SL, GENK, EQK) +
-      bracketLaws(BF, GENK, EQK)
+      bracketLaws(BF, EQK)
 
   fun <F> Bracket<F, Throwable>.bracketCaseWithJustUnitEqvMap(EQ: Eq<Kind<F, Int>>): Unit =
     forAll(Gen.int().applicativeError(this), Gen.functionAToB<Int, Int>(Gen.int())
@@ -162,28 +160,27 @@ object BracketLaws {
   fun <F> Bracket<F, Throwable>.guaranteeCaseMustRunFinalizerOnError(
     EQ: Eq<Kind<F, Int>>
   ): Unit =
-    forAll(Gen.int(), Gen.throwable()) { i, t ->
+    forAll(Gen.int(), Gen.throwable().raiseError<F, Int, Throwable>(this)) { i, fe ->
       val msg = AtomicIntW(0)
-      raiseError<Int>(t)
+      fe
         .guaranteeCase { unit().map { msg.value = i } }
         .attempt()
         .map { msg.value }
         .equalUnderTheLaw(just(i), EQ)
     }
 
-  fun <F> Bracket<F, Throwable>.onErrorIsDerivedFromGuaranteeCase(
-    GENK: GenK<F>,
+  fun <F> Bracket<F, Throwable>.onErrorMustRunFinalizerOnError(
     EQ: Eq<Kind<F, Int>>
   ): Unit =
     forAll(
       Gen.throwable().raiseError<F, Int, Throwable>(this),
-      Gen.functionAToB<Throwable, Kind<F, Unit>>(GENK.genK(Gen.unit()))
-    ) { fe: Kind<F, Int>, ff: (Throwable) -> Kind<F, Unit> ->
-      fe.onError { ff(it) }.equalUnderTheLaw(fe.guaranteeCase {
-        when (it) {
-          is ExitCase.Error -> ff(it.e)
-          else -> unit()
-        }
-      }, EQ)
+      Gen.int()
+    ) { fe: Kind<F, Int>, i: Int ->
+      val msg = AtomicIntW(0)
+      fe
+        .onError { unit().map { msg.value = i } }
+        .attempt()
+        .map { msg.value }
+        .equalUnderTheLaw(just(i), EQ)
     }
 }
