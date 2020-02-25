@@ -58,8 +58,8 @@ interface FluxKApplicative : Applicative<ForFluxK> {
   override fun <A, B> FluxKOf<A>.map(f: (A) -> B): FluxK<B> =
     fix().map(f)
 
-  override fun <A, B> Kind<ForFluxK, A>.lazyAp(ff: () -> Kind<ForFluxK, (A) -> B>): Kind<ForFluxK, B> =
-    fix().flatMap { a -> ff().map { f -> f(a) } }
+  override fun <A, B> Kind<ForFluxK, A>.apEval(ff: Eval<Kind<ForFluxK, (A) -> B>>): Eval<Kind<ForFluxK, B>> =
+    Eval.now(fix().ap(FluxK.defer { ff.value() }))
 }
 
 @extension
