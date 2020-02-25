@@ -18,6 +18,7 @@ import arrow.core.value
 import arrow.fx.IO
 import arrow.fx.extensions.io.applicative.applicative
 import arrow.fx.extensions.io.concurrent.concurrent
+import arrow.fx.unsafeRunSync
 import arrow.mtl.typeclasses.ComposedApplicative
 import arrow.mtl.typeclasses.nest
 import arrow.mtl.typeclasses.unnest
@@ -115,7 +116,7 @@ object TraverseLaws {
       mapped.equalUnderTheLaw(traversed, Eq.any())
     }
 
-  fun <F, A> Traverse<F>.effectOrderPreserved(GEN: Gen<Kind<F, A>>) = IO.concurrent().run {
+  fun <F, A> Traverse<F>.effectOrderPreserved(GEN: Gen<Kind<F, A>>) = IO.concurrent<Nothing>().run {
     forAll(GEN) { fa: Kind<F, A> ->
       val foldableOrder = fa.foldLeft(emptyList()) { xs: List<A>, x: A -> xs + x }
       val effectOrder = Ref<List<A>>(emptyList()).flatMap { ref ->

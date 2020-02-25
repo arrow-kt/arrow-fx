@@ -7,13 +7,16 @@ import arrow.core.None
 import arrow.core.Right
 import arrow.core.Some
 import arrow.core.Tuple4
+import arrow.core.identity
 import arrow.core.right
 import arrow.fx.IO.Companion.just
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.async.async
 import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.concurrent.parMapN
+import arrow.fx.extensions.io.concurrent.raceN
 import arrow.fx.extensions.io.dispatchers.dispatchers
+import arrow.fx.extensions.timer
 import arrow.fx.extensions.toIO
 import arrow.fx.extensions.toIOException
 import arrow.fx.internal.parMap2
@@ -614,18 +617,22 @@ class IOTest : UnitSpec() {
     }
 
     "forked pair race should run" {
-      IO.fx {
-        dispatchers().io().raceN(
-          timer().sleep(10.seconds).followedBy(effect { 1 }),
-          effect { 3 }
+      IO.fx<Nothing, Either<Int, Int>> {
+        IO.dispatchers<Nothing>().io().raceN(
+          IO.timer<Nothing>().sleep(10.seconds).followedBy(IO.effect { 1 }),
+          IO.effect { 3 }
         ).fork().bind().join().bind()
+      }.unsafeRunSync() shouldBe 3.right()
+    }
 
-        res.fold(
-          { a, _, _ -> a },
-          { _, b, _ -> b },
-          { _, _, c -> c }
-        )
-      }.suspended() shouldBe Right(2)
+    "forked triple race should run" {
+      IO.fx<Nothing, Race3<Int, Int, Int>> {
+        IO.dispatchers<Nothing>().io().raceN(
+          IO.timer<Nothing>().sleep(10.seconds).followedBy(IO.effect { 1 }),
+          IO.timer<Nothing>().sleep(10.seconds).followedBy(IO.effect { 3 }),
+          IO.effect { 2 }
+        ).fork().bind().join().bind()
+      }.unsafeRunSync() shouldBe Race3.Third(2)
     }
 
     "IOParMap2 left handles null" {

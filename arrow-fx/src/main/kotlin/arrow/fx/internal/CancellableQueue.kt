@@ -20,7 +20,7 @@ import arrow.fx.typeclasses.rightUnit
 import arrow.typeclasses.Applicative
 import kotlin.coroutines.EmptyCoroutineContext
 
-class CancelableQueue<F, A> internal constructor(
+class CancellableQueue<F, A> internal constructor(
   initial: State<F, A>?,
   private val strategy: SurplusStrategy<F, A>,
   private val CF: Concurrent<F>
@@ -30,12 +30,12 @@ class CancelableQueue<F, A> internal constructor(
 
   companion object {
     operator fun <F, A> invoke(initial: List<A>, CF: Concurrent<F>): Kind<F, Queue<F, A>> = CF.later {
-      CancelableQueue<F, A>(State.Surplus(IQueue(initial), linkedMapOf(), linkedMapOf()), SurplusStrategy.Unbounded(CF), CF)
+      CancellableQueue<F, A>(State.Surplus(IQueue(initial), linkedMapOf(), linkedMapOf()), SurplusStrategy.Unbounded(CF), CF)
     }
 
-    /** Returns an empty [UncancelableMVar] instance. */
+    /** Returns an empty [UncancellableMVar] instance. */
     fun <F, A> empty(CF: Concurrent<F>): Kind<F, Queue<F, A>> = CF.later {
-      CancelableQueue<F, A>(null, SurplusStrategy.Unbounded(CF), CF)
+      CancellableQueue<F, A>(null, SurplusStrategy.Unbounded(CF), CF)
     }
 
     internal sealed class State<F, out A> {

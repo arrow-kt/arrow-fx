@@ -8,7 +8,7 @@ import arrow.fx.Queue
 import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.monad.flatMap
 import arrow.fx.fix
-import arrow.fx.internal.CancelableQueue
+import arrow.fx.internal.CancellableQueue
 import arrow.fx.unsafeRunSync
 import arrow.fx.void
 import org.openjdk.jmh.annotations.Benchmark
@@ -40,7 +40,7 @@ open class Queue {
   @Setup(Level.Trial)
   fun createQueues() {
     ConcurQueue = ConcurrentQueue.empty<IOPartialOf<Nothing>, Int>(IO.concurrent()).unsafeRunSync()
-    CancelQueue = CancelableQueue.empty<IOPartialOf<Nothing>, Int>(IO.concurrent()).unsafeRunSync()
+    CancelQueue = CancellableQueue.empty<IOPartialOf<Nothing>, Int>(IO.concurrent()).unsafeRunSync()
   }
 
   fun <A> IOOf<Nothing, A>.repeat(n: Int): IO<Nothing, A> =
@@ -55,5 +55,5 @@ open class Queue {
   fun concurrentQueue(): Unit = loop(ConcurQueue)
 
   @Benchmark
-  fun cancelableQueue(): Unit = loop(CancelQueue)
+  fun cancellableQueue(): Unit = loop(CancelQueue)
 }
