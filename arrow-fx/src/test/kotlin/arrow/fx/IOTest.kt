@@ -7,7 +7,6 @@ import arrow.core.None
 import arrow.core.Right
 import arrow.core.Some
 import arrow.core.Tuple4
-import arrow.core.identity
 import arrow.core.right
 import arrow.fx.IO.Companion.just
 import arrow.fx.extensions.fx
@@ -615,46 +614,10 @@ class IOTest : UnitSpec() {
     }
 
     "forked pair race should run" {
-      IO.fx<Nothing, Either<Int, Int>> {
-        IO.raceN(
-          IO.sleep(10.seconds).followedBy(IO.effect { 1 }),
-          IO.effect { 3 }
-        ).fork().bind().join().bind()
-      }.unsafeRunSync() shouldBe 3.right()
-    }
-
-    "forked race3 should run" {
-      IO.fx<Nothing, Race3<out Int, out Int, out Int>> {
-        IO.raceN(
-          IO.sleep(10.seconds).followedBy(IO.effect { 1 }),
-          IO.sleep(10.seconds).followedBy(IO.effect { 3 }),
-          IO.effect { 2 }
-        ).fork().bind().join().bind()
-      }.unsafeRunSync() shouldBe Race3.Third(2)
-    }
-
-    "forked racePair should run" {
-      IO.fx<Nothing, Int> {
-        val res = IO.racePair(
-          IO.dispatchers<Nothing>().default(),
-          IO.sleep(10.seconds).followedBy(IO.effect { 2 }),
-          IO.effect { 1 }
-        ).fork().bind().join().bind()
-
-        res.fold(
-          { a, _ -> a },
-          { _, b -> b }
-        )
-      }.suspended() shouldBe Right(1)
-    }
-
-    "forked triple racePair should run" {
-      IO.fx<Nothing, Int> {
-        val res = IO.raceTriple(
-          IO.dispatchers<Nothing>().default(),
-          IO.sleep(1.seconds).followedBy(IO.effect { 1 }),
-          IO.sleep(2.seconds).followedBy(IO.effect { 3 }),
-          IO.effect { 2 }
+      IO.fx {
+        dispatchers().io().raceN(
+          timer().sleep(10.seconds).followedBy(effect { 1 }),
+          effect { 3 }
         ).fork().bind().join().bind()
 
         res.fold(
@@ -663,24 +626,6 @@ class IOTest : UnitSpec() {
           { _, _, c -> c }
         )
       }.suspended() shouldBe Right(2)
-    }
-
-    "IOParMap2 should be stack safe" {
-      val size = 5000
-
-      fun ioParMap2(i: Int): IO<Nothing, Int> =
-        IO.parMapN(just(i), if (i < size) ioParMap2(i + 1) else just(i)) { _, ii -> ii }
-
-      just(1).flatMap(::ioParMap2).unsafeRunSync() shouldBe size
-    }
-
-    "IOParMap3 should be stack safe" {
-      val size = 5000
-
-      fun ioParMap3(i: Int): IO<Nothing, Int> =
-        IO.parMapN(just(i), IO.unit, if (i < size) ioParMap3(i + 1) else just(i)) { _, _, ii -> ii }
-
-      just(1).flatMap(::ioParMap3).unsafeRunSync() shouldBe size
     }
 
     "IOParMap2 left handles null" {
