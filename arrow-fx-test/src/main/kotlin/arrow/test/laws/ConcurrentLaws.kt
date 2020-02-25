@@ -45,7 +45,7 @@ object ConcurrentLaws {
     EQK: EqK<F>,
     ctx: CoroutineContext,
     testStackSafety: Boolean,
-    iterations: Int = 20_000
+    iterations: Int
   ): List<Law> {
 
     val EQ = EQK.liftEq(Int.eq())
@@ -119,7 +119,7 @@ object ConcurrentLaws {
         Law("Concurrent Laws: RaceN arity-8 should be stack safe") { CF.race8StackSafe(iterations, EQK.liftEq(Int.eq()), ctx) },
         Law("Concurrent Laws: RaceN arity-9 should be stack safe") { CF.race9StackSafe(iterations, EQK.liftEq(Int.eq()), ctx) }
       )
-    } else emptyList()) + TimerLaws.laws(CF, CF.timer(), EQK)
+    } else emptyList())
   }
 
   fun <F> laws(
