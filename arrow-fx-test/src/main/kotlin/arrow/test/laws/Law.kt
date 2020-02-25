@@ -24,7 +24,7 @@ fun <A> A.shouldBeEq(b: A, eq: Eq<A>): Unit = this should matchUnderEq(eq, b)
 
 fun <A> matchUnderEq(eq: Eq<A>, b: A) = object : Matcher<A> {
   override fun test(value: A): Result {
-    return io.kotlintest.Result(eq.run { value.eqv(b) }, "Expected: $b but found: $value", "$b and $value should be equal")
+    return Result(value.equalUnderTheLaw(b, eq), "Expected: $b but found: $value", "$b and $value should be equal")
   }
 }
 

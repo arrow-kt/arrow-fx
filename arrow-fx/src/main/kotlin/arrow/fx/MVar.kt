@@ -117,7 +117,7 @@ interface MVar<F, A> {
   fun tryPut(a: A): Kind<F, Boolean>
 
   /**
-   * Takes the value out of the [MVar] if full, or blocks until a value is available.
+   * Empties the [MVar] if full, returning the value, or blocks otherwise until a value is available.
    *
    * ```kotlin:ank:playground
    * import arrow.fx.*
@@ -168,7 +168,7 @@ interface MVar<F, A> {
   fun tryTake(): Kind<F, Option<A>>
 
   /**
-   * Tries reading the current value, or blocks until there is a value available.
+   * Reads the current value without touching it, assuming there is one, or otherwise it blocks until there is a value available.
    *
    * ```kotlin:ank:playground
    * import arrow.core.toT
