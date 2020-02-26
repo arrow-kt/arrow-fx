@@ -18,13 +18,13 @@ fun throwableEq() = Eq { a: Throwable, b ->
 data class Law(val name: String, val test: suspend TestContext.() -> Unit)
 
 fun <A> A.equalUnderTheLaw(b: A, eq: Eq<A>): Boolean =
-  eq.run { eqv(b) }
+  shouldBeEq(b, eq).let { true }
 
 fun <A> A.shouldBeEq(b: A, eq: Eq<A>): Unit = this should matchUnderEq(eq, b)
 
 fun <A> matchUnderEq(eq: Eq<A>, b: A) = object : Matcher<A> {
   override fun test(value: A): Result {
-    return Result(value.equalUnderTheLaw(b, eq), "Expected: $b but found: $value", "$b and $value should be equal")
+    return Result(eq.run { value.eqv(b) }, "Expected: $b but found: $value", "$b and $value should be equal")
   }
 }
 
