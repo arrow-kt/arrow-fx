@@ -10,6 +10,7 @@ import io.kotlintest.Result
 import io.kotlintest.TestContext
 import io.kotlintest.properties.Gen
 import io.kotlintest.should
+import io.kotlintest.shouldNot
 
 fun throwableEq() = Eq { a: Throwable, b ->
   a::class == b::class && a.message == b.message
@@ -21,6 +22,8 @@ fun <A> A.equalUnderTheLaw(b: A, eq: Eq<A>): Boolean =
   shouldBeEq(b, eq).let { true }
 
 fun <A> A.shouldBeEq(b: A, eq: Eq<A>): Unit = this should matchUnderEq(eq, b)
+
+fun <A> A.shouldNotBeEq(b: A, eq: Eq<A>): Unit = this shouldNot matchUnderEq(eq, b)
 
 fun <A> matchUnderEq(eq: Eq<A>, b: A) = object : Matcher<A> {
   override fun test(value: A): Result {
