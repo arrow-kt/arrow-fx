@@ -200,14 +200,14 @@ object BracketLaws {
     EQ: Eq<Kind<F, Int>>
   ) {
 
-    fun ioBracketLoop(i: Int): Kind<F, Int> =
+    fun bracketLoop(i: Int): Kind<F, Int> =
       unit().bracket(use = { just(i + 1) }, release = { unit() }).flatMap { ii ->
-        if (ii < iterations) ioBracketLoop(ii)
+        if (ii < iterations) bracketLoop(ii)
         else just(ii)
       }
 
     forFew(100, Gen.int().applicativeError(this)) { fa ->
-      fa.flatMap { ioBracketLoop(0) }.equalUnderTheLaw(just(iterations), EQ)
+      fa.flatMap { bracketLoop(0) }.equalUnderTheLaw(just(iterations), EQ)
     }
   }
 
@@ -215,15 +215,15 @@ object BracketLaws {
     iterations: Int,
     EQ: Eq<Kind<F, Int>>
   ) {
-    fun ioGuaranteeCase(i: Int): Kind<F, Int> =
+    fun guaranteeCaseLoop(i: Int): Kind<F, Int> =
       unit().guaranteeCase { unit() }.flatMap {
         val ii = i + 1
-        if (ii < iterations) ioGuaranteeCase(ii)
+        if (ii < iterations) guaranteeCaseLoop(ii)
         else just(ii)
       }
 
     forFew(100, Gen.int().applicativeError(this)) { fa ->
-      fa.flatMap { ioGuaranteeCase(0) }.equalUnderTheLaw(just(iterations), EQ)
+      fa.flatMap { guaranteeCaseLoop(0) }.equalUnderTheLaw(just(iterations), EQ)
     }
   }
 }
