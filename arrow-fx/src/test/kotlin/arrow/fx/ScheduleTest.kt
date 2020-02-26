@@ -179,20 +179,12 @@ class ScheduleTest : UnitSpec() {
     }
 
     "Schedule.recurs(n: Int)" {
-      forAll(Gen.intSmall().filter { it < 1000 && it != 0 }) { i ->
-        val res = Schedule.recurs<ForId, Int>(Id.monad(), i).runIdSchedule(0, i + 1)
+      forAll(Gen.intSmall().filter { it < 1000}) { i ->
+        val res = Schedule.recurs<ForId, Int>(Id.monad(), i).runIdSchedule(0, max(1, i + 1))
 
         if (i <= 0) res.isEmpty()
         else res.dropLast(1).forAll { it.cont && it.delay.amount == 0L } &&
           res.last().let { it.cont.not() && it.delay.amount == 0L && it.finish.value() == i + 1 && it.state == i + 1 }
-      }
-    }
-
-    "Schedule.recurs(n = 0)" {
-      forFew(2, Gen.intSmall()) {
-        val i = 0
-        val res = Schedule.recurs<ForId, Int>(Id.monad(), i).runIdSchedule(0, i + 1)
-        res.isEmpty()
       }
     }
 
