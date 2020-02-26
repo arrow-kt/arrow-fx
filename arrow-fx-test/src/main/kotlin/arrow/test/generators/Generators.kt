@@ -3,9 +3,6 @@ package arrow.test.generators
 import arrow.Kind
 import arrow.fx.ForIO
 import arrow.fx.IO
-import arrow.fx.fix
-import arrow.typeclasses.Eq
-import arrow.typeclasses.EqK
 import io.kotlintest.properties.Gen
 import java.util.concurrent.TimeUnit
 
