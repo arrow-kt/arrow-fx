@@ -206,9 +206,7 @@ object BracketLaws {
         else just(ii)
       }
 
-    forFew(100, Gen.int().applicativeError(this)) { fa ->
-      fa.flatMap { bracketLoop(0) }.equalUnderTheLaw(just(iterations), EQ)
-    }
+    unit().flatMap { bracketLoop(0) }.equalUnderTheLaw(just(iterations), EQ)
   }
 
   fun <F> Bracket<F, Throwable>.guaranteeCaseShouldBeStackSafe(
@@ -222,8 +220,6 @@ object BracketLaws {
         else just(ii)
       }
 
-    forFew(100, Gen.int().applicativeError(this)) { fa ->
-      fa.flatMap { guaranteeCaseLoop(0) }.equalUnderTheLaw(just(iterations), EQ)
-    }
+    unit().flatMap { guaranteeCaseLoop(0) }.equalUnderTheLaw(just(iterations), EQ)
   }
 }
