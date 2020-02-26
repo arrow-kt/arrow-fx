@@ -13,9 +13,6 @@ import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.dispatchers.dispatchers
 import arrow.fx.typeclasses.milliseconds
 import arrow.test.UnitSpec
-import arrow.test.generators.nonEmptyList
-import arrow.test.generators.tuple2
-import arrow.test.generators.tuple3
 import io.kotlintest.fail
 import io.kotlintest.matchers.types.shouldBeInstanceOf
 import io.kotlintest.properties.Gen

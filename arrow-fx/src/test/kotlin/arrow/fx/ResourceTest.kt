@@ -16,7 +16,7 @@ import arrow.test.UnitSpec
 import arrow.test.generators.GenK
 import arrow.test.laws.MonadLaws
 import arrow.test.laws.MonoidLaws
-import arrow.test.laws.forFew
+import arrow.test.util.forFew
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import io.kotlintest.properties.Gen

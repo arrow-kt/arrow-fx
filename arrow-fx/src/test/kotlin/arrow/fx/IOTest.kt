@@ -1,6 +1,5 @@
 package arrow.fx
 
-import arrow.Kind
 import arrow.core.Either
 import arrow.core.Left
 import arrow.core.None
@@ -29,11 +28,9 @@ import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
 import arrow.test.UnitSpec
 import arrow.test.concurrency.SideEffect
-import arrow.test.generators.GenK
-import arrow.test.generators.throwable
+import arrow.test.eq.eqK
+import arrow.test.generators.genK
 import arrow.test.laws.ConcurrentLaws
-import arrow.typeclasses.Eq
-import arrow.typeclasses.EqK
 import io.kotlintest.fail
 import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll
@@ -726,17 +723,4 @@ internal class TestContext : AbstractCoroutineContextElement(TestContext) {
   companion object Key : kotlin.coroutines.CoroutineContext.Key<CoroutineName>
 
   override fun toString(): String = "TestContext(${Integer.toHexString(hashCode())})"
-}
-
-internal fun IO.Companion.eqK() = object : EqK<ForIO> {
-  override fun <A> Kind<ForIO, A>.eqK(other: Kind<ForIO, A>, EQ: Eq<A>): Boolean = EQ(EQ).run {
-    fix().eqv(other.fix())
-  }
-}
-
-internal fun IO.Companion.genK() = object : GenK<ForIO> {
-  override fun <A> genK(gen: Gen<A>): Gen<Kind<ForIO, A>> = Gen.oneOf(
-    gen.map(IO.Companion::just),
-    Gen.throwable().map(IO.Companion::raiseError)
-  )
 }

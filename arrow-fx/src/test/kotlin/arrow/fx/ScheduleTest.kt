@@ -36,7 +36,7 @@ import arrow.test.laws.ApplicativeLaws
 import arrow.test.laws.CategoryLaws
 import arrow.test.laws.MonoidLaws
 import arrow.test.laws.ProfunctorLaws
-import arrow.test.laws.forFew
+import arrow.test.util.forFew
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import arrow.typeclasses.EqK2

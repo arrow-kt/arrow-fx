@@ -1,6 +1,5 @@
 package arrow.fx
 
-import arrow.core.extensions.eq
 import arrow.core.extensions.list.traverse.traverse
 import arrow.core.toT
 import arrow.fx.extensions.io.applicative.applicative
@@ -12,6 +11,7 @@ import arrow.fx.extensions.io.functor.unit
 import arrow.fx.extensions.io.monad.flatMap
 import arrow.fx.extensions.io.monad.map
 import arrow.test.UnitSpec
+import arrow.test.eq.eq
 import arrow.test.laws.equalUnderTheLaw
 import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll
@@ -28,7 +28,7 @@ class SemaphoreTest : UnitSpec() {
           (0 until n).toList().traverse(IO.applicative()) { s.acquire() }.flatMap {
             s.available()
           }
-        }.equalUnderTheLaw(IO.just(0L), EQ())
+        }.equalUnderTheLaw(IO.just(0L), IO.eq())
       }
 
       "$label - tryAcquire with available permits" {
@@ -37,7 +37,7 @@ class SemaphoreTest : UnitSpec() {
           (0 until n).toList().traverse(IO.applicative()) { s.acquire() }.flatMap {
             s.tryAcquire()
           }
-        }.equalUnderTheLaw(IO.just(true), EQ())
+        }.equalUnderTheLaw(IO.just(true), IO.eq())
       }
 
       "$label - tryAcquire with no available permits" {
@@ -46,7 +46,7 @@ class SemaphoreTest : UnitSpec() {
           (0 until n).toList().traverse(IO.applicative()) { s.acquire() }.flatMap {
             s.tryAcquire()
           }
-        }.equalUnderTheLaw(IO.just(false), EQ())
+        }.equalUnderTheLaw(IO.just(false), IO.eq())
       }
 
       "$label - available with available permits" {
@@ -54,7 +54,7 @@ class SemaphoreTest : UnitSpec() {
           s.acquireN(19).flatMap {
             s.available()
           }
-        }.equalUnderTheLaw(IO.just(1L), EQ())
+        }.equalUnderTheLaw(IO.just(1L), IO.eq())
       }
 
       "$label - available with no available permits" {
@@ -62,7 +62,7 @@ class SemaphoreTest : UnitSpec() {
           s.acquireN(20).flatMap {
             s.available()
           }
-        }.equalUnderTheLaw(IO.just(0L), EQ())
+        }.equalUnderTheLaw(IO.just(0L), IO.eq())
       }
 
       "$label - tryAcquireN with no available permits" {
@@ -70,7 +70,7 @@ class SemaphoreTest : UnitSpec() {
           s.acquireN(20).flatMap {
             s.tryAcquireN(1)
           }
-        }.equalUnderTheLaw(IO.just(false), EQ())
+        }.equalUnderTheLaw(IO.just(false), IO.eq())
       }
 
       "$label - count with available permits" {
@@ -91,7 +91,7 @@ class SemaphoreTest : UnitSpec() {
           s.acquireN(20).flatMap {
             s.count()
           }
-        }.equalUnderTheLaw(IO.just(0L), EQ())
+        }.equalUnderTheLaw(IO.just(0L), IO.eq())
       }
 
       "$label - negative number of permits" {

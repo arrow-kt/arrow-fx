@@ -1,4 +1,4 @@
-package arrow.test.laws
+package arrow.test.util
 
 import arrow.test.generators.tuple2
 import arrow.test.generators.tuple3
@@ -7,19 +7,12 @@ import arrow.test.generators.tuple5
 import arrow.typeclasses.Eq
 import io.kotlintest.Matcher
 import io.kotlintest.Result
-import io.kotlintest.TestContext
 import io.kotlintest.properties.Gen
 import io.kotlintest.should
 
 fun throwableEq() = Eq { a: Throwable, b ->
   a::class == b::class && a.message == b.message
 }
-
-data class Law(val name: String, val test: suspend TestContext.() -> Unit)
-
-fun <A> A.equalUnderTheLaw(b: A, eq: Eq<A>): Boolean =
-  eq.run { eqv(b) }
-
 fun <A> A.shouldBeEq(b: A, eq: Eq<A>): Unit = this should matchUnderEq(eq, b)
 
 fun <A> matchUnderEq(eq: Eq<A>, b: A) = object : Matcher<A> {

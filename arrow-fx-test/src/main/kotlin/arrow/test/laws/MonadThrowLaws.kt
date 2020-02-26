@@ -5,6 +5,7 @@ import arrow.core.extensions.eq
 import arrow.test.generators.GenK
 import arrow.test.generators.fatalThrowable
 import arrow.test.generators.throwable
+import arrow.test.util.throwableEq
 import arrow.typeclasses.Apply
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK

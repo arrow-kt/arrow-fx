@@ -35,7 +35,6 @@ import arrow.test.UnitSpec
 import arrow.test.generators.GenK
 import arrow.test.generators.functionAToB
 import arrow.test.generators.throwable
-import arrow.test.laws.EqLaws
 import arrow.test.laws.MonadDeferLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK

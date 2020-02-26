@@ -7,7 +7,6 @@ import arrow.fx.extensions.io.monadDefer.monadDefer
 import arrow.fx.typeclasses.Concurrent
 import arrow.fx.typeclasses.MonadDefer
 import arrow.test.UnitSpec
-import arrow.test.generators.functionAToB
 import arrow.test.laws.equalUnderTheLaw
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK

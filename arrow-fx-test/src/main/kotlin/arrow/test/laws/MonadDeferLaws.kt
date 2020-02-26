@@ -11,6 +11,7 @@ import arrow.test.concurrency.SideEffect
 import arrow.test.generators.GenK
 import arrow.test.generators.intSmall
 import arrow.test.generators.throwable
+import arrow.test.util.forFew
 import arrow.typeclasses.Apply
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK

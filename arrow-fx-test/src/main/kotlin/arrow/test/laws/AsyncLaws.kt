@@ -16,6 +16,7 @@ import arrow.test.generators.functionAToB
 import arrow.test.generators.functionToA
 import arrow.test.generators.intSmall
 import arrow.test.generators.throwable
+import arrow.test.util.forFew
 import arrow.typeclasses.Apply
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK

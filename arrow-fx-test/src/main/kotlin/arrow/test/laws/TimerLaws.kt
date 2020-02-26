@@ -7,6 +7,7 @@ import arrow.fx.typeclasses.Async
 import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
 import arrow.test.generators.intSmall
+import arrow.test.util.forFew
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import io.kotlintest.properties.Gen

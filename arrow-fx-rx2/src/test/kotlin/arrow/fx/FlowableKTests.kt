@@ -26,7 +26,6 @@ import arrow.fx.typeclasses.ExitCase
 import arrow.test.generators.GenK
 import arrow.test.laws.AsyncLaws
 import arrow.test.laws.ConcurrentLaws
-import arrow.test.laws.MonadFilterLaws
 import arrow.test.laws.TraverseLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
