@@ -186,8 +186,7 @@ class MVarTest : UnitSpec() {
         task.shouldBeEq(IO.just(count), EQ())
       }
 
-      "!$label - stack overflow test" {
-        // Ignored currently StackOverflows due to ListTraverse
+      "$label - stack overflow test" {
         val count = 10000
 
         fun consumer(ch: Channel<Int>, sum: Long): IO<Long> =
@@ -280,8 +279,7 @@ class MVarTest : UnitSpec() {
       }
 
       "$label - concurrent take and put" {
-        // lower number of concurrent ops until stack overflow test is fixed
-        val count = 1000
+        val count = 5000
         IO.fx {
           val mVar = !mvar.empty<Int>()
           val ref = !Ref(0)
