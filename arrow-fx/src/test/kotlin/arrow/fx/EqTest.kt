@@ -6,7 +6,6 @@ import arrow.test.UnitSpec
 import arrow.test.laws.equalUnderTheLaw
 import arrow.test.laws.shouldBeEq
 import arrow.test.laws.shouldNotBeEq
-import io.kotlintest.shouldBe
 import io.kotlintest.shouldThrow
 
 class EqTest : UnitSpec() {
