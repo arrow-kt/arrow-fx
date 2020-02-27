@@ -1,8 +1,8 @@
 package arrow.fx
 
+import arrow.HkJ3
 import arrow.Kind
 import arrow.core.Either
-import arrow.HkJ3
 import arrow.fx.typeclasses.Bracket
 import arrow.fx.typeclasses.ExitCase
 import arrow.typeclasses.Monoid
@@ -175,37 +175,44 @@ interface Resource<F, E, A> : ResourceOf<F, E, A> {
    */
   operator fun <C> invoke(use: (A) -> Kind<F, C>): Kind<F, C>
 
-  fun <B> map(BR: Bracket<F, E>, f: (A) -> B): Resource<F, E, B> = flatMap { just(f(it), BR) }
+  fun <B> map(BR: Bracket<F, E>, f: (A) -> B): Resource<F, E, B> =
+    flatMap { just(f(it), BR) }
 
-  fun <B> ap(BR: Bracket<F, E>, ff: ResourceOf<F, E, (A) -> B>): Resource<F, E, B> = flatMap { res -> ff.fix().map(BR) { it(res) } }
+  fun <B> ap(BR: Bracket<F, E>, ff: ResourceOf<F, E, (A) -> B>): Resource<F, E, B> =
+    flatMap { res -> ff.fix().map(BR) { it(res) } }
 
-  fun <B> flatMap(f: (A) -> ResourceOf<F, E, B>): Resource<F, E, B> = object : Resource<F, E, B> {
-    override fun <C> invoke(use: (B) -> Kind<F, C>): Kind<F, C> = this@Resource { a ->
-      f(a).fix().invoke { b ->
-        use(b)
+  fun <B> flatMap(f: (A) -> ResourceOf<F, E, B>): Resource<F, E, B> =
+    object : Resource<F, E, B> {
+      override fun <C> invoke(use: (B) -> Kind<F, C>): Kind<F, C> = this@Resource { a ->
+        f(a).fix().invoke { b ->
+          use(b)
+        }
       }
     }
-  }
 
-  fun combine(other: ResourceOf<F, E, A>, SR: Semigroup<A>, BR: Bracket<F, E>): Resource<F, E, A> = flatMap { r ->
-    other.fix().map(BR) { r2 -> SR.run { r.combine(r2) } }
-  }
+  fun combine(other: ResourceOf<F, E, A>, SR: Semigroup<A>, BR: Bracket<F, E>): Resource<F, E, A> =
+    flatMap { r ->
+      other.fix().map(BR) { r2 -> SR.run { r.combine(r2) } }
+    }
 
   companion object {
     /**
      * Lift a value in context [F] into a [Resource]. Use with caution as the value will have no finalizers added.
      */
-    fun <F, E, A> Kind<F, A>.liftF(BR: Bracket<F, E>): Resource<F, E, A> = Resource({ this }, { _, _ -> BR.unit() }, BR)
+    fun <F, E, A> Kind<F, A>.liftF(BR: Bracket<F, E>): Resource<F, E, A> =
+      Resource({ this }, { _, _ -> BR.unit() }, BR)
 
     /**
      * [Monoid] empty. Creates an empty [Resource] using a given [Monoid] for [A]. Use with caution as the value will have no finalizers added.
      */
-    fun <F, E, A> empty(MR: Monoid<A>, BR: Bracket<F, E>): Resource<F, E, A> = just(MR.empty(), BR)
+    fun <F, E, A> empty(MR: Monoid<A>, BR: Bracket<F, E>): Resource<F, E, A> =
+      just(MR.empty(), BR)
 
     /**
      * Create a [Resource] from a value [A]. Use with caution as the value will have no finalizers added.
      */
-    fun <F, E, A> just(r: A, BR: Bracket<F, E>): Resource<F, E, A> = Resource({ BR.just(r) }, { _, _ -> BR.just(Unit) }, BR)
+    fun <F, E, A> just(r: A, BR: Bracket<F, E>): Resource<F, E, A> =
+      Resource({ BR.just(r) }, { _, _ -> BR.just(Unit) }, BR)
 
     fun <F, E, A, B> tailRecM(BR: Bracket<F, E>, a: A, f: (A) -> ResourceOf<F, E, Either<A, B>>): Resource<F, E, B> =
       f(a).fix().flatMap {

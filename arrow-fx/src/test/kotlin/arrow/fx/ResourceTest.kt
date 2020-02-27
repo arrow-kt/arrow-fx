@@ -2,6 +2,7 @@ package arrow.fx
 
 import arrow.Kind
 import arrow.core.Some
+import arrow.core.extensions.eq
 import arrow.core.extensions.list.traverse.traverse
 import arrow.core.extensions.monoid
 import arrow.fx.extensions.io.applicative.applicative
@@ -24,12 +25,7 @@ import io.kotlintest.properties.Gen
 class ResourceTest : UnitSpec() {
   init {
 
-    val EQ = Eq<Kind<ResourcePartialOf<ForIO, Throwable>, Int>> { a, b ->
-      val tested: IO<Int> = a.fix().invoke { IO.just(1) }.fix()
-      val expected = b.fix().invoke { IO.just(1) }.fix()
-      val compare = IO.applicative().mapN(tested, expected) { (t, e) -> t == e }.fix()
-      compare.unsafeRunTimed(5.seconds) == Some(true)
-    }
+    val EQ = Resource.eqK().liftEq(Int.eq())
 
     testLaws(
       MonadLaws.laws(
@@ -59,16 +55,16 @@ class ResourceTest : UnitSpec() {
 private fun Resource.Companion.eqK() = object : EqK<ResourcePartialOf<ForIO, Throwable>> {
   override fun <A> Kind<ResourcePartialOf<ForIO, Throwable>, A>.eqK(other: Kind<ResourcePartialOf<ForIO, Throwable>, A>, EQ: Eq<A>): Boolean =
     (this.fix() to other.fix()).let {
-      val ls = it.first.invoke { IO.just(1) }.fix()
-      val rs = it.second.invoke { IO.just(1) }.fix()
+      val ls = it.first.invoke { IO.just(it) }.fix().attempt()
+      val rs = it.second.invoke { IO.just(it) }.fix().attempt()
       val compare = IO.applicative().mapN(ls, rs) { (l, r) -> l == r }.fix()
 
-      compare.unsafeRunTimed(5.seconds) == Some(true)
+      compare.unsafeRunTimed(10.seconds) == Some(true)
     }
 }
 
 private fun Resource.Companion.genK() = object : GenK<ResourcePartialOf<ForIO, Throwable>> {
   override fun <A> genK(gen: Gen<A>): Gen<Kind<ResourcePartialOf<ForIO, Throwable>, A>> = gen.map {
-    Resource.just(it, IO.bracket())
+    just(it, IO.bracket())
   }
 }
