@@ -135,7 +135,7 @@ inline fun <F, E, A> ResourceOf<F, E, A>.fix(): Resource<F, E, A> =
  *   val consumer = Resource(::createConsumer, ::closeConsumer, IO.bracket()).bind()
  *   val handle = Resource(::createDBHandle, ::closeDBHandle, IO.bracket()).bind()
  *   Resource({ createFancyService(consumer, handle) }, ::shutDownFancyService, IO.bracket()).bind()
- * }.fix().invoke { service ->
+ * }.fix().use { service ->
  *   // use service
  *   // <...>
  *
@@ -168,7 +168,7 @@ sealed class Resource<F, E, A> : ResourceOf<F, E, A> {
    *
    * fun main() {
    *   //sampleStart
-   *   val program = Resource(::acquireResource, ::releaseResource, IO.bracket()).invoke {
+   *   val program = Resource(::acquireResource, ::releaseResource, IO.bracket()).use {
    *     IO { println("Expensive resource under use! $it") }
    *   }
    *   //sampleEnd
@@ -287,7 +287,7 @@ sealed class Resource<F, E, A> : ResourceOf<F, E, A> {
      *   //sampleStart
      *   val resource = Resource(::acquireResource, ::releaseResource, IO.bracket())
      *   //sampleEnd
-     *   resource.invoke {
+     *   resource.use {
      *     IO { println("Expensive resource under use! $it") }
      *   }.fix().unsafeRunSync()
      * }
