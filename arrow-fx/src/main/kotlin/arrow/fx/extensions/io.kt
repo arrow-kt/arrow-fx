@@ -2,6 +2,7 @@ package arrow.fx.extensions
 
 import arrow.Kind
 import arrow.core.Either
+import arrow.core.Eval
 import arrow.core.Left
 import arrow.core.Right
 import arrow.extension
@@ -86,8 +87,8 @@ interface IOApply<E> : Apply<IOPartialOf<E>> {
   override fun <A, B> IOOf<E, A>.ap(ff: IOOf<E, (A) -> B>): IO<E, B> =
     Ap(ff)
 
-  override fun <A, B> IOOf<E, A>.lazyAp(ff: () -> IOOf<E, (A) -> B>): IO<E, B> =
-    FlatMap { a -> ff().map { f -> f(a) } }
+  override fun <A, B> IOOf<E, A>.apEval(ff: Eval<IOOf<E, (A) -> B>>): Eval<IO<E, B>> =
+    Eval.now(Ap(IO.defer { ff.value() }))
 
   override fun <A, B> IOOf<E, A>.map(f: (A) -> B): IO<E, B> =
     fix().map(f)
@@ -101,8 +102,8 @@ interface IOApplicative<E> : Applicative<IOPartialOf<E>> {
   override fun <A, B> IOOf<E, A>.ap(ff: IOOf<E, (A) -> B>): IO<E, B> =
     Ap(ff)
 
-  override fun <A, B> IOOf<E, A>.lazyAp(ff: () -> IOOf<E, (A) -> B>): IO<E, B> =
-    FlatMap { a -> ff().map { f -> f(a) } }
+  override fun <A, B> IOOf<E, A>.apEval(ff: Eval<IOOf<E, (A) -> B>>): Eval<IO<E, B>> =
+    Eval.now(Ap(IO.defer { ff.value() }))
 
   override fun <A, B> IOOf<E, A>.map(f: (A) -> B): IO<E, B> =
     fix().map(f)
@@ -122,8 +123,8 @@ interface IOMonad<E> : Monad<IOPartialOf<E>>, IOApplicative<E> {
   override fun <A, B> IOOf<E, A>.ap(ff: IOOf<E, (A) -> B>): IO<E, B> =
     Ap(ff)
 
-  override fun <A, B> IOOf<E, A>.lazyAp(ff: () -> IOOf<E, (A) -> B>): IO<E, B> =
-    fix().flatMap { a -> ff().map { f -> f(a) } }
+  override fun <A, B> IOOf<E, A>.apEval(ff: Eval<IOOf<E, (A) -> B>>): Eval<IO<E, B>> =
+    Eval.now(Ap(IO.defer { ff.value() }))
 }
 
 @extension
@@ -143,8 +144,8 @@ interface IOApplicativeError<E> : ApplicativeError<IOPartialOf<E>, Throwable>, I
   override fun <A> raiseError(e: Throwable): IO<E, A> =
     IO.raiseException(e)
 
-  override fun <A, B> IOOf<E, A>.lazyAp(ff: () -> IOOf<E, (A) -> B>): IO<E, B> =
-    FlatMap { a -> ff().map { f -> f(a) } }
+  override fun <A, B> IOOf<E, A>.apEval(ff: Eval<IOOf<E, (A) -> B>>): Eval<IO<E, B>> =
+    Eval.now(Ap(IO.defer { ff.value() }))
 }
 
 @extension
@@ -170,8 +171,8 @@ interface IOMonadError<E> : MonadError<IOPartialOf<E>, Throwable>, IOApplicative
   override fun <A> raiseError(e: Throwable): IO<Nothing, A> =
     IO.raiseException(e)
 
-  override fun <A, B> IOOf<E, A>.lazyAp(ff: () -> IOOf<E, (A) -> B>): IO<E, B> =
-    FlatMap { a -> ff().map { f -> f(a) } }
+  override fun <A, B> IOOf<E, A>.apEval(ff: Eval<IOOf<E, (A) -> B>>): Eval<IO<E, B>> =
+    Eval.now(Ap(IO.defer { ff.value() }))
 }
 
 @extension
