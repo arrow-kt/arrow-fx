@@ -44,7 +44,7 @@ class ResourceTest : UnitSpec() {
         val released = mutableListOf<String>()
         l.traverse(Resource.applicative(IO.bracket())) {
           Resource({ IO { it } }, { r -> IO { released.add(r); Unit } }, IO.bracket())
-        }.fix().invoke { IO.unit }.fix().unsafeRunSync()
+        }.fix().use { IO.unit }.fix().unsafeRunSync()
 
         l == released.reversed()
       }
@@ -55,8 +55,8 @@ class ResourceTest : UnitSpec() {
 private fun Resource.Companion.eqK() = object : EqK<ResourcePartialOf<ForIO, Throwable>> {
   override fun <A> Kind<ResourcePartialOf<ForIO, Throwable>, A>.eqK(other: Kind<ResourcePartialOf<ForIO, Throwable>, A>, EQ: Eq<A>): Boolean =
     (this.fix() to other.fix()).let {
-      val ls = it.first.invoke { IO.just(it) }.fix().attempt()
-      val rs = it.second.invoke { IO.just(it) }.fix().attempt()
+      val ls = it.first.use { IO.just(it) }.fix().attempt()
+      val rs = it.second.use { IO.just(it) }.fix().attempt()
       val compare = IO.applicative().mapN(ls, rs) { (l, r) -> l == r }.fix()
 
       compare.unsafeRunTimed(10.seconds) == Some(true)
@@ -64,7 +64,9 @@ private fun Resource.Companion.eqK() = object : EqK<ResourcePartialOf<ForIO, Thr
 }
 
 private fun Resource.Companion.genK() = object : GenK<ResourcePartialOf<ForIO, Throwable>> {
-  override fun <A> genK(gen: Gen<A>): Gen<Kind<ResourcePartialOf<ForIO, Throwable>, A>> = gen.map {
-    just(it, IO.bracket())
-  }
+  override fun <A> genK(gen: Gen<A>): Gen<Kind<ResourcePartialOf<ForIO, Throwable>, A>> =
+    Gen.oneOf(
+      gen.map { just(it, IO.bracket()) },
+      IO.genK().genK(gen).map { it.liftF(IO.bracket()) }
+    )
 }
