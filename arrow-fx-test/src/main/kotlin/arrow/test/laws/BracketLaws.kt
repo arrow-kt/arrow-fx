@@ -45,8 +45,8 @@ object BracketLaws {
       Law("Bracket: onError must run finalizer task") { BF.onErrorMustRunFinalizerOnError(EQ) }
     ) + (if (testStackSafety) {
       listOf(
-        Law("Bracket: onError must run finalizer task") { BF.bracketShouldBeStackSafe(iterations, EQ) },
-        Law("Bracket: onError must run finalizer task") { BF.guaranteeCaseShouldBeStackSafe(iterations, EQ) }
+        Law("Bracket: bracket should be stack-safe") { BF.bracketShouldBeStackSafe(iterations, EQ) },
+        Law("Bracket: guaranteeCase should be stack-safe") { BF.guaranteeCaseShouldBeStackSafe(iterations, EQ) }
       )
     } else emptyList())
   }
