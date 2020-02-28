@@ -718,7 +718,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
       val conn = IOConnection()
       val onCancelCb = when (onCancel) {
         ThrowCancellationException -> cb andThen { it.fix().unsafeRunAsync { } }
-        Silent -> { either -> either.fold({ if (!conn.isCancelled() || it != CancellationException) cb(either) }, { cb(either) }, { cb(either) }) }
+        Silent -> { either -> either.fold({ if (!conn.isCancelled() || it != CancellationException) cb(either) }, { cb(either); Unit }, { cb(either); Unit }) }
       }
       ccb(IOResult.Success(conn.toDisposable()))
       IORunLoop.startCancellable(this, conn, onCancelCb)
