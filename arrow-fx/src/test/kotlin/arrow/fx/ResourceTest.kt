@@ -55,11 +55,11 @@ class ResourceTest : UnitSpec() {
 private fun Resource.Companion.eqK() = object : EqK<ResourcePartialOf<ForIO, Throwable>> {
   override fun <A> Kind<ResourcePartialOf<ForIO, Throwable>, A>.eqK(other: Kind<ResourcePartialOf<ForIO, Throwable>, A>, EQ: Eq<A>): Boolean =
     (this.fix() to other.fix()).let {
-      val ls = it.first.use { IO.just(it) }.fix().attempt()
-      val rs = it.second.use { IO.just(it) }.fix().attempt()
+      val ls = it.first.use(IO.Companion::just).fix().attempt()
+      val rs = it.second.use(IO.Companion::just).fix().attempt()
       val compare = IO.applicative().mapN(ls, rs) { (l, r) -> l == r }.fix()
 
-      compare.unsafeRunTimed(10.seconds) == Some(true)
+      compare.unsafeRunTimed(5.seconds) == Some(true)
     }
 }
 
