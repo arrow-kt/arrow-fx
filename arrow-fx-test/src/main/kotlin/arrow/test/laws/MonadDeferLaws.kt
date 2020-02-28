@@ -31,7 +31,7 @@ object MonadDeferLaws {
   ): List<Law> {
     val EQ = EQK.liftEq(Int.eq())
 
-    return BracketLaws.laws(SC, GENK, EQK) + listOf(
+    return listOf(
       Law("MonadDefer laws: later constant equals pure") { SC.laterConstantEqualsPure(EQ) },
       Law("MonadDefer laws: later throw equals raiseError") { SC.laterThrowEqualsRaiseError(EQ) },
       Law("MonadDefer laws: later constant equals pure") { SC.deferConstantEqualsPure(EQ) },
