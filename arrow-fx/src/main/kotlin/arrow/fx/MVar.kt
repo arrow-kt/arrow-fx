@@ -1,6 +1,7 @@
 package arrow.fx
 
 import arrow.Kind
+import arrow.core.Either
 import arrow.core.Option
 import arrow.fx.internal.CancelableMVar
 import arrow.fx.internal.UncancelableMVar
@@ -370,3 +371,5 @@ interface MVarFactory<F> {
    */
   fun <A> empty(): Kind<F, MVar<F, A>>
 }
+
+internal typealias Listener<A> = (Either<Nothing, A>) -> Unit

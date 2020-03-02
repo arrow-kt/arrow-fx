@@ -7,6 +7,7 @@ import arrow.core.Option
 import arrow.core.Right
 import arrow.core.Some
 import arrow.core.Tuple2
+import arrow.fx.Listener
 import arrow.fx.MVar
 import arrow.fx.internal.UncancelableMVar.Companion.State.WaitForPut
 import arrow.fx.internal.UncancelableMVar.Companion.State.WaitForTake
@@ -238,4 +239,3 @@ internal class UncancelableMVar<F, A> private constructor(initial: State<A>, pri
 }
 
 private val EmptyState: WaitForPut<Any> = WaitForPut(IQueue.empty(), IQueue.empty())
-private typealias Listener<A> = (Either<Nothing, A>) -> Unit
