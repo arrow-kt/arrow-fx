@@ -263,7 +263,7 @@ class MVarTest : UnitSpec() {
       }
 
       "$label - concurrent take and put" {
-        val count = 5000
+        val count = 1_000
         IO.fx {
           val mVar = !mvar.empty<Int>()
           val ref = !Ref(0)
