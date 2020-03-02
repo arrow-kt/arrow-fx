@@ -64,7 +64,7 @@ internal class UncancelableMVar<F, A> private constructor(initial: State<A>, pri
         var first: Listener<A>? = null
         val update: State<A> =
           if (takes.isEmpty()) {
-            WaitForTake(a, IQueue.empty())
+            State(a)
           } else {
             val (x, rest) = takes.dequeue()
             first = x
@@ -91,7 +91,7 @@ internal class UncancelableMVar<F, A> private constructor(initial: State<A>, pri
         var first: Listener<A>? = null
         val update: State<A> =
           if (takes.isEmpty()) {
-            WaitForTake(a, IQueue.empty())
+            State(a)
           } else {
             val (x, rest) = takes.dequeue()
             first = x
@@ -135,7 +135,7 @@ internal class UncancelableMVar<F, A> private constructor(initial: State<A>, pri
         if (queue.isEmpty()) {
           if (stateRef.compareAndSet(current, State.empty())) {
             // Signals completion of `take`
-            onTake(Either.Right(value))
+            onTake(Right(value))
             unit()
           } else {
             unsafeTake(onTake) // retry
@@ -146,11 +146,11 @@ internal class UncancelableMVar<F, A> private constructor(initial: State<A>, pri
           val update = WaitForTake(ax, xs)
           if (stateRef.compareAndSet(current, update)) {
             // Complete the `put` request waiting on a notification
-            asyncBoundary.map { _ ->
+            asyncBoundary.map {
               try {
                 awaitPut(rightUnit)
               } finally {
-                onTake(Either.Right(value))
+                onTake(Right(value))
               }
             }
           } else {
