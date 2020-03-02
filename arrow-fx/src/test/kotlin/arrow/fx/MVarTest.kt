@@ -187,18 +187,33 @@ class MVarTest : UnitSpec() {
       }
 
       "$label - stack overflow test" {
-        val size = 20_000
+        val count = 10_000
 
-        fun ioMvarLoop(i: Int): IO<MVar<ForIO, Int>> =
-          mvar.just(i + 1).flatMap { it.read() }.flatMap { ii ->
-            if (ii < size) ioMvarLoop(ii)
-            else mvar.just(ii)
+        fun consumer(ch: Channel<Int>, sum: Long): IO<Long> =
+          ch.take().flatMap {
+            it.fold({
+              IO.just(sum) // we are done!
+            }, { x ->
+              // next please
+              consumer(ch, sum + x)
+            })
           }
 
-        mvar.just(0)
-          .flatMap { it.read() }
-          .flatMap { ioMvarLoop(it) }
-          .flatMap { it.read() }.unsafeRunSync() shouldBe size
+        fun exec(channel: Channel<Int>): IO<Long> {
+          val consumerTask = consumer(channel, 0L)
+          val tasks = (0 until count).map { i -> channel.put(Some(i)) }
+          val producerTask = tasks.parSequence().flatMap { channel.put(None) }
+
+          return IO.fx {
+            val f1 = !producerTask.fork()
+            val f2 = !consumerTask.fork()
+            !f1.join()
+            !f2.join()
+          }
+        }
+
+        mvar.just(Option(0)).flatMap(::exec)
+          .unsafeRunSync() shouldBe count.toLong() * (count - 1) / 2
       }
 
       "$label - producer-consumer parallel loop" {
