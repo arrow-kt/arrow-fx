@@ -1,7 +1,6 @@
 package arrow.fx.internal
 
 import arrow.Kind
-import arrow.core.Either
 import arrow.core.None
 import arrow.core.Option
 import arrow.core.Right
