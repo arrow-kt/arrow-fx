@@ -83,7 +83,7 @@ internal class CancelableMVar<F, A> private constructor(
       }
     }
 
-  private tailrec fun unsafePut(a: A, onPut: (Either<Nothing, Unit>) -> Unit): Kind<F, CancelToken<F>> =
+  private tailrec fun unsafePut(a: A, onPut: Listener<Unit>): Kind<F, CancelToken<F>> =
     when (val current = state.value) {
       is WaitForTake -> {
         val id = Token()
@@ -146,7 +146,7 @@ internal class CancelableMVar<F, A> private constructor(
       is WaitForPut -> justNone
     }
 
-  private tailrec fun unsafeTake(onTake: (Either<Nothing, A>) -> Unit): Kind<F, CancelToken<F>> =
+  private tailrec fun unsafeTake(onTake: Listener<A>): Kind<F, CancelToken<F>> =
     when (val current = state.value) {
       is WaitForTake -> {
         if (current.listeners.isEmpty()) {
@@ -186,7 +186,7 @@ internal class CancelableMVar<F, A> private constructor(
       is WaitForTake -> Unit
     }
 
-  private tailrec fun unsafeRead(onRead: (Either<Nothing, A>) -> Unit): Kind<F, Unit> =
+  private tailrec fun unsafeRead(onRead: Listener<A>): Kind<F, Unit> =
     when (val current = state.value) {
       is WaitForTake -> {
         onRead(Right(current.value))
@@ -213,8 +213,8 @@ internal class CancelableMVar<F, A> private constructor(
 
   private fun callPutAndAllReaders(
     a: A,
-    put: ((Either<Nothing, A>) -> Unit)?,
-    reads: LinkedMap<Token, (Either<Nothing, A>) -> Unit>
+    put: Listener<A>?,
+    reads: LinkedMap<Token, Listener<A>>
   ): Kind<F, Boolean> {
     val value = Right(a)
     return reads.values.callAll(value).flatMap {
@@ -224,7 +224,7 @@ internal class CancelableMVar<F, A> private constructor(
   }
 
   // For streaming a value to a whole `reads` collection
-  private fun Iterable<(Either<Nothing, A>) -> Unit>.callAll(value: Either<Nothing, A>): Kind<F, Unit> =
+  private fun Iterable<Listener<A>>.callAll(value: Either<Nothing, A>): Kind<F, Unit> =
     fold(null as Kind<F, Fiber<F, Unit>>?) { acc, cb ->
       val task = later { cb(value) }.fork(EmptyCoroutineContext)
       acc?.flatMap { task } ?: task
