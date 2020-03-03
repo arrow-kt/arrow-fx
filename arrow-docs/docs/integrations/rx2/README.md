@@ -230,5 +230,5 @@ IO {
       just(acc.bind() + 1)
     }.bind()
   }.fix().flowable.blockingFirst()
-}.attempt()
+}.attempt().unsafeRunSync()
 ```

@@ -94,7 +94,7 @@ import arrow.core.extensions.fx
 val result =
   Either.fx<Throwable, Int> {
     val (one) = Either.right(1)
-    val (two) = Either.right(one+one)
+    val (two) = Either.right(one + one)
     two
   }
 //sampleEnd
