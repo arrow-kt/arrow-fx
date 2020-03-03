@@ -5,6 +5,7 @@ import arrow.core.Either
 import arrow.core.Eval
 import arrow.core.Option
 import arrow.core.Tuple2
+import arrow.core.Tuple3
 import arrow.extension
 import arrow.fx.RacePair
 import arrow.fx.RaceTriple
@@ -168,13 +169,13 @@ interface ObservableKConcurrent : Concurrent<ForObservableK>, ObservableKAsync {
       }.k()
     }
 
-  override fun <A, B, C> CoroutineContext.parMapN(fa: ObservableKOf<A>, fb: ObservableKOf<B>, f: (A, B) -> C): ObservableK<C> =
-    ObservableK(fa.value().zipWith(fb.value(), BiFunction(f)).subscribeOn(asScheduler()))
+  override fun <A, B, C> parMapN(ctx: CoroutineContext, fa: ObservableKOf<A>, fb: ObservableKOf<B>, f: (Tuple2<A, B>) -> C): ObservableK<C> =
+    ObservableK(fa.value().zipWith(fb.value(), f.toBiFunction()).subscribeOn(ctx.asScheduler()))
 
-  override fun <A, B, C, D> CoroutineContext.parMapN(fa: ObservableKOf<A>, fb: ObservableKOf<B>, fc: ObservableKOf<C>, f: (A, B, C) -> D): ObservableK<D> =
+  override fun <A, B, C, D> parMapN(ctx: CoroutineContext, fa: ObservableKOf<A>, fb: ObservableKOf<B>, fc: ObservableKOf<C>, f: (Tuple3<A, B, C>) -> D): ObservableK<D> =
     ObservableK(fa.value().zipWith(fb.value().zipWith(fc.value(), BiFunction<B, C, Tuple2<B, C>> { b, c -> Tuple2(b, c) }), BiFunction { a: A, tuple: Tuple2<B, C> ->
-      f(a, tuple.a, tuple.b)
-    }).subscribeOn(asScheduler()))
+      f(Tuple3(a, tuple.a, tuple.b))
+    }).subscribeOn(ctx.asScheduler()))
 
   override fun <A> cancelable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForObservableK>): ObservableKOf<A> =
     ObservableK.cancelable(k)

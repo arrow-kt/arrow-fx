@@ -4,6 +4,7 @@ import arrow.Kind
 import arrow.core.Either
 import arrow.core.Eval
 import arrow.core.Tuple2
+import arrow.core.Tuple3
 
 import arrow.fx.RacePair
 import arrow.fx.RaceTriple
@@ -11,7 +12,6 @@ import arrow.fx.Timer
 import arrow.fx.rx2.ForSingleK
 import arrow.fx.rx2.SingleK
 import arrow.fx.rx2.SingleKOf
-import arrow.fx.rx2.extensions.singlek.async.async
 import arrow.fx.rx2.fix
 import arrow.fx.rx2.k
 import arrow.fx.rx2.value
@@ -164,13 +164,13 @@ interface SingleKConcurrent : Concurrent<ForSingleK>, SingleKAsync {
       }.k()
     }
 
-  override fun <A, B, C> CoroutineContext.parMapN(fa: SingleKOf<A>, fb: SingleKOf<B>, f: (A, B) -> C): SingleK<C> =
-    SingleK(fa.value().zipWith(fb.value(), BiFunction(f)).subscribeOn(asScheduler()))
+  override fun <A, B, C> parMapN(ctx: CoroutineContext, fa: SingleKOf<A>, fb: SingleKOf<B>, f: (Tuple2<A, B>) -> C): SingleK<C> =
+    SingleK(fa.value().zipWith(fb.value(), f.toBiFunction()).subscribeOn(ctx.asScheduler()))
 
-  override fun <A, B, C, D> CoroutineContext.parMapN(fa: SingleKOf<A>, fb: SingleKOf<B>, fc: SingleKOf<C>, f: (A, B, C) -> D): SingleK<D> =
+  override fun <A, B, C, D> parMapN(ctx: CoroutineContext, fa: SingleKOf<A>, fb: SingleKOf<B>, fc: SingleKOf<C>, f: (Tuple3<A, B, C>) -> D): SingleK<D> =
     SingleK(fa.value().zipWith(fb.value().zipWith(fc.value(), BiFunction<B, C, Tuple2<B, C>> { b, c -> Tuple2(b, c) }), BiFunction { a: A, tuple: Tuple2<B, C> ->
-      f(a, tuple.a, tuple.b)
-    }).subscribeOn(asScheduler()))
+      f(Tuple3(a, tuple.a, tuple.b))
+    }).subscribeOn(ctx.asScheduler()))
 
   override fun <A> cancelable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForSingleK>): SingleK<A> =
     SingleK.cancelable(k)

@@ -5,6 +5,7 @@ import arrow.core.Either
 import arrow.core.Eval
 import arrow.core.Option
 import arrow.core.Tuple2
+import arrow.core.Tuple3
 import arrow.extension
 import arrow.fx.RacePair
 import arrow.fx.RaceTriple
@@ -13,7 +14,6 @@ import arrow.fx.rx2.ForMaybeK
 import arrow.fx.rx2.MaybeK
 import arrow.fx.rx2.MaybeKOf
 import arrow.fx.rx2.asScheduler
-import arrow.fx.rx2.extensions.maybek.async.async
 import arrow.fx.rx2.extensions.maybek.dispatchers.dispatchers
 import arrow.fx.rx2.fix
 import arrow.fx.rx2.k
@@ -185,13 +185,13 @@ interface MaybeKConcurrent : Concurrent<ForMaybeK>, MaybeKAsync {
       }.k()
     }
 
-  override fun <A, B, C> CoroutineContext.parMapN(fa: MaybeKOf<A>, fb: MaybeKOf<B>, f: (A, B) -> C): MaybeK<C> =
-    MaybeK(fa.value().zipWith(fb.value(), BiFunction(f)).subscribeOn(asScheduler()))
+  override fun <A, B, C> parMapN(ctx: CoroutineContext, fa: MaybeKOf<A>, fb: MaybeKOf<B>, f: (Tuple2<A, B>) -> C): MaybeK<C> =
+    MaybeK(fa.value().zipWith(fb.value(), f.toBiFunction()).subscribeOn(ctx.asScheduler()))
 
-  override fun <A, B, C, D> CoroutineContext.parMapN(fa: MaybeKOf<A>, fb: MaybeKOf<B>, fc: MaybeKOf<C>, f: (A, B, C) -> D): MaybeK<D> =
+  override fun <A, B, C, D> parMapN(ctx: CoroutineContext, fa: MaybeKOf<A>, fb: MaybeKOf<B>, fc: MaybeKOf<C>, f: (Tuple3<A, B, C>) -> D): MaybeK<D> =
     MaybeK(fa.value().zipWith(fb.value().zipWith(fc.value(), BiFunction<B, C, Tuple2<B, C>> { b, c -> Tuple2(b, c) }), BiFunction { a: A, tuple: Tuple2<B, C> ->
-      f(a, tuple.a, tuple.b)
-    }).subscribeOn(asScheduler()))
+      f(Tuple3(a, tuple.a, tuple.b))
+    }).subscribeOn(ctx.asScheduler()))
 
   override fun <A> cancelable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForMaybeK>): MaybeK<A> =
     MaybeK.cancelable(k)
