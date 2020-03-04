@@ -465,6 +465,7 @@ interface Concurrent<F> : Async<F> {
    *
    * ```kotlin:ank:playground
    * import arrow.Kind
+   * import arrow.core.Tuple2
    * import arrow.fx.IO
    * import kotlinx.coroutines.Dispatchers
    * import arrow.fx.typeclasses.Concurrent
@@ -472,7 +473,7 @@ interface Concurrent<F> : Async<F> {
    * import arrow.fx.fix
    *
    * fun main(args: Array<String>) {
-   *   fun <F> Concurrent<F>.example(): Kind<F, Tuple<String, String>> {
+   *   fun <F> Concurrent<F>.example(): Kind<F, Tuple2<String, String>> {
    *   //sampleStart
    *     val result = parTupledN(
    *       Dispatchers.Default,
