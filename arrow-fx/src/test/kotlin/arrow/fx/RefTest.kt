@@ -18,7 +18,7 @@ import io.kotlintest.shouldBe
 class RefTest : UnitSpec() {
 
   init {
-    fun <F> MonadDefer<F>.tests(EQF: EqK<F>, RF: RefFactory<F>): Unit {
+    fun <F> MonadDefer<F>.tests(EQF: EqK<F>, RF: RefFactory<F>) {
       val eq: Eq<Kind<F, Unit>> = EQF.liftEq(Eq.any())
       fun Kind<F, Unit>.test(): Boolean = equalUnderTheLaw(unit(), eq)
       fun Kind<F, Unit>.unsafeRunSync(): Boolean = test()
@@ -145,7 +145,7 @@ class RefTest : UnitSpec() {
       }
     }
 
-    fun <F> Concurrent<F>.concurrentTests(EQF: EqK<F>, RF: RefFactory<F>): Unit {
+    fun <F> Concurrent<F>.concurrentTests(EQF: EqK<F>, RF: RefFactory<F>) {
       "concurrent modifications" {
         val finalValue = 1000
         RF.just(0).flatMap { r ->
