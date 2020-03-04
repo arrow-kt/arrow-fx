@@ -197,7 +197,7 @@ interface IOConcurrent : Concurrent<ForIO>, IOAsync {
   override fun <A> Kind<ForIO, A>.fork(coroutineContext: CoroutineContext): IO<Fiber<ForIO, A>> =
     fix().fork(coroutineContext)
 
-  override fun <A> cancelable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForIO>): Kind<ForIO, A> =
+  override fun <A> cancelable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForIO>): IO<A> =
     IO.cancelable(k)
 
   override fun <A> cancelableF(k: ((Either<Throwable, A>) -> Unit) -> IOOf<CancelToken<ForIO>>): IO<A> =
@@ -209,11 +209,11 @@ interface IOConcurrent : Concurrent<ForIO>, IOAsync {
   override fun <A, B, C> CoroutineContext.raceTriple(fa: Kind<ForIO, A>, fb: Kind<ForIO, B>, fc: Kind<ForIO, C>): IO<RaceTriple<ForIO, A, B, C>> =
     IO.raceTriple(this, fa, fb, fc)
 
-  override fun <A, B, C> parMapN(ctx: CoroutineContext, fa: Kind<ForIO, A>, fb: Kind<ForIO, B>, f: (Tuple2<A, B>) -> C): Kind<ForIO, C> =
-    IO.parMapN(ctx, fa, fb, f)
+  override fun <A, B> parTupledN(ctx: CoroutineContext, fa: Kind<ForIO, A>, fb: Kind<ForIO, B>): IO<Tuple2<A, B>> =
+    IO.parTupledN(ctx, fa, fb)
 
-  override fun <A, B, C, D> parMapN(ctx: CoroutineContext, fa: Kind<ForIO, A>, fb: Kind<ForIO, B>, fc: Kind<ForIO, C>, f: (Tuple3<A, B, C>) -> D): Kind<ForIO, D> =
-    IO.parMapN(ctx, fa, fb, fc, f)
+  override fun <A, B, C> parTupledN(ctx: CoroutineContext, fa: Kind<ForIO, A>, fb: Kind<ForIO, B>, fc: Kind<ForIO, C>): IO<Tuple3<A, B, C>> =
+    IO.parTupledN(ctx, fa, fb, fc)
 
   override fun <A, B> CoroutineContext.raceN(fa: Kind<ForIO, A>, fb: Kind<ForIO, B>): IO<Race2<A, B>> =
     IO.raceN(this@raceN, fa, fb)

@@ -197,11 +197,11 @@ interface FlowableKConcurrent : Concurrent<ForFlowableK>, FlowableKAsync {
       }, BS()).k()
     }
 
-  override fun <A, B, C> parMapN(ctx: CoroutineContext, fa: FlowableKOf<A>, fb: FlowableKOf<B>, f: (Tuple2<A, B>) -> C): FlowableK<C> =
-    fa.value().zipWith(fb.value(), f.toBiFunction()).subscribeOn(ctx.asScheduler()).k()
+  override fun <A, B> parTupledN(ctx: CoroutineContext, fa: FlowableKOf<A>, fb: FlowableKOf<B>): FlowableK<Tuple2<A, B>> =
+    fa.value().zipWith(fb.value(), tupled2()).subscribeOn(ctx.asScheduler()).k()
 
-  override fun <A, B, C, D> parMapN(ctx: CoroutineContext, fa: FlowableKOf<A>, fb: FlowableKOf<B>, fc: FlowableKOf<C>, f: (Tuple3<A, B, C>) -> D): FlowableK<D> =
-    Flowable.zip(fa.value(), fb.value(), fc.value(), f.toFunction3()).subscribeOn(ctx.asScheduler()).k()
+  override fun <A, B, C> parTupledN(ctx: CoroutineContext, fa: FlowableKOf<A>, fb: FlowableKOf<B>, fc: FlowableKOf<C>): FlowableK<Tuple3<A, B, C>> =
+    Flowable.zip(fa.value(), fb.value(), fc.value(), tupled3()).subscribeOn(ctx.asScheduler()).k()
 
   override fun <A> cancelable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForFlowableK>): FlowableK<A> =
     FlowableK.cancelable(k, BS())

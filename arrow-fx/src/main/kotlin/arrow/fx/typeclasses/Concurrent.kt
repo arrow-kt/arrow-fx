@@ -13,14 +13,11 @@ import arrow.core.Tuple6
 import arrow.core.Tuple7
 import arrow.core.Tuple8
 import arrow.core.Tuple9
-import arrow.core.internal.AtomicRefW
 import arrow.core.extensions.listk.traverse.traverse
 import arrow.core.fix
 import arrow.core.identity
+import arrow.core.internal.AtomicRefW
 import arrow.core.k
-import arrow.fx.internal.parMap2
-import arrow.fx.internal.parMap3
-import arrow.typeclasses.Applicative
 import arrow.fx.MVar
 import arrow.fx.Promise
 import arrow.fx.Race2
@@ -36,6 +33,9 @@ import arrow.fx.RaceTriple
 import arrow.fx.Semaphore
 import arrow.fx.Timer
 import arrow.fx.internal.TimeoutException
+import arrow.fx.internal.parMap2
+import arrow.fx.internal.parMap3
+import arrow.typeclasses.Applicative
 import arrow.typeclasses.Traverse
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
@@ -507,7 +507,7 @@ interface Concurrent<F> : Async<F> {
     fb: Kind<F, B>,
     f: (A, B) -> C
   ): Kind<F, C> =
-    parMap2(this, fa, fb, f)
+    parMapN(this, fa, fb) { (a, b) -> f(a, b) }
 
   /**
    * @see parMapN
@@ -539,7 +539,7 @@ interface Concurrent<F> : Async<F> {
     fc: Kind<F, C>,
     f: (A, B, C) -> D
   ): Kind<F, D> =
-    parMap3(this, fa, fb, fc, f)
+    parMapN(this, fa, fb, fc) { (a, b, c) -> f(a, b, c) }
 
   /**
    * @see parMapN
@@ -582,12 +582,7 @@ interface Concurrent<F> : Async<F> {
     fd: Kind<F, D>,
     f: (A, B, C, D) -> E
   ): Kind<F, E> =
-    parMapN(
-      parMapN(fa, fb, ::Tuple2),
-      parMapN(fc, fd, ::Tuple2)
-    ) { (a, b), (c, d) ->
-      f(a, b, c, d)
-    }
+    parMapN(this, fa, fb, fc, fd) { (a, b, c, d) -> f(a, b, c, d) }
 
   /**
    * @see parMapN
@@ -632,12 +627,7 @@ interface Concurrent<F> : Async<F> {
     fe: Kind<F, E>,
     f: (A, B, C, D, E) -> G
   ): Kind<F, G> =
-    parMapN(
-      parMapN(fa, fb, fc, ::Tuple3),
-      parMapN(fd, fe, ::Tuple2)
-    ) { (a, b, c), (d, e) ->
-      f(a, b, c, d, e)
-    }
+    parMapN(this, fa, fb, fc, fd, fe) { (a, b, c, d, e) -> f(a, b, c, d, e) }
 
   /**
    * @see parMapN
@@ -685,12 +675,7 @@ interface Concurrent<F> : Async<F> {
     fg: Kind<F, G>,
     f: (A, B, C, D, E, G) -> H
   ): Kind<F, H> =
-    parMapN(
-      parMapN(fa, fb, fc, ::Tuple3),
-      parMapN(fd, fe, fg, ::Tuple3)
-    ) { (a, b, c), (d, e, g) ->
-      f(a, b, c, d, e, g)
-    }
+    parMapN(this, fa, fb, fc, fd, fe, fg) { (a, b, c, d, e, g) -> f(a, b, c, d, e, g) }
 
   /**
    * @see parMapN
@@ -743,11 +728,7 @@ interface Concurrent<F> : Async<F> {
     fh: Kind<F, H>,
     f: (A, B, C, D, E, G, H) -> I
   ): Kind<F, I> =
-    parMapN(parMapN(fa, fb, fc, ::Tuple3),
-      parMapN(fd, fe, ::Tuple2),
-      parMapN(fg, fh, ::Tuple2)) { (a, b, c): Tuple3<A, B, C>, (d, e): Tuple2<D, E>, (g, h): Tuple2<G, H> ->
-      f(a, b, c, d, e, g, h)
-    }
+    parMapN(this, fa, fb, fc, fd, fe, fg, fh) { (a, b, c, d, e, g, h) -> f(a, b, c, d, e, g, h) }
 
   /**
    * @see parMapN
@@ -803,11 +784,7 @@ interface Concurrent<F> : Async<F> {
     fi: Kind<F, I>,
     f: (A, B, C, D, E, G, H, I) -> J
   ): Kind<F, J> =
-    parMapN(parMapN(fa, fb, fc, ::Tuple3),
-      parMapN(fd, fe, fg, ::Tuple3),
-      parMapN(fh, fi, ::Tuple2)) { (a, b, c): Tuple3<A, B, C>, (d, e, g): Tuple3<D, E, G>, (h, i): Tuple2<H, I> ->
-      f(a, b, c, d, e, g, h, i)
-    }
+    parMapN(this, fa, fb, fc, fd, fe, fg, fh, fi) { (a, b, c, d, e, g, h, i) -> f(a, b, c, d, e, g, h, i) }
 
   /**
    * @see parMapN
@@ -866,11 +843,7 @@ interface Concurrent<F> : Async<F> {
     fj: Kind<F, J>,
     f: (A, B, C, D, E, G, H, I, J) -> K
   ): Kind<F, K> =
-    parMapN(parMapN(fa, fb, fc, ::Tuple3),
-      parMapN(fd, fe, fg, ::Tuple3),
-      parMapN(fh, fi, fj, ::Tuple3)) { (a, b, c): Tuple3<A, B, C>, (d, e, g): Tuple3<D, E, G>, (h, i, j): Tuple3<H, I, J> ->
-      f(a, b, c, d, e, g, h, i, j)
-    }
+    parMapN(this, fa, fb, fc, fd, fe, fg, fh, fi, fj) { (a, b, c, d, e, g, h, i, j) -> f(a, b, c, d, e, g, h, i, j) }
 
   /**
    * Race two tasks concurrently within a new [F] on [this@raceN].

@@ -163,11 +163,11 @@ interface SingleKConcurrent : Concurrent<ForSingleK>, SingleKAsync {
       }.k()
     }
 
-  override fun <A, B, C> parMapN(ctx: CoroutineContext, fa: SingleKOf<A>, fb: SingleKOf<B>, f: (Tuple2<A, B>) -> C): SingleK<C> =
-    fa.value().zipWith(fb.value(), f.toBiFunction()).subscribeOn(ctx.asScheduler()).k()
+  override fun <A, B> parTupledN(ctx: CoroutineContext, fa: SingleKOf<A>, fb: SingleKOf<B>): SingleK<Tuple2<A, B>> =
+    fa.value().zipWith(fb.value(), tupled2()).subscribeOn(ctx.asScheduler()).k()
 
-  override fun <A, B, C, D> parMapN(ctx: CoroutineContext, fa: SingleKOf<A>, fb: SingleKOf<B>, fc: SingleKOf<C>, f: (Tuple3<A, B, C>) -> D): SingleK<D> =
-    Single.zip(fa.value(), fb.value(), fc.value(), f.toFunction3()).subscribeOn(ctx.asScheduler()).k()
+  override fun <A, B, C> parTupledN(ctx: CoroutineContext, fa: SingleKOf<A>, fb: SingleKOf<B>, fc: SingleKOf<C>): SingleK<Tuple3<A, B, C>> =
+    Single.zip(fa.value(), fb.value(), fc.value(), tupled3()).subscribeOn(ctx.asScheduler()).k()
 
   override fun <A> cancelable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForSingleK>): SingleK<A> =
     SingleK.cancelable(k)

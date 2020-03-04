@@ -168,11 +168,11 @@ interface ObservableKConcurrent : Concurrent<ForObservableK>, ObservableKAsync {
       }.k()
     }
 
-  override fun <A, B, C> parMapN(ctx: CoroutineContext, fa: ObservableKOf<A>, fb: ObservableKOf<B>, f: (Tuple2<A, B>) -> C): ObservableK<C> =
-    fa.value().zipWith(fb.value(), f.toBiFunction()).subscribeOn(ctx.asScheduler()).k()
+  override fun <A, B> parTupledN(ctx: CoroutineContext, fa: ObservableKOf<A>, fb: ObservableKOf<B>): ObservableK<Tuple2<A, B>> =
+    fa.value().zipWith(fb.value(), tupled2()).subscribeOn(ctx.asScheduler()).k()
 
-  override fun <A, B, C, D> parMapN(ctx: CoroutineContext, fa: ObservableKOf<A>, fb: ObservableKOf<B>, fc: ObservableKOf<C>, f: (Tuple3<A, B, C>) -> D): ObservableK<D> =
-    Observable.zip(fa.value(), fb.value(), fc.value(), f.toFunction3()).subscribeOn(ctx.asScheduler()).k()
+  override fun <A, B, C> parTupledN(ctx: CoroutineContext, fa: ObservableKOf<A>, fb: ObservableKOf<B>, fc: ObservableKOf<C>): ObservableK<Tuple3<A, B, C>> =
+    Observable.zip(fa.value(), fb.value(), fc.value(), tupled3()).subscribeOn(ctx.asScheduler()).k()
 
   override fun <A> cancelable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForObservableK>): ObservableKOf<A> =
     ObservableK.cancelable(k)

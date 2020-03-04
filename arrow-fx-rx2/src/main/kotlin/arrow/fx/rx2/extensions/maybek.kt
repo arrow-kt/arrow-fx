@@ -184,11 +184,11 @@ interface MaybeKConcurrent : Concurrent<ForMaybeK>, MaybeKAsync {
       }.k()
     }
 
-  override fun <A, B, C> parMapN(ctx: CoroutineContext, fa: MaybeKOf<A>, fb: MaybeKOf<B>, f: (Tuple2<A, B>) -> C): MaybeK<C> =
-    fa.value().zipWith(fb.value(), f.toBiFunction()).subscribeOn(ctx.asScheduler()).k()
+  override fun <A, B> parTupledN(ctx: CoroutineContext, fa: MaybeKOf<A>, fb: MaybeKOf<B>): MaybeK<Tuple2<A, B>> =
+    fa.value().zipWith(fb.value(), tupled2()).subscribeOn(ctx.asScheduler()).k()
 
-  override fun <A, B, C, D> parMapN(ctx: CoroutineContext, fa: MaybeKOf<A>, fb: MaybeKOf<B>, fc: MaybeKOf<C>, f: (Tuple3<A, B, C>) -> D): MaybeK<D> =
-    Maybe.zip(fa.value(), fb.value(), fc.value(), f.toFunction3()).subscribeOn(ctx.asScheduler()).k()
+  override fun <A, B, C> parTupledN(ctx: CoroutineContext, fa: MaybeKOf<A>, fb: MaybeKOf<B>, fc: MaybeKOf<C>): MaybeK<Tuple3<A, B, C>> =
+    Maybe.zip(fa.value(), fb.value(), fc.value(), tupled3()).subscribeOn(ctx.asScheduler()).k()
 
   override fun <A> cancelable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForMaybeK>): MaybeK<A> =
     MaybeK.cancelable(k)
