@@ -79,7 +79,6 @@ sealed class KindConnection<F> {
   @Deprecated("Renaming this api for consistency", ReplaceWith("isCancelled()"))
   fun isCanceled(): Boolean = isCancelled()
 
-
   /**
    * Check if the [KindConnection] is not cancelled
    *

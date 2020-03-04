@@ -55,7 +55,7 @@ import arrow.fx.extensions.io.monad.flatMap
 
 fun main(args: Array<String>) {
 //sampleStart
-Promise.unl<ForIO, Int>(IO.async()).flatMap { p ->
+Promise.uncancellable<ForIO, Int>(IO.async()).flatMap { p ->
   p.get()
 } //never ends because `get` keeps waiting for p to be fulfilled.
 //sampleEnd

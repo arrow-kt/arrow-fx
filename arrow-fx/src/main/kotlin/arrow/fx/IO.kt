@@ -874,7 +874,7 @@ sealed class IO<out A> : IOOf<A> {
 
   @Deprecated("Renaming this api for consistency", ReplaceWith("uncancellable()"))
   fun uncancelable(): IO<A> =
-    ContextSwitch(this, ContextSwitch.makeUncancellable, ContextSwitch.disableUncancellable)
+    uncancellable()
 
   /**
    * Meant for specifying tasks with safe resource acquisition and release in the face of errors and interruption.
