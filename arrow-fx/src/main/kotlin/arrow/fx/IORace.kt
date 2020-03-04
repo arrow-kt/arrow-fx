@@ -50,7 +50,7 @@ interface IORace {
    *
    * fun main(args: Array<String>) {
    *   fun <F> Concurrent<F>.example(): Kind<F, String> {
-   *     val never: Kind<F, Int> = cancellable { effect { println("Never got canelled for losing.") } }
+   *     val never: Kind<F, Int> = cancellable { effect { println("Never got cancelled for losing.") } }
    *
    *     //sampleStart
    *     val result = fx.concurrent {
