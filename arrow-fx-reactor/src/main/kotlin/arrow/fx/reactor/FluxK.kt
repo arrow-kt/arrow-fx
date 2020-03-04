@@ -94,13 +94,13 @@ data class FluxK<out A>(val flux: Flux<out A>) : FluxKOf<A> {
   fun <B> bracketCase(use: (A) -> FluxKOf<B>, release: (A, ExitCase<Throwable>) -> FluxKOf<Unit>): FluxK<B> =
     FluxK(Flux.create<B> { sink ->
       flux.subscribe({ a ->
-        if (sink.isCancelled) release(a, ExitCase.Canceled).fix().flux.subscribe({}, sink::error)
+        if (sink.isCancelled) release(a, ExitCase.Cancelled).fix().flux.subscribe({}, sink::error)
         else try {
           sink.onDispose(use(a).fix()
             .flatMap { b -> release(a, ExitCase.Completed).fix().map { b } }
             .handleErrorWith { e -> release(a, ExitCase.Error(e)).fix().flatMap { FluxK.raiseError<B>(e) } }
             .flux
-            .doOnCancel { release(a, ExitCase.Canceled).fix().flux.subscribe({}, sink::error) }
+            .doOnCancel { release(a, ExitCase.Cancelled).fix().flux.subscribe({}, sink::error) }
             .subscribe({ sink.next(it) }, sink::error, { }, {
               sink.onRequest(it::request)
             })

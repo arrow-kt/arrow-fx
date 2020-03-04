@@ -96,7 +96,7 @@ data class ObservableK<out A>(val observable: Observable<out A>) : ObservableKOf
         handleErrorWith { t -> Observable.fromCallable { emitter.tryOnError(t) }.flatMap { Observable.error<A>(t) }.k() }
           .concatMap { a ->
             if (emitter.isDisposed) {
-              release(a, ExitCase.Canceled).fix().observable.subscribe({}, { e -> emitter.tryOnError(e) })
+              release(a, ExitCase.Cancelled).fix().observable.subscribe({}, { e -> emitter.tryOnError(e) })
               Observable.never<B>().k()
             } else {
               defer { use(a) }
@@ -109,7 +109,7 @@ data class ObservableK<out A>(val observable: Observable<out A>) : ObservableKOf
                   })
                 }
                 .doOnDispose {
-                  defer { release(a, ExitCase.Canceled) }.value().subscribe({}, {})
+                  defer { release(a, ExitCase.Cancelled) }.value().subscribe({}, {})
                 }
                 .k()
             }

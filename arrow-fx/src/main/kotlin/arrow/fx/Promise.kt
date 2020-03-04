@@ -250,6 +250,11 @@ interface Promise<F, A> {
      * }
      * ```
      */
+    fun <F, A> uncancellable(AS: Async<F>): Kind<F, Promise<F, A>> =
+      AS.later { UncancelablePromise<F, A>(AS) }
+
+    // TODO: check for a better replacement with
+    @Deprecated("Renaming this api for consistency", ReplaceWith("uncancellable(AS)"))
     fun <F, A> uncancelable(AS: Async<F>): Kind<F, Promise<F, A>> =
       AS.later { UncancelablePromise<F, A>(AS) }
 
@@ -297,7 +302,7 @@ interface Promise<F, A> {
           a2 toT (fc toT pb)
         }
         val c = !fc
-        !(releaseRef.set(Some(c toT pb)).followedBy(just(pb))).uncancelable()
+        !(releaseRef.set(Some(c toT pb)).followedBy(just(pb))).uncancellable()
         !pb.get()
       }.guarantee(releaseRef.get().flatMap { it.map { (c, fb) -> release(c, fb) }.getOrElse { just(Unit) } })
     }

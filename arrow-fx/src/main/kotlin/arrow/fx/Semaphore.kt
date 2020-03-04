@@ -227,7 +227,7 @@ interface Semaphore<F> {
     fun <F> uncancelable(n: Long, AS: Async<F>): Kind<F, Semaphore<F>> = AS.run {
       assertNonNegative(n).flatMap {
         Ref<F, State<F>>(AS, Right(n)).map { ref ->
-          DefaultSemaphore(ref, Promise.uncancelable(this), this)
+          DefaultSemaphore(ref, Promise.uncancellable(this), this)
         }
       }
     }

@@ -228,8 +228,16 @@ interface Concurrent<F> : Async<F> {
    *   //sampleEnd
    * }
    * ```
-   * @see cancelableF for a version that can safely suspend impure callback registration code.
+   * @see cancellableF for a version that can safely suspend impure callback registration code.
    */
+  fun <A> cancellable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<F>): Kind<F, A> =
+    cancellableF { cb ->
+      val token = k(cb)
+      later { token }
+    }
+
+  // TODO: check for a better replacement with
+  @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(k))"))
   fun <A> cancelable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<F>): Kind<F, A> =
     cancelableF { cb ->
       val token = k(cb)
@@ -272,8 +280,39 @@ interface Concurrent<F> : Async<F> {
    * }
    * ```
    *
-   * @see cancelable for a simpler non-suspending version.
+   * @see cancellable for a simpler non-suspending version.
    */
+  fun <A> cancellableF(k: ((Either<Throwable, A>) -> Unit) -> Kind<F, CancelToken<F>>): Kind<F, A> =
+    asyncF { cb ->
+      val state = AtomicRefW<((Either<Throwable, Unit>) -> Unit)?>(null)
+      val cb1 = { r: Either<Throwable, A> ->
+        try {
+          cb(r)
+        } finally {
+          if (!state.compareAndSet(null, mapUnit)) {
+            val cb2 = state.value!!
+            state.lazySet(null)
+            cb2(rightUnit)
+          }
+        }
+      }
+
+      k(cb1).bracketCase(use = {
+        async<Unit> { cb ->
+          if (!state.compareAndSet(null, cb)) {
+            cb(rightUnit)
+          }
+        }
+      }, release = { token, exitCase ->
+        when (exitCase) {
+          is ExitCase.Cancelled -> token
+          else -> just(Unit)
+        }
+      })
+    }
+
+  // TODO: check for a better replacement with
+  @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(k)"))
   fun <A> cancelableF(k: ((Either<Throwable, A>) -> Unit) -> Kind<F, CancelToken<F>>): Kind<F, A> =
     asyncF { cb ->
       val state = AtomicRefW<((Either<Throwable, Unit>) -> Unit)?>(null)
@@ -297,7 +336,7 @@ interface Concurrent<F> : Async<F> {
         }
       }, release = { token, exitCase ->
         when (exitCase) {
-          is ExitCase.Canceled -> token
+          is ExitCase.Cancelled -> token
           else -> just(Unit)
         }
       })

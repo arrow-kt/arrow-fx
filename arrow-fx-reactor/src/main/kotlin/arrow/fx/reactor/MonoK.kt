@@ -103,13 +103,13 @@ data class MonoK<out A>(val mono: Mono<out A>) : MonoKOf<A> {
       sink.onCancel { isCanceled.value = true }
       val a: A? = mono.block()
       if (a != null) {
-        if (isCanceled.value) release(a, ExitCase.Canceled).fix().mono.subscribe({}, sink::error)
+        if (isCanceled.value) release(a, ExitCase.Cancelled).fix().mono.subscribe({}, sink::error)
         else try {
           sink.onDispose(use(a).fix()
             .flatMap { b -> release(a, ExitCase.Completed).fix().map { b } }
             .handleErrorWith { e -> release(a, ExitCase.Error(e)).fix().flatMap { MonoK.raiseError<B>(e) } }
             .mono
-            .doOnCancel { release(a, ExitCase.Canceled).fix().mono.subscribe({}, sink::error) }
+            .doOnCancel { release(a, ExitCase.Cancelled).fix().mono.subscribe({}, sink::error) }
             .subscribe(sink::success, sink::error)
           )
         } catch (e: Throwable) {

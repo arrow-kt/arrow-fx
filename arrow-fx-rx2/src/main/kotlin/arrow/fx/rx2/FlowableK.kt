@@ -98,7 +98,7 @@ data class FlowableK<out A>(val flowable: Flowable<out A>) : FlowableKOf<A> {
           .value()
           .concatMap { a ->
             if (emitter.isCancelled) {
-              release(a, ExitCase.Canceled).value().subscribe({}, emitter::onError)
+              release(a, ExitCase.Cancelled).value().subscribe({}, emitter::onError)
               Flowable.never<B>()
             } else {
               Flowable.defer { use(a).value() }
@@ -107,7 +107,7 @@ data class FlowableK<out A>(val flowable: Flowable<out A>) : FlowableKOf<A> {
                 }.doOnComplete {
                   Flowable.defer { release(a, ExitCase.Completed).value() }.subscribe({ emitter.onComplete() }, emitter::onError)
                 }.doOnCancel {
-                  Flowable.defer { release(a, ExitCase.Canceled).value() }.subscribe({}, {})
+                  Flowable.defer { release(a, ExitCase.Cancelled).value() }.subscribe({}, {})
                 }
             }
           }.subscribe(emitter::onNext, {}, {})

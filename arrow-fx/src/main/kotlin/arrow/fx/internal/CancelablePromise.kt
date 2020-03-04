@@ -31,7 +31,7 @@ internal class CancelablePromise<F, A>(private val CF: Concurrent<F>) : Promise<
   override fun get(): Kind<F, A> = defer {
     when (val current = state.value) {
       is State.Complete -> just(current.value)
-      is State.Pending -> cancelable { cb ->
+      is State.Pending -> cancellable { cb ->
         val id = unsafeRegister(cb)
         later { unregister(id) }
       }

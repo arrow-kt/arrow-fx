@@ -64,7 +64,7 @@ class CancelableQueue<F, A> internal constructor(
 
   override fun offer(a: A): Kind<F, Unit> =
     tryOffer(a).flatMap { didPut ->
-      if (didPut) unit() else cancelableF { cb -> unsafeOffer(a, cb) }
+      if (didPut) unit() else cancellableF { cb -> unsafeOffer(a, cb) }
     }
 
   override fun shutdown(): Kind<F, Unit> =
@@ -85,21 +85,21 @@ class CancelableQueue<F, A> internal constructor(
     isEmpty().map(Boolean::not)
 
   override fun awaitShutdown(): Kind<F, Unit> =
-    CF.cancelableF(::unsafeRegisterAwaitShutdown)
+    CF.cancellableF(::unsafeRegisterAwaitShutdown)
 
   fun tryOffer(a: A): Kind<F, Boolean> =
     defer { unsafeTryOffer(a) }
 
   override fun take(): Kind<F, A> =
     tryTake().flatMap {
-      it.fold({ cancelableF(::unsafeTake) }, ::just)
+      it.fold({ cancellableF(::unsafeTake) }, ::just)
     }
 
   fun tryTake(): Kind<F, Option<A>> =
     defer { unsafeTryTake() }
 
   fun read(): Kind<F, A> =
-    cancelable(::unsafeRead)
+    cancellable(::unsafeRead)
 
   private tailrec fun unsafeTryOffer(a: A): Kind<F, Boolean> =
     when (val current = state.value) {

@@ -13,7 +13,7 @@ import arrow.core.nonFatalOrThrow
 import arrow.fx.internal.Platform
 import arrow.fx.typeclasses.CancelToken
 import arrow.fx.typeclasses.ExitCase
-import arrow.fx.typeclasses.ExitCase.Canceled
+import arrow.fx.typeclasses.ExitCase.Cancelled
 import arrow.fx.typeclasses.ExitCase.Completed
 import arrow.fx.typeclasses.ExitCase.Error
 import io.reactivex.Maybe
@@ -104,7 +104,7 @@ data class MaybeK<out A>(val maybe: Maybe<out A>) : MaybeKOf<A> {
         handleErrorWith { t -> Maybe.fromCallable { emitter.onError(t) }.flatMap { Maybe.error<A>(t) }.k() }
           .flatMap { a ->
             if (emitter.isDisposed) {
-              release(a, Canceled).fix().maybe.subscribe({}, emitter::onError)
+              release(a, Cancelled).fix().maybe.subscribe({}, emitter::onError)
               Maybe.never<B>().k()
             } else {
               MaybeK.defer { use(a) }
@@ -115,7 +115,7 @@ data class MaybeK<out A>(val maybe: Maybe<out A>) : MaybeKOf<A> {
                   MaybeK.defer { release(a, Completed) }.fix().value().subscribe({ emitter.onComplete() }, emitter::onError)
                 }
                 .doOnDispose {
-                  MaybeK.defer { release(a, Canceled) }.value().subscribe({}, {})
+                  MaybeK.defer { release(a, Cancelled) }.value().subscribe({}, {})
                 }
                 .k()
             }

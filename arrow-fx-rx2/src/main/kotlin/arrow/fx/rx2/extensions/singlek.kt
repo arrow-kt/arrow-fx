@@ -172,10 +172,10 @@ interface SingleKConcurrent : Concurrent<ForSingleK>, SingleKAsync {
       f(a, tuple.a, tuple.b)
     }).subscribeOn(asScheduler()))
 
-  override fun <A> cancelable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForSingleK>): SingleK<A> =
+  override fun <A> cancellable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForSingleK>): SingleK<A> =
     SingleK.cancelable(k)
 
-  override fun <A> cancelableF(k: ((Either<Throwable, A>) -> Unit) -> SingleKOf<CancelToken<ForSingleK>>): SingleK<A> =
+  override fun <A> cancellableF(k: ((Either<Throwable, A>) -> Unit) -> SingleKOf<CancelToken<ForSingleK>>): SingleK<A> =
     SingleK.cancelableF(k)
 
   override fun <A, B> CoroutineContext.racePair(fa: SingleKOf<A>, fb: SingleKOf<B>): SingleK<RacePair<ForSingleK, A, B>> =

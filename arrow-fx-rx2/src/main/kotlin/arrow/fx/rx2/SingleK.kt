@@ -10,7 +10,7 @@ import arrow.fx.internal.Platform
 import arrow.fx.typeclasses.CancelToken
 import arrow.fx.typeclasses.Disposable
 import arrow.fx.typeclasses.ExitCase
-import arrow.fx.typeclasses.ExitCase.Canceled
+import arrow.fx.typeclasses.ExitCase.Cancelled
 import arrow.fx.typeclasses.ExitCase.Completed
 import arrow.fx.typeclasses.ExitCase.Error
 import io.reactivex.Single
@@ -101,7 +101,7 @@ data class SingleK<out A>(val single: Single<out A>) : SingleKOf<A> {
         handleErrorWith { t -> Single.fromCallable { emitter.onError(t) }.flatMap { Single.error<A>(t) }.k() }
           .flatMap { a ->
             if (emitter.isDisposed) {
-              release(a, Canceled).fix().single.subscribe({}, emitter::onError)
+              release(a, Cancelled).fix().single.subscribe({}, emitter::onError)
               Single.never<B>().k()
             } else {
               SingleK.defer { use(a) }
@@ -111,7 +111,7 @@ data class SingleK<out A>(val single: Single<out A>) : SingleKOf<A> {
                 }.doAfterSuccess {
                   SingleK.defer { release(a, Completed) }.fix().value().subscribe({ }, emitter::onError)
                 }.doOnDispose {
-                  SingleK.defer { release(a, Canceled) }.value().subscribe({}, {})
+                  SingleK.defer { release(a, Cancelled) }.value().subscribe({}, {})
                 }
                 .k()
             }

@@ -153,7 +153,7 @@ sealed class IO<out A> : IOOf<A> {
      * ```
      **/
     fun sleep(duration: Duration, continueOn: CoroutineContext = IODispatchers.CommonPool): IO<Unit> =
-      cancelable { cb ->
+      cancellable { cb ->
         val cancelRef = scheduler.schedule(ShiftTick(continueOn, cb), duration.amount, duration.timeUnit)
         later { cancelRef.cancel(false); Unit }
       }
@@ -232,7 +232,7 @@ sealed class IO<out A> : IOOf<A> {
      * ```
      *
      * @param k an asynchronous computation that might fail typed as [IOProc].
-     * @see cancelable for an operator that supports cancellation.
+     * @see cancellable for an operator that supports cancellation.
      * @see asyncF for a version that can suspend side effects in the registration function.
      */
     fun <A> async(k: IOProc<A>): IO<A> =
@@ -286,7 +286,7 @@ sealed class IO<out A> : IOOf<A> {
      *
      * @param k a deferred asynchronous computation that might fail typed as [IOProcF].
      * @see async for a version that can suspend side effects in the registration function.
-     * @see cancelableF for an operator that supports cancellation.
+     * @see cancellableF for an operator that supports cancellation.
      */
     fun <A> asyncF(k: IOProcF<A>): IO<A> =
       Async { conn: IOConnection, ff: (Either<Throwable, A>) -> Unit ->
@@ -359,6 +359,24 @@ sealed class IO<out A> : IOOf<A> {
      * @param cb an asynchronous computation that might fail.
      * @see async for wrapping impure APIs without cancellation
      */
+    fun <A> cancellable(cb: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForIO>): IO<A> =
+      Async { conn: IOConnection, cbb: (Either<Throwable, A>) -> Unit ->
+        onceOnly(conn, cbb).let { cbb2 ->
+          val cancelable = ForwardCancelable()
+          conn.push(cancelable.cancel())
+          if (conn.isNotCanceled()) {
+            cancelable.complete(try {
+              cb(cbb2)
+            } catch (throwable: Throwable) {
+              cbb2(Left(throwable.nonFatalOrThrow()))
+              unit
+            })
+          }
+        }
+      }
+
+    // TODO: check for a better replacement with
+    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(k)"))
     fun <A> cancelable(cb: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForIO>): IO<A> =
       Async { conn: IOConnection, cbb: (Either<Throwable, A>) -> Unit ->
         onceOnly(conn, cbb).let { cbb2 ->
@@ -427,6 +445,29 @@ sealed class IO<out A> : IOOf<A> {
      * @param cb a deferred asynchronous computation that might fail.
      * @see asyncF for wrapping impure APIs without cancellation
      */
+    fun <A> cancellableF(cb: ((Either<Throwable, A>) -> Unit) -> IOOf<CancelToken<ForIO>>): IO<A> =
+      Async { conn: IOConnection, cbb: (Either<Throwable, A>) -> Unit ->
+        val cancelable = ForwardCancelable()
+        val conn2 = IOConnection()
+        conn.push(cancelable.cancel())
+        conn.push(conn2.cancel())
+
+        onceOnly(conn, cbb).let { cbb2 ->
+          val fa: IOOf<CancelToken<ForIO>> = try {
+            cb(cbb2)
+          } catch (throwable: Throwable) {
+            cbb2(Left(throwable.nonFatalOrThrow()))
+            just(unit)
+          }
+
+          IORunLoop.startCancelable(fa, conn2) { result ->
+            conn.pop()
+            result.fold({ }, cancelable::complete)
+          }
+        }
+      }
+
+
     fun <A> cancelableF(cb: ((Either<Throwable, A>) -> Unit) -> IOOf<CancelToken<ForIO>>): IO<A> =
       Async { conn: IOConnection, cbb: (Either<Throwable, A>) -> Unit ->
         val cancelable = ForwardCancelable()
@@ -860,7 +901,11 @@ sealed class IO<out A> : IOOf<A> {
 
   internal abstract fun unsafeRunTimedTotal(limit: Duration): Option<A>
 
-  /** Makes the source [IO] uncancelable such that a [Fiber.cancel] signal has no effect. */
+  /** Makes the source [IO] uncancellable such that a [Fiber.cancel] signal has no effect. */
+  fun uncancellable(): IO<A> =
+    ContextSwitch(this, ContextSwitch.makeUncancelable, ContextSwitch.disableUncancelable)
+
+  @Deprecated("Renaming this api for consistency", ReplaceWith("uncancellable()"))
   fun uncancelable(): IO<A> =
     ContextSwitch(this, ContextSwitch.makeUncancelable, ContextSwitch.disableUncancelable)
 
@@ -911,7 +956,7 @@ sealed class IO<out A> : IOOf<A> {
    *   If it is successful we pass the result to stage 2 [use].
    *
    * 2. Resource consumption is like any other [IO] effect. The key difference here is that it's wired in such a way that
-   *   [release] **will always** be called either on [ExitCase.Canceled], [ExitCase.Error] or [ExitCase.Completed].
+   *   [release] **will always** be called either on [ExitCase.Cancelled], [ExitCase.Error] or [ExitCase.Completed].
    *   If it failed than the resulting [IO] from [bracketCase] will be `IO.raiseError(e)`, otherwise the result of [use].
    *
    * 3. Resource releasing is **NON CANCELABLE**, otherwise it could result in leaks.

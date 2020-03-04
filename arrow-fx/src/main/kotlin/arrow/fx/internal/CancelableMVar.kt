@@ -63,7 +63,7 @@ internal class CancelableMVar<F, A> private constructor(initial: State<A>, priva
 
   override fun put(a: A): Kind<F, Unit> =
     tryPut(a).flatMap { didPut ->
-      if (didPut) unit() else cancelableF { cb -> unsafePut(a, cb) }
+      if (didPut) unit() else cancellableF { cb -> unsafePut(a, cb) }
     }
 
   override fun tryPut(a: A): Kind<F, Boolean> =
@@ -71,14 +71,14 @@ internal class CancelableMVar<F, A> private constructor(initial: State<A>, priva
 
   override fun take(): Kind<F, A> =
     tryTake().flatMap {
-      it.fold({ cancelableF(::unsafeTake) }, ::just)
+      it.fold({ cancellableF(::unsafeTake) }, ::just)
     }
 
   override fun tryTake(): Kind<F, Option<A>> =
     defer { unsafeTryTake() }
 
   override fun read(): Kind<F, A> =
-    cancelable(::unsafeRead)
+    cancellable(::unsafeRead)
 
   private tailrec fun unsafeTryPut(a: A): Kind<F, Boolean> =
     when (val current = state.value) {

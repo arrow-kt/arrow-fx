@@ -12,7 +12,7 @@ sealed class ExitCase<out E> {
     override fun toString() = "ExitCase.Completed"
   }
 
-  object Canceled : ExitCase<Nothing>() {
+  object Cancelled : ExitCase<Nothing>() {
     override fun toString() = "ExitCase.Canceled"
   }
 
@@ -116,6 +116,10 @@ interface Bracket<F, E> : MonadError<F, E> {
   /**
    * Meant for ensuring a given task continues execution even when interrupted.
    */
+  fun <A> Kind<F, A>.uncancellable(): Kind<F, A> =
+    bracket({ just<Unit>(Unit) }, { just(it) })
+
+  @Deprecated("Renaming this api for consistency", ReplaceWith("uncancellable()"))
   fun <A> Kind<F, A>.uncancelable(): Kind<F, A> =
     bracket({ just<Unit>(Unit) }, { just(it) })
 
@@ -155,7 +159,7 @@ interface Bracket<F, E> : MonadError<F, E> {
   fun <A> Kind<F, A>.onCancel(finalizer: Kind<F, Unit>): Kind<F, A> =
     guaranteeCase { case ->
       when (case) {
-        ExitCase.Canceled -> finalizer
+        ExitCase.Cancelled -> finalizer
         else -> just<Unit>(Unit)
       }
     }
