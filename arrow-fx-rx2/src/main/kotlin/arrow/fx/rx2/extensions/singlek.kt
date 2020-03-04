@@ -44,7 +44,6 @@ import arrow.typeclasses.MonadError
 import arrow.typeclasses.MonadThrow
 import arrow.unsafe
 import io.reactivex.Single
-import io.reactivex.functions.BiFunction
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.ReplaySubject
 import java.util.concurrent.TimeUnit
@@ -151,8 +150,8 @@ interface SingleKEffect :
 }
 
 interface SingleKConcurrent : Concurrent<ForSingleK>, SingleKAsync {
-  override fun <A> Kind<ForSingleK, A>.fork(coroutineContext: CoroutineContext): SingleK<Fiber<ForSingleK, A>> =
-    coroutineContext.asScheduler().let { scheduler ->
+  override fun <A> Kind<ForSingleK, A>.fork(ctx: CoroutineContext): SingleK<Fiber<ForSingleK, A>> =
+    ctx.asScheduler().let { scheduler ->
       Single.create<Fiber<ForSingleK, A>> { emitter ->
         if (!emitter.isDisposed) {
           val s: ReplaySubject<A> = ReplaySubject.create()
@@ -165,12 +164,10 @@ interface SingleKConcurrent : Concurrent<ForSingleK>, SingleKAsync {
     }
 
   override fun <A, B, C> parMapN(ctx: CoroutineContext, fa: SingleKOf<A>, fb: SingleKOf<B>, f: (Tuple2<A, B>) -> C): SingleK<C> =
-    SingleK(fa.value().zipWith(fb.value(), f.toBiFunction()).subscribeOn(ctx.asScheduler()))
+    fa.value().zipWith(fb.value(), f.toBiFunction()).subscribeOn(ctx.asScheduler()).k()
 
   override fun <A, B, C, D> parMapN(ctx: CoroutineContext, fa: SingleKOf<A>, fb: SingleKOf<B>, fc: SingleKOf<C>, f: (Tuple3<A, B, C>) -> D): SingleK<D> =
-    SingleK(fa.value().zipWith(fb.value().zipWith(fc.value(), BiFunction<B, C, Tuple2<B, C>> { b, c -> Tuple2(b, c) }), BiFunction { a: A, tuple: Tuple2<B, C> ->
-      f(Tuple3(a, tuple.a, tuple.b))
-    }).subscribeOn(ctx.asScheduler()))
+    Single.zip(fa.value(), fb.value(), fc.value(), f.toFunction3()).subscribeOn(ctx.asScheduler()).k()
 
   override fun <A> cancelable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForSingleK>): SingleK<A> =
     SingleK.cancelable(k)

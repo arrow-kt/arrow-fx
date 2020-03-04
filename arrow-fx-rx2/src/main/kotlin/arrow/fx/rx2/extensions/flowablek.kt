@@ -44,7 +44,6 @@ import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.CoroutineContext
-import io.reactivex.functions.BiFunction
 import arrow.fx.rx2.asScheduler
 import arrow.fx.rx2.extensions.flowablek.dispatchers.dispatchers
 import arrow.fx.rx2.k
@@ -199,12 +198,10 @@ interface FlowableKConcurrent : Concurrent<ForFlowableK>, FlowableKAsync {
     }
 
   override fun <A, B, C> parMapN(ctx: CoroutineContext, fa: FlowableKOf<A>, fb: FlowableKOf<B>, f: (Tuple2<A, B>) -> C): FlowableK<C> =
-    FlowableK(fa.value().zipWith(fb.value(), f.toBiFunction()).subscribeOn(ctx.asScheduler()))
+    fa.value().zipWith(fb.value(), f.toBiFunction()).subscribeOn(ctx.asScheduler()).k()
 
   override fun <A, B, C, D> parMapN(ctx: CoroutineContext, fa: FlowableKOf<A>, fb: FlowableKOf<B>, fc: FlowableKOf<C>, f: (Tuple3<A, B, C>) -> D): FlowableK<D> =
-    FlowableK(fa.value().zipWith(fb.value().zipWith(fc.value(), BiFunction<B, C, Tuple2<B, C>> { b, c -> Tuple2(b, c) }), BiFunction { a: A, tuple: Tuple2<B, C> ->
-      f(Tuple3(a, tuple.a, tuple.b))
-    }).subscribeOn(ctx.asScheduler()))
+    Flowable.zip(fa.value(), fb.value(), fc.value(), f.toFunction3()).subscribeOn(ctx.asScheduler()).k()
 
   override fun <A> cancelable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForFlowableK>): FlowableK<A> =
     FlowableK.cancelable(k, BS())

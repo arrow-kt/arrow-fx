@@ -416,7 +416,7 @@ interface Concurrent<F> : Async<F> {
     toList().k().parTraverse(ListK.traverse(), ::identity).map { it.fix() }
 
   /**
-   * Map two tasks in parallel within a new [F] on [this@parMapN].
+   * Map two tasks in parallel within a new [F] on [ctx].
    *
    * ```kotlin:ank:playground
    * import arrow.Kind
@@ -429,10 +429,11 @@ interface Concurrent<F> : Async<F> {
    * fun main(args: Array<String>) {
    *   fun <F> Concurrent<F>.example(): Kind<F, String> {
    *   //sampleStart
-   *     val result = Dispatchers.Default.parMapN(
+   *     val result = parMapN(
+   *       Dispatchers.Default,
    *       effect { "First one is on ${Thread.currentThread().name}" },
    *       effect { "Second one is on ${Thread.currentThread().name}" }
-   *     ) { a, b ->
+   *     ) { (a, b) ->
    *       "$a\n$b"
    *     }
    *   //sampleEnd
@@ -460,7 +461,7 @@ interface Concurrent<F> : Async<F> {
     parTupledN(ctx, fa, fb).map(f)
 
   /**
-   * Map two tasks in parallel within a new [F] on [this@parMapN].
+   * Map two tasks in parallel within a new [F] on [ctx].
    *
    * ```kotlin:ank:playground
    * import arrow.Kind
@@ -471,14 +472,13 @@ interface Concurrent<F> : Async<F> {
    * import arrow.fx.fix
    *
    * fun main(args: Array<String>) {
-   *   fun <F> Concurrent<F>.example(): Kind<F, String> {
+   *   fun <F> Concurrent<F>.example(): Kind<F, Tuple<String, String>> {
    *   //sampleStart
-   *     val result = Dispatchers.Default.parMapN(
+   *     val result = parTupledN(
+   *       Dispatchers.Default,
    *       effect { "First one is on ${Thread.currentThread().name}" },
    *       effect { "Second one is on ${Thread.currentThread().name}" }
-   *     ) { a, b ->
-   *       "$a\n$b"
-   *     }
+   *     )
    *   //sampleEnd
    *   return result
    *   }
@@ -669,10 +669,10 @@ interface Concurrent<F> : Async<F> {
     parMapN(ctx,
       parTupledN(ctx, fa, fb, fc),
       parTupledN(ctx, fd, fe, fg)
-    ) { (abc, def) ->
+    ) { (abc, deg) ->
       val (a, b, c) = abc
-      val (d, e, f) = def
-      Tuple6(a, b, c, d, e, f)
+      val (d, e, g) = deg
+      Tuple6(a, b, c, d, e, g)
     }
 
   @Deprecated("This API is not consistent with others within Arrow", ReplaceWith("parMapN(this, fa, fb, fc, fd, fe, fg)"))
