@@ -626,17 +626,17 @@ object ConcurrentLaws {
     }
 
   fun <F> Concurrent<F>.parMapStartsAllAtSameTime(EQ: Eq<Kind<F, Any>>) {
-    val order = mutableListOf<Long>()
+    val order = mutableListOf<Int>()
 
-    fun makePar(num: Long) = sleep((num * 100).milliseconds).map {
+    fun makePar(num: Int) = sleep((num * 100).milliseconds).map {
       order.add(num)
       num
     }
 
     parTupledN(single,
       makePar(6), makePar(3), makePar(2), makePar(4), makePar(1), makePar(5)
-    ).equalUnderTheLaw(just(Tuple6(6L, 3, 2, 4, 1, 5)), EQ)
-    order.toList() shouldBe listOf(1L, 2, 3, 4, 5, 6)
+    ).equalUnderTheLaw(just(Tuple6(6, 3, 2, 4, 1, 5)), EQ) shouldBe true
+    order.toList() shouldBe listOf(1, 2, 3, 4, 5, 6)
   }
 
   fun <F> Concurrent<F>.parMapCancelCancelsBoth(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
@@ -796,45 +796,45 @@ object ConcurrentLaws {
   }
 
   fun <F> Concurrent<F>.parMap2StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
-      (0 until iterations).map { just(1) }
-        .fold(just(0)) { acc, t -> parMapN(ctx, acc, t) { (a, b) -> a + b } }
-        .shouldBeEq(just(iterations), EQ)
+    (0 until iterations).map { just(1) }
+      .fold(just(0)) { acc, t -> parMapN(ctx, acc, t) { (a, b) -> a + b } }
+      .shouldBeEq(just(iterations), EQ)
   }
 
   fun <F> Concurrent<F>.parMap3StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
-      (0 until iterations).map { just(1) }
-        .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit()) { it.a + it.b } }
-        .shouldBeEq(just(iterations), EQ)
+    (0 until iterations).map { just(1) }
+      .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit()) { it.a + it.b } }
+      .shouldBeEq(just(iterations), EQ)
   }
 
   fun <F> Concurrent<F>.parMap4StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
-      (0 until iterations).map { just(1) }
-        .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit(), unit()) { it.a + it.b } }
-        .shouldBeEq(just(iterations), EQ)
+    (0 until iterations).map { just(1) }
+      .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit(), unit()) { it.a + it.b } }
+      .shouldBeEq(just(iterations), EQ)
   }
 
   fun <F> Concurrent<F>.parMap5StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
-      (0 until iterations).map { just(1) }
-        .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit(), unit(), unit()) { it.a + it.b } }
-        .shouldBeEq(just(iterations), EQ)
+    (0 until iterations).map { just(1) }
+      .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit(), unit(), unit()) { it.a + it.b } }
+      .shouldBeEq(just(iterations), EQ)
   }
 
   fun <F> Concurrent<F>.parMap6StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
-      (0 until iterations).map { just(1) }
-        .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit(), unit(), unit(), unit()) { it.a + it.b } }
-        .shouldBeEq(just(iterations), EQ)
+    (0 until iterations).map { just(1) }
+      .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit(), unit(), unit(), unit()) { it.a + it.b } }
+      .shouldBeEq(just(iterations), EQ)
   }
 
   fun <F> Concurrent<F>.parMap7StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
-      (0 until iterations).map { just(1) }
-        .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit(), unit(), unit(), unit(), unit()) { it.a + it.b } }
-        .shouldBeEq(just(iterations), EQ)
+    (0 until iterations).map { just(1) }
+      .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit(), unit(), unit(), unit(), unit()) { it.a + it.b } }
+      .shouldBeEq(just(iterations), EQ)
   }
 
   fun <F> Concurrent<F>.parMap8StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
-      (0 until iterations).map { just(1) }
-        .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit(), unit(), unit(), unit(), unit(), unit()) { it.a + it.b } }
-        .shouldBeEq(just(iterations), EQ)
+    (0 until iterations).map { just(1) }
+      .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit(), unit(), unit(), unit(), unit(), unit()) { it.a + it.b } }
+      .shouldBeEq(just(iterations), EQ)
   }
 
   fun <F> Concurrent<F>.parMap9StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
