@@ -5,10 +5,8 @@ import arrow.core.Either
 import arrow.core.extensions.either.eq.eq
 import arrow.core.extensions.eq
 import arrow.core.right
-import arrow.core.some
 import arrow.fx.ForIO
 import arrow.fx.IO
-import arrow.fx.IODispatchers
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.applicative.applicative
 import arrow.fx.extensions.io.applicativeError.attempt
@@ -17,7 +15,6 @@ import arrow.fx.handleErrorWith
 import arrow.fx.extensions.io.bracket.onCancel
 import arrow.fx.extensions.io.concurrent.waitFor
 import arrow.fx.fix
-import arrow.fx.typeclasses.CancelToken
 import arrow.fx.typeclasses.Duration
 import arrow.fx.typeclasses.ExitCase
 import arrow.fx.typeclasses.milliseconds
@@ -32,18 +29,15 @@ import io.kotlintest.fail
 import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll
 import io.kotlintest.shouldBe
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.newCoroutineContext
 import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.test.TestCoroutineDispatcher
 import kotlinx.coroutines.test.TestCoroutineExceptionHandler
 import kotlinx.coroutines.test.TestCoroutineScope
-import kotlin.coroutines.EmptyCoroutineContext
 
 @ObsoleteCoroutinesApi
 @Suppress("IMPLICIT_NOTHING_AS_TYPE_PARAMETER")

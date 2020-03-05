@@ -1,11 +1,8 @@
 package arrow.fx.internal
 
-import arrow.core.Either
-import arrow.core.andThen
 import arrow.fx.ForIO
 import arrow.fx.IO
 import arrow.fx.IOConnection
-import arrow.fx.typeclasses.Disposable
 import arrow.fx.typeclasses.Fiber
 
 internal fun <A> IOFiber(promise: UnsafePromise<A>, conn: IOConnection): Fiber<ForIO, A> {

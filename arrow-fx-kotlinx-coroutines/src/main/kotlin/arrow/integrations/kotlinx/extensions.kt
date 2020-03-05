@@ -102,4 +102,3 @@ private fun <A> IOFiber(promise: UnsafePromise<A>, conn: Disposable): Fiber<ForI
 
   return Fiber(join, IO { conn.invoke() })
 }
-
