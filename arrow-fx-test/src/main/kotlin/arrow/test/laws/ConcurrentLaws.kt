@@ -9,6 +9,7 @@ import arrow.core.Tuple6
 import arrow.core.extensions.eq
 import arrow.core.extensions.listk.traverse.traverse
 import arrow.core.extensions.tuple2.eq.eq
+import arrow.core.extensions.tuple6.eq.eq
 import arrow.core.identity
 import arrow.core.k
 import arrow.core.toT
@@ -86,7 +87,7 @@ object ConcurrentLaws {
       Law("Concurrent Laws: race mirrors right winner") { CF.raceMirrorsRightWinner(EQ, ctx) },
       Law("Concurrent Laws: race cancels loser") { CF.raceCancelsLoser(EQ, ctx) },
       Law("Concurrent Laws: race cancels both") { CF.raceCancelCancelsBoth(EQ, ctx) },
-      Law("Concurrent Laws: parallel execution with single threaded context makes all Fs start at the same time") { CF.parMapStartsAllAtSameTime(EQK.liftEq(Eq.any())) },
+      Law("Concurrent Laws: parallel execution with single threaded context makes all Fs start at the same time") { CF.parMapStartsAllAtSameTime(EQK.liftEq(Tuple6.eq(Int.eq(), Int.eq(), Int.eq(), Int.eq(), Int.eq(), Int.eq()))) },
       Law("Concurrent Laws: parallel map cancels both") { CF.parMapCancelCancelsBoth(EQ, ctx) },
       Law("Concurrent Laws: action concurrent with pure value is just action") { CF.actionConcurrentWithPureValueIsJustAction(EQ, ctx) },
       Law("Concurrent Laws: parTraverse can traverse effectful computations") { CF.parTraverseCanTraverseEffectfullComputations(EQ) },
@@ -625,7 +626,7 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(a + b + c), EQ)
     }
 
-  fun <F> Concurrent<F>.parMapStartsAllAtSameTime(EQ: Eq<Kind<F, Any>>) {
+  fun <F> Concurrent<F>.parMapStartsAllAtSameTime(EQ: Eq<Kind<F, Tuple6<Int, Int, Int, Int, Int, Int>>>) {
     val order = mutableListOf<Int>()
 
     fun makePar(num: Int) = sleep((num * 100).milliseconds).map {
