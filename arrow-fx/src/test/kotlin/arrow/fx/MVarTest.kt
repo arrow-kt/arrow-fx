@@ -296,7 +296,7 @@ class MVarTest : UnitSpec() {
     fun concurrentTests(label: String, mvar: MVarFactory<ForIO>) {
       tests(label, mvar)
 
-      "$label - put is cancelable" {
+      "$label - put is cancellable" {
         IO.fx {
           val mVar = !mvar.just(0)
           !mVar.put(1).fork()
@@ -311,7 +311,7 @@ class MVarTest : UnitSpec() {
         }.shouldBeEq(IO.just(setOf(1, 3)), EQ())
       }
 
-      "$label - take is cancelable" {
+      "$label - take is cancellable" {
         IO.fx {
           val mVar = !mvar.empty<Int>()
           val t1 = !mVar.take().fork()
@@ -327,7 +327,7 @@ class MVarTest : UnitSpec() {
         }.shouldBeEq(IO.just(setOf(1, 3)), EQ())
       }
 
-      "$label - read is cancelable" {
+      "$label - read is cancellable" {
         IO.fx {
           val mVar = !mvar.empty<Int>()
           val finished = !Promise<Int>()
@@ -341,8 +341,8 @@ class MVarTest : UnitSpec() {
       }
     }
 
-    tests("UncancelableMVar", MVar.factoryUncancelable(IO.async()))
-    concurrentTests("CancelableMVar", MVar.factoryCancelable(IO.concurrent()))
+    tests("UncancellableMVar", MVar.factoryUncancellable(IO.async()))
+    concurrentTests("cancellableMVar", MVar.factoryCancellable(IO.concurrent()))
   }
 }
 
