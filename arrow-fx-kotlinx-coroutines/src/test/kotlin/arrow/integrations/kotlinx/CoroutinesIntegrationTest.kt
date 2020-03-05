@@ -1,29 +1,49 @@
 package arrow.integrations.kotlinx
 
+import arrow.Kind
 import arrow.core.Either
+import arrow.core.extensions.either.eq.eq
+import arrow.core.extensions.eq
 import arrow.core.right
 import arrow.core.some
+import arrow.fx.ForIO
 import arrow.fx.IO
+import arrow.fx.IODispatchers
 import arrow.fx.extensions.fx
+import arrow.fx.extensions.io.applicative.applicative
+import arrow.fx.extensions.io.applicativeError.attempt
+import arrow.fx.extensions.io.async.effectMap
 import arrow.fx.handleErrorWith
 import arrow.fx.extensions.io.bracket.onCancel
+import arrow.fx.extensions.io.concurrent.waitFor
+import arrow.fx.fix
+import arrow.fx.typeclasses.CancelToken
+import arrow.fx.typeclasses.Duration
+import arrow.fx.typeclasses.ExitCase
 import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
 import arrow.test.UnitSpec
 import arrow.test.generators.throwable
+import arrow.test.laws.equalUnderTheLaw
+import arrow.test.laws.shouldBeEq
+import arrow.typeclasses.Eq
+import arrow.typeclasses.EqK
 import io.kotlintest.fail
 import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll
 import io.kotlintest.shouldBe
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.newCoroutineContext
 import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.test.TestCoroutineDispatcher
 import kotlinx.coroutines.test.TestCoroutineExceptionHandler
 import kotlinx.coroutines.test.TestCoroutineScope
+import kotlin.coroutines.EmptyCoroutineContext
 
 @ObsoleteCoroutinesApi
 @Suppress("IMPLICIT_NOTHING_AS_TYPE_PARAMETER")
@@ -95,7 +115,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
           }
           !effect { scope.cancel() }
           !promise.get()
-        }.unsafeRunTimed(500.milliseconds) == i.some()
+        }.equalUnderTheLaw(IO.just(i), IO.eqK(500.milliseconds).liftEq(Int.eq()))
       }
     }
 
@@ -109,7 +129,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
         }
         IO.sleep(500.milliseconds)
           .unsafeRunAsync { scope.cancel() }
-      }.unsafeRunTimed(2.seconds) shouldBe 1.some()
+      }.equalUnderTheLaw(IO.just(1), IO.eqK(2.seconds).liftEq(Int.eq()))
     }
 
     // --------------- unsafeRunScoped ---------------
@@ -139,20 +159,20 @@ class CoroutinesIntegrationTest : UnitSpec() {
           }
           !effect { scope.cancel() }
           !promise.get()
-        }.unsafeRunTimed(500.milliseconds) == i.some()
+        }.equalUnderTheLaw(IO.just(i), IO.eqK(500.milliseconds).liftEq(Int.eq()))
       }
     }
 
     "unsafeRunScoped can cancel even for infinite asyncs" {
-        IO.fx {
-          val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
-          val promise = !Promise<Int>()
-          !effect {
-            IO(all) { -1 }.flatMap { IO.async<Int> { } }.onCancel(promise.complete(1)).unsafeRunScoped(scope) { }
-          }
-          !sleep(500.milliseconds).flatMap { IO { scope.cancel() } }
-          !promise.get()
-        }.unsafeRunTimed(2.seconds) shouldBe 1.some()
+      IO.fx {
+        val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
+        val promise = !Promise<Int>()
+        !effect {
+          IO(all) { -1 }.flatMap { IO.async<Int> { } }.onCancel(promise.complete(1)).unsafeRunScoped(scope) { }
+        }
+        !sleep(500.milliseconds).effectMap { scope.cancel() }
+        !promise.get()
+      }.equalUnderTheLaw(IO.just(1), IO.eqK(2.seconds).liftEq(Int.eq()))
     }
 
     "should complete when running a pure value with unsafeRunScoped" {
@@ -162,8 +182,75 @@ class CoroutinesIntegrationTest : UnitSpec() {
           IO.just(i).unsafeRunScoped(scope) { either ->
             either.fold({ fail("") }, { cb(it.right()) })
           }
-        }.unsafeRunSync() == i
+        }.equalUnderTheLaw(IO.just(i), IO.eqK().liftEq(Int.eq()))
       }
+    }
+
+    "forkScoped can cancel even for infinite asyncs" {
+      IO.fx {
+        val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
+        val promise = !Promise<Int>()
+
+        val (_, _) = !IO.never.onCancel(promise.complete(1)).forkScoped(scope)
+        !sleep(500.milliseconds).effectMap { scope.cancel() }
+        !promise.get()
+      }.shouldBeEq(IO.just(1), IO.eqK().liftEq(Int.eq()))
+    }
+
+    "forkScoped should complete when running a pure value" {
+      forAll(Gen.int()) { i ->
+        IO.fx {
+          val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
+          val (join, _) = !IO.effect { i }.forkScoped(scope)
+          !join
+        }.equalUnderTheLaw(IO.just(i), IO.eqK().liftEq(Int.eq()))
+      }
+    }
+
+    "forkScoped should cancel correctly" {
+      IO.fx {
+        val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
+        val startLatch = !Promise<Unit>()
+        val promise = !Promise<ExitCase<Throwable>>()
+
+        !IO.unit.bracketCase(
+          use = { startLatch.complete(Unit).followedBy(IO.never) },
+          release = { _, ex -> promise.complete(ex) }
+        ).forkScoped(scope)
+
+        !startLatch.get()
+
+        !effect { scope.cancel() }
+
+        !promise.get()
+      }.equalUnderTheLaw(IO.just(ExitCase.Cancelled), IO.eqK().liftEq(ExitCase.eq(Eq.any())))
     }
   }
 }
+
+internal fun IO.Companion.eqK(timeout: Duration = 5.seconds) = object : EqK<ForIO> {
+  override fun <A> Kind<ForIO, A>.eqK(other: Kind<ForIO, A>, EQ: Eq<A>): Boolean =
+    Either.eq(Eq.any(), EQ).run {
+      IO.applicative().mapN(fix().attempt(), other.attempt()) { (a, b) -> a.eqv(b) }
+        .waitFor(timeout)
+        .unsafeRunSync()
+    }
+}
+
+internal fun <E> ExitCase.Companion.eq(eq: Eq<E>): Eq<ExitCase<E>> =
+  Eq { f, f2 ->
+    when (f) {
+      ExitCase.Completed -> when (f2) {
+        ExitCase.Completed -> true
+        else -> false
+      }
+      ExitCase.Cancelled -> when (f2) {
+        ExitCase.Cancelled -> true
+        else -> false
+      }
+      is ExitCase.Error -> when (f2) {
+        is ExitCase.Error -> eq.run { f.e.eqv(f2.e) }
+        else -> false
+      }
+    }
+  }
