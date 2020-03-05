@@ -112,8 +112,8 @@ class IOTest : UnitSpec() {
       }
     }
 
-    "should return immediate value by uncancelable" {
-      val run = just(1).uncancelable().unsafeRunSync()
+    "should return immediate value by uncancellable" {
+      val run = just(1).uncancellable().unsafeRunSync()
 
       val expected = 1
 
@@ -200,7 +200,7 @@ class IOTest : UnitSpec() {
       }
     }
 
-    "should rethrow exceptions within run block with unsafeRunAsyncCancelable" {
+    "should rethrow exceptions within run block with unsafeRunAsyncCancellable" {
       try {
         val exception = MyException()
         val ioa = IO<Int> { throw exception }
@@ -508,7 +508,7 @@ class IOTest : UnitSpec() {
     }
 
     "IO bracket cancellation should release resource with cancel exit status" {
-      Promise.uncancelable<ForIO, ExitCase<Throwable>>(IO.async()).flatMap { p ->
+      Promise.uncancellable<ForIO, ExitCase<Throwable>>(IO.async()).flatMap { p ->
         just(0L)
           .bracketCase(
             use = { IO.never },
@@ -518,12 +518,12 @@ class IOTest : UnitSpec() {
           .invoke() // cancel immediately
 
         p.get()
-      }.unsafeRunSync() shouldBe ExitCase.Canceled
+      }.unsafeRunSync() shouldBe ExitCase.Cancelled
     }
 
-    "Cancelable should run CancelToken" {
-      Promise.uncancelable<ForIO, Unit>(IO.async()).flatMap { p ->
-        IO.concurrent().cancelable<Unit> {
+    "Cancellable should run CancelToken" {
+      Promise.uncancellable<ForIO, Unit>(IO.async()).flatMap { p ->
+        IO.concurrent().cancellable<Unit> {
           p.complete(Unit)
         }.fix()
           .unsafeRunAsyncCancellable { }
@@ -533,9 +533,9 @@ class IOTest : UnitSpec() {
       }.unsafeRunSync() shouldBe Unit
     }
 
-    "CancelableF should run CancelToken" {
-      Promise.uncancelable<ForIO, Unit>(IO.async()).flatMap { p ->
-        IO.concurrent().cancelableF<Unit> {
+    "CancellableF should run CancelToken" {
+      Promise.uncancellable<ForIO, Unit>(IO.async()).flatMap { p ->
+        IO.concurrent().cancellableF<Unit> {
           IO { p.complete(Unit) }
         }.fix()
           .unsafeRunAsyncCancellable { }
@@ -545,10 +545,10 @@ class IOTest : UnitSpec() {
       }.unsafeRunSync() shouldBe Unit
     }
 
-    "IO should cancel cancelable on dispose" {
-      Promise.uncancelable<ForIO, Unit>(IO.async()).flatMap { latch ->
+    "IO should cancel cancellable on dispose" {
+      Promise.uncancellable<ForIO, Unit>(IO.async()).flatMap { latch ->
         IO {
-          IO.cancelable<Unit> {
+          IO.cancellable<Unit> {
             latch.complete(Unit)
           }.unsafeRunAsyncCancellable { }
             .invoke()
@@ -694,7 +694,7 @@ class IOTest : UnitSpec() {
         !sleep(100.milliseconds)
         !cancel
         val result = !p.get()
-        !effect { result shouldBe ExitCase.Canceled }
+        !effect { result shouldBe ExitCase.Cancelled }
       }.suspended()
     }
   }
