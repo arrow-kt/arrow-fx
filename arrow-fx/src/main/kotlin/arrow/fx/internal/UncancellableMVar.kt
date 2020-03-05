@@ -1,6 +1,7 @@
 package arrow.fx.internal
 
 import arrow.Kind
+import arrow.core.Either
 import arrow.core.None
 import arrow.core.Option
 import arrow.core.Right
@@ -64,7 +65,7 @@ internal class UncancellableMVar<F, A> private constructor(initial: State<A>, pr
         var first: Listener<A>? = null
         val update: State<A> =
           if (takes.isEmpty()) {
-            State(a)
+            WaitForTake(a, IQueue.empty())
           } else {
             val (x, rest) = takes.dequeue()
             first = x
@@ -135,7 +136,7 @@ internal class UncancellableMVar<F, A> private constructor(initial: State<A>, pr
         if (queue.isEmpty()) {
           if (stateRef.compareAndSet(current, State.empty())) {
             // Signals completion of `take`
-            onTake(Right(value))
+            onTake(Either.Right(value))
             unit()
           } else {
             unsafeTake(onTake) // retry

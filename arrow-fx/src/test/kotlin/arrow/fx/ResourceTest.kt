@@ -64,9 +64,16 @@ private fun Resource.Companion.eqK() = object : EqK<ResourcePartialOf<ForIO, Thr
 }
 
 private fun Resource.Companion.genK() = object : GenK<ResourcePartialOf<ForIO, Throwable>> {
-  override fun <A> genK(gen: Gen<A>): Gen<Kind<ResourcePartialOf<ForIO, Throwable>, A>> =
-    Gen.oneOf(
-      gen.map { just(it, IO.bracket()) },
-      IO.genK().genK(gen).map { it.liftF(IO.bracket()) }
+  override fun <A> genK(gen: Gen<A>): Gen<Kind<ResourcePartialOf<ForIO, Throwable>, A>> {
+    val allocate = gen.map { Resource({ IO.just(it) }, { _ -> IO.unit }, IO.bracket()) }
+    
+    return Gen.oneOf(
+      // Allocate
+      allocate,
+      // Suspend
+      allocate.map { Resource.Suspend(IO.just(it), IO.bracket()) },
+      // Bind
+      allocate.map { it.flatMap { a -> just(a, IO.bracket()) } }
     )
+  }
 }

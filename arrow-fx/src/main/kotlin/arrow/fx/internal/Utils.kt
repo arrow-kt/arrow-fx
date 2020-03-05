@@ -300,7 +300,3 @@ internal fun <A> asyncContinuation(ctx: CoroutineContext, cc: (Either<Throwable,
  */
 internal fun <A> IOForkedStart(fa: IOOf<A>, ctx: CoroutineContext): IO<A> =
   IO.Bind(IO.ContinueOn(IO.unit, ctx)) { fa.fix() }
-
-@Suppress("UNCHECKED_CAST")
-internal fun <A, B> A.unsafeCast(): B =
-  this as B

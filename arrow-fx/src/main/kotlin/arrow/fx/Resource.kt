@@ -5,7 +5,6 @@ import arrow.Kind
 import arrow.core.Either
 import arrow.core.andThen
 import arrow.core.identity
-import arrow.fx.internal.unsafeCast
 import arrow.fx.typeclasses.Bracket
 import arrow.fx.typeclasses.ExitCase
 import arrow.typeclasses.Monoid
@@ -176,8 +175,12 @@ sealed class Resource<F, E, A> : ResourceOf<F, E, A> {
    * }
    * ```
    */
-  fun <B> use(use: (A) -> Kind<F, B>): Kind<F, B> =
-    fold(use, ::identity)
+  fun <B> use(f: (A) -> Kind<F, B>): Kind<F, B> =
+    fold(f, ::identity)
+
+  @Deprecated("Api is being renamed to `use` for explicitness", ReplaceWith("use(use)"))
+  operator fun <C> invoke(use: (A) -> Kind<F, C>): Kind<F, C> =
+    use(use)
 
   fun <B> map(BR: Bracket<F, E>, f: (A) -> B): Resource<F, E, B> =
     flatMap { just(f(it), BR) }
@@ -203,31 +206,31 @@ sealed class Resource<F, E, A> : ResourceOf<F, E, A> {
 
   internal class Suspend<F, E, A>(val resource: Kind<F, Resource<F, E, A>>, val BR: Bracket<F, E>) : Resource<F, E, A>()
 
-  private fun <F, B> fold(
+  private fun <B> fold(
     onOutput: (A) -> Kind<F, B>,
     onRelease: (Kind<F, Unit>) -> Kind<F, Unit>
   ): Kind<F, B> {
     // Interpreter that knows how to evaluate a Resource data structure
     // Maintains its own stack for dealing with Bind chains
-    tailrec fun loop(current: Resource<F, E, Any>, stack: List<(Any) -> Resource<F, E, Any>>): Kind<F, Any?> =
+    tailrec fun loop(current: Resource<F, E, A>, stack: List<(A) -> Resource<F, E, A>>): Kind<F, B> =
       when (current) {
         is Suspend -> current.BR.run { current.resource.flatMap { loop(it, stack) } }
         is Bind<*, *, *, *> ->
-          loop(current.source.unsafeCast(), listOf<(Any) -> Resource<F, E, Any>>(current.f.unsafeCast()) + stack)
+          loop(current.source as Resource<F, E, A>, listOf(current.f as (A) -> Resource<F, E, A>) + stack)
         is Allocate ->
           current.BR.run {
             current.acquire().bracketCase(
               { a, exitCase -> onRelease(current.release(a, exitCase)) },
               { a ->
                 when {
-                  stack.isEmpty() -> onOutput(a.unsafeCast())
+                  stack.isEmpty() -> onOutput(a)
                   else -> loop(stack.first()(a), stack.drop(1))
                 }
               })
           }
       }
 
-    return loop(this.unsafeCast(), emptyList()).unsafeCast()
+    return loop(this, emptyList())
   }
 
   companion object {
@@ -251,7 +254,7 @@ sealed class Resource<F, E, A> : ResourceOf<F, E, A> {
 
     fun <F, E, A, B> tailRecM(BR: Bracket<F, E>, a: A, f: (A) -> ResourceOf<F, E, Either<A, B>>): Resource<F, E, B> {
       fun loop(r: Resource<F, E, Either<A, B>>): Resource<F, E, B> = when (r) {
-        is Bind<*, *, *, *> -> Bind(r.source.unsafeCast(), r.f.andThen { loop(it.fix().unsafeCast()) })
+        is Bind<*, *, *, *> -> Bind(r.source as Resource<F, E, A>, (r.f as (A) -> ResourceOf<F, E, Either<A, B>>).andThen { loop(it.fix()) })
         is Allocate -> {
           Suspend(
             BR.run {
