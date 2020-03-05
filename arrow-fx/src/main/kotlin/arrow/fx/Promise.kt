@@ -235,7 +235,7 @@ interface Promise<F, A> {
      */
     fun <F, A> unsafeCancellable(CF: Concurrent<F>): Promise<F, A> = CancellablePromise(CF)
 
-    @Deprecated("Renaming this api for consistency", ReplaceWith("unsafeCancellable(CF)"))
+    @Deprecated("Renaming this api for consistency", ReplaceWith("unsafeCancellable<F, A>(CF)"))
     fun <F, A> unsafeCancelable(CF: Concurrent<F>): Promise<F, A> =
       unsafeCancellable(CF)
 
@@ -257,8 +257,7 @@ interface Promise<F, A> {
     fun <F, A> uncancellable(AS: Async<F>): Kind<F, Promise<F, A>> =
       AS.later { UncancellablePromise<F, A>(AS) }
 
-    // TODO: check for a better replacement with
-    @Deprecated("Renaming this api for consistency", ReplaceWith("uncancellable(AS)"))
+    @Deprecated("Renaming this api for consistency", ReplaceWith("uncancellable<F, A>(AS)"))
     fun <F, A> uncancelable(AS: Async<F>): Kind<F, Promise<F, A>> =
       uncancellable(AS)
 
@@ -280,7 +279,7 @@ interface Promise<F, A> {
      */
     fun <F, A> unsafeUncancellable(AS: Async<F>): Promise<F, A> = UncancellablePromise(AS)
 
-    @Deprecated("Renaming this api for consistency", ReplaceWith("unsafeUncancellable(AS)"))
+    @Deprecated("Renaming this api for consistency", ReplaceWith("unsafeUncancellable<F, A>(AS)"))
     fun <F, A> unsafeUncancelable(AS: Async<F>): Promise<F, A> = unsafeUncancellable(AS)
 
     /**

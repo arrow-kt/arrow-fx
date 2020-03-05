@@ -236,7 +236,6 @@ interface Concurrent<F> : Async<F> {
       later { token }
     }
 
-  // TODO: check for a better replacement with
   @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(k))"))
   fun <A> cancelable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<F>): Kind<F, A> =
     cancellable(k)
@@ -308,7 +307,6 @@ interface Concurrent<F> : Async<F> {
       })
     }
 
-  // TODO: check for a better replacement with
   @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(k)"))
   fun <A> cancelableF(k: ((Either<Throwable, A>) -> Unit) -> Kind<F, CancelToken<F>>): Kind<F, A> =
     cancellableF(k)

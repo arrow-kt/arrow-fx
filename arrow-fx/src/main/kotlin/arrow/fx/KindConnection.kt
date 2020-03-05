@@ -283,7 +283,7 @@ sealed class KindConnection<F> {
      **/
     fun <F> uncancellable(FA: Applicative<F>): KindConnection<F> = Uncancellable(FA)
 
-    @Deprecated("Renaming this api for consistency", ReplaceWith("uncancellable(FA)"))
+    @Deprecated("Renaming this api for consistency", ReplaceWith("uncancellable<F>(FA)"))
     fun <F> uncancelable(FA: Applicative<F>): KindConnection<F> = Uncancellable(FA)
   }
 
