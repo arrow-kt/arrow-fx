@@ -8,7 +8,7 @@ import io.kotlintest.shouldBe
 class IOConnectionTests : UnitSpec() {
 
   init {
-    val EQ = IO.eqK().liftEq(Eq.any())
+    val EQ = IO.eqK<Nothing>().liftEq(Eq.any())
 
     "cancellation is only executed once" {
       var effect = 0
