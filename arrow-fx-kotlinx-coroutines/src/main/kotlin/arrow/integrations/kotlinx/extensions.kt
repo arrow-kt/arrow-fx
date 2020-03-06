@@ -57,7 +57,7 @@ fun <A> IOOf<A>.unsafeRunScoped(
   val newContext = scope.newCoroutineContext(EmptyCoroutineContext)
   val job = newContext[Job]
 
-  if (newContext.isActive) {
+  if (job == null || job.isActive) {
     val disposable = fix().unsafeRunAsyncCancellable(cb = cb)
 
     job?.invokeOnCompletion { e ->
@@ -80,7 +80,7 @@ fun <A> IOOf<A>.forkScoped(scope: CoroutineScope): IO<Fiber<ForIO, A>> =
 
     val promise = UnsafePromise<A>()
 
-    if (newContext.isActive) {
+    if (job == null || job.isActive) {
       val disposable = IO.unit.continueOn(newContext).flatMap { fix() }
         .unsafeRunAsyncCancellable(cb = promise::complete)
 
@@ -90,7 +90,7 @@ fun <A> IOOf<A>.forkScoped(scope: CoroutineScope): IO<Fiber<ForIO, A>> =
       }
 
       cb(Either.Right(IOFiber(promise, disposable)))
-    }
+    } else cb(Either.Right(Fiber(IO.never, IO.unit)))
   }
 
 private fun <A> IOFiber(promise: UnsafePromise<A>, conn: Disposable): Fiber<ForIO, A> {

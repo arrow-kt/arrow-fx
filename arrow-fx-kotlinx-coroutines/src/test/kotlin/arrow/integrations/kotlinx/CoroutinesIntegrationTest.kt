@@ -4,9 +4,11 @@ import arrow.Kind
 import arrow.core.Either
 import arrow.core.extensions.either.eq.eq
 import arrow.core.extensions.eq
+import arrow.core.internal.AtomicRefW
 import arrow.core.right
 import arrow.fx.ForIO
 import arrow.fx.IO
+import arrow.fx.extensions.exitcase.eq.eq
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.applicative.applicative
 import arrow.fx.extensions.io.applicativeError.attempt
@@ -97,6 +99,19 @@ class CoroutinesIntegrationTest : UnitSpec() {
       }
     }
 
+    "suspendCancellable doesn't start if scope is cancelled" {
+      forAll(Gen.int()) { i ->
+        val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
+        val ref = AtomicRefW<Int?>(i)
+        scope.cancel()
+        scope.launch {
+          IO { ref.value = null }.suspendCancellable()
+        }
+
+        ref.value == i
+      }
+    }
+
     "scope cancellation should cancel suspendedCancellable IO" {
       forAll(Gen.int()) { i ->
         IO.fx {
@@ -132,7 +147,9 @@ class CoroutinesIntegrationTest : UnitSpec() {
       forAll(Gen.throwable()) { e ->
         try {
           val scope = TestCoroutineScope(TestCoroutineDispatcher())
+
           val ioa = IO<Int> { throw e }
+
           ioa.unsafeRunScoped(scope) { either ->
             either.fold({ throw it }, { fail("") })
           }
@@ -180,6 +197,18 @@ class CoroutinesIntegrationTest : UnitSpec() {
       }
     }
 
+    "unsafeRunScoped doesn't start if scope is cancelled" {
+      forAll(Gen.int()) { i ->
+        val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
+        val ref = AtomicRefW<Int?>(i)
+        scope.cancel()
+        IO { ref.value = null }.unsafeRunScoped(scope) {}
+        ref.value == i
+      }
+    }
+
+    // --------------- forkScoped ---------------
+
     "forkScoped can cancel even for infinite asyncs" {
       IO.fx {
         val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
@@ -219,7 +248,31 @@ class CoroutinesIntegrationTest : UnitSpec() {
         !promise.get()
       }.equalUnderTheLaw(IO.just(ExitCase.Cancelled), IO.eqK().liftEq(ExitCase.eq(Eq.any())))
     }
+
+    "forkScoped doesn't start if scope is cancelled" {
+      forAll(Gen.int()) { i ->
+        IO.fx {
+          val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
+          val ref = AtomicRefW<Int?>(i)
+          scope.cancel()
+          !IO {
+            ref.value = null
+          }.forkScoped(scope)
+
+          ref.value
+        }.equalUnderTheLaw(IO.just<Int?>(i), IO.eqK().liftEq(Int.eq().nullable()))
+      }
+    }
   }
+}
+
+// TODO move to Arrow Core
+fun <A> Eq<A>.nullable(): Eq<A?> = Eq { a, b ->
+  a?.let { aa ->
+    b?.let { bb ->
+      aa.eqv(bb)
+    } ?: false
+  } ?: b?.let { false } ?: true
 }
 
 internal fun IO.Companion.eqK(timeout: Duration = 5.seconds) = object : EqK<ForIO> {
@@ -230,21 +283,3 @@ internal fun IO.Companion.eqK(timeout: Duration = 5.seconds) = object : EqK<ForI
         .unsafeRunSync()
     }
 }
-
-internal fun <E> ExitCase.Companion.eq(eq: Eq<E>): Eq<ExitCase<E>> =
-  Eq { f, f2 ->
-    when (f) {
-      ExitCase.Completed -> when (f2) {
-        ExitCase.Completed -> true
-        else -> false
-      }
-      ExitCase.Cancelled -> when (f2) {
-        ExitCase.Cancelled -> true
-        else -> false
-      }
-      is ExitCase.Error -> when (f2) {
-        is ExitCase.Error -> eq.run { f.e.eqv(f2.e) }
-        else -> false
-      }
-    }
-  }
