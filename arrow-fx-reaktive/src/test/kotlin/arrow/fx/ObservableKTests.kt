@@ -110,7 +110,7 @@ class ObservableKTests : ReaktiveSpec() {
         .dispose()
 
       countDownLatch.await(100, TimeUnit.MILLISECONDS)
-      ec shouldBe ExitCase.Canceled
+      ec shouldBe ExitCase.Cancelled
     }
 
     "ObservableK should cancel KindConnection on dispose" {

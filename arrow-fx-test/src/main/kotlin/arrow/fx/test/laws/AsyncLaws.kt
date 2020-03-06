@@ -35,7 +35,7 @@ object AsyncLaws {
   private fun <F> asyncLaws(AC: Async<F>, GENK: GenK<F>, EQK: EqK<F>): List<Law> {
     val EQ = EQK.liftEq(Int.eq())
     val EQB = EQK.liftEq(Boolean.eq())
-    val EQString = EQK.liftEq(String.eq())
+    val EQLong = EQK.liftEq(Long.eq())
 
     return listOf(
       Law("Async Laws: success equivalence") { AC.asyncSuccess(EQ) },
@@ -48,7 +48,7 @@ object AsyncLaws {
       Law("Async Laws: effect calls suspend functions in the right dispatcher") { AC.effectCanCallSuspend(EQ) },
       Law("Async Laws: effect is equivalent to later") { AC.effectEquivalence(EQ) },
       Law("Async Laws: fx block runs lazily") { AC.fxLazyEvaluation(Boolean.eq(), EQB) },
-      Law("Async Laws: defer should be consistent with defer on provided coroutine context") { AC.derivedDefer(EQString) },
+      Law("Async Laws: defer should be consistent with defer on provided coroutine context") { AC.derivedDefer(EQLong) },
       Law("Async Laws: laterOrRaise should be consistent with laterOrRaise on provided coroutine context") { AC.derivedLaterOrRaise(EQ) },
       Law("Async Laws: continueOn should be consistent with continueOn on provided coroutine context") { AC.derivedContinueOn(EQ) },
       Law("Async Laws: shift should be consistent with shift given a coroutine context") { AC.derivedShift(EQ) },
@@ -173,8 +173,8 @@ object AsyncLaws {
     p.equalUnderTheLaw(just(true), EQK) shouldBe true
   }
 
-  fun <F> Async<F>.derivedDefer(EQK: Eq<Kind<F, String>>) {
-    val f: () -> Kind<F, String> = { effect { Thread.currentThread().name } }
+  fun <F> Async<F>.derivedDefer(EQK: Eq<Kind<F, Long>>) {
+    val f: () -> Kind<F, Long> = { effect { Thread.currentThread().id } }
     defer(one, f).equalUnderTheLaw(just(Unit).continueOn(one).flatMap { defer(f) }, EQK)
   }
 

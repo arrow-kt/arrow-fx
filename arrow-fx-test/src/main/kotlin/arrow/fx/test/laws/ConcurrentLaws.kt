@@ -186,9 +186,15 @@ object ConcurrentLaws {
       fx.concurrent {
         val mvar = MVar(a, this@acquireBracketIsNotCancellable).bind()
         mvar.take().bind()
-        val p = Promise.uncancellable<F, Unit>(this@acquireBracketIsNotCancellable).bind()
-        val task = p.complete(Unit).flatMap { mvar.put(b) }
-          .bracket(use = { never<Int>() }, release = { unit() })
+        val p = Promise.uncancelable<F, Unit>(this@acquireBracketIsNotCancellable).bind()
+        val task = just(Unit).bracket(
+          use = {
+            mvar.put(b)
+              .flatMap { p.complete(Unit) }
+              .flatMap { never<Int>() }
+          },
+          release = { unit() }
+        )
         val (_, cancel) = task.fork(ctx).bind()
         p.get().bind()
         cancel.fork(ctx).bind()
@@ -200,16 +206,18 @@ object ConcurrentLaws {
   fun <F> Concurrent<F>.releaseBracketIsNotCancellable(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
     forAll(Gen.int(), Gen.int()) { a, b ->
       fx.concurrent {
-        val mvar = MVar(a, this@releaseBracketIsNotCancellable).bind()
-        val p = Promise.uncancellable<F, Unit>(this@releaseBracketIsNotCancellable).bind()
-        val task = p.complete(Unit)
-          .bracket(use = { never<Int>() }, release = { mvar.put(b) })
-        val (_, cancel) = task.fork(ctx).bind()
-        p.get().bind()
-        cancel.fork(ctx).bind()
-        continueOn(ctx)
-        mvar.take().bind()
-        mvar.take().bind()
+        val mvar = MVar(a, this@releaseBracketIsNotCancellable).bind() // Create filled MVar
+        val p = Promise.uncancelable<F, Unit>(this@releaseBracketIsNotCancellable).bind() //Create use latch
+        val task = just(Unit).bracket( // No-op acquire
+          use = { p.complete(Unit).flatMap { never<Int>() } }, // Complete latch in `use` and never finish
+          release = { mvar.put(b) } // Semantically block putting new value in MVar
+        )
+        val (_, cancel) = task.fork(ctx).bind() // / Fork the operation returning a `join, cancel` op
+        p.get().bind() // Wait until `use`started
+        cancel.fork(ctx).bind() // Cancel forked operation
+        mvar.take().bind() // Take original value out of MVar
+        // <-- Release blocks on `mvar.put` until here
+        mvar.take().bind() // Take value put by release after `cancel`.
       }.equalUnderTheLaw(just(b), EQ)
     }
 

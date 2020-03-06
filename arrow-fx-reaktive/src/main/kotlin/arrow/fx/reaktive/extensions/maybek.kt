@@ -77,9 +77,6 @@ interface MaybeKApplicative : Applicative<ForMaybeK> {
 
   override fun <A> just(a: A): MaybeK<A> =
     MaybeK.just(a)
-
-  override fun <A, B> Kind<ForMaybeK, A>.lazyAp(ff: () -> Kind<ForMaybeK, (A) -> B>): Kind<ForMaybeK, B> =
-    fix().flatMap { a -> ff().map { f -> f(a) } }
 }
 
 @extension
@@ -95,9 +92,6 @@ interface MaybeKMonad : Monad<ForMaybeK>, MaybeKApplicative {
 
   override fun <A, B> tailRecM(a: A, f: (A) -> MaybeKOf<Either<A, B>>): MaybeK<B> =
     MaybeK.tailRecM(a, f)
-
-  override fun <A, B> Kind<ForMaybeK, A>.lazyAp(ff: () -> Kind<ForMaybeK, (A) -> B>): Kind<ForMaybeK, B> =
-    fix().flatMap { a -> ff().map { f -> f(a) } }
 }
 
 @extension

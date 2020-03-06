@@ -117,7 +117,7 @@ data class SingleK<out A>(val single: Single<out A>) : SingleKOf<A> {
             release(value, ExitCase.Completed).value().subscribe()
           }
           .doOnBeforeDispose {
-            release(value, ExitCase.Canceled).value().subscribe()
+            release(value, ExitCase.Cancelled).value().subscribe()
           }
       }
       .k()

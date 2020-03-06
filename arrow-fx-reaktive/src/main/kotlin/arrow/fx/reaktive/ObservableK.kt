@@ -125,7 +125,7 @@ data class ObservableK<out A>(val observable: Observable<out A>) : ObservableKOf
             release(value, ExitCase.Completed).value().subscribe()
           }
           .doOnBeforeDispose {
-            release(value, ExitCase.Canceled).value().subscribe()
+            release(value, ExitCase.Cancelled).value().subscribe()
           }
       }
       .k()

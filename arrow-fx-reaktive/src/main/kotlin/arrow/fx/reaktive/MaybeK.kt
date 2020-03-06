@@ -127,7 +127,7 @@ data class MaybeK<out A>(val maybe: Maybe<A>) : MaybeKOf<A> {
             release(value, ExitCase.Completed).value().subscribe()
           }
           .doOnBeforeDispose {
-            release(value, ExitCase.Canceled).value().subscribe()
+            release(value, ExitCase.Cancelled).value().subscribe()
           }
       }
       .k()
