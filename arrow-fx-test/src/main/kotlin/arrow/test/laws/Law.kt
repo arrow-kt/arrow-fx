@@ -7,16 +7,14 @@ import arrow.test.generators.tuple5
 import arrow.typeclasses.Eq
 import io.kotlintest.Matcher
 import io.kotlintest.Result
-import io.kotlintest.TestContext
 import io.kotlintest.properties.Gen
 import io.kotlintest.should
 import io.kotlintest.shouldNot
 
+// TODO: to be moved to arrow-core-test
 fun throwableEq() = Eq { a: Throwable, b ->
   a::class == b::class && a.message == b.message
 }
-
-data class Law(val name: String, val test: suspend TestContext.() -> Unit)
 
 fun <A> A.equalUnderTheLaw(b: A, eq: Eq<A>): Boolean =
   shouldBeEq(b, eq).let { true }
