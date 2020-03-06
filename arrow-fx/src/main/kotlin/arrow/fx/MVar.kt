@@ -1,6 +1,7 @@
 package arrow.fx
 
 import arrow.Kind
+import arrow.core.Either
 import arrow.core.Option
 import arrow.fx.internal.CancellableMVar
 import arrow.fx.internal.UncancellableMVar
@@ -117,7 +118,7 @@ interface MVar<F, A> {
   fun tryPut(a: A): Kind<F, Boolean>
 
   /**
-   * Takes the value out of the [MVar] if full, or blocks until a value is available.
+   * Empties the [MVar] if full, returning the value, or blocks otherwise until a value is available.
    *
    * ```kotlin:ank:playground
    * import arrow.fx.*
@@ -168,7 +169,7 @@ interface MVar<F, A> {
   fun tryTake(): Kind<F, Option<A>>
 
   /**
-   * Tries reading the current value, or blocks until there is a value available.
+   * Reads the current value without emptying the MVar, assuming there is one, or otherwise it blocks until there is a value available.
    *
    * ```kotlin:ank:playground
    * import arrow.core.toT
@@ -237,6 +238,10 @@ interface MVar<F, A> {
     fun <F, A> cancellable(initial: A, CF: Concurrent<F>): Kind<F, MVar<F, A>> =
       CancellableMVar(initial, CF)
 
+    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(initial, CF)"))
+    fun <F, A> cancelable(initial: A, CF: Concurrent<F>): Kind<F, MVar<F, A>> =
+      cancellable(initial, CF)
+
     /**
      * Create an uncancellable [MVar] that's initialized to an [initial] value.
      *
@@ -271,6 +276,10 @@ interface MVar<F, A> {
     fun <F, A> uncancellableEmpty(AS: Async<F>): Kind<F, MVar<F, A>> =
       UncancellableMVar.empty(AS)
 
+    @Deprecated("Renaming this api for consistency", ReplaceWith("uncancellableEmpty(AS)"))
+    fun <F, A> uncancelableEmpty(AS: Async<F>): Kind<F, MVar<F, A>> =
+      uncancellableEmpty(AS)
+
     /**
      * Create an uncancellable [MVar] that's initialized to an [initial] value.
      *
@@ -288,6 +297,10 @@ interface MVar<F, A> {
     fun <F, A> uncancellableOf(initial: A, AS: Async<F>): Kind<F, MVar<F, A>> =
       UncancellableMVar(initial, AS)
 
+    @Deprecated("Renaming this api for consistency", ReplaceWith("uncancellableOf(initial, AS)"))
+    fun <F, A> uncancelableOf(initial: A, AS: Async<F>): Kind<F, MVar<F, A>> =
+      uncancellableOf(initial, AS)
+
     /**
      * Build a [MVarFactory] value for creating MVar types [F] without deciding the type of the MVar's value.
      *
@@ -302,6 +315,10 @@ interface MVar<F, A> {
         uncancellableEmpty(AS)
     }
 
+    @Deprecated("Renaming this api for consistency", ReplaceWith("factoryUncancellable(AS)"))
+    fun <F> factoryUncancelable(AS: Async<F>) =
+      factoryUncancellable(AS)
+
     /**
      * Build a [MVarFactory] value for creating MVar types [F] without deciding the type of the MVar's value.
      *
@@ -314,6 +331,10 @@ interface MVar<F, A> {
       override fun <A> empty(): Kind<F, MVar<F, A>> =
         empty(CF)
     }
+
+    @Deprecated("Renaming this api for consistency", ReplaceWith("factoryCancellable(CF)"))
+    fun <F> factoryCancelable(CF: Concurrent<F>) =
+      factoryCancellable(CF)
   }
 }
 
@@ -370,3 +391,5 @@ interface MVarFactory<F> {
    */
   fun <A> empty(): Kind<F, MVar<F, A>>
 }
+
+internal typealias Listener<A> = (Either<Nothing, A>) -> Unit

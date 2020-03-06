@@ -252,6 +252,14 @@ data class MonoK<out A>(val mono: Mono<out A>) : MonoKOf<A> {
         sink.onDispose { token.value().subscribe({}, sink::error) }
       }.k()
 
+    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(fa)"))
+    fun <A> cancelable(fa: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForMonoK>): MonoK<A> =
+      cancellable(fa)
+
+    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellableF(fa)"))
+    fun <A> cancelableF(fa: ((Either<Throwable, A>) -> Unit) -> MonoKOf<CancelToken<ForMonoK>>): MonoK<A> =
+      cancellableF(fa)
+
     fun <A> cancellableF(fa: ((Either<Throwable, A>) -> Unit) -> MonoKOf<CancelToken<ForMonoK>>): MonoK<A> =
       Mono.create { sink: MonoSink<A> ->
         val cb = { either: Either<Throwable, A> ->

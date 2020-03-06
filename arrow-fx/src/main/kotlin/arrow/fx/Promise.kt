@@ -235,6 +235,10 @@ interface Promise<F, A> {
      */
     fun <F, A> unsafeCancellable(CF: Concurrent<F>): Promise<F, A> = CancellablePromise(CF)
 
+    @Deprecated("Renaming this api for consistency", ReplaceWith("unsafeCancellable<F, A>(CF)"))
+    fun <F, A> unsafeCancelable(CF: Concurrent<F>): Promise<F, A> =
+      unsafeCancellable(CF)
+
     /**
      * Creates an empty `Promise` from on [Async] instance for [F].
      * Does not support cancellation of [get] operation.
@@ -253,6 +257,10 @@ interface Promise<F, A> {
     fun <F, A> uncancellable(AS: Async<F>): Kind<F, Promise<F, A>> =
       AS.later { UncancellablePromise<F, A>(AS) }
 
+    @Deprecated("Renaming this api for consistency", ReplaceWith("uncancellable<F, A>(AS)"))
+    fun <F, A> uncancelable(AS: Async<F>): Kind<F, Promise<F, A>> =
+      uncancellable(AS)
+
     /**
      * Creates an empty `Promise` from on [Async] instance for [F].
      * Does not support cancellation of [get] operation.
@@ -270,6 +278,9 @@ interface Promise<F, A> {
      * ```
      */
     fun <F, A> unsafeUncancellable(AS: Async<F>): Promise<F, A> = UncancellablePromise(AS)
+
+    @Deprecated("Renaming this api for consistency", ReplaceWith("unsafeUncancellable<F, A>(AS)"))
+    fun <F, A> unsafeUncancelable(AS: Async<F>): Promise<F, A> = unsafeUncancellable(AS)
 
     /**
      *
@@ -293,7 +304,6 @@ interface Promise<F, A> {
         // creates a new promise for `use` and returns
         val (fc, pb) = !ref.modify { a ->
           val pb = unsafeCancellable<F, B>(this)
-          println("Hello")
           val (fc, a2) = use(pb, a)
           a2 toT (fc toT pb)
         }

@@ -6,6 +6,8 @@ import arrow.core.Left
 import arrow.core.None
 import arrow.core.Right
 import arrow.core.Some
+import arrow.core.Tuple2
+import arrow.core.Tuple3
 import arrow.core.Tuple4
 import arrow.core.identity
 import arrow.core.right
@@ -13,8 +15,6 @@ import arrow.fx.IO.Companion.just
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.async.async
 import arrow.fx.extensions.io.concurrent.concurrent
-import arrow.fx.extensions.io.concurrent.parMapN
-import arrow.fx.extensions.io.concurrent.raceN
 import arrow.fx.extensions.io.dispatchers.dispatchers
 import arrow.fx.extensions.timer
 import arrow.fx.extensions.toIO
@@ -371,7 +371,7 @@ class IOTest : UnitSpec() {
         }
 
       val result =
-        all.parMapN(
+        IO.parMapN(all,
           makePar(6), makePar(3), makePar(2), makePar(4), makePar(1), makePar(5)) { six, tree, two, four, one, five -> listOf(six, tree, two, four, one, five) }
           .unsafeRunSync()
 
@@ -393,7 +393,7 @@ class IOTest : UnitSpec() {
           .map { num }.order()
 
       val result =
-        all.parMapN(
+        IO.parMapN(all,
           makePar(6), just(1L).order(), makePar(4), IO.defer { just(2L) }.order(), makePar(5), IO { 3L }.order()) { six, one, four, two, five, three -> listOf(six, one, four, two, five, three) }
           .unsafeRunSync()
 
@@ -436,7 +436,7 @@ class IOTest : UnitSpec() {
         }
 
       val result =
-        all.parMapN(
+        IO.parMapN(all,
           makePar(6), just(1L), makePar(4), IO.defer { just(2L) }, makePar(5), IO { 3L }) { _, _, _, _, _, _ ->
           Thread.currentThread().name
         }.unsafeRunSync()
@@ -447,12 +447,11 @@ class IOTest : UnitSpec() {
 
     "parallel IO#defer, IO#suspend and IO#async are run in the expected CoroutineContext" {
       val result =
-        all.parMapN(
+        IO.parTupledN(all,
           IO { Thread.currentThread().name },
           IO.defer { just(Thread.currentThread().name) },
           IO.async<Nothing, String> { cb -> cb(IOResult.Success(Thread.currentThread().name)) },
-          IO(other) { Thread.currentThread().name },
-          ::Tuple4)
+          IO(other) { Thread.currentThread().name })
           .unsafeRunSync()
 
       result shouldBe Tuple4("all", "all", "all", "other")
@@ -611,28 +610,28 @@ class IOTest : UnitSpec() {
     }
 
     "IOParMap2 left handles null" {
-      IO.parMapN(just<Int?>(null), IO.unit) { _, unit -> unit }
-        .unsafeRunSync() shouldBe Unit
+      IO.parTupledN(just<Int?>(null), IO.unit)
+        .unsafeRunSync() shouldBe Tuple2(null, Unit)
     }
 
     "IOParMap2 right handles null" {
-      IO.parMapN(IO.unit, IO.just<Int?>(null)) { unit, _ -> unit }
-        .unsafeRunSync() shouldBe Unit
+      IO.parTupledN(IO.unit, IO.just<Int?>(null))
+        .unsafeRunSync() shouldBe Tuple2(Unit, null)
     }
 
     "IOParMap3 left handles null" {
-      IO.parMapN(just<Int?>(null), IO.unit, IO.unit) { _, unit, _ -> unit }
-        .unsafeRunSync() shouldBe Unit
+      IO.parTupledN(just<Int?>(null), IO.unit, IO.unit)
+        .unsafeRunSync() shouldBe Tuple3(null, Unit, Unit)
     }
 
     "IOParMap3 middle handles null" {
-      IO.parMapN(IO.unit, IO.just<Int?>(null), IO.unit) { unit, _, _ -> unit }
-        .unsafeRunSync() shouldBe Unit
+      IO.parTupledN(IO.unit, IO.just<Int?>(null), IO.unit)
+        .unsafeRunSync() shouldBe Tuple3(Unit, null, Unit)
     }
 
     "IOParMap3 right handles null" {
-      IO.parMapN(IO.unit, IO.unit, IO.just<Int?>(null)) { unit, _, _ -> unit }
-        .unsafeRunSync() shouldBe Unit
+      IO.parTupledN(IO.unit, IO.unit, IO.just<Int?>(null))
+        .unsafeRunSync() shouldBe Tuple3(Unit, Unit, null)
     }
 
     "ConcurrentParMap2 left handles null" {

@@ -248,6 +248,14 @@ data class SingleK<out A>(val single: Single<out A>) : SingleKOf<A> {
         emitter.setCancellable { token.value().subscribe({}, { e -> emitter.tryOnError(e) }) }
       }.k()
 
+    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(fa)"))
+    fun <A> cancelable(fa: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForSingleK>): SingleK<A> =
+      cancellable(fa)
+
+    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellableF(fa)"))
+    fun <A> cancelableF(fa: ((Either<Throwable, A>) -> Unit) -> SingleKOf<CancelToken<ForSingleK>>): SingleK<A> =
+      cancellableF(fa)
+
     fun <A> cancellableF(fa: ((Either<Throwable, A>) -> Unit) -> SingleKOf<CancelToken<ForSingleK>>): SingleK<A> =
       Single.create { emitter: SingleEmitter<A> ->
         val cb = { either: Either<Throwable, A> ->

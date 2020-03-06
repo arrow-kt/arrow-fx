@@ -132,6 +132,10 @@ interface Bracket<F, E> : MonadError<F, E> {
   fun <A> Kind<F, A>.uncancellable(): Kind<F, A> =
     bracket({ just<Unit>(Unit) }, { just(it) })
 
+  @Deprecated("Renaming this api for consistency", ReplaceWith("uncancellable()"))
+  fun <A> Kind<F, A>.uncancelable(): Kind<F, A> =
+    uncancellable()
+
   /**
    * Executes the given `finalizer` when the source is finished, either in success or in error, or if cancelled.
    *

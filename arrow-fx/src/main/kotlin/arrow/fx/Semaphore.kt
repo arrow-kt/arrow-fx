@@ -231,6 +231,10 @@ interface Semaphore<F> {
         }
       }
     }
+
+    @Deprecated("Renaming this api for consistency", ReplaceWith("uncancellable(n, AS)"))
+    fun <F> uncancelable(n: Long, AS: Async<F>): Kind<F, Semaphore<F>> =
+      uncancellable(n, AS)
   }
 }
 

@@ -271,6 +271,14 @@ data class MaybeK<out A>(val maybe: Maybe<out A>) : MaybeKOf<A> {
         emitter.setCancellable { token.value().subscribe({}, { e -> emitter.tryOnError(e) }) }
       }.k()
 
+    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(fa)"))
+    fun <A> cancelable(fa: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForMaybeK>): MaybeK<A> =
+      cancellable(fa)
+
+    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellableF(fa)"))
+    fun <A> cancelableF(fa: ((Either<Throwable, A>) -> Unit) -> MaybeKOf<CancelToken<ForMaybeK>>): MaybeK<A> =
+      cancellableF(fa)
+
     fun <A> cancellableF(fa: ((Either<Throwable, A>) -> Unit) -> MaybeKOf<CancelToken<ForMaybeK>>): MaybeK<A> =
       Maybe.create { emitter: MaybeEmitter<A> ->
         val cb = { either: Either<Throwable, A> ->

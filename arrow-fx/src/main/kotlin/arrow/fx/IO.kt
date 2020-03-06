@@ -413,6 +413,10 @@ sealed class IO<out E, out A> : IOOf<E, A> {
         }
       }
 
+    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(cb)"))
+    fun <E, A> cancelable(cb: ((IOResult<E, A>) -> Unit) -> IOOf<E, Unit>): IO<E, A> =
+      cancellable(cb)
+
     /**
      * Creates a cancellable instance of [IO] that executes an asynchronous process on evaluation.
      * This combinator can be used to wrap callbacks or other similar impure code that requires cancellation code.
@@ -486,6 +490,10 @@ sealed class IO<out E, out A> : IOOf<E, A> {
           }
         }
       }
+
+    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellableF(cb)"))
+    fun <E, A> cancelableF(cb: ((IOResult<E, A>) -> Unit) -> IOOf<E, IOOf<E, Unit>>): IO<E, A> =
+      cancellableF(cb)
 
     /**
      * A pure [IO] value of [Unit].

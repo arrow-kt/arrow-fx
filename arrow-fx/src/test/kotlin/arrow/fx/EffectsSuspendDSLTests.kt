@@ -4,8 +4,10 @@ import arrow.Kind
 import arrow.core.Either
 import arrow.core.Left
 import arrow.core.Right
+import arrow.core.Tuple2
 import arrow.core.internal.AtomicIntW
 import arrow.core.identity
+import arrow.fx.IO.Companion.effect
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.dispatchers.dispatchers
@@ -68,15 +70,17 @@ class EffectsSuspendDSLTests : UnitSpec() {
 
       suspend fun getThreadName(): String = Thread.currentThread().name
 
-      val program = IO.fx<Nothing, List<String>> {
+      val program = IO.fx<Nothing, Tuple2<String, String>> {
         // note how the receiving value is typed in the environment and not inside IO despite being effectful and non-blocking parallel computations
-        val result: List<String> = !IO.parMapN(textContext,
-          IO.effect { getThreadName() },
-          IO.effect { getThreadName() }
-        ) { a, b -> listOf(a, b) }
+        val result = !IO.parTupledN(
+          textContext,
+          // we only care to know the name of the thread, ignore the number
+          effect { getThreadName().split("-")[0] },
+          effect { getThreadName().split("-")[0] }
+        )
         result
       }
-      unsafe { runBlocking { program } }.distinct().size shouldBe 2
+      unsafe { runBlocking { program } } shouldBe Tuple2("test", "test")
     }
 
     "raiseError" {
