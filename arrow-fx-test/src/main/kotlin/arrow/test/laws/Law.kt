@@ -11,7 +11,7 @@ import io.kotlintest.properties.Gen
 import io.kotlintest.should
 import io.kotlintest.shouldNot
 
-// TODO: to be moved to arrow-core-test
+// TODO: check to move to arrow-core-test
 fun throwableEq() = Eq { a: Throwable, b ->
   a::class == b::class && a.message == b.message
 }

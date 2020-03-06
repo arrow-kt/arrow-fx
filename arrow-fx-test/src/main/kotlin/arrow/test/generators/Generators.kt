@@ -2,6 +2,7 @@ package arrow.test.generators
 
 import arrow.Kind
 import arrow.core.Either
+import arrow.core.Eval
 import arrow.core.Id
 import arrow.core.Ior
 import arrow.core.Left
@@ -132,3 +133,12 @@ fun <A, B> Gen.Companion.ior(genA: Gen<A>, genB: Gen<B>): Gen<Ior<A, B>> =
         }
       }
   }
+
+fun <A> Gen.Companion.functionAAToA(gen: Gen<A>): Gen<(A, A) -> A> = gen.map { a: A -> { _: A, _: A -> a } }
+
+fun <A, B> Gen.Companion.functionBAToB(gen: Gen<B>): Gen<(B, A) -> B> = gen.map { b: B -> { _: B, _: A -> b } }
+
+fun <A, B> Gen.Companion.functionABToB(gen: Gen<B>): Gen<(A, B) -> B> = gen.map { b: B -> { _: A, _: B -> b } }
+
+fun <A> Gen<A>.genEval(): Gen<Eval<A>> =
+  map { Eval.just(it) }
