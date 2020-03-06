@@ -7,14 +7,17 @@ import arrow.core.ListK
 import arrow.core.Right
 import arrow.core.Tuple2
 import arrow.core.Tuple3
-import arrow.core.internal.AtomicRefW
+import arrow.core.Tuple4
+import arrow.core.Tuple5
+import arrow.core.Tuple6
+import arrow.core.Tuple7
+import arrow.core.Tuple8
+import arrow.core.Tuple9
 import arrow.core.extensions.listk.traverse.traverse
 import arrow.core.fix
 import arrow.core.identity
+import arrow.core.internal.AtomicRefW
 import arrow.core.k
-import arrow.fx.internal.parMap2
-import arrow.fx.internal.parMap3
-import arrow.typeclasses.Applicative
 import arrow.fx.MVar
 import arrow.fx.Promise
 import arrow.fx.Queue
@@ -31,6 +34,9 @@ import arrow.fx.RaceTriple
 import arrow.fx.Semaphore
 import arrow.fx.Timer
 import arrow.fx.internal.TimeoutException
+import arrow.fx.internal.parMap2
+import arrow.fx.internal.parMap3
+import arrow.typeclasses.Applicative
 import arrow.typeclasses.Traverse
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
@@ -41,7 +47,7 @@ typealias CancelToken<F> = Kind<F, Unit>
 /**
  * ank_macro_hierarchy(arrow.fx.typeclasses.Concurrent)
  *
- * Type class for async data types that are cancelable and can be started concurrently.
+ * Type class for async data types that are cancellable and can be started concurrently.
  */
 interface Concurrent<F> : Async<F> {
 
@@ -180,7 +186,7 @@ interface Concurrent<F> : Async<F> {
   fun <A, B, C> CoroutineContext.raceTriple(fa: Kind<F, A>, fb: Kind<F, B>, fc: Kind<F, C>): Kind<F, RaceTriple<F, A, B, C>>
 
   /**
-   * Creates a cancelable [F] instance that executes an asynchronous process on evaluation.
+   * Creates a cancellable [F] instance that executes an asynchronous process on evaluation.
    * Derived from [async] and [bracketCase].
    *
    * ```kotlin:ank:playground:extension
@@ -207,7 +213,7 @@ interface Concurrent<F> : Async<F> {
    *   }
    *
    *   fun cancel(): Unit = kotlinx.coroutines.runBlocking {
-   *     println("Canceled, closing NetworkApi")
+   *     println("Cancelled, closing NetworkApi")
    *     kotlinx.coroutines.delay(500)
    *     println("Closed NetworkApi")
    *   }
@@ -216,7 +222,7 @@ interface Concurrent<F> : Async<F> {
    * fun main(args: Array<String>) {
    *   //sampleStart
    *   val getAccounts = Default._shift_().flatMap {
-   *     _extensionFactory_.cancelable<List<Account>> { cb ->
+   *     _extensionFactory_.cancellable<List<Account>> { cb ->
    *       val service = NetworkService()
    *       service.getAccounts(
    *         successCallback = { accs -> cb(Right(accs)) },
@@ -229,16 +235,20 @@ interface Concurrent<F> : Async<F> {
    *   //sampleEnd
    * }
    * ```
-   * @see cancelableF for a version that can safely suspend impure callback registration code.
+   * @see cancellableF for a version that can safely suspend impure callback registration code.
    */
-  fun <A> cancelable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<F>): Kind<F, A> =
-    cancelableF { cb ->
+  fun <A> cancellable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<F>): Kind<F, A> =
+    cancellableF { cb ->
       val token = k(cb)
       later { token }
     }
 
+  @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(k))"))
+  fun <A> cancelable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<F>): Kind<F, A> =
+    cancellable(k)
+
   /**
-   * Builder to create a cancelable [F] instance that executes an asynchronous process on evaluation.
+   * Builder to create a cancellable [F] instance that executes an asynchronous process on evaluation.
    * Function derived from [async] and [bracketCase].
    *
    * ```kotlin:ank:playground:extension
@@ -248,7 +258,7 @@ interface Concurrent<F> : Async<F> {
    *
    * fun main(args: Array<String>) {
    *   //sampleStart
-   *   val result = _extensionFactory_.cancelableF<String> { cb ->
+   *   val result = _extensionFactory_.cancellableF<String> { cb ->
    *     effect {
    *       val deferred = kotlinx.coroutines.GlobalScope.async {
    *         kotlinx.coroutines.delay(1000)
@@ -261,7 +271,7 @@ interface Concurrent<F> : Async<F> {
    *
    *   println(result) //Run with `fix().unsafeRunSync()`
    *
-   *   val result2 = _extensionFactory_.cancelableF<Unit> { cb ->
+   *   val result2 = _extensionFactory_.cancellableF<Unit> { cb ->
    *     effect {
    *       println("Doing something that can be cancelled.")
    *       effect  { println("Cancelling the task") }
@@ -273,9 +283,9 @@ interface Concurrent<F> : Async<F> {
    * }
    * ```
    *
-   * @see cancelable for a simpler non-suspending version.
+   * @see cancellable for a simpler non-suspending version.
    */
-  fun <A> cancelableF(k: ((Either<Throwable, A>) -> Unit) -> Kind<F, CancelToken<F>>): Kind<F, A> =
+  fun <A> cancellableF(k: ((Either<Throwable, A>) -> Unit) -> Kind<F, CancelToken<F>>): Kind<F, A> =
     asyncF { cb ->
       val state = AtomicRefW<((Either<Throwable, Unit>) -> Unit)?>(null)
       val cb1 = { r: Either<Throwable, A> ->
@@ -298,11 +308,15 @@ interface Concurrent<F> : Async<F> {
         }
       }, release = { token, exitCase ->
         when (exitCase) {
-          is ExitCase.Canceled -> token
+          is ExitCase.Cancelled -> token
           else -> just(Unit)
         }
       })
     }
+
+  @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(k)"))
+  fun <A> cancelableF(k: ((Either<Throwable, A>) -> Unit) -> Kind<F, CancelToken<F>>): Kind<F, A> =
+    cancellableF(k)
 
   /**
    * Given a function which returns an [F] effect, run this effect in parallel for all the values in [G].
@@ -411,7 +425,7 @@ interface Concurrent<F> : Async<F> {
     toList().k().parTraverse(ListK.traverse(), ::identity).map { it.fix() }
 
   /**
-   * Map two tasks in parallel within a new [F] on [this@parMapN].
+   * Map two tasks in parallel within a new [F] on [ctx].
    *
    * ```kotlin:ank:playground
    * import arrow.Kind
@@ -424,10 +438,11 @@ interface Concurrent<F> : Async<F> {
    * fun main(args: Array<String>) {
    *   fun <F> Concurrent<F>.example(): Kind<F, String> {
    *   //sampleStart
-   *     val result = Dispatchers.Default.parMapN(
+   *     val result = parMapN(
+   *       Dispatchers.Default,
    *       effect { "First one is on ${Thread.currentThread().name}" },
    *       effect { "Second one is on ${Thread.currentThread().name}" }
-   *     ) { a, b ->
+   *     ) { (a, b) ->
    *       "$a\n$b"
    *     }
    *   //sampleEnd
@@ -438,7 +453,7 @@ interface Concurrent<F> : Async<F> {
    * }
    * ```
    *
-   * @param this@parMapN [CoroutineContext] to execute the source [F] on.
+   * @param ctx [CoroutineContext] to execute the source [F] on.
    * @param fa value to parallel map
    * @param fb value to parallel map
    * @param f function to map/combine value [A] and [B]
@@ -446,22 +461,130 @@ interface Concurrent<F> : Async<F> {
    *
    * @see racePair for a version that does not await all results to be finished.
    */
+  fun <A, B, C> parMapN(
+    ctx: CoroutineContext,
+    fa: Kind<F, A>,
+    fb: Kind<F, B>,
+    f: (Tuple2<A, B>) -> C
+  ): Kind<F, C> =
+    parTupledN(ctx, fa, fb).map(f)
+
+  /**
+   * Map two tasks in parallel within a new [F] on [ctx].
+   *
+   * ```kotlin:ank:playground
+   * import arrow.Kind
+   * import arrow.core.Tuple2
+   * import arrow.fx.IO
+   * import kotlinx.coroutines.Dispatchers
+   * import arrow.fx.typeclasses.Concurrent
+   * import arrow.fx.extensions.io.concurrent.concurrent
+   * import arrow.fx.fix
+   *
+   * fun main(args: Array<String>) {
+   *   fun <F> Concurrent<F>.example(): Kind<F, Tuple2<String, String>> {
+   *   //sampleStart
+   *     val result = parTupledN(
+   *       Dispatchers.Default,
+   *       effect { "First one is on ${Thread.currentThread().name}" },
+   *       effect { "Second one is on ${Thread.currentThread().name}" }
+   *     )
+   *   //sampleEnd
+   *   return result
+   *   }
+   *
+   *   IO.concurrent().example().fix().unsafeRunSync().let(::println)
+   * }
+   * ```
+   *
+   * @param ctx [CoroutineContext] to execute the source [F] on.
+   * @param fa value to parallel map
+   * @param fb value to parallel map
+   * @return [F] with the result of function [fa] and [fb].
+   *
+   * @see racePair for a version that does not await all results to be finished.
+   */
+  fun <A, B> parTupledN(
+    ctx: CoroutineContext,
+    fa: Kind<F, A>,
+    fb: Kind<F, B>
+  ): Kind<F, Tuple2<A, B>> =
+    parMap2(ctx, fa, fb, ::Tuple2)
+
+  @Deprecated("This API is not consistent with others within Arrow", ReplaceWith("Concurrent<F>.parMapN(this, fa, fb, f)"))
   fun <A, B, C> CoroutineContext.parMapN(
     fa: Kind<F, A>,
     fb: Kind<F, B>,
     f: (A, B) -> C
   ): Kind<F, C> =
-    parMap2(this, fa, fb, f)
+    parMapN(this, fa, fb) { (a, b) -> f(a, b) }
 
   /**
    * @see parMapN
    */
-  fun <A, B, C, D> CoroutineContext.parMapN(fa: Kind<F, A>, fb: Kind<F, B>, fc: Kind<F, C>, f: (A, B, C) -> D): Kind<F, D> =
-    parMap3(this, fa, fb, fc, f)
+  fun <A, B, C, D> parMapN(
+    ctx: CoroutineContext,
+    fa: Kind<F, A>,
+    fb: Kind<F, B>,
+    fc: Kind<F, C>,
+    f: (Tuple3<A, B, C>) -> D
+  ): Kind<F, D> =
+    parTupledN(ctx, fa, fb, fc).map(f)
 
   /**
    * @see parMapN
    */
+  fun <A, B, C> parTupledN(
+    ctx: CoroutineContext,
+    fa: Kind<F, A>,
+    fb: Kind<F, B>,
+    fc: Kind<F, C>
+  ): Kind<F, Tuple3<A, B, C>> =
+    parMap3(ctx, fa, fb, fc, ::Tuple3)
+
+  @Deprecated("This API is not consistent with others within Arrow", ReplaceWith("parMapN(this, fa, fb, fc, f)"))
+  fun <A, B, C, D> CoroutineContext.parMapN(
+    fa: Kind<F, A>,
+    fb: Kind<F, B>,
+    fc: Kind<F, C>,
+    f: (A, B, C) -> D
+  ): Kind<F, D> =
+    parMapN(this, fa, fb, fc) { (a, b, c) -> f(a, b, c) }
+
+  /**
+   * @see parMapN
+   */
+  fun <A, B, C, D, E> parMapN(
+    ctx: CoroutineContext,
+    fa: Kind<F, A>,
+    fb: Kind<F, B>,
+    fc: Kind<F, C>,
+    fd: Kind<F, D>,
+    f: (Tuple4<A, B, C, D>) -> E
+  ): Kind<F, E> =
+    parTupledN(ctx, fa, fb, fc, fd).map(f)
+
+  /**
+   * @see parMapN
+   */
+  fun <A, B, C, D> parTupledN(
+    ctx: CoroutineContext,
+    fa: Kind<F, A>,
+    fb: Kind<F, B>,
+    fc: Kind<F, C>,
+    fd: Kind<F, D>
+  ): Kind<F, Tuple4<A, B, C, D>> =
+    parMapN(
+      ctx,
+      parTupledN(ctx, fa, fb),
+      parTupledN(ctx, fc, fd)
+    ) { (ab, cd) ->
+      val (a, b) = ab
+      val (c, d) = cd
+      Tuple4(a, b, c, d)
+    }
+
+  @Deprecated("This API is not consistent with others within Arrow", ReplaceWith("parMapN(this, fa, fb, fc, fd, f)"))
   fun <A, B, C, D, E> CoroutineContext.parMapN(
     fa: Kind<F, A>,
     fb: Kind<F, B>,
@@ -469,16 +592,43 @@ interface Concurrent<F> : Async<F> {
     fd: Kind<F, D>,
     f: (A, B, C, D) -> E
   ): Kind<F, E> =
-    parMapN(
-      parMapN(fa, fb, ::Tuple2),
-      parMapN(fc, fd, ::Tuple2)
-    ) { (a, b), (c, d) ->
-      f(a, b, c, d)
-    }
+    parMapN(this, fa, fb, fc, fd) { (a, b, c, d) -> f(a, b, c, d) }
 
   /**
    * @see parMapN
    */
+  fun <A, B, C, D, E, G> parMapN(
+    ctx: CoroutineContext,
+    fa: Kind<F, A>,
+    fb: Kind<F, B>,
+    fc: Kind<F, C>,
+    fd: Kind<F, D>,
+    fe: Kind<F, E>,
+    f: (Tuple5<A, B, C, D, E>) -> G
+  ): Kind<F, G> =
+    parTupledN(ctx, fa, fb, fc, fd, fe).map(f)
+
+  /**
+   * @see parMapN
+   */
+  fun <A, B, C, D, E> Concurrent<F>.parTupledN(
+    ctx: CoroutineContext,
+    fa: Kind<F, A>,
+    fb: Kind<F, B>,
+    fc: Kind<F, C>,
+    fd: Kind<F, D>,
+    fe: Kind<F, E>
+  ): Kind<F, Tuple5<A, B, C, D, E>> =
+    parMapN(ctx,
+      parTupledN(ctx, fa, fb, fc),
+      parTupledN(ctx, fd, fe)
+    ) { (abc, de) ->
+      val (a, b, c) = abc
+      val (d, e) = de
+      Tuple5(a, b, c, d, e)
+    }
+
+  @Deprecated("This API is not consistent with others within Arrow", ReplaceWith("parMapN(this, fa, fb, fc, fd, fe)"))
   fun <A, B, C, D, E, G> CoroutineContext.parMapN(
     fa: Kind<F, A>,
     fb: Kind<F, B>,
@@ -487,15 +637,45 @@ interface Concurrent<F> : Async<F> {
     fe: Kind<F, E>,
     f: (A, B, C, D, E) -> G
   ): Kind<F, G> =
-    parMapN(parMapN(fa, fb, fc, ::Tuple3),
-      parMapN(fd, fe, ::Tuple2)
-    ) { (a, b, c), (d, e) ->
-      f(a, b, c, d, e)
-    }
+    parMapN(this, fa, fb, fc, fd, fe) { (a, b, c, d, e) -> f(a, b, c, d, e) }
 
   /**
    * @see parMapN
    */
+  fun <A, B, C, D, E, G, H> Concurrent<F>.parMapN(
+    ctx: CoroutineContext,
+    fa: Kind<F, A>,
+    fb: Kind<F, B>,
+    fc: Kind<F, C>,
+    fd: Kind<F, D>,
+    fe: Kind<F, E>,
+    fg: Kind<F, G>,
+    f: (Tuple6<A, B, C, D, E, G>) -> H
+  ): Kind<F, H> =
+    parTupledN(ctx, fa, fb, fc, fd, fe, fg).map(f)
+
+  /**
+   * @see parMapN
+   */
+  fun <A, B, C, D, E, G> Concurrent<F>.parTupledN(
+    ctx: CoroutineContext,
+    fa: Kind<F, A>,
+    fb: Kind<F, B>,
+    fc: Kind<F, C>,
+    fd: Kind<F, D>,
+    fe: Kind<F, E>,
+    fg: Kind<F, G>
+  ): Kind<F, Tuple6<A, B, C, D, E, G>> =
+    parMapN(ctx,
+      parTupledN(ctx, fa, fb, fc),
+      parTupledN(ctx, fd, fe, fg)
+    ) { (abc, deg) ->
+      val (a, b, c) = abc
+      val (d, e, g) = deg
+      Tuple6(a, b, c, d, e, g)
+    }
+
+  @Deprecated("This API is not consistent with others within Arrow", ReplaceWith("parMapN(this, fa, fb, fc, fd, fe, fg)"))
   fun <A, B, C, D, E, G, H> CoroutineContext.parMapN(
     fa: Kind<F, A>,
     fb: Kind<F, B>,
@@ -505,15 +685,49 @@ interface Concurrent<F> : Async<F> {
     fg: Kind<F, G>,
     f: (A, B, C, D, E, G) -> H
   ): Kind<F, H> =
-    parMapN(parMapN(fa, fb, fc, ::Tuple3),
-      parMapN(fd, fe, fg, ::Tuple3)
-    ) { (a, b, c), (d, e, g) ->
-      f(a, b, c, d, e, g)
-    }
+    parMapN(this, fa, fb, fc, fd, fe, fg) { (a, b, c, d, e, g) -> f(a, b, c, d, e, g) }
 
   /**
    * @see parMapN
    */
+  fun <F, A, B, C, D, E, G, H, I> Concurrent<F>.parMapN(
+    ctx: CoroutineContext,
+    fa: Kind<F, A>,
+    fb: Kind<F, B>,
+    fc: Kind<F, C>,
+    fd: Kind<F, D>,
+    fe: Kind<F, E>,
+    fg: Kind<F, G>,
+    fh: Kind<F, H>,
+    f: (Tuple7<A, B, C, D, E, G, H>) -> I
+  ): Kind<F, I> =
+    parTupledN(ctx, fa, fb, fc, fd, fe, fg, fh).map(f)
+
+  /**
+   * @see parMapN
+   */
+  fun <A, B, C, D, E, G, H> parTupledN(
+    ctx: CoroutineContext,
+    fa: Kind<F, A>,
+    fb: Kind<F, B>,
+    fc: Kind<F, C>,
+    fd: Kind<F, D>,
+    fe: Kind<F, E>,
+    fg: Kind<F, G>,
+    fh: Kind<F, H>
+  ): Kind<F, Tuple7<A, B, C, D, E, G, H>> =
+    parMapN(ctx,
+      parTupledN(ctx, fa, fb, fc),
+      parTupledN(ctx, fd, fe),
+      parTupledN(ctx, fg, fh)
+    ) { (abc, de, gh) ->
+      val (a, b, c) = abc
+      val (d, e) = de
+      val (g, h) = gh
+      Tuple7(a, b, c, d, e, g, h)
+    }
+
+  @Deprecated("This API is not consistent with others within Arrow", ReplaceWith("parMapN(this, fa, fb, fc, fd, fe, fg, fh)"))
   fun <A, B, C, D, E, G, H, I> CoroutineContext.parMapN(
     fa: Kind<F, A>,
     fb: Kind<F, B>,
@@ -524,15 +738,51 @@ interface Concurrent<F> : Async<F> {
     fh: Kind<F, H>,
     f: (A, B, C, D, E, G, H) -> I
   ): Kind<F, I> =
-    parMapN(parMapN(fa, fb, fc, ::Tuple3),
-      parMapN(fd, fe, ::Tuple2),
-      parMapN(fg, fh, ::Tuple2)) { (a, b, c), (d, e), (g, h) ->
-      f(a, b, c, d, e, g, h)
-    }
+    parMapN(this, fa, fb, fc, fd, fe, fg, fh) { (a, b, c, d, e, g, h) -> f(a, b, c, d, e, g, h) }
 
   /**
    * @see parMapN
    */
+  fun <A, B, C, D, E, G, H, I, J> parMapN(
+    ctx: CoroutineContext,
+    fa: Kind<F, A>,
+    fb: Kind<F, B>,
+    fc: Kind<F, C>,
+    fd: Kind<F, D>,
+    fe: Kind<F, E>,
+    fg: Kind<F, G>,
+    fh: Kind<F, H>,
+    fi: Kind<F, I>,
+    f: (Tuple8<A, B, C, D, E, G, H, I>) -> J
+  ): Kind<F, J> =
+    parTupledN(ctx, fa, fb, fc, fd, fe, fg, fh, fi).map(f)
+
+  /**
+   * @see parMapN
+   */
+  fun <A, B, C, D, E, G, H, I> parTupledN(
+    ctx: CoroutineContext,
+    fa: Kind<F, A>,
+    fb: Kind<F, B>,
+    fc: Kind<F, C>,
+    fd: Kind<F, D>,
+    fe: Kind<F, E>,
+    fg: Kind<F, G>,
+    fh: Kind<F, H>,
+    fi: Kind<F, I>
+  ): Kind<F, Tuple8<A, B, C, D, E, G, H, I>> =
+    parMapN(ctx,
+      parTupledN(ctx, fa, fb, fc),
+      parTupledN(ctx, fd, fe, fg),
+      parTupledN(ctx, fh, fi)
+    ) { (abc, deg, hi) ->
+      val (a, b, c) = abc
+      val (d, e, g) = deg
+      val (h, i) = hi
+      Tuple8(a, b, c, d, e, g, h, i)
+    }
+
+  @Deprecated("This API is not consistent with others within Arrow", ReplaceWith("parMapN(this, fa, fb, fc, fd, fe, fg, fh, fi)"))
   fun <A, B, C, D, E, G, H, I, J> CoroutineContext.parMapN(
     fa: Kind<F, A>,
     fb: Kind<F, B>,
@@ -544,15 +794,53 @@ interface Concurrent<F> : Async<F> {
     fi: Kind<F, I>,
     f: (A, B, C, D, E, G, H, I) -> J
   ): Kind<F, J> =
-    parMapN(parMapN(fa, fb, fc, ::Tuple3),
-      parMapN(fd, fe, fg, ::Tuple3),
-      parMapN(fh, fi, ::Tuple2)) { (a, b, c), (d, e, g), (h, i) ->
-      f(a, b, c, d, e, g, h, i)
-    }
+    parMapN(this, fa, fb, fc, fd, fe, fg, fh, fi) { (a, b, c, d, e, g, h, i) -> f(a, b, c, d, e, g, h, i) }
 
   /**
    * @see parMapN
    */
+  fun <A, B, C, D, E, G, H, I, J, K> parMapN(
+    ctx: CoroutineContext,
+    fa: Kind<F, A>,
+    fb: Kind<F, B>,
+    fc: Kind<F, C>,
+    fd: Kind<F, D>,
+    fe: Kind<F, E>,
+    fg: Kind<F, G>,
+    fh: Kind<F, H>,
+    fi: Kind<F, I>,
+    fj: Kind<F, J>,
+    f: (Tuple9<A, B, C, D, E, G, H, I, J>) -> K
+  ): Kind<F, K> =
+    parTupledN(ctx, fa, fb, fc, fd, fe, fg, fh, fi, fj).map(f)
+
+  /**
+   * @see parMapN
+   */
+  fun <A, B, C, D, E, G, H, I, J> parTupledN(
+    ctx: CoroutineContext,
+    fa: Kind<F, A>,
+    fb: Kind<F, B>,
+    fc: Kind<F, C>,
+    fd: Kind<F, D>,
+    fe: Kind<F, E>,
+    fg: Kind<F, G>,
+    fh: Kind<F, H>,
+    fi: Kind<F, I>,
+    fj: Kind<F, J>
+  ): Kind<F, Tuple9<A, B, C, D, E, G, H, I, J>> =
+    parMapN(ctx,
+      parTupledN(ctx, fa, fb, fc),
+      parTupledN(ctx, fd, fe, fg),
+      parTupledN(ctx, fh, fi, fj)
+    ) { (abc, deg, hij) ->
+      val (a, b, c) = abc
+      val (d, e, g) = deg
+      val (h, i, j) = hij
+      Tuple9(a, b, c, d, e, g, h, i, j)
+    }
+
+  @Deprecated("This API is not consistent with others within Arrow", ReplaceWith("parMapN(this, fa, fb, fc, fd, fe, fg, fh, fi, fj)"))
   fun <A, B, C, D, E, G, H, I, J, K> CoroutineContext.parMapN(
     fa: Kind<F, A>,
     fb: Kind<F, B>,
@@ -565,11 +853,7 @@ interface Concurrent<F> : Async<F> {
     fj: Kind<F, J>,
     f: (A, B, C, D, E, G, H, I, J) -> K
   ): Kind<F, K> =
-    parMapN(parMapN(fa, fb, fc, ::Tuple3),
-      parMapN(fd, fe, fg, ::Tuple3),
-      parMapN(fh, fi, fj, ::Tuple3)) { (a, b, c), (d, e, g), (h, i, j) ->
-      f(a, b, c, d, e, g, h, i, j)
-    }
+    parMapN(this, fa, fb, fc, fd, fe, fg, fh, fi, fj) { (a, b, c, d, e, g, h, i, j) -> f(a, b, c, d, e, g, h, i, j) }
 
   /**
    * Race two tasks concurrently within a new [F] on [this@raceN].
@@ -584,7 +868,7 @@ interface Concurrent<F> : Async<F> {
    *
    * fun main(args: Array<String>) {
    *   fun <F> Concurrent<F>.example(): Kind<F, String> {
-   *     val never: Kind<F, Int> = cancelable { effect { println("Never got canelled for losing.") } }
+   *     val never: Kind<F, Int> = cancellable { effect { println("Never got cancelled for losing.") } }
    *
    *     //sampleStart
    *     val result = fx.concurrent {
@@ -629,7 +913,7 @@ interface Concurrent<F> : Async<F> {
     fa: Kind<F, A>,
     fb: Kind<F, B>,
     fc: Kind<F, C>
-  ): Kind<F, Race3<out A, out B, out C>> =
+  ): Kind<F, Race3<A, B, C>> =
     raceTriple(fa, fb, fc).flatMap {
       it.fold(
         { a, fiberB, fiberC -> fiberB.cancel().flatMap { fiberC.cancel().map { Race3.First(a) } } },
@@ -646,7 +930,7 @@ interface Concurrent<F> : Async<F> {
     b: Kind<F, B>,
     c: Kind<F, C>,
     d: Kind<F, D>
-  ): Kind<F, Race4<out A, out B, out C, out D>> =
+  ): Kind<F, Race4<A, B, C, D>> =
     raceN(
       raceN(a, b),
       raceN(c, d)
@@ -666,7 +950,7 @@ interface Concurrent<F> : Async<F> {
     c: Kind<F, C>,
     d: Kind<F, D>,
     e: Kind<F, E>
-  ): Kind<F, Race5<out A, out B, out C, out D, out E>> =
+  ): Kind<F, Race5<A, B, C, D, E>> =
     raceN(
       raceN(a, b, c),
       raceN(d, e)
@@ -688,7 +972,7 @@ interface Concurrent<F> : Async<F> {
     d: Kind<F, D>,
     e: Kind<F, E>,
     g: Kind<F, G>
-  ): Kind<F, Race6<out A, out B, out C, out D, out E, out G>> =
+  ): Kind<F, Race6<A, B, C, D, E, G>> =
     raceN(
       raceN(a, b, c),
       raceN(d, e, g)
@@ -711,7 +995,7 @@ interface Concurrent<F> : Async<F> {
     e: Kind<F, E>,
     g: Kind<F, G>,
     h: Kind<F, H>
-  ): Kind<F, Race7<out A, out B, out C, out D, out E, out G, out H>> =
+  ): Kind<F, Race7<A, B, C, D, E, G, H>> =
     raceN(
       raceN(a, b, c),
       raceN(d, e),
@@ -738,7 +1022,7 @@ interface Concurrent<F> : Async<F> {
     g: Kind<F, G>,
     h: Kind<F, H>,
     i: Kind<F, I>
-  ): Kind<F, Race8<out A, out B, out C, out D, out E, out G, out H, out I>> =
+  ): Kind<F, Race8<A, B, C, D, E, G, H, I>> =
     raceN(
       raceN(a, b),
       raceN(c, d),
@@ -769,7 +1053,7 @@ interface Concurrent<F> : Async<F> {
     h: Kind<F, H>,
     i: Kind<F, I>,
     j: Kind<F, J>
-  ): Kind<F, Race9<out A, out B, out C, out D, out E, out G, out H, out I, out J>> =
+  ): Kind<F, Race9<A, B, C, D, E, G, H, I, J>> =
     raceN(
       raceN(a, b, c),
       raceN(d, e),

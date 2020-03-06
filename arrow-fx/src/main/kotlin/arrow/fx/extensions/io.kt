@@ -3,6 +3,8 @@ package arrow.fx.extensions
 import arrow.Kind
 import arrow.core.Either
 import arrow.core.Eval
+import arrow.core.Tuple2
+import arrow.core.Tuple3
 import arrow.core.identity
 import arrow.extension
 import arrow.fx.ForIO
@@ -195,11 +197,11 @@ interface IOConcurrent : Concurrent<ForIO>, IOAsync {
   override fun <A> Kind<ForIO, A>.fork(coroutineContext: CoroutineContext): IO<Fiber<ForIO, A>> =
     fix().fork(coroutineContext)
 
-  override fun <A> cancelable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForIO>): Kind<ForIO, A> =
-    IO.cancelable(k)
+  override fun <A> cancellable(k: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForIO>): Kind<ForIO, A> =
+    IO.cancellable(k)
 
-  override fun <A> cancelableF(k: ((Either<Throwable, A>) -> Unit) -> IOOf<CancelToken<ForIO>>): IO<A> =
-    IO.cancelableF(k)
+  override fun <A> cancellableF(k: ((Either<Throwable, A>) -> Unit) -> IOOf<CancelToken<ForIO>>): IO<A> =
+    IO.cancellableF(k)
 
   override fun <A, B> CoroutineContext.racePair(fa: Kind<ForIO, A>, fb: Kind<ForIO, B>): IO<RacePair<ForIO, A, B>> =
     IO.racePair(this, fa, fb)
@@ -207,11 +209,11 @@ interface IOConcurrent : Concurrent<ForIO>, IOAsync {
   override fun <A, B, C> CoroutineContext.raceTriple(fa: Kind<ForIO, A>, fb: Kind<ForIO, B>, fc: Kind<ForIO, C>): IO<RaceTriple<ForIO, A, B, C>> =
     IO.raceTriple(this, fa, fb, fc)
 
-  override fun <A, B, C> CoroutineContext.parMapN(fa: Kind<ForIO, A>, fb: Kind<ForIO, B>, f: (A, B) -> C): Kind<ForIO, C> =
-    IO.parMapN(this@parMapN, fa, fb, f)
+  override fun <A, B> parTupledN(ctx: CoroutineContext, fa: Kind<ForIO, A>, fb: Kind<ForIO, B>): IO<Tuple2<A, B>> =
+    IO.parTupledN(ctx, fa, fb)
 
-  override fun <A, B, C, D> CoroutineContext.parMapN(fa: Kind<ForIO, A>, fb: Kind<ForIO, B>, fc: Kind<ForIO, C>, f: (A, B, C) -> D): Kind<ForIO, D> =
-    IO.parMapN(this@parMapN, fa, fb, fc, f)
+  override fun <A, B, C> parTupledN(ctx: CoroutineContext, fa: Kind<ForIO, A>, fb: Kind<ForIO, B>, fc: Kind<ForIO, C>): IO<Tuple3<A, B, C>> =
+    IO.parTupledN(ctx, fa, fb, fc)
 
   override fun <A, B> CoroutineContext.raceN(fa: Kind<ForIO, A>, fb: Kind<ForIO, B>): IO<Race2<A, B>> =
     IO.raceN(this@raceN, fa, fb)
