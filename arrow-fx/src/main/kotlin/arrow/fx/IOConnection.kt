@@ -78,7 +78,9 @@ private class DefaultConnection : IOConnection() {
   override tailrec fun <E> push(token: IOOf<E, Unit>): Unit = when (val list = state.value) {
     // If connection is already cancelled cancel token immediately.
     null -> token.rethrow.unsafeRunSync()
-    else -> if (!state.compareAndSet(list, listOf(token.rethrow) + list)) push(token) else Unit
+    else ->
+      if (state.compareAndSet(list, listOf(token.rethrow) + list)) Unit
+      else push(token)
   }
 
   override fun <E> push(vararg token: IOOf<E, Unit>): Unit =
@@ -88,8 +90,9 @@ private class DefaultConnection : IOConnection() {
     val state = state.value
     return when {
       state == null || state.isEmpty() -> IO.unit
-      else -> if (!this.state.compareAndSet(state, state.drop(1))) pop()
-      else state.first()
+      else ->
+        if (this.state.compareAndSet(state, state.drop(1))) state.first()
+        else pop()
     }
   }
 

@@ -15,6 +15,7 @@ import arrow.fx.IO.Companion.just
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.async.async
 import arrow.fx.extensions.io.concurrent.concurrent
+import arrow.fx.extensions.io.concurrent.raceN
 import arrow.fx.extensions.io.dispatchers.dispatchers
 import arrow.fx.extensions.timer
 import arrow.fx.extensions.toIO
@@ -306,7 +307,7 @@ class IOTest : UnitSpec() {
 
     "fx should defer evaluation until run" {
       var run = false
-      val program = IO.fx<Nothing, Unit> {
+      val program = IO.fx<Unit> {
         run = true
       }
 
@@ -316,7 +317,7 @@ class IOTest : UnitSpec() {
     }
 
     "fx can switch execution context state across not/bind" {
-      val program = IO.fx<Nothing, Unit> {
+      val program = IO.fx<Unit> {
         val ctx = !IO.effect { kotlin.coroutines.coroutineContext }
         !IO.effect { ctx shouldBe EmptyCoroutineContext }
         continueOn(all)
@@ -328,7 +329,7 @@ class IOTest : UnitSpec() {
     }
 
     "fx can pass context state across not/bind" {
-      val program = IO.fx<Nothing, Unit> {
+      val program = IO.fx<Unit> {
         val ctx = !IO.effect { kotlin.coroutines.coroutineContext }
         !IO.effect { ctx shouldBe EmptyCoroutineContext }
         continueOn(CoroutineName("Simon"))
@@ -340,7 +341,7 @@ class IOTest : UnitSpec() {
     }
 
     "fx will respect thread switching across not/bind" {
-      val program = IO.fx<Nothing, Unit> {
+      val program = IO.fx<Unit> {
         continueOn(all)
         val initialThread = !IO.effect { Thread.currentThread().name }
         !(0..130).map { i -> IO.effect { i } }.parSequence()
@@ -512,7 +513,7 @@ class IOTest : UnitSpec() {
     }
 
     "IO.binding should for comprehend over IO" {
-      val result = IO.fx<Nothing, Int> {
+      val result = IO.fx<Int> {
         val x = !IO.just(1)
         val y = !IO { x + 1 }
         y
@@ -522,7 +523,7 @@ class IOTest : UnitSpec() {
 
     "IO bracket cancellation should release resource with cancel exit status" {
       IO.fx<Nothing, ExitCase2<Throwable>> {
-        val p = !Promise<ExitCase2<Throwable>>()
+        val p = Promise<ExitCase2<Throwable>>().bind()
         IO.just(0L).bracketCase(
           use = { IO.never },
           release = { _, exitCase -> p.complete(exitCase) }
@@ -535,7 +536,7 @@ class IOTest : UnitSpec() {
     }
 
     "Cancellable should run CancelToken" {
-      IO.fx<Nothing, Unit> {
+      IO.fx<Unit> {
         val p = !Promise<Unit>()
         IO.cancellable<Nothing, Unit> {
           p.complete(Unit)
@@ -547,7 +548,7 @@ class IOTest : UnitSpec() {
     }
 
     "CancellableF should run CancelToken" {
-      IO.fx<Nothing, Unit> {
+      IO.fx<Unit> {
         val p = !Promise<Unit>()
         IO.cancellableF<Nothing, Unit> {
           IO { p.complete(Unit) }
@@ -570,7 +571,7 @@ class IOTest : UnitSpec() {
     }
 
     "guarantee should be called on finish with error" {
-      IO.fx<Nothing, Unit> {
+      IO.fx<Unit> {
         val p = !Promise<Unit>()
         IO.effect { throw Exception() }.guarantee(p.complete(Unit)).attempt().bind()
         !p.get()
@@ -591,7 +592,7 @@ class IOTest : UnitSpec() {
     }
 
     "forked pair race should run" {
-      IO.fx<Nothing, Either<Int, Int>> {
+      IO.fx<Either<Int, Int>> {
         IO.dispatchers<Nothing>().io().raceN(
           IO.timer<Nothing>().sleep(10.seconds).followedBy(IO.effect { 1 }),
           IO.effect { 3 }
@@ -600,7 +601,7 @@ class IOTest : UnitSpec() {
     }
 
     "forked triple race should run" {
-      IO.fx<Nothing, Race3<Int, Int, Int>> {
+      IO.fx<Race3<Int, Int, Int>> {
         IO.dispatchers<Nothing>().io().raceN(
           IO.timer<Nothing>().sleep(10.seconds).followedBy(IO.effect { 1 }),
           IO.timer<Nothing>().sleep(10.seconds).followedBy(IO.effect { 3 }),

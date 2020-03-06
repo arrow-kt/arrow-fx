@@ -74,7 +74,7 @@ private fun Resource.Companion.genK() = object : GenK<ResourcePartialOf<IOPartia
       // Suspend
       allocate.map { Resource.Suspend(IO.just(it), IO.bracket()) },
       // Bind
-      allocate.map { it.flatMap { a -> just(a, IO.bracket()) } }
+      allocate.map { it.flatMap { a -> just(a, IO.bracket<Nothing>()) } }
     )
   }
 }

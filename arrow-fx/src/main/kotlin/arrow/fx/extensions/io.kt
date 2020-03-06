@@ -5,7 +5,6 @@ import arrow.core.Either
 import arrow.core.Eval
 import arrow.core.Tuple2
 import arrow.core.Tuple3
-import arrow.core.identity
 import arrow.core.Left
 import arrow.core.Right
 import arrow.extension

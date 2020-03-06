@@ -223,13 +223,13 @@ class MVarTest : UnitSpec() {
       }
 
       "$label - producer-consumer parallel loop" {
-        fun producer(ch: Channel<Int>, list: List<Int>): IO<Nothing, Unit> =
+        fun producer(ch: Channel<Long>, list: List<Long>): IO<Nothing, Unit> =
           when {
             list.isEmpty() -> ch.put(None).fix() // we are done!
             else -> ch.put(Some(list.first())).flatMap { producer(ch, list.drop(1)) } // next please
           }
 
-        fun consumer(ch: Channel<Int>, sum: Long): IO<Nothing, Long> =
+        fun consumer(ch: Channel<Long>, sum: Long): IO<Nothing, Long> =
           ch.take().flatMap {
             it.fold({
               IO.just(sum) // we are done!
