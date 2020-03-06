@@ -207,7 +207,7 @@ object ConcurrentLaws {
     forAll(Gen.int(), Gen.int()) { a, b ->
       fx.concurrent {
         val mvar = MVar(a, this@releaseBracketIsNotCancellable).bind() // Create filled MVar
-        val p = Promise.uncancelable<F, Unit>(this@releaseBracketIsNotCancellable).bind() //Create use latch
+        val p = Promise.uncancelable<F, Unit>(this@releaseBracketIsNotCancellable).bind() // Create use latch
         val task = just(Unit).bracket( // No-op acquire
           use = { p.complete(Unit).flatMap { never<Int>() } }, // Complete latch in `use` and never finish
           release = { mvar.put(b) } // Semantically block putting new value in MVar
