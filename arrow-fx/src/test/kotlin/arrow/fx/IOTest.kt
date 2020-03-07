@@ -20,6 +20,7 @@ import arrow.fx.extensions.io.functor.functor
 import arrow.fx.extensions.io.monad.flatMap
 import arrow.fx.extensions.io.monad.map
 import arrow.fx.extensions.io.monad.monad
+import arrow.fx.extensions.io.semigroupK.semigroupK
 import arrow.fx.extensions.timer
 import arrow.fx.extensions.toIO
 import arrow.fx.internal.parMap2
@@ -32,6 +33,9 @@ import arrow.test.concurrency.SideEffect
 import arrow.test.eq.eqK
 import arrow.test.generators.genK
 import arrow.test.laws.ConcurrentLaws
+import arrow.test.laws.SemigroupKLaws
+import arrow.typeclasses.Eq
+import arrow.typeclasses.EqK
 import io.kotlintest.fail
 import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll
@@ -49,7 +53,9 @@ class IOTest : UnitSpec() {
   private val NonBlocking = IO.dispatchers().default()
 
   init {
-    testLaws(ConcurrentLaws.laws(IO.concurrent(), IO.timer(), IO.functor(), IO.applicative(), IO.monad(), IO.genK(), IO.eqK()))
+    testLaws(
+      SemigroupKLaws.laws(IO.semigroupK(), IO.genK(), IO.eqK()),
+      ConcurrentLaws.laws(IO.concurrent(), IO.timer(), IO.functor(), IO.applicative(), IO.monad(), IO.genK(), IO.eqK()))
 
     "should defer evaluation until run" {
       var run = false
