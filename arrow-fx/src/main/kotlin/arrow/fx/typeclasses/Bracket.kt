@@ -17,6 +17,8 @@ sealed class ExitCase<out E> {
   }
 
   data class Error<out E>(val e: E) : ExitCase<E>()
+
+  companion object
 }
 
 fun <E> Either<E, *>.toExitCase() =
@@ -33,6 +35,8 @@ sealed class ExitCase2<out E> {
 
   data class Error<E>(val error: E) : ExitCase2<E>()
   data class Exception(val exception: Throwable) : ExitCase2<Nothing>()
+
+  companion object
 }
 
 /**

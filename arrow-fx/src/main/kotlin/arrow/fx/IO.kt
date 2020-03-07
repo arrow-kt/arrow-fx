@@ -780,55 +780,55 @@ sealed class IO<out E, out A> : IOOf<E, A> {
   fun uncancellable(): IO<E, A> =
     ContextSwitch(this, ContextSwitch.makeUncancellable, ContextSwitch.disableUncancellable)
 
-  internal data class Pure<out A>(val a: A) : IO<Nothing, A>() {
+  internal class Pure<out A>(val a: A) : IO<Nothing, A>() {
     // Pure can be replaced by its value
     override fun <B> map(f: (A) -> B): IO<Nothing, B> = Suspend { Pure(f(a)) }
 
     override fun unsafeRunTimedTotal(limit: Duration): Option<Either<Nothing, A>> = Some(Right(a))
   }
 
-  internal data class RaiseException(val exception: Throwable) : IO<Nothing, Nothing>() {
+  internal class RaiseException(val exception: Throwable) : IO<Nothing, Nothing>() {
     // Errors short-circuit
     override fun <B> map(f: (Nothing) -> B): IO<Nothing, B> = this
 
     override fun unsafeRunTimedTotal(limit: Duration): Option<Nothing> = throw exception
   }
 
-  internal data class RaiseError<E>(val error: E) : IO<E, Nothing>() {
+  internal class RaiseError<E>(val error: E) : IO<E, Nothing>() {
     // Errors short-circuit
     override fun <B> map(f: (Nothing) -> B): IO<E, B> = this
 
     override fun unsafeRunTimedTotal(limit: Duration): Option<Either<E, Nothing>> = Some(Left(error))
   }
 
-  internal data class Delay<out A>(val thunk: () -> A) : IO<Nothing, A>() {
+  internal class Delay<out A>(val thunk: () -> A) : IO<Nothing, A>() {
     override fun unsafeRunTimedTotal(limit: Duration): Option<Nothing> = throw AssertionError("Unreachable")
   }
 
-  internal data class Suspend<out E, out A>(val thunk: () -> IOOf<E, A>) : IO<E, A>() {
+  internal class Suspend<out E, out A>(val thunk: () -> IOOf<E, A>) : IO<E, A>() {
     override fun unsafeRunTimedTotal(limit: Duration): Option<Nothing> = throw AssertionError("Unreachable")
   }
 
-  internal data class Async<out E, out A>(val shouldTrampoline: Boolean = false, val k: (IOConnection, (IOResult<E, A>) -> Unit) -> Unit) : IO<E, A>() {
+  internal class Async<out E, out A>(val shouldTrampoline: Boolean = false, val k: (IOConnection, (IOResult<E, A>) -> Unit) -> Unit) : IO<E, A>() {
     override fun unsafeRunTimedTotal(limit: Duration): Option<Either<E, A>> = unsafeResync(this, limit)
   }
 
-  internal data class Effect<out A>(val ctx: CoroutineContext? = null, val effect: suspend () -> A) : IO<Nothing, A>() {
+  internal class Effect<out A>(val ctx: CoroutineContext? = null, val effect: suspend () -> A) : IO<Nothing, A>() {
     override fun unsafeRunTimedTotal(limit: Duration): Option<Either<Nothing, A>> = unsafeResync(this, limit)
   }
 
-  internal data class Bind<A, E, out B, out E2 : E>(val cont: IOOf<E, A>, val g: (A) -> IOOf<E, B>) : IO<E2, B>() {
+  internal class Bind<A, E, out B, out E2 : E>(val cont: IOOf<E, A>, val g: (A) -> IOOf<E, B>) : IO<E2, B>() {
     override fun unsafeRunTimedTotal(limit: Duration): Option<Nothing> = throw AssertionError("Unreachable")
   }
 
-  internal data class ContinueOn<E, A>(val cont: IO<E, A>, val cc: CoroutineContext) : IO<E, A>() {
+  internal class ContinueOn<E, A>(val cont: IO<E, A>, val cc: CoroutineContext) : IO<E, A>() {
     // If a ContinueOn follows another ContinueOn, execute only the latest
     override fun continueOn(ctx: CoroutineContext): IO<E, A> = ContinueOn(cont, ctx)
 
     override fun unsafeRunTimedTotal(limit: Duration): Option<Nothing> = throw AssertionError("Unreachable")
   }
 
-  internal data class ContextSwitch<E, A>(
+  internal class ContextSwitch<E, A>(
     val source: IO<E, A>,
     val modify: (IOConnection) -> IOConnection,
     val restore: ((a: Any?, e: Any?, t: Throwable?, old: IOConnection, new: IOConnection) -> IOConnection)?
@@ -844,7 +844,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
     }
   }
 
-  internal data class Map<A, out E, out B>(val source: IOOf<E, A>, val g: (A) -> B, val index: Int) : IO<E, B>(), (A) -> IO<E, B> {
+  internal class Map<A, out E, out B>(val source: IOOf<E, A>, val g: (A) -> B, val index: Int) : IO<E, B>(), (A) -> IO<E, B> {
     override fun invoke(value: A): IO<E, B> = just(g(value))
 
     override fun <C> map(f: (B) -> C): IO<E, C> =

@@ -57,6 +57,7 @@ import arrow.typeclasses.MonadError
 import arrow.typeclasses.MonadThrow
 import arrow.typeclasses.Monoid
 import arrow.typeclasses.Semigroup
+import arrow.typeclasses.SemigroupK
 import arrow.typeclasses.stateStack
 import arrow.typeclasses.suspended.BindSyntax
 import arrow.unsafe
@@ -516,5 +517,13 @@ open class IOContinuation<E, A>(override val context: CoroutineContext = EmptyCo
         returnedMonad
       }
       COROUTINE_SUSPENDED
+    }
+}
+
+@extension
+interface IOSemigroupK<E> : SemigroupK<IOPartialOf<E>> {
+  override fun <A> IOOf<E, A>.combineK(y: IOOf<E, A>): IO<E, A> =
+    (this.fix() to y.fix()).let { (l, r) ->
+      l.HandleErrorWith({ r }, { r })
     }
 }

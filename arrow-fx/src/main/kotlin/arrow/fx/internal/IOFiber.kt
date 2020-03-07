@@ -6,14 +6,10 @@ import arrow.fx.IOPartialOf
 import arrow.fx.typeclasses.Fiber
 
 internal fun <E, A> IOFiber(promise: UnsafePromise<E, A>, conn: IOConnection): Fiber<IOPartialOf<E>, A> {
-  val join: IO<E, A> = IO.Async { conn2, cb ->
-    conn2.push(IO { promise.remove(cb) })
+  val join: IO<E, A> = IO.cancellable { cb ->
+    promise.get(cb)
 
-    promise.get { a ->
-      cb(a)
-      conn2.pop()
-      conn.pop()
-    }
+    IO { promise.remove(cb) }
   }
 
   return Fiber(join, conn.cancel())

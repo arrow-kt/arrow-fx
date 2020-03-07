@@ -16,7 +16,13 @@ import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.async.async
 import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.concurrent.raceN
+import arrow.fx.extensions.io.applicative.applicative
 import arrow.fx.extensions.io.dispatchers.dispatchers
+import arrow.fx.extensions.io.functor.functor
+import arrow.fx.extensions.io.monad.flatMap
+import arrow.fx.extensions.io.monad.map
+import arrow.fx.extensions.io.monad.monad
+import arrow.fx.extensions.io.semigroupK.semigroupK
 import arrow.fx.extensions.timer
 import arrow.fx.extensions.toIO
 import arrow.fx.extensions.toIOException
@@ -29,6 +35,8 @@ import arrow.test.UnitSpec
 import arrow.test.concurrency.SideEffect
 import arrow.test.generators.GenK
 import arrow.test.generators.throwable
+import arrow.test.laws.ConcurrentLaws
+import arrow.test.laws.SemigroupKLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import io.kotlintest.fail
@@ -48,8 +56,10 @@ class IOTest : UnitSpec() {
   private val NonBlocking = IO.dispatchers<Nothing>().default()
 
   init {
-    // Broken due to version conflict... ?
-    // testLaws(ConcurrentLaws.laws(IO.concurrent<Nothing>(), IO.timer<Nothing>(), IO.functor<Nothing>(), IO.applicative<Nothing>(), IO.monad<Nothing>(), IO.genK(), IO.eqK<Nothing>()))
+    testLaws(
+      SemigroupKLaws.laws<IOPartialOf<Nothing>>(IO.semigroupK(), IO.genK(), IO.eqK()),
+      ConcurrentLaws.laws<IOPartialOf<Nothing>>(IO.concurrent(), IO.timer(), IO.functor(), IO.applicative(), IO.monad(), IO.genK(), IO.eqK())
+    )
 
     "should defer evaluation until run" {
       var run = false
@@ -373,7 +383,7 @@ class IOTest : UnitSpec() {
 
       val result =
         IO.parMapN(all,
-          makePar(6), makePar(3), makePar(2), makePar(4), makePar(1), makePar(5)) { six, tree, two, four, one, five -> listOf(six, tree, two, four, one, five) }
+            makePar(6), makePar(3), makePar(2), makePar(4), makePar(1), makePar(5)) { six, tree, two, four, one, five -> listOf(six, tree, two, four, one, five) }
           .unsafeRunSync()
 
       result shouldBe listOf(6L, 3, 2, 4, 1, 5)
@@ -395,7 +405,7 @@ class IOTest : UnitSpec() {
 
       val result =
         IO.parMapN(all,
-          makePar(6), just(1L).order(), makePar(4), IO.defer { just(2L) }.order(), makePar(5), IO { 3L }.order()) { six, one, four, two, five, three -> listOf(six, one, four, two, five, three) }
+            makePar(6), just(1L).order(), makePar(4), IO.defer { just(2L) }.order(), makePar(5), IO { 3L }.order()) { six, one, four, two, five, three -> listOf(six, one, four, two, five, three) }
           .unsafeRunSync()
 
       result shouldBe listOf(6L, 1, 4, 2, 5, 3)
@@ -407,8 +417,8 @@ class IOTest : UnitSpec() {
 
       fun makePar(num: Int): IO<Nothing, Int> =
         IO.effect {
-          order.add(num)
-        }.followedBy(IO.sleep((num * 200L).milliseconds))
+            order.add(num)
+          }.followedBy(IO.sleep((num * 200L).milliseconds))
           .map { num }
 
       val result = IO.raceN(
@@ -449,10 +459,10 @@ class IOTest : UnitSpec() {
     "parallel IO#defer, IO#suspend and IO#async are run in the expected CoroutineContext" {
       val result =
         IO.parTupledN(all,
-          IO { Thread.currentThread().name },
-          IO.defer { just(Thread.currentThread().name) },
-          IO.async<Nothing, String> { cb -> cb(IOResult.Success(Thread.currentThread().name)) },
-          IO(other) { Thread.currentThread().name })
+            IO { Thread.currentThread().name },
+            IO.defer { just(Thread.currentThread().name) },
+            IO.async<Nothing, String> { cb -> cb(IOResult.Success(Thread.currentThread().name)) },
+            IO(other) { Thread.currentThread().name })
           .unsafeRunSync()
 
       result shouldBe Tuple4("all", "all", "all", "other")
@@ -525,9 +535,9 @@ class IOTest : UnitSpec() {
       IO.fx<Nothing, ExitCase2<Throwable>> {
         val p = Promise<ExitCase2<Throwable>>().bind()
         IO.just(0L).bracketCase(
-          use = { IO.never },
-          release = { _, exitCase -> p.complete(exitCase) }
-        )
+            use = { IO.never },
+            release = { _, exitCase -> p.complete(exitCase) }
+          )
           .unsafeRunAsyncCancellable { }
           .invoke() // cancel immediately
 
@@ -539,8 +549,8 @@ class IOTest : UnitSpec() {
       IO.fx<Unit> {
         val p = !Promise<Unit>()
         IO.cancellable<Nothing, Unit> {
-          p.complete(Unit)
-        }.unsafeRunAsyncCancellable { }
+            p.complete(Unit)
+          }.unsafeRunAsyncCancellable { }
           .invoke()
 
         !p.get()
@@ -551,8 +561,8 @@ class IOTest : UnitSpec() {
       IO.fx<Unit> {
         val p = !Promise<Unit>()
         IO.cancellableF<Nothing, Unit> {
-          IO { p.complete(Unit) }
-        }.unsafeRunAsyncCancellable { }
+            IO { p.complete(Unit) }
+          }.unsafeRunAsyncCancellable { }
           .invoke()
 
         !p.get()
@@ -563,8 +573,8 @@ class IOTest : UnitSpec() {
       Promise.uncancellable<IOPartialOf<Nothing>, Unit>(IO.async()).flatMap { latch ->
         IO {
           IO.cancellable<Nothing, Unit> {
-            latch.complete(Unit)
-          }.unsafeRunAsyncCancellable { }
+              latch.complete(Unit)
+            }.unsafeRunAsyncCancellable { }
             .invoke()
         }.flatMap { latch.get() }
       }.unsafeRunSync()

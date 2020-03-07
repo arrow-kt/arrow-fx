@@ -2,19 +2,36 @@ package arrow.integrations.kotlinx
 
 import arrow.core.Right
 import arrow.core.Some
+import arrow.Kind
+import arrow.core.extensions.eq
+import arrow.core.internal.AtomicRefW
 import arrow.fx.IO
+import arrow.fx.IOPartialOf
 import arrow.fx.IOResult
+import arrow.fx.bracketCase
+import arrow.fx.extensions.exitcase2.eq.eq
 import arrow.fx.extensions.fx
-import arrow.fx.handleErrorWith
 import arrow.fx.extensions.io.async.effectMap
+import arrow.fx.extensions.io.applicative.applicative
+import arrow.fx.extensions.io.monad.followedBy
+import arrow.fx.extensions.io.concurrent.waitFor
+import arrow.fx.fix
+import arrow.fx.handleErrorWith
 import arrow.fx.flatMap
 import arrow.fx.onCancel
+import arrow.fx.typeclasses.Duration
+import arrow.fx.typeclasses.ExitCase2
 import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
 import arrow.fx.unsafeRunAsync
 import arrow.fx.unsafeRunSync
 import arrow.test.UnitSpec
+import arrow.test.eq
 import arrow.test.generators.throwable
+import arrow.test.laws.equalUnderTheLaw
+import arrow.test.laws.shouldBeEq
+import arrow.typeclasses.Eq
+import arrow.typeclasses.EqK
 import io.kotlintest.fail
 import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll
@@ -87,6 +104,19 @@ class CoroutinesIntegrationTest : UnitSpec() {
       }
     }
 
+    "suspendCancellable doesn't start if scope is cancelled" {
+      forAll(Gen.int()) { i ->
+        val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
+        val ref = AtomicRefW<Int?>(i)
+        scope.cancel()
+        scope.launch {
+          IO { ref.value = null }.suspendCancellable()
+        }
+
+        ref.value == i
+      }
+    }
+
     "scope cancellation should cancel suspendedCancellable IO" {
       forAll(Gen.int()) { i ->
         IO.fx<Nothing, Int> {
@@ -99,7 +129,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
           }
           !IO.effect { scope.cancel() }
           !promise.get()
-        }.unsafeRunTimed(500.milliseconds) == Some(Right(i))
+        }.equalUnderTheLaw(IO.just(i), IO.eqK<Nothing>(500.milliseconds).liftEq(Int.eq()))
       }
     }
 
@@ -113,7 +143,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
         }
         IO.sleep(500.milliseconds)
           .unsafeRunAsync { scope.cancel() }
-      }.unsafeRunTimed(2.seconds) shouldBe Some(Right(1))
+      }.equalUnderTheLaw(IO.just(1), IO.eqK<Nothing>(2.seconds).liftEq(Int.eq()))
     }
 
     // --------------- unsafeRunScoped ---------------
@@ -122,7 +152,9 @@ class CoroutinesIntegrationTest : UnitSpec() {
       forAll(Gen.throwable()) { e ->
         try {
           val scope = TestCoroutineScope(TestCoroutineDispatcher())
+
           val ioa = IO<Int> { throw e }
+
           ioa.unsafeRunScoped(scope) { result ->
             result.fold({ throw it }, { fail("") }, { fail("") })
           }
@@ -143,7 +175,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
           }
           !IO.effect { scope.cancel() }
           !promise.get()
-        }.unsafeRunTimed(500.milliseconds) == Some(Right(i))
+        }.equalUnderTheLaw(IO.just(i), IO.eqK<Nothing>(500.milliseconds).liftEq(Int.eq()))
       }
     }
 
@@ -166,8 +198,93 @@ class CoroutinesIntegrationTest : UnitSpec() {
           IO.just(i).unsafeRunScoped(scope) { result ->
             result.fold({ fail("") }, { fail("") }, { cb(IOResult.Success(it)) })
           }
-        }.unsafeRunSync() == i
+        }.equalUnderTheLaw(IO.just(i), IO.eqK<Nothing>().liftEq(Int.eq()))
+      }
+    }
+
+    "unsafeRunScoped doesn't start if scope is cancelled" {
+      forAll(Gen.int()) { i ->
+        val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
+        val ref = AtomicRefW<Int?>(i)
+        scope.cancel()
+        IO { ref.value = null }.unsafeRunScoped(scope) {}
+        ref.value == i
+      }
+    }
+
+    // --------------- forkScoped ---------------
+
+    "forkScoped can cancel even for infinite asyncs" {
+      IO.fx<Nothing, Int> {
+        val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
+        val promise = !Promise<Int>()
+
+        val (_, _) = !IO.never.onCancel(promise.complete(1)).forkScoped(scope)
+        !IO.sleep(500.milliseconds).effectMap { scope.cancel() }
+        !promise.get()
+      }.shouldBeEq(IO.just(1), IO.eqK<Nothing>().liftEq(Int.eq()))
+    }
+
+    "forkScoped should complete when running a pure value" {
+      forAll(Gen.int()) { i ->
+        IO.fx<Nothing, Int> {
+          val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
+          val (join, _) = !IO.effect { i }.forkScoped(scope)
+          !join
+        }.equalUnderTheLaw(IO.just(i), IO.eqK<Nothing>().liftEq(Int.eq()))
+      }
+    }
+
+    "forkScoped should cancel correctly" {
+      IO.fx<Nothing, ExitCase2<Nothing>> {
+        val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
+        val startLatch = !Promise<Unit>()
+        val promise = !Promise<ExitCase2<Nothing>>()
+
+        !IO.unit.bracketCase(
+          use = { startLatch.complete(Unit).followedBy(IO.never) },
+          release = { _, ex -> promise.complete(ex) }
+        ).forkScoped(scope)
+
+        !startLatch.get()
+
+        !IO.effect { scope.cancel() }
+
+        !promise.get()
+      }.equalUnderTheLaw(IO.just(ExitCase2.Cancelled), IO.eqK<Nothing>().liftEq(ExitCase2.eq<Nothing>(Eq.any(), Eq.any())))
+    }
+
+    "forkScoped doesn't start if scope is cancelled" {
+      forAll(Gen.int()) { i ->
+        IO.fx<Nothing, Int?> {
+          val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
+          val ref = AtomicRefW<Int?>(i)
+          scope.cancel()
+          !IO {
+            ref.value = null
+          }.forkScoped(scope)
+
+          ref.value
+        }.equalUnderTheLaw(IO.just<Int?>(i), IO.eqK<Nothing>().liftEq(Int.eq().nullable()))
       }
     }
   }
+}
+
+// TODO move to Arrow Core
+fun <A> Eq<A>.nullable(): Eq<A?> = Eq { a, b ->
+  a?.let { aa ->
+    b?.let { bb ->
+      aa.eqv(bb)
+    } ?: false
+  } ?: b?.let { false } ?: true
+}
+
+internal fun <E> IO.Companion.eqK(timeout: Duration = 5.seconds, EQE: Eq<E> = Eq.any()) = object : EqK<IOPartialOf<E>> {
+  override fun <A> Kind<IOPartialOf<E>, A>.eqK(other: Kind<IOPartialOf<E>, A>, EQ: Eq<A>): Boolean =
+    IOResult.eq(EQE, EQ, Eq.any()).run {
+      IO.applicative<Nothing>().mapN(fix().result(), other.fix().result()) { (a, b) -> a.eqv(b) }
+        .waitFor(timeout)
+        .unsafeRunSync()
+    }
 }
