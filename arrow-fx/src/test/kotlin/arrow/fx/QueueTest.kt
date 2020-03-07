@@ -4,7 +4,6 @@ import arrow.core.None
 import arrow.core.Some
 import arrow.core.Tuple2
 import arrow.core.Tuple3
-import arrow.core.Left
 import arrow.core.Right
 import arrow.core.Tuple4
 import arrow.core.extensions.list.traverse.traverse
@@ -43,7 +42,7 @@ class QueueTest : UnitSpec() {
             !l.traverse(IO.applicative(), q::offer)
             val nl = !(1..l.size).toList().traverse(IO.applicative()) { q.take() }
             nl.fix()
-          }.unsafeRunSync() == l.toList()
+          }.equalUnderTheLaw(IO.just(l.toList()), EQ())
         }
       }
 
@@ -58,7 +57,7 @@ class QueueTest : UnitSpec() {
             val second = !q.take()
             val third = !q.take()
             Tuple3(first, second, third)
-          }.unsafeRunSync() == t
+          }.equalUnderTheLaw(IO.just(t), EQ())
         }
       }
 
@@ -71,7 +70,7 @@ class QueueTest : UnitSpec() {
           val elapsed = !effect { System.currentTimeMillis() - start }
           !effect { received shouldBe None }
           !effect { (elapsed >= 100) shouldBe true }
-        }.unsafeRunSync()
+        }.equalUnderTheLaw(IO.unit, EQ())
       }
 
       "$label - suspended take calls on an empty queue complete when offer calls made to queue" {
@@ -81,7 +80,7 @@ class QueueTest : UnitSpec() {
             val first = !q.take().fork(ctx)
             !q.offer(i)
             !first.join()
-          }.unsafeRunSync() == i
+          }.equalUnderTheLaw(IO.just(i), EQ())
         }
       }
 
@@ -99,7 +98,7 @@ class QueueTest : UnitSpec() {
             val secondValue = !second.join()
             val thirdValue = !third.join()
             setOf(firstValue, secondValue, thirdValue)
-          }.unsafeRunSync() == setOf(t.a, t.b, t.c)
+          }.equalUnderTheLaw(IO.just(setOf(t.a, t.b, t.c)), EQ())
         }
       }
 
@@ -110,7 +109,7 @@ class QueueTest : UnitSpec() {
             !q.offer(i)
             !q.shutdown()
             !q.take()
-          }.attempt().unsafeRunSync() == Left(QueueShutdown)
+          }.equalUnderTheLaw(IO.raiseError(QueueShutdown), EQ())
         }
       }
 
@@ -161,7 +160,7 @@ class QueueTest : UnitSpec() {
             !q.offer(i)
             !q.shutdown()
             !q.peek()
-          }.attempt().unsafeRunSync() == Left(QueueShutdown)
+          }.equalUnderTheLaw(IO.raiseError(QueueShutdown), EQ())
         }
       }
 
@@ -185,7 +184,7 @@ class QueueTest : UnitSpec() {
             val q = !queue(10)
             !q.shutdown()
             !q.offer(i)
-          }.attempt().unsafeRunSync() == Left(QueueShutdown)
+          }.equalUnderTheLaw(IO.raiseError(QueueShutdown), EQ())
         }
       }
 
@@ -195,7 +194,7 @@ class QueueTest : UnitSpec() {
           val t = !q.take().fork(ctx)
           !q.shutdown()
           !t.join()
-        }.attempt().unsafeRunSync() shouldBe Left(QueueShutdown)
+        }.equalUnderTheLaw(IO.raiseError(QueueShutdown), EQ())
       }
 
       "$label - create a shutdown hook completing a promise, then shutdown the queue, the promise should be completed" {
@@ -205,7 +204,7 @@ class QueueTest : UnitSpec() {
           !(q.awaitShutdown().followedBy(p.complete(true))).fork()
           !q.shutdown()
           !p.get()
-        }.unsafeRunSync()
+        }.equalUnderTheLaw(IO.just(true), EQ())
       }
 
       "$label - create a shutdown hook completing a promise twice, then shutdown the queue, both promises should be completed" {
@@ -217,7 +216,7 @@ class QueueTest : UnitSpec() {
           !(q.awaitShutdown().followedBy(p2.complete(true))).fork()
           !q.shutdown()
           !mapN(p1.get(), p2.get()) { (p1, p2) -> p1 && p2 }
-        }.suspended()
+        }.equalUnderTheLaw(IO.just(true), EQ())
       }
 
       "$label - shut it down, create a shutdown hook completing a promise, the promise should be completed immediately" {
@@ -227,7 +226,7 @@ class QueueTest : UnitSpec() {
           val p = !Promise<ForIO, Boolean>(IO.concurrent())
           !(q.awaitShutdown().followedBy(p.complete(true))).fork()
           !p.get()
-        }.unsafeRunSync()
+        }.equalUnderTheLaw(IO.just(true), EQ())
       }
 
       "$label - tryOffer on a shutdown Queue returns false" {
@@ -324,7 +323,7 @@ class QueueTest : UnitSpec() {
           val elapsed = !effect { System.currentTimeMillis() - start }
           !effect { received shouldBe None }
           !effect { (elapsed >= 100) shouldBe true }
-        }.unsafeRunSync()
+        }.equalUnderTheLaw(IO.unit, EQ())
       }
 
       // Offer only gets scheduled for Bounded Queues, others apply strategy.
@@ -354,7 +353,7 @@ class QueueTest : UnitSpec() {
           !q.offer(1)
           val offered = !q.tryOffer(2)
           !effect { offered shouldBe false }
-        }.unsafeRunSync()
+        }.equalUnderTheLaw(IO.unit, EQ())
       }
 
       "$label - capacity must be a positive integer" {
@@ -373,7 +372,7 @@ class QueueTest : UnitSpec() {
             val first = !q.take()
             val second = !q.take()
             Tuple2(first, second)
-          }.unsafeRunSync() == t
+          }.equalUnderTheLaw(IO.just(t), EQ())
         }
       }
 
@@ -388,7 +387,7 @@ class QueueTest : UnitSpec() {
             val second = !q.take()
             val third = !q.take()
             setOf(first, second, third)
-          }.unsafeRunSync() == setOf(t.a, t.b, t.c)
+          }.equalUnderTheLaw(IO.just(setOf(t.a, t.b, t.c)), EQ())
         }
       }
 
@@ -400,7 +399,7 @@ class QueueTest : UnitSpec() {
             val o = !q.offer(i).fork(ctx)
             !q.shutdown()
             !o.join()
-          }.attempt().unsafeRunSync() == Left(QueueShutdown)
+          }.equalUnderTheLaw(IO.raiseError(QueueShutdown), EQ())
         }
       }
     }
@@ -425,7 +424,7 @@ class QueueTest : UnitSpec() {
           !q.offer(1)
           val offered = !q.tryOffer(2)
           !effect { offered shouldBe false }
-        }.unsafeRunSync()
+        }.equalUnderTheLaw(IO.unit, EQ())
       }
 
       "$label - removes first element after offering to a queue at capacity" {
@@ -436,7 +435,7 @@ class QueueTest : UnitSpec() {
             !xs.traverse(IO.applicative(), q::offer)
             val taken = !(1..xs.size).toList().traverse(IO.applicative()) { q.take() }
             taken.fix()
-          }.unsafeRunSync() == xs.toList()
+          }.equalUnderTheLaw(IO.just(xs.toList()), EQ())
         }
       }
     }
@@ -462,7 +461,7 @@ class QueueTest : UnitSpec() {
           !q.offer(1)
           val offered = !q.tryOffer(5000)
           !effect { offered shouldBe false }
-        }.unsafeRunSync()
+        }.equalUnderTheLaw(IO.unit, EQ())
       }
 
       "$label - drops elements offered to a queue at capacity" {
@@ -475,7 +474,7 @@ class QueueTest : UnitSpec() {
             !q.offer(x2)
             val taken2 = !q.take()
             taken.fix() + taken2
-          }.unsafeRunSync() == xs.toList() + x2
+          }.equalUnderTheLaw(IO.just(xs.toList() + x2), EQ())
         }
       }
     }
