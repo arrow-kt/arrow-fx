@@ -34,8 +34,6 @@ import arrow.test.eq.eqK
 import arrow.test.generators.genK
 import arrow.test.laws.ConcurrentLaws
 import arrow.test.laws.SemigroupKLaws
-import arrow.typeclasses.Eq
-import arrow.typeclasses.EqK
 import io.kotlintest.fail
 import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll
