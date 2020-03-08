@@ -53,6 +53,18 @@ interface Dequeue<F, A> {
    * @see [peek] for a function that sementically blocks until a value becomes available.
    */
   fun tryPeek(): Kind<F, Option<A>>
+
+  /**
+   * Takes all values currently available in the [Queue] and empties the [Queue] or returns an empty list.
+   *
+   * It also takes all outstanding offers, in case of a blocking strategy such as bounded.
+   */
+  fun takeAll(): Kind<F, List<A>>
+
+  /**
+   * Peeks all values currently available in the [Queue] or returns an empty list.
+   */
+  fun peekAll(): Kind<F, List<A>>
 }
 
 /** A polymoprhic effect typeclass that allows [Dequeue]'ing values from a [Queue]. */

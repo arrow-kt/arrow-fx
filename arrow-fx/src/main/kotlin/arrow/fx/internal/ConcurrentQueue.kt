@@ -52,6 +52,9 @@ internal class ConcurrentQueue<F, A> internal constructor(
       it.fold({ cancelableF(::unsafeTake) }, ::just)
     }
 
+  override fun takeAll(): Kind<F, List<A>> =
+    defer { unsafeTakeAll() }
+
   override fun tryPeek(): Kind<F, Option<A>> =
     defer { unsafeTryPeek() }
 
@@ -59,6 +62,9 @@ internal class ConcurrentQueue<F, A> internal constructor(
     tryPeek().flatMap {
       it.fold({ cancelableF(::unsafePeek) }, ::just)
     }
+
+  override fun peekAll(): Kind<F, List<A>> =
+    defer { unsafePeekAll() }
 
   /**
    * Waits until the queue is shutdown.
@@ -201,6 +207,35 @@ internal class ConcurrentQueue<F, A> internal constructor(
         else unsafeCancelTake(id)
       }
       else -> Unit
+    }
+
+  private tailrec fun unsafeTakeAll(): Kind<F, List<A>> =
+    when (val current = state.value) {
+      is State.Surplus -> {
+        val all = current.value.toList()
+        if (current.offers.isEmpty()) {
+          if (state.compareAndSet(current, State.empty<F, A>().copy(shutdownHook = current.shutdownHook))) just(all)
+          else unsafeTakeAll()
+        } else {
+          val allValues = current.offers.values.map { it.a }
+          val allOffers = current.offers.values.map { it.b }
+          if (state.compareAndSet(current, State.empty<F, A>().copy(shutdownHook = current.shutdownHook))) later { allOffers.forEach { cb -> cb(rightUnit) } }.map { all + allValues }
+          else unsafeTakeAll()
+        }
+      }
+      is State.Deficit -> just(emptyList<A>())
+      is State.Shutdown -> raiseError(QueueShutdown)
+    }
+
+  private fun unsafePeekAll(): Kind<F, List<A>> =
+    when (val current = state.value) {
+      is State.Deficit -> just(emptyList())
+      is State.Surplus -> {
+        val all = current.value.toList()
+        val allOffered = current.offers.values.map { it.a }
+        just(all + allOffered)
+      }
+      is State.Shutdown -> raiseError(QueueShutdown)
     }
 
   private fun unsafeTryPeek(): Kind<F, Option<A>> =

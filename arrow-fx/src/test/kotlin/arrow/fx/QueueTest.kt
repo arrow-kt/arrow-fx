@@ -46,6 +46,44 @@ class QueueTest : UnitSpec() {
         }
       }
 
+      "$label - takeAll takes all values from a Queue" {
+        forAll(Gen.nonEmptyList(Gen.int())) { l ->
+          IO.fx {
+            val q = !queue(l.size)
+            !l.traverse(IO.applicative(), q::offer)
+            !q.takeAll()
+          }.equalUnderTheLaw(IO.just(l.toList()), EQ())
+        }
+      }
+
+      "$label - peekAll takes all values from a Queue" {
+        forAll(Gen.nonEmptyList(Gen.int())) { l ->
+          IO.fx {
+            val q = !queue(l.size)
+            !l.traverse(IO.applicative(), q::offer)
+            !q.peekAll()
+          }.equalUnderTheLaw(IO.just(l.toList()), EQ())
+        }
+      }
+
+      "$label - empty queue takeAll is empty" {
+        forAll(Gen.positiveIntegers()) { n ->
+          IO.fx {
+            val q = !queue(n)
+            !q.takeAll()
+          }.equalUnderTheLaw(IO.just(emptyList()), EQ())
+        }
+      }
+
+      "$label - empty queue peekAll is empty" {
+        forAll(Gen.positiveIntegers()) { n ->
+          IO.fx {
+            val q = !queue(n)
+            !q.peekAll()
+          }.equalUnderTheLaw(IO.just(emptyList()), EQ())
+        }
+      }
+
       "$label - offer and take a number of values in the same order" {
         forAll(Gen.tuple3(Gen.int(), Gen.int(), Gen.int())) { t ->
           IO.fx {
@@ -324,6 +362,30 @@ class QueueTest : UnitSpec() {
           !effect { received shouldBe None }
           !effect { (elapsed >= 100) shouldBe true }
         }.equalUnderTheLaw(IO.unit, EQ())
+      }
+
+      "$label - takeAll takes outstanding  offers" {
+        IO.fx {
+          val q = !queue(1)
+          !q.offer(1)
+          !q.offer(2).fork()
+          !q.offer(3).fork()
+          !IO.sleep(10.milliseconds) // Give take callbacks a chance to register
+
+          !q.takeAll()
+        }.equalUnderTheLaw(IO.just(listOf(1, 2, 3)), EQ())
+      }
+
+      "$label - peekAll takes outstanding  offers" {
+        IO.fx {
+          val q = !queue(1)
+          !q.offer(1)
+          !q.offer(2).fork()
+          !q.offer(3).fork()
+          !IO.sleep(10.milliseconds) // Give take callbacks a chance to register
+
+          !q.peekAll()
+        }.equalUnderTheLaw(IO.just(listOf(1, 2, 3)), EQ())
       }
 
       // Offer only gets scheduled for Bounded Queues, others apply strategy.
