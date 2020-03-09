@@ -9,7 +9,9 @@ import arrow.fx.extensions.io.applicativeError.attempt
 import arrow.fx.extensions.io.concurrent.waitFor
 import arrow.fx.fix
 import arrow.fx.typeclasses.Duration
+import arrow.fx.typeclasses.Fiber
 import arrow.fx.typeclasses.FiberOf
+import arrow.fx.typeclasses.FiberPartialOf
 import arrow.fx.typeclasses.fix
 import arrow.fx.typeclasses.seconds
 import arrow.typeclasses.Eq
@@ -29,8 +31,23 @@ fun IO.Companion.eqK() = object : EqK<ForIO> {
   }
 }
 
-fun <F, A> EQ(EQ: Eq<Kind<F, A>>): Eq<FiberOf<F, A>> = object : Eq<FiberOf<F, A>> {
+fun <F, A> Fiber.Companion.eq(EQ: Eq<Kind<F, A>>): Eq<FiberOf<F, A>> = object : Eq<FiberOf<F, A>> {
   override fun FiberOf<F, A>.eqv(b: FiberOf<F, A>): Boolean = EQ.run {
     fix().join().eqv(b.fix().join())
   }
+}
+
+fun Fiber.Companion.eqK() = object : EqK<FiberPartialOf<ForIO>> {
+  override fun <A> Kind<FiberPartialOf<ForIO>, A>.eqK(other: Kind<FiberPartialOf<ForIO>, A>, EQ: Eq<A>): Boolean =
+    IO.eq<A>().run {
+      fix().join().eqv(other.fix().join())
+    }
+}
+
+/**
+ * Comparing Throwable is not safe due to their structure (stacktrace),
+ * so we structurally compare type and message instead.
+ */
+fun throwableEq() = Eq { a: Throwable, b ->
+  a::class == b::class && a.message == b.message
 }

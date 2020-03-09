@@ -2,6 +2,7 @@ package arrow.test.laws
 
 import arrow.Kind
 import arrow.core.extensions.eq
+import arrow.test.eq.throwableEq
 import arrow.test.generators.GenK
 import arrow.test.generators.fatalThrowable
 import arrow.test.generators.throwable
