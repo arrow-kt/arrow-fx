@@ -18,8 +18,8 @@ import arrow.fx.reactor.fix
 import arrow.fx.reactor.k
 import arrow.fx.reactor.value
 import arrow.fx.typeclasses.ExitCase
-import arrow.test.laws.AsyncLaws
-import arrow.test.laws.TimerLaws
+import arrow.fx.test.laws.AsyncLaws
+import arrow.fx.test.laws.TimerLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import io.kotlintest.matchers.startWith

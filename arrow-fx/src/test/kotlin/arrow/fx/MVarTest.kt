@@ -18,8 +18,8 @@ import arrow.fx.extensions.io.concurrent.parSequence
 import arrow.fx.extensions.io.monad.flatMap
 import arrow.fx.extensions.io.monad.followedBy
 import arrow.fx.typeclasses.milliseconds
-import arrow.test.eq.eq
-import arrow.test.laws.shouldBeEq
+import arrow.fx.test.eq.eq
+import arrow.fx.test.laws.shouldBeEq
 import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll
 import io.kotlintest.shouldBe

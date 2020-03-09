@@ -1,4 +1,4 @@
-package arrow.test.generators
+package arrow.fx.test.generators
 
 import arrow.Kind
 import arrow.core.test.generators.GenK

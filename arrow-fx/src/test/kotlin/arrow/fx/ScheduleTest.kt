@@ -36,7 +36,7 @@ import arrow.fx.extensions.schedule.profunctor.profunctor
 import arrow.fx.typeclasses.Duration
 import arrow.fx.typeclasses.nanoseconds
 import arrow.fx.typeclasses.seconds
-import arrow.test.laws.forFew
+import arrow.fx.test.laws.forFew
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import arrow.typeclasses.EqK2

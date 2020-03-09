@@ -1,8 +1,8 @@
 package arrow.fx
 
 import arrow.core.test.UnitSpec
-import arrow.test.eq.eq
-import arrow.test.laws.shouldBeEq
+import arrow.fx.test.eq.eq
+import arrow.fx.test.laws.shouldBeEq
 import io.kotlintest.shouldBe
 
 class KindConnectionTests : UnitSpec() {

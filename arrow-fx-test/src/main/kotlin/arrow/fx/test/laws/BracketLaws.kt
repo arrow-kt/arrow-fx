@@ -1,4 +1,4 @@
-package arrow.test.laws
+package arrow.fx.test.laws
 
 import arrow.Kind
 import arrow.core.extensions.eq
@@ -11,7 +11,7 @@ import arrow.core.test.laws.Law
 import arrow.core.test.laws.MonadErrorLaws
 import arrow.fx.typeclasses.Bracket
 import arrow.fx.typeclasses.ExitCase
-import arrow.test.generators.raiseError
+import arrow.fx.test.generators.raiseError
 import arrow.typeclasses.Apply
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK

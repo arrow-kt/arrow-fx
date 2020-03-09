@@ -4,9 +4,9 @@ import arrow.core.test.UnitSpec
 import arrow.core.test.laws.equalUnderTheLaw
 import arrow.fx.internal.TimeoutException
 import arrow.fx.typeclasses.milliseconds
-import arrow.test.eq.eq
-import arrow.test.laws.shouldBeEq
-import arrow.test.laws.shouldNotBeEq
+import arrow.fx.test.eq.eq
+import arrow.fx.test.laws.shouldBeEq
+import arrow.fx.test.laws.shouldNotBeEq
 import io.kotlintest.shouldThrow
 
 class EqTest : UnitSpec() {

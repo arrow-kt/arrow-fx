@@ -31,9 +31,9 @@ import arrow.fx.internal.parMap3
 import arrow.fx.typeclasses.ExitCase
 import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
-import arrow.test.eq.eqK
-import arrow.test.generators.genK
-import arrow.test.laws.ConcurrentLaws
+import arrow.fx.test.eq.eqK
+import arrow.fx.test.generators.genK
+import arrow.fx.test.laws.ConcurrentLaws
 import io.kotlintest.fail
 import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll

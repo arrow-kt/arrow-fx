@@ -26,8 +26,8 @@ import arrow.fx.rx2.fix
 import arrow.fx.rx2.k
 import arrow.fx.rx2.value
 import arrow.fx.typeclasses.ExitCase
-import arrow.test.laws.AsyncLaws
-import arrow.test.laws.ConcurrentLaws
+import arrow.fx.test.laws.AsyncLaws
+import arrow.fx.test.laws.ConcurrentLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import io.kotlintest.properties.Gen

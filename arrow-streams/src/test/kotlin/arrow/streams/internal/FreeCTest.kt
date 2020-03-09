@@ -36,7 +36,7 @@ import arrow.core.test.generators.GenK
 import arrow.core.test.generators.functionAToB
 import arrow.core.test.generators.throwable
 import arrow.core.test.laws.EqLaws
-import arrow.test.laws.MonadDeferLaws
+import arrow.fx.test.laws.MonadDeferLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import io.kotlintest.properties.Gen

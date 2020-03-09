@@ -17,7 +17,7 @@ import arrow.fx.extensions.resource.monad.monad
 import arrow.fx.extensions.resource.monoid.monoid
 import arrow.fx.extensions.resource.selective.selective
 import arrow.fx.typeclasses.seconds
-import arrow.test.laws.forFew
+import arrow.fx.test.laws.forFew
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import io.kotlintest.properties.Gen

@@ -3,7 +3,7 @@ package arrow.fx.data
 import arrow.core.test.UnitSpec
 import arrow.core.test.generators.intSmall
 import arrow.fx.typeclasses.Duration
-import arrow.test.generators.timeUnit
+import arrow.fx.test.generators.timeUnit
 import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll
 

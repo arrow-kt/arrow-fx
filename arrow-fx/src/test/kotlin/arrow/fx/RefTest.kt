@@ -9,7 +9,7 @@ import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.monadDefer.monadDefer
 import arrow.fx.typeclasses.Concurrent
 import arrow.fx.typeclasses.MonadDefer
-import arrow.test.eq.eqK
+import arrow.fx.test.eq.eqK
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import io.kotlintest.properties.Gen

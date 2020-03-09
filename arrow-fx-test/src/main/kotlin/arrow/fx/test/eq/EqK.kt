@@ -1,4 +1,4 @@
-package arrow.test.eq
+package arrow.fx.test.eq
 
 import arrow.Kind
 import arrow.core.extensions.either.eq.eq
