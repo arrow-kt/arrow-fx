@@ -1,5 +1,6 @@
 package arrow.fx
 
+import arrow.core.NonEmptyList
 import arrow.core.None
 import arrow.core.Some
 import arrow.core.Tuple2
@@ -7,17 +8,21 @@ import arrow.core.Tuple3
 import arrow.core.Right
 import arrow.core.Tuple4
 import arrow.core.extensions.list.traverse.traverse
+import arrow.core.extensions.nonemptylist.traverse.traverse
 import arrow.core.fix
+import arrow.core.success
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.applicative.applicative
 import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.dispatchers.dispatchers
 import arrow.fx.typeclasses.milliseconds
+import arrow.optics.Tuple
 import arrow.test.UnitSpec
 import arrow.test.generators.nonEmptyList
 import arrow.test.generators.tuple2
 import arrow.test.generators.tuple3
 import arrow.test.laws.equalUnderTheLaw
+import arrow.test.laws.shouldBeEq
 import io.kotlintest.fail
 import io.kotlintest.matchers.types.shouldBeInstanceOf
 import io.kotlintest.properties.Gen
@@ -42,7 +47,29 @@ class QueueTest : UnitSpec() {
             !l.traverse(IO.applicative(), q::offer)
             val nl = !(1..l.size).toList().traverse(IO.applicative()) { q.take() }
             nl.fix()
-          }.equalUnderTheLaw(IO.just(l.toList()), EQ())
+          }.equalUnderTheLaw(IO.just(l.toList()))
+        }
+      }
+
+      "$label - queue can be filled at once with enough capacity" {
+        forAll(Gen.nonEmptyList(Gen.int())) { l ->
+          IO.fx {
+            val q = !queue(l.size)
+            val succeed = !q.tryOfferAll(l.toList())
+            val res = !q.takeAll()
+            Tuple2(succeed, res)
+          }.equalUnderTheLaw(IO.just(Tuple2(true, l.toList())))
+        }
+      }
+
+      "$label - queue can be filled at once" {
+        forAll(Gen.nonEmptyList(Gen.int())) { l ->
+          IO.fx {
+            val q = !queue(l.size)
+            val succeed = !q.tryOfferAll(l.toList())
+            val res = !q.takeAll()
+            Tuple2(succeed, res)
+          }.equalUnderTheLaw(IO.just(Tuple2(true, l.toList())))
         }
       }
 
@@ -364,28 +391,41 @@ class QueueTest : UnitSpec() {
         }.equalUnderTheLaw(IO.unit, EQ())
       }
 
-      "$label - takeAll takes outstanding  offers" {
-        IO.fx {
-          val q = !queue(1)
-          !q.offer(1)
-          !q.offer(2).fork()
-          !q.offer(3).fork()
-          !IO.sleep(10.milliseconds) // Give take callbacks a chance to register
+      "$label - queue cannot be filled at once without enough capacity" {
+        forAll(Gen.nonEmptyList(Gen.int())) { l ->
+          IO.fx {
+            val q = !queue(l.size)
+            val succeed = !q.tryOfferAll(l.toList() + 1)
+            val res = !q.takeAll()
+            Tuple2(succeed, res)
+          }.equalUnderTheLaw(IO.just(Tuple2(false, emptyList<Int>())))
+        }
+      }
 
-          !q.takeAll()
-        }.equalUnderTheLaw(IO.just(listOf(1, 2, 3)), EQ())
+      "$label - takeAll takes outstanding  offers" {
+        forAll(50, Gen.nonEmptyList(Gen.int()).filter { it.size <= 100 }, Gen.choose(1, 100)) { l, capacity ->
+          IO.fx {
+            val q = !queue(capacity)
+            !l.parTraverse(NonEmptyList.traverse(), q::offer).fork()
+            !IO.sleep(50.milliseconds) // Give take callbacks a chance to register
+
+            val l = !q.takeAll()
+            l.toSet()
+          }.equalUnderTheLaw(IO.just(l.toList().toSet()))
+        }
       }
 
       "$label - peekAll takes outstanding  offers" {
-        IO.fx {
-          val q = !queue(1)
-          !q.offer(1)
-          !q.offer(2).fork()
-          !q.offer(3).fork()
-          !IO.sleep(10.milliseconds) // Give take callbacks a chance to register
+        forAll(50, Gen.nonEmptyList(Gen.int()).filter { it.size <= 100 }, Gen.choose(1, 100)) { l, capacity ->
+          IO.fx {
+            val q = !queue(capacity)
+            !l.parTraverse(NonEmptyList.traverse(), q::offer).fork()
+            !IO.sleep(50.milliseconds) // Give take callbacks a chance to register
 
-          !q.peekAll()
-        }.equalUnderTheLaw(IO.just(listOf(1, 2, 3)), EQ())
+            val l = !q.peekAll()
+            l.toSet()
+          }.equalUnderTheLaw(IO.just(l.toList().toSet()))
+        }
       }
 
       // Offer only gets scheduled for Bounded Queues, others apply strategy.
@@ -489,6 +529,49 @@ class QueueTest : UnitSpec() {
         }.equalUnderTheLaw(IO.unit, EQ())
       }
 
+      "$label - tryOfferAll over capacity" {
+        forAll(Gen.list(Gen.int()).filter { it.size > 1 }) { l ->
+          IO.fx {
+            val q = !queue(1)
+            !q.tryOfferAll(l)
+          }.equalUnderTheLaw(IO.just(false))
+        }
+      }
+
+      "$label - tryOfferAll under capacity" {
+        forAll(Gen.list(Gen.int()).filter { it.size <= 100 },Gen.int().filter { it > 100 }) { l, capacity->
+          IO.fx {
+            val q = !queue(capacity)
+            val succeed = !q.tryOfferAll(l)
+            val all = !q.takeAll()
+            Tuple2(succeed, all)
+          }.equalUnderTheLaw(IO.just(Tuple2(true, l)))
+        }
+      }
+
+      "$label - can take and offer at capacity" {
+        IO.fx {
+          val q = !queue(1)
+          val (join, _) = !q.take().fork()
+          !IO.sleep(250.milliseconds)
+          val succeed = !q.tryOfferAll(1, 2)
+          val a = !q.take()
+          val b = !join
+          Tuple2(succeed, setOf(a, b))
+        }.equalUnderTheLaw(IO.just(Tuple2(true, setOf(1, 2))))
+      }
+
+      "$label - queue cannot be filled at once without enough capacity" {
+        forAll(Gen.nonEmptyList(Gen.int())) { l ->
+          IO.fx {
+            val q = !queue(l.size)
+            val succeed = !q.tryOfferAll(l.toList() + 1)
+            val res = !q.takeAll()
+            Tuple2(succeed, res)
+          }.equalUnderTheLaw(IO.just(Tuple2(false, emptyList<Int>())))
+        }
+      }
+
       "$label - removes first element after offering to a queue at capacity" {
         forAll(Gen.int(), Gen.nonEmptyList(Gen.int())) { x, xs ->
           IO.fx {
@@ -515,6 +598,49 @@ class QueueTest : UnitSpec() {
           { err -> err.shouldBeInstanceOf<IllegalArgumentException>() },
           { fail("Expected Left<IllegalArgumentException>") }
         )
+      }
+
+      "$label - tryOfferAll over capacity" {
+        forAll(Gen.list(Gen.int()).filter { it.size > 1 }) { l ->
+          IO.fx {
+            val q = !queue(1)
+            !q.tryOfferAll(l)
+          }.equalUnderTheLaw(IO.just(false))
+        }
+      }
+
+      "$label - tryOfferAll under capacity" {
+        forAll(Gen.list(Gen.int()).filter { it.size <= 100 },Gen.int().filter { it > 100 }) { l, capacity->
+          IO.fx {
+            val q = !queue(capacity)
+            val succeed = !q.tryOfferAll(l)
+            val all = !q.takeAll()
+            Tuple2(succeed, all)
+          }.equalUnderTheLaw(IO.just(Tuple2(true, l)))
+        }
+      }
+
+      "$label - can take and offer at capacity" {
+        IO.fx {
+          val q = !queue(1)
+          val (join, _) = !q.take().fork()
+          !IO.sleep(250.milliseconds)
+          val succeed = !q.tryOfferAll(1, 2)
+          val a = !q.take()
+          val b = !join
+          Tuple2(succeed, setOf(a, b))
+        }.equalUnderTheLaw(IO.just(Tuple2(true, setOf(1, 2))))
+      }
+
+      "$label - queue cannot be filled at once without enough capacity" {
+        forAll(Gen.nonEmptyList(Gen.int())) { l ->
+          IO.fx {
+            val q = !queue(l.size)
+            val succeed = !q.tryOfferAll(l.toList() + 1)
+            val res = !q.takeAll()
+            Tuple2(succeed, res)
+          }.equalUnderTheLaw(IO.just(Tuple2(false, emptyList<Int>())))
+        }
       }
 
       "$label - tryOffer returns false at capacity" {

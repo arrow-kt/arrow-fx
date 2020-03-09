@@ -2,11 +2,14 @@ package arrow.fx
 
 import arrow.Kind
 import arrow.Kind2
+import arrow.core.Eval
+import arrow.core.ForListK
 import arrow.core.Option
 import arrow.fx.Queue.BackpressureStrategy
 import arrow.fx.Queue.Companion.ensureCapacity
 import arrow.fx.internal.ConcurrentQueue
 import arrow.fx.typeclasses.Concurrent
+import arrow.typeclasses.Foldable
 
 class ForQueue private constructor() {
   companion object
@@ -89,6 +92,16 @@ interface Enqueue<F, A> {
    * Use [tryOffer] if you do not want to block or lose a value and return immediately.
    */
   fun tryOffer(a: A): Kind<F, Boolean>
+
+  fun tryOfferAll(a: Collection<A>): Kind<F, Boolean>
+
+  fun tryOfferAll(vararg a: A): Kind<F, Boolean> =
+    tryOfferAll(a.toList())
+
+  fun offerAll(a: Collection<A>): Kind<F, Unit>
+
+  fun offerAll(vararg a: A): Kind<F, Unit> =
+    offerAll(a.toList())
 }
 
 /**
