@@ -17,8 +17,8 @@ import arrow.fx.reactor.k
 import arrow.fx.reactor.unsafeRunSync
 import arrow.fx.reactor.value
 import arrow.fx.typeclasses.ExitCase
-import arrow.test.UnitSpec
-import arrow.test.generators.GenK
+import arrow.core.test.UnitSpec
+import arrow.core.test.generators.GenK
 import arrow.test.laws.AsyncLaws
 import arrow.test.laws.TimerLaws
 import arrow.typeclasses.Eq

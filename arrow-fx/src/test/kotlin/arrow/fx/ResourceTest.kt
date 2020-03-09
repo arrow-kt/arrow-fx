@@ -5,6 +5,10 @@ import arrow.core.Some
 import arrow.core.extensions.eq
 import arrow.core.extensions.list.traverse.traverse
 import arrow.core.extensions.monoid
+import arrow.core.test.UnitSpec
+import arrow.core.test.generators.GenK
+import arrow.core.test.laws.MonadLaws
+import arrow.core.test.laws.MonoidLaws
 import arrow.fx.extensions.io.applicative.applicative
 import arrow.fx.extensions.io.bracket.bracket
 import arrow.fx.extensions.resource.applicative.applicative
@@ -13,10 +17,6 @@ import arrow.fx.extensions.resource.monad.monad
 import arrow.fx.extensions.resource.monoid.monoid
 import arrow.fx.extensions.resource.selective.selective
 import arrow.fx.typeclasses.seconds
-import arrow.test.UnitSpec
-import arrow.test.generators.GenK
-import arrow.test.laws.MonadLaws
-import arrow.test.laws.MonoidLaws
 import arrow.test.laws.forFew
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK

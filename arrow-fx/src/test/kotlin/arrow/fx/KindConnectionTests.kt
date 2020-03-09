@@ -1,6 +1,6 @@
 package arrow.fx
 
-import arrow.test.UnitSpec
+import arrow.core.test.UnitSpec
 import arrow.test.eq.eq
 import arrow.test.laws.shouldBeEq
 import io.kotlintest.shouldBe

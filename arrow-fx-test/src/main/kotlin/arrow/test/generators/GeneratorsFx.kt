@@ -1,6 +1,8 @@
 package arrow.test.generators
 
 import arrow.Kind
+import arrow.core.test.generators.GenK
+import arrow.core.test.generators.throwable
 import arrow.fx.ForIO
 import arrow.fx.IO
 import arrow.fx.typeclasses.Fiber

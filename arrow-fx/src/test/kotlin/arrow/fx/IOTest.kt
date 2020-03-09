@@ -10,6 +10,9 @@ import arrow.core.Tuple3
 import arrow.core.Tuple4
 import arrow.core.right
 import arrow.core.some
+import arrow.core.test.UnitSpec
+import arrow.core.test.concurrency.SideEffect
+import arrow.core.test.laws.SemigroupKLaws
 import arrow.fx.IO.Companion.just
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.applicative.applicative
@@ -28,12 +31,9 @@ import arrow.fx.internal.parMap3
 import arrow.fx.typeclasses.ExitCase
 import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
-import arrow.test.UnitSpec
-import arrow.test.concurrency.SideEffect
 import arrow.test.eq.eqK
 import arrow.test.generators.genK
 import arrow.test.laws.ConcurrentLaws
-import arrow.test.laws.SemigroupKLaws
 import io.kotlintest.fail
 import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll

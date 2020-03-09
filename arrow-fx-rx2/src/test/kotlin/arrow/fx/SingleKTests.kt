@@ -19,8 +19,8 @@ import arrow.fx.rx2.k
 import arrow.fx.rx2.unsafeRunSync
 import arrow.fx.rx2.value
 import arrow.fx.typeclasses.ExitCase
-import arrow.test.generators.GenK
-import arrow.test.generators.throwable
+import arrow.core.test.generators.GenK
+import arrow.core.test.generators.throwable
 import arrow.test.laws.ConcurrentLaws
 import arrow.test.laws.forFew
 import arrow.typeclasses.Eq
