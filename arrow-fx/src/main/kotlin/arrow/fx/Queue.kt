@@ -2,14 +2,11 @@ package arrow.fx
 
 import arrow.Kind
 import arrow.Kind2
-import arrow.core.Eval
-import arrow.core.ForListK
 import arrow.core.Option
 import arrow.fx.Queue.BackpressureStrategy
 import arrow.fx.Queue.Companion.ensureCapacity
 import arrow.fx.internal.ConcurrentQueue
 import arrow.fx.typeclasses.Concurrent
-import arrow.typeclasses.Foldable
 
 class ForQueue private constructor() {
   companion object

@@ -10,19 +10,16 @@ import arrow.core.Tuple4
 import arrow.core.extensions.list.traverse.traverse
 import arrow.core.extensions.nonemptylist.traverse.traverse
 import arrow.core.fix
-import arrow.core.success
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.applicative.applicative
 import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.dispatchers.dispatchers
 import arrow.fx.typeclasses.milliseconds
-import arrow.optics.Tuple
 import arrow.test.UnitSpec
 import arrow.test.generators.nonEmptyList
 import arrow.test.generators.tuple2
 import arrow.test.generators.tuple3
 import arrow.test.laws.equalUnderTheLaw
-import arrow.test.laws.shouldBeEq
 import io.kotlintest.fail
 import io.kotlintest.matchers.types.shouldBeInstanceOf
 import io.kotlintest.properties.Gen
@@ -62,7 +59,7 @@ class QueueTest : UnitSpec() {
         }
       }
 
-      "$label - queue can be filled at once" {
+      "$label - queue can be filled at once over capacity with takers" {
         forAll(Gen.nonEmptyList(Gen.int())) { l ->
           IO.fx {
             val q = !queue(l.size)
@@ -388,7 +385,20 @@ class QueueTest : UnitSpec() {
           val elapsed = !effect { System.currentTimeMillis() - start }
           !effect { received shouldBe None }
           !effect { (elapsed >= 100) shouldBe true }
-        }.equalUnderTheLaw(IO.unit, EQ())
+        }.equalUnderTheLaw(IO.unit)
+      }
+
+      "$label - time out offering multiple values to a queue at capacity" {
+        IO.fx {
+          val q = !queue(3)
+          val start = !effect { System.currentTimeMillis() }
+          val wontComplete = q.offerAll(1, 2, 3, 4)
+          val received = !wontComplete.map { Some(it) }
+            .waitFor(100.milliseconds, default = just(None))
+          val elapsed = !effect { System.currentTimeMillis() - start }
+          !effect { received shouldBe None }
+          !effect { (elapsed >= 100) shouldBe true }
+        }.equalUnderTheLaw(IO.unit)
       }
 
       "$label - queue cannot be filled at once without enough capacity" {
@@ -399,6 +409,59 @@ class QueueTest : UnitSpec() {
             val res = !q.takeAll()
             Tuple2(succeed, res)
           }.equalUnderTheLaw(IO.just(Tuple2(false, emptyList<Int>())))
+        }
+      }
+
+      "$label - can offerAll at capacity with take" {
+        IO.fx {
+          val q = !queue(1)
+          val (join, _) = !q.take().fork()
+          !IO.sleep(250.milliseconds)
+          !q.offerAll(1, 2)
+          val a = !q.take()
+          val b = !join
+          setOf(a, b)
+        }.equalUnderTheLaw(IO.just(setOf(1, 2)))
+      }
+
+      "$label - can tryOfferAll at capacity with take" {
+        IO.fx {
+          val q = !queue(1)
+          val (join, _) = !q.take().fork()
+          !IO.sleep(250.milliseconds)
+          val succeed = !q.tryOfferAll(1, 2)
+          val a = !q.take()
+          val b = !join
+          Tuple2(succeed, setOf(a, b))
+        }.equalUnderTheLaw(IO.just(Tuple2(true, setOf(1, 2))))
+      }
+
+      "$label - offerAll blocks when values not  taken" {
+        IO.fx {
+          val q = !queue(1)
+          val start = !effect { System.currentTimeMillis() }
+          val res = !q.offerAll(1, 2, 3).map { Some(it) }
+            .waitFor(100.milliseconds, default = just(None))
+
+          val elapsed = !effect { System.currentTimeMillis() - start }
+          !effect { res shouldBe None }
+          !effect { (elapsed >= 100) shouldBe true }
+        }.equalUnderTheLaw(IO.unit)
+      }
+
+      // offerAll(fa).fork() + offerAll(fb).fork() <==> queue(fa + fb) OR queue(fb + fa)
+      "$label - offerAll is atomic" {
+        forAll(Gen.nonEmptyList(Gen.int()), Gen.nonEmptyList(Gen.int())) { fa, fb ->
+          IO.fx {
+            val q = !queue(fa.size + fb.size)
+            !q.offerAll(fa.toList()).fork()
+            !q.offerAll(fb.toList()).fork()
+
+            !IO.sleep(50.milliseconds)
+
+            val res = !q.takeAll()
+            res == (fa.toList() + fb.toList()) || res == (fb.toList() + fa.toList())
+          }.equalUnderTheLaw(IO.just(true))
         }
       }
 
@@ -446,6 +509,27 @@ class QueueTest : UnitSpec() {
           val r3 = !q.take()
 
           !effect { setOf(r1, r3) shouldBe setOf(1, 3) }
+        }.equalUnderTheLaw(IO.unit, EQ())
+      }
+
+      // OfferAll only gets scheduled for Bounded Queues, others apply strategy.
+      "$label - offerAll is cancelable" {
+        IO.fx {
+          val q = !queue(1)
+          !q.offer(0)
+          !q.offer(1).fork()
+          val p2 = !q.offerAll(2, 3).fork()
+          !q.offer(4).fork()
+
+          !IO.sleep(10.milliseconds) // Give put callbacks a chance to register
+
+          !p2.cancel()
+
+          !q.take()
+          val r1 = !q.take()
+          val r3 = !q.take()
+
+          !effect { setOf(r1, r3) shouldBe setOf(1, 4) }
         }.equalUnderTheLaw(IO.unit, EQ())
       }
 
@@ -539,7 +623,7 @@ class QueueTest : UnitSpec() {
       }
 
       "$label - tryOfferAll under capacity" {
-        forAll(Gen.list(Gen.int()).filter { it.size <= 100 },Gen.int().filter { it > 100 }) { l, capacity->
+        forAll(Gen.list(Gen.int()).filter { it.size <= 100 }, Gen.int().filter { it > 100 }) { l, capacity ->
           IO.fx {
             val q = !queue(capacity)
             val succeed = !q.tryOfferAll(l)
@@ -610,7 +694,7 @@ class QueueTest : UnitSpec() {
       }
 
       "$label - tryOfferAll under capacity" {
-        forAll(Gen.list(Gen.int()).filter { it.size <= 100 },Gen.int().filter { it > 100 }) { l, capacity->
+        forAll(Gen.list(Gen.int()).filter { it.size <= 100 }, Gen.int().filter { it > 100 }) { l, capacity ->
           IO.fx {
             val q = !queue(capacity)
             val succeed = !q.tryOfferAll(l)
