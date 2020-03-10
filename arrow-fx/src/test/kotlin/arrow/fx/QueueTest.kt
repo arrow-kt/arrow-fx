@@ -6,7 +6,6 @@ import arrow.core.Some
 import arrow.core.Tuple2
 import arrow.core.Tuple3
 import arrow.core.Right
-import arrow.core.Tuple4
 import arrow.core.extensions.list.traverse.traverse
 import arrow.core.extensions.nonemptylist.traverse.traverse
 import arrow.core.fix
@@ -57,6 +56,21 @@ class QueueTest : UnitSpec() {
         }
       }
 
+      "$label - queue can be filled at once over capacity with takers" {
+        forAll(Gen.nonEmptyList(Gen.int())) { l ->
+          IO.fx {
+            val q = !queue(l.size)
+            val (join, _) = !q.take().fork()
+            !IO.sleep(50.milliseconds) // Registered first, should receive first element of `tryOfferAll`
+
+            val succeed = !q.tryOfferAll(listOf(500) + l.toList())
+            val res = !q.takeAll()
+            val head = !join
+            Tuple3(succeed, res, head)
+          }.equalUnderTheLaw(IO.just(Tuple3(true, l.toList(), 500)))
+        }
+      }
+
       "$label - tryOfferAll under capacity" {
         forAll(
           Gen.list(Gen.int()).filter { it.size <= 100 },
@@ -68,21 +82,6 @@ class QueueTest : UnitSpec() {
             val all = !q.takeAll()
             Tuple2(succeed, all)
           }.equalUnderTheLaw(IO.just(Tuple2(true, l)))
-        }
-      }
-
-      "$label - queue can be filled at once over capacity with takers" {
-        forAll(Gen.nonEmptyList(Gen.int())) { l ->
-          IO.fx {
-            val q = !queue(l.size)
-            val (join, _) = !q.take().fork()
-            !IO.sleep(50.milliseconds)
-
-            val succeed = !q.tryOfferAll(listOf(500) + l.toList())
-            val res = !q.takeAll()
-            val head = !join
-            Tuple3(succeed, res, head)
-          }.equalUnderTheLaw(IO.just(Tuple3(true, l.toList(), 500)))
         }
       }
 
@@ -198,7 +197,7 @@ class QueueTest : UnitSpec() {
         }
       }
 
-      "$label - multiple peek calls on an empty queue all complete with the first value is received" {
+      "$label - multiple peek calls oofferAll is cancelablen an empty queue all complete with the first value is received" {
         forAll(Gen.int()) { i ->
           IO.fx {
             val q = !queue(1)
@@ -226,13 +225,11 @@ class QueueTest : UnitSpec() {
         forAll(Gen.int()) { i ->
           IO.fx {
             val q = !queue(10)
-            val empty = !q.peekAll()
             !q.offer(i)
-            val nonEmpty = !q.peekAll()
             val peeked = !q.peek()
-            val nonEmpty2 = !q.peekAll()
-            Tuple4(empty, nonEmpty, peeked, nonEmpty2)
-          }.equalUnderTheLaw(IO.just(Tuple4(emptyList(), listOf(i), i, listOf(i))))
+            val took = !q.takeAll()
+            Tuple2(peeked, took)
+          }.equalUnderTheLaw(IO.just(Tuple2(i, listOf(i))))
         }
       }
 
@@ -386,6 +383,18 @@ class QueueTest : UnitSpec() {
           }.equalUnderTheLaw(IO.just(Tuple2(false, emptyList())))
         }
       }
+
+      "$label - can take and offer at capacity" {
+        IO.fx {
+          val q = !queue(1)
+          val (join, _) = !q.take().fork()
+          !IO.sleep(250.milliseconds)
+          val succeed = !q.tryOfferAll(1, 2)
+          val a = !q.take()
+          val b = !join
+          Tuple2(succeed, setOf(a, b))
+        }.equalUnderTheLaw(IO.just(Tuple2(true, setOf(1, 2))))
+      }
     }
 
     fun boundedStrategyTests(
@@ -472,8 +481,12 @@ class QueueTest : UnitSpec() {
         }
       }
 
-      "$label - takeAll takes outstanding  offers" {
-        forAll(50, Gen.nonEmptyList(Gen.int()).filter { it.size in 51..100 }, Gen.choose(1, 50)) { l, capacity ->
+      // To test outstanding offers, we need to `offer` more elements to the queue than we have capacity
+      "$label - takeAll takes all values, including outstanding offers" {
+        forAll(50,
+          Gen.nonEmptyList(Gen.int()).filter { it.size in 51..100 },
+          Gen.choose(1, 50)
+        ) { l, capacity ->
           IO.fx {
             val q = !queue(capacity)
             !l.parTraverse(NonEmptyList.traverse(), q::offer).fork()
@@ -486,8 +499,12 @@ class QueueTest : UnitSpec() {
         }
       }
 
-      "$label - peekAll takes outstanding offers" {
-        forAll(50, Gen.nonEmptyList(Gen.int()).filter { it.size in 51..100 }, Gen.choose(1, 50)) { l, capacity ->
+      // To test outstanding offers, we need to `offer` more elements to the queue than we have capacity
+      "$label - peekAll reads all values, including outstanding offers" {
+        forAll(50,
+          Gen.nonEmptyList(Gen.int()).filter { it.size in 51..100 },
+          Gen.choose(1, 50)
+        ) { l, capacity ->
           IO.fx {
             val q = !queue(capacity)
             !l.parTraverse(NonEmptyList.traverse(), q::offer).fork()
@@ -616,18 +633,6 @@ class QueueTest : UnitSpec() {
         )
       }
 
-      "$label - can take and offer at capacity" {
-        IO.fx {
-          val q = !queue(1)
-          val (join, _) = !q.take().fork()
-          !IO.sleep(250.milliseconds)
-          val succeed = !q.tryOfferAll(1, 2)
-          val a = !q.take()
-          val b = !join
-          Tuple2(succeed, setOf(a, b))
-        }.equalUnderTheLaw(IO.just(Tuple2(true, setOf(1, 2))))
-      }
-
       "$label - removes first element after offering to a queue at capacity" {
         forAll(Gen.int(), Gen.nonEmptyList(Gen.int())) { x, xs ->
           IO.fx {
@@ -653,18 +658,6 @@ class QueueTest : UnitSpec() {
           { err -> err.shouldBeInstanceOf<IllegalArgumentException>() },
           { fail("Expected Left<IllegalArgumentException>") }
         )
-      }
-
-      "$label - can take and offer at capacity" {
-        IO.fx {
-          val q = !queue(1)
-          val (join, _) = !q.take().fork()
-          !IO.sleep(250.milliseconds)
-          val succeed = !q.tryOfferAll(1, 2)
-          val a = !q.take()
-          val b = !join
-          Tuple2(succeed, setOf(a, b))
-        }.equalUnderTheLaw(IO.just(Tuple2(true, setOf(1, 2))))
       }
 
       "$label - drops elements offered to a queue at capacity" {

@@ -71,9 +71,10 @@ internal class ConcurrentQueue<F, A> internal constructor(
     defer { unsafePeekAll() }
 
   /**
-   * Waits until the queue is shutdown.
-   * The `IO` returned by this method will not resume until the queue has been shutdown.
-   * If the queue is already shutdown, the `IO` will resume right away.
+   * Semantically blocks until the queue is shutdown.
+   *
+   * The `F` returned by this method will not resume until the queue has been shutdown.
+   * If the queue is already shutdown, `F` will resume right away.
    */
   override fun awaitShutdown(): Kind<F, Unit> =
     CF.cancellableF(::unsafeRegisterAwaitShutdown)
@@ -141,7 +142,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
       is State.Surplus -> {
         val id = Token()
         val newMap = current.offers + Pair(id, Tuple2(a, onPut))
-        if (state.compareAndSet(current, State.Surplus(current.values, newMap, current.shutdownHook))) just(later { unsafeCancelOffer(id) })
+        if (state.compareAndSet(current, State.Surplus(current.values, newMap, current.shutdownHook))) just(later { unsafeCancelOffer(listOf(id)) })
         else unsafeOffer(a, onPut)
       }
 
@@ -188,7 +189,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
 
         val update: State<F, A> = State.Surplus(current.values, newMap, current.shutdownHook)
 
-        if (state.compareAndSet(current, update)) just(later { unsafeCancelOffer(id) })
+        if (state.compareAndSet(current, update)) just(later { unsafeCancelOffer(tokens + id) })
         else unsafeOfferAll(a, onPut)
       }
 
@@ -229,12 +230,12 @@ internal class ConcurrentQueue<F, A> internal constructor(
       }
     }
 
-  private tailrec fun unsafeCancelOffer(id: Token): Unit =
+  private tailrec fun unsafeCancelOffer(ids: List<Token>): Unit =
     when (val current = state.value) {
       is State.Surplus -> {
-        val update = current.copy(offers = current.offers - id)
+        val update = current.copy(offers = current.offers - ids)
         if (state.compareAndSet(current, update)) Unit
-        else unsafeCancelOffer(id)
+        else unsafeCancelOffer(ids)
       }
       else -> Unit
     }
