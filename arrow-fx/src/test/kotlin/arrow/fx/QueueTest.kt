@@ -24,7 +24,6 @@ import io.kotlintest.fail
 import io.kotlintest.matchers.types.shouldBeInstanceOf
 import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll
-import io.kotlintest.shouldBe
 import kotlin.coroutines.CoroutineContext
 
 class QueueTest : UnitSpec() {
@@ -42,8 +41,7 @@ class QueueTest : UnitSpec() {
           IO.fx {
             val q = !queue(l.size)
             !l.traverse(IO.applicative(), q::offer)
-            val nl = !(1..l.size).toList().traverse(IO.applicative()) { q.take() }
-            nl.fix()
+            !(1..l.size).toList().traverse(IO.applicative()) { q.take() }
           }.equalUnderTheLaw(IO.just(l.toList()))
         }
       }
@@ -59,14 +57,32 @@ class QueueTest : UnitSpec() {
         }
       }
 
+      "$label - tryOfferAll under capacity" {
+        forAll(
+          Gen.list(Gen.int()).filter { it.size <= 100 },
+          Gen.int().filter { it > 100 }
+        ) { l, capacity ->
+          IO.fx {
+            val q = !queue(capacity)
+            val succeed = !q.tryOfferAll(l)
+            val all = !q.takeAll()
+            Tuple2(succeed, all)
+          }.equalUnderTheLaw(IO.just(Tuple2(true, l)))
+        }
+      }
+
       "$label - queue can be filled at once over capacity with takers" {
         forAll(Gen.nonEmptyList(Gen.int())) { l ->
           IO.fx {
             val q = !queue(l.size)
-            val succeed = !q.tryOfferAll(l.toList())
+            val (join, _) = !q.take().fork()
+            !IO.sleep(50.milliseconds)
+
+            val succeed = !q.tryOfferAll(listOf(500) + l.toList())
             val res = !q.takeAll()
-            Tuple2(succeed, res)
-          }.equalUnderTheLaw(IO.just(Tuple2(true, l.toList())))
+            val head = !join
+            Tuple3(succeed, res, head)
+          }.equalUnderTheLaw(IO.just(Tuple3(true, l.toList(), 500)))
         }
       }
 
@@ -75,51 +91,40 @@ class QueueTest : UnitSpec() {
           IO.fx {
             val q = !queue(l.size)
             !l.traverse(IO.applicative(), q::offer)
-            !q.takeAll()
-          }.equalUnderTheLaw(IO.just(l.toList()), EQ())
+            val res = !q.takeAll()
+            val after = !q.takeAll()
+            Tuple2(res, after)
+          }.equalUnderTheLaw(IO.just(Tuple2(l.toList(), emptyList())))
         }
       }
 
-      "$label - peekAll takes all values from a Queue" {
+      "$label - peekAll reads all values from a Queue without removing them" {
         forAll(Gen.nonEmptyList(Gen.int())) { l ->
           IO.fx {
             val q = !queue(l.size)
             !l.traverse(IO.applicative(), q::offer)
-            !q.peekAll()
-          }.equalUnderTheLaw(IO.just(l.toList()), EQ())
+            val res = !q.peekAll()
+            val after = !q.peekAll()
+            Tuple2(res, after)
+          }.equalUnderTheLaw(IO.just(Tuple2(l.toList(), l.toList())))
         }
       }
 
       "$label - empty queue takeAll is empty" {
-        forAll(Gen.positiveIntegers()) { n ->
+        forAll(Gen.positiveIntegers()) { capacity ->
           IO.fx {
-            val q = !queue(n)
+            val q = !queue(capacity)
             !q.takeAll()
-          }.equalUnderTheLaw(IO.just(emptyList()), EQ())
+          }.equalUnderTheLaw(IO.just(emptyList()))
         }
       }
 
       "$label - empty queue peekAll is empty" {
-        forAll(Gen.positiveIntegers()) { n ->
+        forAll(Gen.positiveIntegers()) { capacity ->
           IO.fx {
-            val q = !queue(n)
+            val q = !queue(capacity)
             !q.peekAll()
-          }.equalUnderTheLaw(IO.just(emptyList()), EQ())
-        }
-      }
-
-      "$label - offer and take a number of values in the same order" {
-        forAll(Gen.tuple3(Gen.int(), Gen.int(), Gen.int())) { t ->
-          IO.fx {
-            val q = !queue(3)
-            !q.offer(t.a)
-            !q.offer(t.b)
-            !q.offer(t.c)
-            val first = !q.take()
-            val second = !q.take()
-            val third = !q.take()
-            Tuple3(first, second, third)
-          }.equalUnderTheLaw(IO.just(t), EQ())
+          }.equalUnderTheLaw(IO.just(emptyList()))
         }
       }
 
@@ -130,9 +135,8 @@ class QueueTest : UnitSpec() {
           val received = !wontComplete.map { Some(it) }
             .waitFor(100.milliseconds, default = just(None))
           val elapsed = !effect { System.currentTimeMillis() - start }
-          !effect { received shouldBe None }
-          !effect { (elapsed >= 100) shouldBe true }
-        }.equalUnderTheLaw(IO.unit, EQ())
+          Tuple2(received, (elapsed >= 100))
+        }.equalUnderTheLaw(IO.just(Tuple2(None, true)))
       }
 
       "$label - suspended take calls on an empty queue complete when offer calls made to queue" {
@@ -142,7 +146,7 @@ class QueueTest : UnitSpec() {
             val first = !q.take().fork(ctx)
             !q.offer(i)
             !first.join()
-          }.equalUnderTheLaw(IO.just(i), EQ())
+          }.equalUnderTheLaw(IO.just(i))
         }
       }
 
@@ -160,19 +164,16 @@ class QueueTest : UnitSpec() {
             val secondValue = !second.join()
             val thirdValue = !third.join()
             setOf(firstValue, secondValue, thirdValue)
-          }.equalUnderTheLaw(IO.just(setOf(t.a, t.b, t.c)), EQ())
+          }.equalUnderTheLaw(IO.just(setOf(t.a, t.b, t.c)))
         }
       }
 
       "$label - taking from a shutdown queue creates a QueueShutdown error" {
-        forAll(Gen.int()) { i ->
-          IO.fx {
-            val q = !queue(10)
-            !q.offer(i)
-            !q.shutdown()
-            !q.take()
-          }.equalUnderTheLaw(IO.raiseError(QueueShutdown), EQ())
-        }
+        IO.fx {
+          val q = !queue(10)
+          !q.shutdown()
+          !q.take()
+        }.equalUnderTheLaw(IO.raiseError(QueueShutdown))
       }
 
       "$label - time out peeking from an empty queue" {
@@ -182,9 +183,8 @@ class QueueTest : UnitSpec() {
           val received = !wontComplete.map { Some(it) }
             .waitFor(100.milliseconds, default = just(None))
           val elapsed = !effect { System.currentTimeMillis() - start }
-          !effect { received shouldBe None }
-          !effect { (elapsed >= 100) shouldBe true }
-        }.equalUnderTheLaw(IO.unit, EQ())
+          Tuple2(received, (elapsed >= 100))
+        }.equalUnderTheLaw(IO.just(Tuple2(None, true)))
       }
 
       "$label - suspended peek calls on an empty queue complete when offer calls made to queue" {
@@ -194,8 +194,7 @@ class QueueTest : UnitSpec() {
             val first = !q.peek().fork(ctx)
             !q.offer(i)
             val res = !first.join()
-            !effect { res shouldBe i }
-          }.equalUnderTheLaw(IO.unit, EQ())
+          }.equalUnderTheLaw(IO.just(i))
         }
       }
 
@@ -210,33 +209,30 @@ class QueueTest : UnitSpec() {
             val firstValue = !first.join()
             val secondValue = !second.join()
             val thirdValue = !third.join()
-            !effect { setOf(firstValue, secondValue, thirdValue) shouldBe setOf(i, i, i) }
-          }.equalUnderTheLaw(IO.unit, EQ())
+            setOf(firstValue, secondValue, thirdValue)
+          }.equalUnderTheLaw(IO.just(setOf(i, i, i)))
         }
       }
 
       "$label - peeking a shutdown queue creates a QueueShutdown error" {
-        forAll(Gen.int()) { i ->
-          IO.fx {
-            val q = !queue(10)
-            !q.offer(i)
-            !q.shutdown()
-            !q.peek()
-          }.equalUnderTheLaw(IO.raiseError(QueueShutdown), EQ())
-        }
+        IO.fx {
+          val q = !queue(10)
+          !q.shutdown()
+          !q.peek()
+        }.equalUnderTheLaw(IO.raiseError(QueueShutdown))
       }
 
       "$label - peek does not remove value from Queue" {
         forAll(Gen.int()) { i ->
           IO.fx {
             val q = !queue(10)
-            val size1 = !q.size()
+            val empty = !q.peekAll()
             !q.offer(i)
-            val size2 = !q.size()
+            val nonEmpty = !q.peekAll()
             val peeked = !q.peek()
-            val size3 = !q.size()
-            !effect { Tuple4(size1, size2, peeked, size3) shouldBe Tuple4(0, 1, i, 1) }
-          }.equalUnderTheLaw(IO.unit, EQ())
+            val nonEmpty2 = !q.peekAll()
+            Tuple4(empty, nonEmpty, peeked, nonEmpty2)
+          }.equalUnderTheLaw(IO.just(Tuple4(emptyList(), listOf(i), i, listOf(i))))
         }
       }
 
@@ -246,7 +242,7 @@ class QueueTest : UnitSpec() {
             val q = !queue(10)
             !q.shutdown()
             !q.offer(i)
-          }.equalUnderTheLaw(IO.raiseError(QueueShutdown), EQ())
+          }.equalUnderTheLaw(IO.raiseError(QueueShutdown))
         }
       }
 
@@ -256,7 +252,7 @@ class QueueTest : UnitSpec() {
           val t = !q.take().fork(ctx)
           !q.shutdown()
           !t.join()
-        }.equalUnderTheLaw(IO.raiseError(QueueShutdown), EQ())
+        }.equalUnderTheLaw(IO.raiseError(QueueShutdown))
       }
 
       "$label - create a shutdown hook completing a promise, then shutdown the queue, the promise should be completed" {
@@ -264,9 +260,11 @@ class QueueTest : UnitSpec() {
           val q = !queue(10)
           val p = !Promise<ForIO, Boolean>(IO.concurrent())
           !(q.awaitShutdown().followedBy(p.complete(true))).fork()
+          val completed = !p.tryGet()
           !q.shutdown()
-          !p.get()
-        }.equalUnderTheLaw(IO.just(true), EQ())
+          val res = !p.get()
+          Tuple2(completed, res)
+        }.equalUnderTheLaw(IO.just(Tuple2(None, true)))
       }
 
       "$label - create a shutdown hook completing a promise twice, then shutdown the queue, both promises should be completed" {
@@ -276,9 +274,12 @@ class QueueTest : UnitSpec() {
           val p2 = !Promise<ForIO, Boolean>(IO.concurrent())
           !(q.awaitShutdown().followedBy(p1.complete(true))).fork()
           !(q.awaitShutdown().followedBy(p2.complete(true))).fork()
+          val completed = !p1.tryGet()
+          val completed2 = !p2.tryGet()
           !q.shutdown()
-          !mapN(p1.get(), p2.get()) { (p1, p2) -> p1 && p2 }
-        }.equalUnderTheLaw(IO.just(true), EQ())
+          val p = !mapN(p1.get(), p2.get()) { (p1, p2) -> p1 && p2 }
+          Tuple3(completed, completed2, p)
+        }.equalUnderTheLaw(IO.just(Tuple3(None, None, true)))
       }
 
       "$label - shut it down, create a shutdown hook completing a promise, the promise should be completed immediately" {
@@ -288,7 +289,7 @@ class QueueTest : UnitSpec() {
           val p = !Promise<ForIO, Boolean>(IO.concurrent())
           !(q.awaitShutdown().followedBy(p.complete(true))).fork()
           !p.get()
-        }.equalUnderTheLaw(IO.just(true), EQ())
+        }.equalUnderTheLaw(IO.just(true))
       }
 
       "$label - tryOffer on a shutdown Queue returns false" {
@@ -296,9 +297,8 @@ class QueueTest : UnitSpec() {
           IO.fx {
             val q = !queue(10)
             !q.shutdown()
-            val offered = !q.tryOffer(i)
-            !effect { offered shouldBe false }
-          }.equalUnderTheLaw(IO.unit, EQ())
+            !q.tryOffer(i)
+          }.equalUnderTheLaw(IO.just(false))
         }
       }
 
@@ -306,34 +306,30 @@ class QueueTest : UnitSpec() {
         IO.fx {
           val q = !queue(10)
           !q.shutdown()
-          val took = !q.tryTake()
-          !effect { took shouldBe None }
-        }.equalUnderTheLaw(IO.unit, EQ())
+          !q.tryTake()
+        }.equalUnderTheLaw(IO.just(None))
       }
 
       "$label - tryPeek on a shutdown Queue returns false" {
         IO.fx {
           val q = !queue(10)
           !q.shutdown()
-          val peeked = !q.tryPeek()
-          !effect { peeked shouldBe None }
-        }.equalUnderTheLaw(IO.unit, EQ())
+          !q.tryPeek()
+        }.equalUnderTheLaw(IO.just(None))
       }
 
-      "$label - tryTake on an empty Queue returns false" {
+      "$label - tryTake on an empty Queue returns None" {
         IO.fx {
           val q = !queue(10)
-          val took = !q.tryTake()
-          !effect { took shouldBe None }
-        }.equalUnderTheLaw(IO.unit, EQ())
+          !q.tryTake()
+        }.equalUnderTheLaw(IO.just(None))
       }
 
-      "$label - tryPeek on an empty Queue returns false" {
+      "$label - tryPeek on an empty Queue returns None" {
         IO.fx {
           val q = !queue(10)
-          val peeked = !q.tryPeek()
-          !effect { peeked shouldBe None }
-        }.equalUnderTheLaw(IO.unit, EQ())
+          !q.tryPeek()
+        }.equalUnderTheLaw(IO.just(None))
       }
 
       "$label - take is cancelable" {
@@ -342,14 +338,15 @@ class QueueTest : UnitSpec() {
           val t1 = !q.take().fork()
           val t2 = !q.take().fork()
           val t3 = !q.take().fork()
-          !IO.sleep(10.milliseconds) // Give take callbacks a chance to register
+          !IO.sleep(25.milliseconds) // Give take callbacks a chance to register
           !t2.cancel()
           !q.offer(1)
           !q.offer(3)
           val r1 = !t1.join()
           val r3 = !t3.join()
-          !effect { setOf(r1, r3) shouldBe setOf(1, 3) }
-        }.equalUnderTheLaw(IO.unit, EQ())
+          val size = !q.size()
+          Tuple2(setOf(r1, r3), size)
+        }.equalUnderTheLaw(IO.just(Tuple2(setOf(1, 3), 0)))
       }
 
       "$label - peek is cancelable" {
@@ -361,9 +358,33 @@ class QueueTest : UnitSpec() {
           !fiber.cancel()
           !q.offer(10)
           val fallback = sleep(200.milliseconds).followedBy(IO.just(0))
-          val res = !IO.raceN(finished.get(), fallback)
-          !effect { res shouldBe Right(0) }
-        }.equalUnderTheLaw(IO.unit, EQ())
+          !IO.raceN(finished.get(), fallback)
+        }.equalUnderTheLaw(IO.just(Right(0)))
+      }
+    }
+
+    fun strategyAtCapacityTests(
+      label: String,
+      ctx: CoroutineContext = IO.dispatchers().default(),
+      queue: (Int) -> IO<Queue<ForIO, Int>>
+    ) {
+      "$label - tryOffer returns false over capacity" {
+        IO.fx {
+          val q = !queue(1)
+          !q.offer(1)
+          !q.tryOffer(2)
+        }.equalUnderTheLaw(IO.just(false))
+      }
+
+      "$label - tryOfferAll over capacity" {
+        forAll(Gen.list(Gen.int()).filter { it.size > 1 }) { l ->
+          IO.fx {
+            val q = !queue(1)
+            val succeed = !q.tryOfferAll(l)
+            val res = !q.peekAll()
+            Tuple2(succeed, res)
+          }.equalUnderTheLaw(IO.just(Tuple2(false, emptyList())))
+        }
       }
     }
 
@@ -373,6 +394,7 @@ class QueueTest : UnitSpec() {
     ) {
       val label = "BoundedQueue"
       allStrategyTests(label, ctx, queue)
+      strategyAtCapacityTests(label, ctx, queue)
 
       "$label - time out offering to a queue at capacity" {
         IO.fx {
@@ -383,9 +405,8 @@ class QueueTest : UnitSpec() {
           val received = !wontComplete.map { Some(it) }
             .waitFor(100.milliseconds, default = just(None))
           val elapsed = !effect { System.currentTimeMillis() - start }
-          !effect { received shouldBe None }
-          !effect { (elapsed >= 100) shouldBe true }
-        }.equalUnderTheLaw(IO.unit)
+          Tuple2(received, (elapsed >= 100))
+        }.equalUnderTheLaw(IO.just(Tuple2(None, true)))
       }
 
       "$label - time out offering multiple values to a queue at capacity" {
@@ -396,9 +417,8 @@ class QueueTest : UnitSpec() {
           val received = !wontComplete.map { Some(it) }
             .waitFor(100.milliseconds, default = just(None))
           val elapsed = !effect { System.currentTimeMillis() - start }
-          !effect { received shouldBe None }
-          !effect { (elapsed >= 100) shouldBe true }
-        }.equalUnderTheLaw(IO.unit)
+          Tuple2(received, (elapsed >= 100))
+        }.equalUnderTheLaw(IO.just(Tuple2(None, true)))
       }
 
       "$label - queue cannot be filled at once without enough capacity" {
@@ -408,7 +428,7 @@ class QueueTest : UnitSpec() {
             val succeed = !q.tryOfferAll(l.toList() + 1)
             val res = !q.takeAll()
             Tuple2(succeed, res)
-          }.equalUnderTheLaw(IO.just(Tuple2(false, emptyList<Int>())))
+          }.equalUnderTheLaw(IO.just(Tuple2(false, emptyList())))
         }
       }
 
@@ -436,19 +456,6 @@ class QueueTest : UnitSpec() {
         }.equalUnderTheLaw(IO.just(Tuple2(true, setOf(1, 2))))
       }
 
-      "$label - offerAll blocks when values not  taken" {
-        IO.fx {
-          val q = !queue(1)
-          val start = !effect { System.currentTimeMillis() }
-          val res = !q.offerAll(1, 2, 3).map { Some(it) }
-            .waitFor(100.milliseconds, default = just(None))
-
-          val elapsed = !effect { System.currentTimeMillis() - start }
-          !effect { res shouldBe None }
-          !effect { (elapsed >= 100) shouldBe true }
-        }.equalUnderTheLaw(IO.unit)
-      }
-
       // offerAll(fa).fork() + offerAll(fb).fork() <==> queue(fa + fb) OR queue(fb + fa)
       "$label - offerAll is atomic" {
         forAll(Gen.nonEmptyList(Gen.int()), Gen.nonEmptyList(Gen.int())) { fa, fb ->
@@ -466,28 +473,30 @@ class QueueTest : UnitSpec() {
       }
 
       "$label - takeAll takes outstanding  offers" {
-        forAll(50, Gen.nonEmptyList(Gen.int()).filter { it.size <= 100 }, Gen.choose(1, 100)) { l, capacity ->
+        forAll(50, Gen.nonEmptyList(Gen.int()).filter { it.size in 51..100 }, Gen.choose(1, 50)) { l, capacity ->
           IO.fx {
             val q = !queue(capacity)
             !l.parTraverse(NonEmptyList.traverse(), q::offer).fork()
             !IO.sleep(50.milliseconds) // Give take callbacks a chance to register
 
-            val l = !q.takeAll()
-            l.toSet()
-          }.equalUnderTheLaw(IO.just(l.toList().toSet()))
+            val res = !q.takeAll().map(Iterable<Int>::toSet)
+            val after = !q.peekAll()
+            Tuple2(res, after)
+          }.equalUnderTheLaw(IO.just(Tuple2(l.toList().toSet(), emptyList())))
         }
       }
 
-      "$label - peekAll takes outstanding  offers" {
-        forAll(50, Gen.nonEmptyList(Gen.int()).filter { it.size <= 100 }, Gen.choose(1, 100)) { l, capacity ->
+      "$label - peekAll takes outstanding offers" {
+        forAll(50, Gen.nonEmptyList(Gen.int()).filter { it.size in 51..100 }, Gen.choose(1, 50)) { l, capacity ->
           IO.fx {
             val q = !queue(capacity)
             !l.parTraverse(NonEmptyList.traverse(), q::offer).fork()
             !IO.sleep(50.milliseconds) // Give take callbacks a chance to register
 
-            val l = !q.peekAll()
-            l.toSet()
-          }.equalUnderTheLaw(IO.just(l.toList().toSet()))
+            val res = !q.peekAll().map(Iterable<Int>::toSet)
+            val after = !q.peekAll().map(Iterable<Int>::toSet)
+            Tuple2(res, after)
+          }.equalUnderTheLaw(IO.just(Tuple2(l.toList().toSet(), l.toList().toSet())))
         }
       }
 
@@ -508,8 +517,8 @@ class QueueTest : UnitSpec() {
           val r1 = !q.take()
           val r3 = !q.take()
 
-          !effect { setOf(r1, r3) shouldBe setOf(1, 3) }
-        }.equalUnderTheLaw(IO.unit, EQ())
+          setOf(r1, r3)
+        }.equalUnderTheLaw(IO.just(setOf(1, 3)))
       }
 
       // OfferAll only gets scheduled for Bounded Queues, others apply strategy.
@@ -529,17 +538,16 @@ class QueueTest : UnitSpec() {
           val r1 = !q.take()
           val r3 = !q.take()
 
-          !effect { setOf(r1, r3) shouldBe setOf(1, 4) }
-        }.equalUnderTheLaw(IO.unit, EQ())
+          setOf(r1, r3)
+        }.equalUnderTheLaw(IO.just(setOf(1, 4)))
       }
 
       "$label - tryOffer returns false at capacity" {
         IO.fx {
           val q = !queue(1)
           !q.offer(1)
-          val offered = !q.tryOffer(2)
-          !effect { offered shouldBe false }
-        }.equalUnderTheLaw(IO.unit, EQ())
+          !q.tryOffer(2)
+        }.equalUnderTheLaw(IO.just(false))
       }
 
       "$label - capacity must be a positive integer" {
@@ -549,16 +557,17 @@ class QueueTest : UnitSpec() {
         )
       }
 
-      "$label - suspended offers called on an full queue complete when take calls made to queue" {
+      "$label - suspended offers called on a full queue complete when take calls made to queue" {
         forAll(Gen.tuple2(Gen.int(), Gen.int())) { t ->
           IO.fx {
             val q = !queue(1)
             !q.offer(t.a)
-            !q.offer(t.b).fork(ctx)
+            val (join, _) = !q.offer(t.b).fork(ctx)
             val first = !q.take()
             val second = !q.take()
+            !join // Check if fiber completed
             Tuple2(first, second)
-          }.equalUnderTheLaw(IO.just(t), EQ())
+          }.equalUnderTheLaw(IO.just(t))
         }
       }
 
@@ -567,13 +576,15 @@ class QueueTest : UnitSpec() {
           IO.fx {
             val q = !queue(1)
             !q.offer(t.a)
-            !q.offer(t.b).fork(ctx)
-            !q.offer(t.c).fork(ctx)
+            val (join, _) = !q.offer(t.b).fork(ctx)
+            val (join2, _) = !q.offer(t.c).fork(ctx)
             val first = !q.take()
             val second = !q.take()
             val third = !q.take()
+            !join // Check if fiber completed
+            !join2 // Check if fiber completed
             setOf(first, second, third)
-          }.equalUnderTheLaw(IO.just(setOf(t.a, t.b, t.c)), EQ())
+          }.equalUnderTheLaw(IO.just(setOf(t.a, t.b, t.c)))
         }
       }
 
@@ -585,7 +596,7 @@ class QueueTest : UnitSpec() {
             val o = !q.offer(i).fork(ctx)
             !q.shutdown()
             !o.join()
-          }.equalUnderTheLaw(IO.raiseError(QueueShutdown), EQ())
+          }.equalUnderTheLaw(IO.raiseError(QueueShutdown))
         }
       }
     }
@@ -596,41 +607,13 @@ class QueueTest : UnitSpec() {
     ) {
       val label = "SlidingQueue"
       allStrategyTests(label, ctx, queue)
+      strategyAtCapacityTests(label, ctx, queue)
 
       "$label - capacity must be a positive integer" {
         queue(0).attempt().suspended().fold(
           { err -> err.shouldBeInstanceOf<IllegalArgumentException>() },
           { fail("Expected Left<IllegalArgumentException>") }
         )
-      }
-
-      "$label - tryOffer returns false at capacity" {
-        IO.fx {
-          val q = !queue(1)
-          !q.offer(1)
-          val offered = !q.tryOffer(2)
-          !effect { offered shouldBe false }
-        }.equalUnderTheLaw(IO.unit, EQ())
-      }
-
-      "$label - tryOfferAll over capacity" {
-        forAll(Gen.list(Gen.int()).filter { it.size > 1 }) { l ->
-          IO.fx {
-            val q = !queue(1)
-            !q.tryOfferAll(l)
-          }.equalUnderTheLaw(IO.just(false))
-        }
-      }
-
-      "$label - tryOfferAll under capacity" {
-        forAll(Gen.list(Gen.int()).filter { it.size <= 100 }, Gen.int().filter { it > 100 }) { l, capacity ->
-          IO.fx {
-            val q = !queue(capacity)
-            val succeed = !q.tryOfferAll(l)
-            val all = !q.takeAll()
-            Tuple2(succeed, all)
-          }.equalUnderTheLaw(IO.just(Tuple2(true, l)))
-        }
       }
 
       "$label - can take and offer at capacity" {
@@ -645,26 +628,14 @@ class QueueTest : UnitSpec() {
         }.equalUnderTheLaw(IO.just(Tuple2(true, setOf(1, 2))))
       }
 
-      "$label - queue cannot be filled at once without enough capacity" {
-        forAll(Gen.nonEmptyList(Gen.int())) { l ->
-          IO.fx {
-            val q = !queue(l.size)
-            val succeed = !q.tryOfferAll(l.toList() + 1)
-            val res = !q.takeAll()
-            Tuple2(succeed, res)
-          }.equalUnderTheLaw(IO.just(Tuple2(false, emptyList<Int>())))
-        }
-      }
-
       "$label - removes first element after offering to a queue at capacity" {
         forAll(Gen.int(), Gen.nonEmptyList(Gen.int())) { x, xs ->
           IO.fx {
             val q = !queue(xs.size)
             !q.offer(x)
-            !xs.traverse(IO.applicative(), q::offer)
-            val taken = !(1..xs.size).toList().traverse(IO.applicative()) { q.take() }
-            taken.fix()
-          }.equalUnderTheLaw(IO.just(xs.toList()), EQ())
+            !q.offerAll(xs.toList())
+            !q.takeAll()
+          }.equalUnderTheLaw(IO.just(xs.toList()))
         }
       }
     }
@@ -674,34 +645,14 @@ class QueueTest : UnitSpec() {
       queue: (Int) -> IO<Queue<ForIO, Int>>
     ) {
       val label = "DroppingQueue"
-
       allStrategyTests(label, ctx, queue)
+      strategyAtCapacityTests(label, ctx, queue)
 
       "$label - capacity must be a positive integer" {
         queue(0).attempt().suspended().fold(
           { err -> err.shouldBeInstanceOf<IllegalArgumentException>() },
           { fail("Expected Left<IllegalArgumentException>") }
         )
-      }
-
-      "$label - tryOfferAll over capacity" {
-        forAll(Gen.list(Gen.int()).filter { it.size > 1 }) { l ->
-          IO.fx {
-            val q = !queue(1)
-            !q.tryOfferAll(l)
-          }.equalUnderTheLaw(IO.just(false))
-        }
-      }
-
-      "$label - tryOfferAll under capacity" {
-        forAll(Gen.list(Gen.int()).filter { it.size <= 100 }, Gen.int().filter { it > 100 }) { l, capacity ->
-          IO.fx {
-            val q = !queue(capacity)
-            val succeed = !q.tryOfferAll(l)
-            val all = !q.takeAll()
-            Tuple2(succeed, all)
-          }.equalUnderTheLaw(IO.just(Tuple2(true, l)))
-        }
       }
 
       "$label - can take and offer at capacity" {
@@ -714,26 +665,6 @@ class QueueTest : UnitSpec() {
           val b = !join
           Tuple2(succeed, setOf(a, b))
         }.equalUnderTheLaw(IO.just(Tuple2(true, setOf(1, 2))))
-      }
-
-      "$label - queue cannot be filled at once without enough capacity" {
-        forAll(Gen.nonEmptyList(Gen.int())) { l ->
-          IO.fx {
-            val q = !queue(l.size)
-            val succeed = !q.tryOfferAll(l.toList() + 1)
-            val res = !q.takeAll()
-            Tuple2(succeed, res)
-          }.equalUnderTheLaw(IO.just(Tuple2(false, emptyList<Int>())))
-        }
-      }
-
-      "$label - tryOffer returns false at capacity" {
-        IO.fx {
-          val q = !queue(1)
-          !q.offer(1)
-          val offered = !q.tryOffer(5000)
-          !effect { offered shouldBe false }
-        }.equalUnderTheLaw(IO.unit, EQ())
       }
 
       "$label - drops elements offered to a queue at capacity" {
@@ -746,7 +677,7 @@ class QueueTest : UnitSpec() {
             !q.offer(x2)
             val taken2 = !q.take()
             taken.fix() + taken2
-          }.equalUnderTheLaw(IO.just(xs.toList() + x2), EQ())
+          }.equalUnderTheLaw(IO.just(xs.toList() + x2))
         }
       }
     }
