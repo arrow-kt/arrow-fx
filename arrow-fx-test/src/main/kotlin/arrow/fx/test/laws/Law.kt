@@ -1,4 +1,4 @@
-package arrow.test.laws
+package arrow.fx.test.laws
 
 import arrow.core.extensions.either.eq.eq
 import arrow.fx.IO
@@ -8,23 +8,16 @@ import arrow.fx.extensions.io.applicative.applicative
 import arrow.fx.extensions.io.concurrent.waitFor
 import arrow.fx.typeclasses.Duration
 import arrow.fx.typeclasses.seconds
-import arrow.test.generators.tuple2
-import arrow.test.generators.tuple3
-import arrow.test.generators.tuple4
-import arrow.test.generators.tuple5
+import arrow.core.test.generators.tuple2
+import arrow.core.test.generators.tuple3
+import arrow.core.test.generators.tuple4
+import arrow.core.test.generators.tuple5
 import arrow.typeclasses.Eq
 import io.kotlintest.Matcher
 import io.kotlintest.Result
-import io.kotlintest.TestContext
 import io.kotlintest.properties.Gen
 import io.kotlintest.should
 import io.kotlintest.shouldNot
-
-fun throwableEq() = Eq { a: Throwable, b ->
-  a::class == b::class && a.message == b.message
-}
-
-data class Law(val name: String, val test: suspend TestContext.() -> Unit)
 
 fun <A> A.equalUnderTheLaw(b: A, eq: Eq<A>): Boolean =
   shouldBeEq(b, eq).let { true }

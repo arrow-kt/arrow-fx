@@ -10,16 +10,16 @@ import arrow.core.Tuple4
 import arrow.core.extensions.list.traverse.traverse
 import arrow.core.extensions.nonemptylist.traverse.traverse
 import arrow.core.fix
+import arrow.core.test.UnitSpec
+import arrow.core.test.generators.nonEmptyList
+import arrow.core.test.generators.tuple2
+import arrow.core.test.generators.tuple3
+import arrow.fx.test.laws.equalUnderTheLaw
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.applicative.applicative
 import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.dispatchers.dispatchers
 import arrow.fx.typeclasses.milliseconds
-import arrow.test.UnitSpec
-import arrow.test.generators.nonEmptyList
-import arrow.test.generators.tuple2
-import arrow.test.generators.tuple3
-import arrow.test.laws.equalUnderTheLaw
 import io.kotlintest.fail
 import io.kotlintest.matchers.types.shouldBeInstanceOf
 import io.kotlintest.properties.Gen
@@ -193,7 +193,7 @@ class QueueTest : UnitSpec() {
             val q = !queue(3)
             val first = !q.peek().fork(ctx)
             !q.offer(i)
-            val res = !first.join()
+            !first.join()
           }.equalUnderTheLaw(IO.just(i))
         }
       }
