@@ -19,22 +19,22 @@ typealias QueuePartialOf<F> = Kind<ForQueue, F>
 inline fun <F, A> QueueOf<F, A>.fix(): Queue<F, A> =
   this as Queue<F, A>
 
-/** A polymoprhic effect typeclass that allows [Dequeue]'ing values from a [Queue]. */
+/** A polymorphic effect typeclass that allows [Dequeue]'ing values from a [Queue]. */
 interface Dequeue<F, A> {
 
   /**
-   * Take a value from the [Queue], or sementically blocks until a value becomes available.
+   * Take a value from the [Queue], or semantically blocks until a value becomes available.
    *
    * @see [peek] for a function that doesn't remove the value from the [Queue].
-   * @see [tryTake] for a function that does not sementically block but returns immediately with an [Option].
+   * @see [tryTake] for a function that does not semantically block but returns immediately with an [Option].
    */
   fun take(): Kind<F, A>
 
   /**
-   * Tries to take a value from the [Queue]. Returns immediately with either [None] or a value [Just].
+   * Tries to take a value from the [Queue]. Returns immediately with either [None] or a value [Some].
    *
-   * @see [take] for function that sementically blocks until a value becomes available.
-   * @see [tryPeek] for a function that sementically blocks until a value becomes available.
+   * @see [take] for function that semantically blocks until a value becomes available.
+   * @see [tryPeek] for a function that semantically blocks until a value becomes available.
    */
   fun tryTake(): Kind<F, Option<A>>
 
@@ -42,15 +42,15 @@ interface Dequeue<F, A> {
    * Peeks a value from the [Queue] or semantically blocks until one becomes available.
    * In contrast to [take], [peek] does not remove the value from the [Queue].
    *
-   * @see [tryPeek] for a function that does not sementically blocks but returns immediately with an [Option].
+   * @see [tryPeek] for a function that does not semantically blocks but returns immediately with an [Option].
    */
   fun peek(): Kind<F, A>
 
   /**
-   * Tries to peek a value from the [Queue]. Returns immediately with either [None] or a value [Just].
+   * Tries to peek a value from the [Queue]. Returns immediately with either [None] or a value [Some].
    * In contrast to [tryTake], [tryPeek] does not remove the value from the [Queue].
    *
-   * @see [peek] for a function that sementically blocks until a value becomes available.
+   * @see [peek] for a function that semantically blocks until a value becomes available.
    */
   fun tryPeek(): Kind<F, Option<A>>
 
@@ -67,13 +67,13 @@ interface Dequeue<F, A> {
   fun peekAll(): Kind<F, List<A>>
 }
 
-/** A polymoprhic effect typeclass that allows [Dequeue]'ing values from a [Queue]. */
+/** A polymorphic effect typeclass that allows [Enqueue]'ing values from a [Queue]. */
 interface Enqueue<F, A> {
 
   /**
    * Offers a value to the [Queue], and might behave differently depending on the [Queue.BackpressureStrategy].
    *
-   *  - Sementically blocks until room available in [Queue] for [Queue.BackpressureStrategy.Bounded]
+   *  - Semantically blocks until room available in [Queue] for [Queue.BackpressureStrategy.Bounded]
    *  - Returns immediately and slides values through the [Queue] for [Queue.BackpressureStrategy.Sliding]
    *  - Returns immediately and drops values from the [Queue] for [Queue.BackpressureStrategy.Dropping]
    *  - Returns immediately and always offers to the [Queue] for [Queue.BackpressureStrategy.Unbounded]
@@ -127,7 +127,7 @@ interface Queue<F, A> : QueueOf<F, A>, Dequeue<F, A>, Enqueue<F, A> {
   fun size(): Kind<F, Int>
 
   /**
-   * Sementically blocks until the [Queue] is [shutdown].
+   * Semantically blocks until the [Queue] is [shutdown].
    * Useful for registering hooks that need to be triggered when the [Queue] shuts down.
    */
   fun awaitShutdown(): Kind<F, Unit>
