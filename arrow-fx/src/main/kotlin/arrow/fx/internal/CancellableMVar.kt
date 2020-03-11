@@ -7,7 +7,6 @@ import arrow.core.Option
 import arrow.core.Right
 import arrow.core.Some
 import arrow.core.Tuple2
-import arrow.core.toT
 import arrow.fx.Listener
 
 import arrow.fx.MVar

@@ -237,7 +237,7 @@ class QueueTest : UnitSpec() {
           val t1 = !q.take().fork()
           val t2 = !q.take().fork()
           val t3 = !q.take().fork()
-          !IO.sleep(25.milliseconds) // Give take callbacks a chance to register
+          !IO.sleep(50.milliseconds) // Give take callbacks a chance to register
           !t2.cancel()
           !q.offer(1)
           !q.offer(3)
@@ -253,7 +253,7 @@ class QueueTest : UnitSpec() {
           val q = !queue(1)
           val finished = !Promise<Int>()
           val fiber = !q.peek().flatMap(finished::complete).fork()
-          !IO.sleep(100.milliseconds) // Give read callback a chance to register
+          !IO.sleep(50.milliseconds) // Give read callback a chance to register
           !fiber.cancel()
           !q.offer(10)
           val fallback = sleep(200.milliseconds).followedBy(IO.just(0))
@@ -306,7 +306,6 @@ class QueueTest : UnitSpec() {
           !q.peekAll()
         }.equalUnderTheLaw(IO.just(listOf(1)))
       }
-
     }
 
     fun strategyAtCapacityTests(
@@ -337,7 +336,7 @@ class QueueTest : UnitSpec() {
         IO.fx {
           val q = !queue(1)
           val (join, _) = !q.take().fork()
-          !IO.sleep(250.milliseconds)
+          !IO.sleep(50.milliseconds)
           val succeed = !q.tryOfferAll(1, 2)
           val a = !q.take()
           val b = !join
@@ -394,7 +393,7 @@ class QueueTest : UnitSpec() {
         IO.fx {
           val q = !queue(1)
           val (join, _) = !q.take().fork()
-          !IO.sleep(250.milliseconds)
+          !IO.sleep(50.milliseconds)
           !q.offerAll(1, 2)
           val a = !q.take()
           val b = !join
@@ -406,7 +405,7 @@ class QueueTest : UnitSpec() {
         IO.fx {
           val q = !queue(1)
           val (join, _) = !q.take().fork()
-          !IO.sleep(250.milliseconds)
+          !IO.sleep(50.milliseconds)
           val succeed = !q.tryOfferAll(1, 2)
           val a = !q.take()
           val b = !join
@@ -475,7 +474,7 @@ class QueueTest : UnitSpec() {
           val p2 = !q.offer(2).fork()
           !q.offer(3).fork()
 
-          !IO.sleep(10.milliseconds) // Give put callbacks a chance to register
+          !IO.sleep(50.milliseconds) // Give put callbacks a chance to register
 
           !p2.cancel()
 
@@ -496,7 +495,7 @@ class QueueTest : UnitSpec() {
           val p2 = !q.offerAll(2, 3).fork()
           !q.offer(4).fork()
 
-          !IO.sleep(10.milliseconds) // Give put callbacks a chance to register
+          !IO.sleep(50.milliseconds) // Give put callbacks a chance to register
 
           !p2.cancel()
 
@@ -570,14 +569,16 @@ class QueueTest : UnitSpec() {
         )
       }
 
-      "$label - removes first element after offering to a queue at capacity" {
-        forAll(Gen.int(), Gen.nonEmptyList(Gen.int())) { x, xs ->
+      "$label - slides elements offered to queue at capacity" {
+        forAll(
+          Gen.choose(1, 50),
+          Gen.nonEmptyList(Gen.int()).filter { it.size > 50 }
+        ) { capacity, xs ->
           IO.fx {
-            val q = !queue(xs.size)
-            !q.offer(x)
+            val q = !queue(capacity)
             !q.offerAll(xs.toList())
-            !q.takeAll()
-          }.equalUnderTheLaw(IO.just(xs.toList()))
+            !q.peekAll()
+          }.equalUnderTheLaw(IO.just(xs.toList().drop(xs.size - capacity)))
         }
       }
     }
@@ -608,6 +609,19 @@ class QueueTest : UnitSpec() {
             val taken2 = !q.take()
             taken.fix() + taken2
           }.equalUnderTheLaw(IO.just(xs.toList() + x2))
+        }
+      }
+
+      "$label - drops elements offered to queue at capacity" {
+        forAll(
+          Gen.choose(1, 50),
+          Gen.nonEmptyList(Gen.int()).filter { it.size > 50 }
+        ) { capacity, xs ->
+          IO.fx {
+            val q = !queue(capacity)
+            !q.offerAll(xs.toList())
+            !q.peekAll()
+          }.equalUnderTheLaw(IO.just(xs.toList().take(capacity)))
         }
       }
     }

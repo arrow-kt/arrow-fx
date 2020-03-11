@@ -99,7 +99,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
 
       is State.Deficit -> {
         if (aas.count() > current.takes.values.size) {
-          unsafeOfferAllDecifitForStrategy(aas, current) ?: unsafeTryOfferAll(aas, tryStrategy)
+          unsafeOfferAllDecifitForStrategy(aas, tryStrategy, current) ?: unsafeTryOfferAll(aas, tryStrategy)
         } else {
           val update =
             if (aas.count() == current.takes.values.size) State.empty<F, A>().copy(shutdownHook = current.shutdownHook)
@@ -418,7 +418,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
         else just(true)
     }
 
-  private fun unsafeOfferAllDecifitForStrategy(a: Iterable<A>, deficit: State.Deficit<F, A>): Kind<F, Boolean>? =
+  private fun unsafeOfferAllDecifitForStrategy(a: Iterable<A>, tryStrategy: Boolean, deficit: State.Deficit<F, A>): Kind<F, Boolean>? =
     when (strategy) {
       is BackpressureStrategy.Bounded ->
         when {
@@ -434,17 +434,25 @@ internal class ConcurrentQueue<F, A> internal constructor(
           else -> null // updates failed, recurse
         }
       is BackpressureStrategy.Sliding -> {
-        if ((a.count() - deficit.takes.size) > strategy.capacity) just(false)
+        val afterTakers = a.count() - deficit.takes.size
+        if (afterTakers > strategy.capacity && tryStrategy) just(false)
         else {
-          val update = State.Surplus<F, A>(IQueue(a.drop(deficit.takes.size)), emptyMap(), deficit.shutdownHook)
+          val newQueue = if (afterTakers > strategy.capacity) IQueue(a.drop(deficit.takes.size).drop(afterTakers - strategy.capacity))
+          else IQueue(a.drop(deficit.takes.size))
+          val update = State.Surplus<F, A>(newQueue, emptyMap(), deficit.shutdownHook)
+
           if (state.compareAndSet(deficit, update)) streamAllPeeksAndTakers(a, deficit.peeks.values, deficit.takes.values)
           else null // recurse
         }
       }
       is BackpressureStrategy.Dropping -> {
-        if ((a.count() - deficit.takes.size) > strategy.capacity) just(false)
+        val afterTakers = a.count() - deficit.takes.size
+        if (afterTakers > strategy.capacity && tryStrategy) just(false)
         else {
-          val update = State.Surplus<F, A>(IQueue(a.drop(deficit.takes.size)), emptyMap(), deficit.shutdownHook)
+          val newQueue = if (afterTakers > strategy.capacity) IQueue(a.drop(deficit.takes.size).take(strategy.capacity))
+          else IQueue(a.drop(deficit.takes.size))
+
+          val update = State.Surplus<F, A>(newQueue, emptyMap(), deficit.shutdownHook)
           if (state.compareAndSet(deficit, update)) streamAllPeeksAndTakers(a, deficit.peeks.values, deficit.takes.values)
           else null // recurse
         }
