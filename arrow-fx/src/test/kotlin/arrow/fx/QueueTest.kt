@@ -175,6 +175,22 @@ class QueueTest : UnitSpec() {
         }.equalUnderTheLaw(IO.raiseError(QueueShutdown))
       }
 
+      "$label - takeAll from a shutdown queue creates a QueueShutdown error" {
+        IO.fx {
+          val q = !queue(10)
+          !q.shutdown()
+          !q.takeAll()
+        }.equalUnderTheLaw(IO.raiseError(QueueShutdown))
+      }
+
+      "$label - peekAll from a shutdown queue creates a QueueShutdown error" {
+        IO.fx {
+          val q = !queue(10)
+          !q.shutdown()
+          !q.peekAll()
+        }.equalUnderTheLaw(IO.raiseError(QueueShutdown))
+      }
+
       "$label - time out peeking from an empty queue" {
         IO.fx {
           val wontComplete = queue(10).flatMap(Queue<ForIO, Int>::peek)
@@ -197,7 +213,7 @@ class QueueTest : UnitSpec() {
         }
       }
 
-      "$label - multiple peek calls oofferAll is cancelablen an empty queue all complete with the first value is received" {
+      "$label - multiple peek calls offerAll is cancelable an empty queue all complete with the first value is received" {
         forAll(Gen.int()) { i ->
           IO.fx {
             val q = !queue(1)
@@ -241,6 +257,14 @@ class QueueTest : UnitSpec() {
             !q.offer(i)
           }.equalUnderTheLaw(IO.raiseError(QueueShutdown))
         }
+      }
+
+      "$label - offerAll to a shutdown queue creates a QueueShutdown error" {
+        IO.fx {
+          val q = !queue(10)
+          !q.shutdown()
+          !q.offerAll(1, 2)
+        }.equalUnderTheLaw(IO.raiseError(QueueShutdown))
       }
 
       "$label - joining a forked, incomplete take call on a shutdown queue creates a QueueShutdown error" {
@@ -290,6 +314,16 @@ class QueueTest : UnitSpec() {
       }
 
       "$label - tryOffer on a shutdown Queue returns false" {
+        forAll(Gen.int()) { i ->
+          IO.fx {
+            val q = !queue(10)
+            !q.shutdown()
+            !q.tryOffer(i)
+          }.equalUnderTheLaw(IO.just(false))
+        }
+      }
+
+      "$label - tryOfferAll on a shutdown Queue returns false" {
         forAll(Gen.int()) { i ->
           IO.fx {
             val q = !queue(10)
