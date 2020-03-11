@@ -37,12 +37,12 @@ internal class ConcurrentQueue<F, A> internal constructor(
       if (didPut) unit() else cancellableF { cb -> unsafeOffer(a, cb) }
     }
 
-  override fun offerAll(a: Collection<A>): Kind<F, Unit> =
+  override fun offerAll(a: Iterable<A>): Kind<F, Unit> =
     defer { unsafeTryOfferAll(a, false) }.flatMap { didPut ->
       if (didPut) unit() else cancellableF { cb -> unsafeOfferAll(a, cb) }
     }
 
-  override fun tryOfferAll(a: Collection<A>): Kind<F, Boolean> =
+  override fun tryOfferAll(a: Iterable<A>): Kind<F, Boolean> =
     defer { unsafeTryOfferAll(a) }
 
   override fun tryTake(): Kind<F, Option<A>> =
@@ -92,18 +92,18 @@ internal class ConcurrentQueue<F, A> internal constructor(
       }
     }
 
-  private tailrec fun unsafeTryOfferAll(aas: Collection<A>, tryStrategy: Boolean = true): Kind<F, Boolean> =
+  private tailrec fun unsafeTryOfferAll(aas: Iterable<A>, tryStrategy: Boolean = true): Kind<F, Boolean> =
     when (val current = state.value) {
       is State.Surplus ->
         unsafeOfferAllSurplusForStrategy(aas, tryStrategy, current) ?: unsafeTryOfferAll(aas, tryStrategy)
 
       is State.Deficit -> {
-        if (aas.size > current.takes.values.size) {
-          unsafeOfferAllDecifitForStrategy(aas, tryStrategy, current) ?: unsafeTryOfferAll(aas, tryStrategy)
+        if (aas.count() > current.takes.values.size) {
+          unsafeOfferAllDecifitForStrategy(aas, current) ?: unsafeTryOfferAll(aas, tryStrategy)
         } else {
           val update =
-            if (aas.size == current.takes.values.size) State.empty<F, A>().copy(shutdownHook = current.shutdownHook)
-            else current.copy(peeks = emptyMap(), takes = current.takes.entries.drop(aas.size).toMap(), shutdownHook = current.shutdownHook)
+            if (aas.count() == current.takes.values.size) State.empty<F, A>().copy(shutdownHook = current.shutdownHook)
+            else current.copy(peeks = emptyMap(), takes = current.takes.entries.drop(aas.count()).toMap(), shutdownHook = current.shutdownHook)
 
           if (!state.compareAndSet(current, update)) {
             unsafeTryOfferAll(aas, tryStrategy)
@@ -146,11 +146,11 @@ internal class ConcurrentQueue<F, A> internal constructor(
       }
     }
 
-  private tailrec fun unsafeOfferAll(a: Collection<A>, onPut: Callback<Unit>): Kind<F, CancelToken<F>> =
+  private tailrec fun unsafeOfferAll(a: Iterable<A>, onPut: Callback<Unit>): Kind<F, CancelToken<F>> =
     when (val current = state.value) {
       is State.Surplus -> {
-        val tokens = (1..a.size).map { Token() }
-        val callbacks = (1..a.size).map { noOpCallback }
+        val tokens = (1..a.count()).map { Token() }
+        val callbacks = (1..a.count()).map { noOpCallback }
         val tupled: List<Tuple2<A, Callback<Unit>>> = a.zip(callbacks, ::Tuple2)
 
         val id = Token()
@@ -167,7 +167,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
 
       is State.Deficit -> {
         val capacity = (strategy as? BackpressureStrategy.Bounded)?.capacity ?: 0
-        if (a.size > current.takes.size && (a.size - current.takes.size) > capacity) {
+        if (a.count() > current.takes.size && (a.count() - current.takes.size) > capacity) {
           val takerValues = a.take(current.takes.size)
           val leftOver = a.drop(current.takes.size)
           val values = leftOver.take(capacity)
@@ -385,17 +385,17 @@ internal class ConcurrentQueue<F, A> internal constructor(
    *     or when [tryStrategy] is true to signal no room in the [Queue].
    *  - null when needs to recurse and try again
    */
-  private fun unsafeOfferAllSurplusForStrategy(a: Collection<A>, tryStrategy: Boolean, surplus: State.Surplus<F, A>): Kind<F, Boolean>? =
+  private fun unsafeOfferAllSurplusForStrategy(a: Iterable<A>, tryStrategy: Boolean, surplus: State.Surplus<F, A>): Kind<F, Boolean>? =
     when (strategy) {
       is BackpressureStrategy.Bounded ->
         when {
-          surplus.values.length() + a.size > strategy.capacity -> just(false)
+          surplus.values.length() + a.count() > strategy.capacity -> just(false)
           state.compareAndSet(surplus, surplus.copy(surplus.values.enqueue(a))) -> just(true)
           else -> null
         }
       is BackpressureStrategy.Sliding -> {
-        val nextQueue = if (surplus.values.length() + (a.size - 1) < strategy.capacity) surplus.values.enqueue(a)
-        else surplus.values.drop(a.size).enqueue(a)
+        val nextQueue = if (surplus.values.length() + (a.count() - 1) < strategy.capacity) surplus.values.enqueue(a)
+        else surplus.values.drop(a.count()).enqueue(a)
 
         when {
           surplus.values.length() >= strategy.capacity && tryStrategy -> just(false)
@@ -404,7 +404,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
         }
       }
       is BackpressureStrategy.Dropping -> {
-        val nextQueue = if (surplus.values.length() + (a.size - 1) < strategy.capacity) surplus.values.enqueue(a)
+        val nextQueue = if (surplus.values.length() + (a.count() - 1) < strategy.capacity) surplus.values.enqueue(a)
         else surplus.values
 
         when {
@@ -418,14 +418,14 @@ internal class ConcurrentQueue<F, A> internal constructor(
         else just(true)
     }
 
-  private fun unsafeOfferAllDecifitForStrategy(a: Collection<A>, tryStrategy: Boolean, deficit: State.Deficit<F, A>): Kind<F, Boolean>? =
+  private fun unsafeOfferAllDecifitForStrategy(a: Iterable<A>, deficit: State.Deficit<F, A>): Kind<F, Boolean>? =
     when (strategy) {
       is BackpressureStrategy.Bounded ->
         when {
           // We need to atomically offer to deficit AND schedule offers according to capacity.
-          a.size > deficit.takes.size && (a.size - deficit.takes.size) > strategy.capacity -> just(false)
+          a.count() > deficit.takes.size && (a.count() - deficit.takes.size) > strategy.capacity -> just(false)
 
-          a.size > deficit.takes.size -> { // Offer to deficit and update to Surplus, capacity check above
+          a.count() > deficit.takes.size -> { // Offer to deficit and update to Surplus, capacity check above
             val update = State.Surplus<F, A>(IQueue(a.drop(deficit.takes.size)), emptyMap(), deficit.shutdownHook)
 
             if (state.compareAndSet(deficit, update)) streamAllPeeksAndTakers(a, deficit.peeks.values, deficit.takes.values)
@@ -434,7 +434,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
           else -> null // updates failed, recurse
         }
       is BackpressureStrategy.Sliding -> {
-        if ((a.size - deficit.takes.size) > strategy.capacity) just(false)
+        if ((a.count() - deficit.takes.size) > strategy.capacity) just(false)
         else {
           val update = State.Surplus<F, A>(IQueue(a.drop(deficit.takes.size)), emptyMap(), deficit.shutdownHook)
           if (state.compareAndSet(deficit, update)) streamAllPeeksAndTakers(a, deficit.peeks.values, deficit.takes.values)
@@ -442,7 +442,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
         }
       }
       is BackpressureStrategy.Dropping -> {
-        if ((a.size - deficit.takes.size) > strategy.capacity) just(false)
+        if ((a.count() - deficit.takes.size) > strategy.capacity) just(false)
         else {
           val update = State.Surplus<F, A>(IQueue(a.drop(deficit.takes.size)), emptyMap(), deficit.shutdownHook)
           if (state.compareAndSet(deficit, update)) streamAllPeeksAndTakers(a, deficit.peeks.values, deficit.takes.values)
@@ -456,13 +456,13 @@ internal class ConcurrentQueue<F, A> internal constructor(
       }
     }
 
-  private fun streamAllPeeksAndTakers(a: Collection<A>, peeks: Iterable<Callback<A>>, takes: Iterable<Callback<A>>): Kind<F, Boolean> =
+  private fun streamAllPeeksAndTakers(a: Iterable<A>, peeks: Iterable<Callback<A>>, takes: Iterable<Callback<A>>): Kind<F, Boolean> =
     later {
       a.firstOrNull()?.let { Either.Right(it) }?.let { a ->
         peeks.forEach { cb -> cb(a) }
       }
 
-      a.zip(takes.take(a.size)) { a, cb ->
+      a.zip(takes.take(a.count())) { a, cb ->
         cb(Either.Right(a))
       }
 

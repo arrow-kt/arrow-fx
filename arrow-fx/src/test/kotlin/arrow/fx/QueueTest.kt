@@ -260,6 +260,53 @@ class QueueTest : UnitSpec() {
           !IO.raceN(finished.get(), fallback)
         }.equalUnderTheLaw(IO.just(Right(0)))
       }
+
+      "$label - takeAll returns emptyList with waiting suspended takers" {
+        IO.fx {
+          val q = !queue(1)
+          val (_, cancel) = !q.take().fork()
+          val res = !q.takeAll()
+          !cancel
+          res
+        }.equalUnderTheLaw(IO.just(emptyList()))
+      }
+
+      "$label - peekAll returns emptyList with waiting suspended takers" {
+        IO.fx {
+          val q = !queue(1)
+          val (_, cancel) = !q.take().fork()
+          val res = !q.peekAll()
+          !cancel
+          res
+        }.equalUnderTheLaw(IO.just(emptyList()))
+      }
+
+      "$label - offerAll offers all values with waiting suspended takers, and within capacity" {
+        forAll(50,
+          Gen.nonEmptyList(Gen.int()).filter { it.size in 1..50 },
+          Gen.choose(52, 100)
+        ) { l, capacity ->
+          IO.fx {
+            val q = !queue(capacity)
+            val (_, cancel) = !q.take().fork()
+            !IO.sleep(50.milliseconds) // Give take callbacks a chance to register
+
+            !q.offerAll(l.toList())
+            !cancel
+            !q.peekAll()
+          }.equalUnderTheLaw(IO.just(l.toList().drop(1)))
+        }
+      }
+
+      "$label - offerAll can offer empty" {
+        IO.fx {
+          val q = !queue(1)
+          !q.offer(1)
+          !q.offerAll(emptyList())
+          !q.peekAll()
+        }.equalUnderTheLaw(IO.just(listOf(1)))
+      }
+
     }
 
     fun strategyAtCapacityTests(

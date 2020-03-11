@@ -245,12 +245,12 @@ interface Enqueue<F, A> {
    */
   fun tryOffer(a: A): Kind<F, Boolean>
 
-  fun tryOfferAll(a: Collection<A>): Kind<F, Boolean>
+  fun tryOfferAll(a: Iterable<A>): Kind<F, Boolean>
 
   fun tryOfferAll(vararg a: A): Kind<F, Boolean> =
     tryOfferAll(a.toList())
 
-  fun offerAll(a: Collection<A>): Kind<F, Unit>
+  fun offerAll(a: Iterable<A>): Kind<F, Unit>
 
   fun offerAll(vararg a: A): Kind<F, Unit> =
     offerAll(a.toList())

@@ -20,8 +20,8 @@ interface QueueInvariant<F> : Invariant<QueuePartialOf<F>> {
     FR().run {
       val fixed = this@imap.fix()
       object : Queue<F, B> {
-        override fun tryOfferAll(a: Collection<B>): Kind<F, Boolean> = fixed.tryOfferAll(a.map(g))
-        override fun offerAll(a: Collection<B>): Kind<F, Unit> = fixed.offerAll(a.map(g))
+        override fun tryOfferAll(a: Iterable<B>): Kind<F, Boolean> = fixed.tryOfferAll(a.map(g))
+        override fun offerAll(a: Iterable<B>): Kind<F, Unit> = fixed.offerAll(a.map(g))
         override fun peek(): Kind<F, B> = fixed.peek().map(f)
         override fun take(): Kind<F, B> = fixed.take().map(f)
         override fun takeAll(): Kind<F, List<B>> = fixed.takeAll().map { it.map(f) }
