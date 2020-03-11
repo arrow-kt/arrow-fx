@@ -31,7 +31,7 @@ inline fun <F, A> QueueOf<F, A>.fix(): Queue<F, A> =
  *
  * //sampleStart
  * suspend fun main(args: Array<String>): Unit = IO.fx {
- *   fun consumeInts(e: Dequeue<ForIO, A>, max: Int): IO<Unit> =
+ *   fun consumeInts(e: Dequeue<ForIO, Int>, max: Int): IO<Unit> =
  *     (0..max).parTraverse(EmptyCoroutineContext) { i ->
  *       IO.sleep(i * 10.milliseconds)
  *         .followedBy(e.offer(i))
