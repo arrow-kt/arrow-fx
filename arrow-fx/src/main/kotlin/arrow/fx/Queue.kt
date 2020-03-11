@@ -261,16 +261,16 @@ interface Enqueue<F, A> {
  *
  * A [Queue] can be used using 4 different back-pressure strategies:
  *
- *  - [BackpressureStrategy.Bounded]: Offering to a bounded queue at capacity will cause the fiber making
+ *  - [bounded]: Offering to a bounded queue at capacity will cause the fiber making
  *   the call to be suspended until the queue has space to receive the offer value
  *
- *  - [BackpressureStrategy.Dropping]: Offering to a dropping queue at capacity will cause the offered
+ *  - [dropping]: Offering to a dropping queue at capacity will cause the offered
  *   value to be discarded
  *
- *  - [BackpressureStrategy.Sliding]: Offering to a sliding queue at capacity will cause the value at the
+ *  - [sliding]: Offering to a sliding queue at capacity will cause the value at the
  *   front of the queue to be discarded to make room for the offered value
  *
- * - [BackpressureStrategy.Unbounded]: An unbounded queue has no notion of capacity and is bound only by
+ * - [unbounded]: An unbounded queue has no notion of capacity and is bound only by
  *   exhausting the memory limits of the runtime
  */
 interface Queue<F, A> : QueueOf<F, A>, Dequeue<F, A>, Enqueue<F, A> {
@@ -293,6 +293,24 @@ interface Queue<F, A> : QueueOf<F, A>, Dequeue<F, A>, Enqueue<F, A> {
      *
      * Offering to a bounded queue at capacity will cause the fiber making
      * the call to be suspended until the queue has space to receive the offer value.
+     *
+     * ```kotlin:ank:playground
+     * import arrow.fx.*
+     * import arrow.fx.extensions.fx
+     * import arrow.fx.extensions.io.concurrent.concurrent
+     *
+     * suspend fun main(args: Array<String>): Unit = IO.fx {
+     *   val capacity = 2
+     *   val q = !Queue.bounded<Int>(capacity)
+     *   !q.offer(42)
+     *   !q.offer(43)
+     *   !q.offer(44).fork() // <-- This `offer` exceeds the capacity and will be suspended
+     *   val fortyTwo   = !q.take()
+     *   val fortyThree = !q.take()
+     *   val fortyFour  = !q.take()
+     *   !effect { println(listOf(fortyTwo, fortyThree, fortyFour)) }
+     * }.suspended()
+     * ```
      */
     fun <F, A> bounded(capacity: Int, CF: Concurrent<F>): Kind<F, Queue<F, A>> = CF.run {
       ensureCapacity(capacity).map { n ->
@@ -304,7 +322,26 @@ interface Queue<F, A> : QueueOf<F, A>, Dequeue<F, A>, Enqueue<F, A> {
      * Create a [Queue] with [BackpressureStrategy.Sliding].
      *
      * Offering to a sliding queue at capacity will cause the value at the
-     * front of the queue to be discarded to make room for the offered value
+     * front of the queue to be discarded to make room for the offered value.
+     *
+     * ```kotlin:ank:playground
+     * import arrow.fx.*
+     * import arrow.fx.extensions.fx
+     * import arrow.fx.extensions.io.concurrent.concurrent
+     *
+     * suspend fun main(args: Array<String>): Unit = IO.fx {
+     *  val capacity = 2
+     *  val q = !Queue.sliding<ForIO, Int>(capacity, IO.concurrent())
+     *  !q.offer(42)
+     *  !q.offer(43)
+     *  !q.offer(44) // <-- This `offer` exceeds the capacity, causing the oldest value to be removed
+     *  val fortyThree = !q.take()
+     *  val fortyFour  = !q.take()
+     *  !q.offer(45)
+     *  val fortyFive  = !q.take()
+     *  !effect { listOf(fortyThree, fortyFour, fortyFive) }
+     * }.suspended()
+     * ```
      */
     fun <F, A> sliding(capacity: Int, CF: Concurrent<F>): Kind<F, Queue<F, A>> = CF.run {
       ensureCapacity(capacity).map { n ->
@@ -316,6 +353,25 @@ interface Queue<F, A> : QueueOf<F, A>, Dequeue<F, A>, Enqueue<F, A> {
      * Create a [Queue] with [BackpressureStrategy.Dropping].
      *
      * Offering to a dropping queue at capacity will cause the offered value to be discarded.
+     *
+     * ```kotlin:ank:playground
+     * import arrow.fx.*
+     * import arrow.fx.extensions.fx
+     * import arrow.fx.extensions.io.concurrent.concurrent
+     *
+     * suspend fun main(args: Array<String>): Unit = IO.fx {
+     *   val capacity = 2
+     *   val q = !Queue.dropping<ForIO, Int>(capacity, IO.concurrent())
+     *   !q.offer(42)
+     *   !q.offer(43)
+     *   !q.offer(44) // <-- This `offer` exceeds the capacity and will be dropped immediately
+     *   val fortyTwo   = !q.take()
+     *   val fortyThree = !q.take()
+     *   !q.offer(45)
+     *   val fortyFive  = !q.take()
+     *   !effect { println(listOf(fortyTwo, fortyThree, fortyFive)) }
+     * }.suspended()
+     * ```
      */
     fun <F, A> dropping(capacity: Int, CF: Concurrent<F>): Kind<F, Queue<F, A>> = CF.run {
       ensureCapacity(capacity).map { n ->
@@ -326,7 +382,22 @@ interface Queue<F, A> : QueueOf<F, A>, Dequeue<F, A>, Enqueue<F, A> {
     /**
      * Create a [Queue] with [BackpressureStrategy.Unbounded].
      *
-     * An unbounded queue has no notion of capacity and is bound only by exhausting the memory limits of the runtime
+     * An unbounded queue has no notion of capacity and is bound only by exhausting the memory limits of the runtime.
+     *
+     * ```kotlin:ank:playground
+     * import arrow.fx.*
+     * import arrow.fx.extensions.fx
+     * import arrow.fx.extensions.io.concurrent.concurrent
+     *
+     * suspend fun main(args: Array<String>): Unit = IO.fx {
+     *   val q = !Queue.unbounded<ForIO, Int>(IO.concurrent())
+     *   !q.offer(42)
+     *   // ...
+     *   !q.offer(42000000)
+     *   val res = !q.take()
+     *   !effect { println(res) }
+     * }.suspended()
+     * ```
      */
     fun <F, A> unbounded(CF: Concurrent<F>): Kind<F, Queue<F, A>> = CF.later {
       ConcurrentQueue<F, A>(Queue.BackpressureStrategy.Unbounded, ConcurrentQueue.State.empty(), CF)
