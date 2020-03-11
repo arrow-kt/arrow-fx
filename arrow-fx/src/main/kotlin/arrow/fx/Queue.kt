@@ -339,7 +339,7 @@ interface Queue<F, A> : QueueOf<F, A>, Dequeue<F, A>, Enqueue<F, A> {
      *  val fortyFour  = !q.take()
      *  !q.offer(45)
      *  val fortyFive  = !q.take()
-     *  !effect { listOf(fortyThree, fortyFour, fortyFive) }
+     *  !effect { println(listOf(fortyThree, fortyFour, fortyFive)) }
      * }.suspended()
      * ```
      */
