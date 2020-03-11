@@ -27,8 +27,6 @@ interface QueueInvariant<F> : Invariant<QueuePartialOf<F>> {
         override fun takeAll(): Kind<F, List<B>> = fixed.takeAll().map { it.map(f) }
         override fun offer(a: B): Kind<F, Unit> = fixed.offer(g(a))
         override fun size(): Kind<F, Int> = fixed.size()
-        override fun awaitShutdown(): Kind<F, Unit> = fixed.awaitShutdown()
-        override fun shutdown(): Kind<F, Unit> = fixed.shutdown()
         override fun tryTake(): Kind<F, Option<B>> = fixed.tryTake().map { it.map(f) }
         override fun tryPeek(): Kind<F, Option<B>> = fixed.tryPeek().map { it.map(f) }
         override fun peekAll(): Kind<F, List<B>> = fixed.peekAll().map { it.map(f) }

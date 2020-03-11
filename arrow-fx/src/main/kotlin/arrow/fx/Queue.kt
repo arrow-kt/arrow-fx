@@ -27,6 +27,7 @@ inline fun <F, A> QueueOf<F, A>.fix(): Queue<F, A> =
  * ```kotlin:ank:playground
  * import arrow.fx.*
  * import arrow.fx.typeclasses.*
+ * import arrow.fx.extensions.fx
  *
  * //sampleStart
  * suspend fun main(args: Array<String>): Unit = IO.fx {
@@ -280,19 +281,6 @@ interface Queue<F, A> : QueueOf<F, A>, Dequeue<F, A>, Enqueue<F, A> {
    */
   fun size(): Kind<F, Int>
 
-  /**
-   * Semantically blocks until the [Queue] is [shutdown].
-   * Useful for registering hooks that need to be triggered when the [Queue] shuts down.
-   */
-  fun awaitShutdown(): Kind<F, Unit>
-
-  /**
-   * Shut down the [Queue].
-   * Shuts down all [offer], [take], [peek] with [QueueShutdown],
-   * and call all the registered [awaitShutdown] hooks.
-   */
-  fun shutdown(): Kind<F, Unit>
-
   companion object {
     private fun <F> Concurrent<F>.ensureCapacity(capacity: Int): Kind<F, Int> =
       just(capacity).ensure(
@@ -355,10 +343,6 @@ interface Queue<F, A> : QueueOf<F, A>, Dequeue<F, A>, Enqueue<F, A> {
     data class Dropping(val capacity: Int) : BackpressureStrategy()
     object Unbounded : BackpressureStrategy()
   }
-}
-
-object QueueShutdown : RuntimeException() {
-  override fun fillInStackTrace(): Throwable = this
 }
 
 /**

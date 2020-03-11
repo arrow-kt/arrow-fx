@@ -8,10 +8,8 @@ import arrow.core.Right
 import arrow.core.Some
 import arrow.core.Tuple2
 import arrow.core.internal.AtomicRefW
-import arrow.core.left
 import arrow.fx.Queue
 import arrow.fx.Queue.BackpressureStrategy
-import arrow.fx.QueueShutdown
 import arrow.fx.typeclasses.CancelToken
 import arrow.fx.typeclasses.Concurrent
 import arrow.fx.typeclasses.rightUnit
@@ -28,7 +26,6 @@ internal class ConcurrentQueue<F, A> internal constructor(
     when (val curr = state.value) {
       is State.Deficit -> just(-curr.takes.size)
       is State.Surplus -> just(1 + curr.offers.size)
-      State.Shutdown -> raiseError(QueueShutdown)
     }
   }
 
@@ -70,22 +67,6 @@ internal class ConcurrentQueue<F, A> internal constructor(
   override fun peekAll(): Kind<F, List<A>> =
     defer { unsafePeekAll() }
 
-  /**
-   * Semantically blocks until the queue is shutdown.
-   *
-   * The `F` returned by this method will not resume until the queue has been shutdown.
-   * If the queue is already shutdown, `F` will resume right away.
-   */
-  override fun awaitShutdown(): Kind<F, Unit> =
-    CF.cancellableF(::unsafeRegisterAwaitShutdown)
-
-  /**
-   * Cancels any fibers that are suspended on `offer` or `take`.
-   * Future calls to `offer*` and `take*` will be interrupted immediately.
-   */
-  override fun shutdown(): Kind<F, Unit> =
-    defer { unsafeShutdown() }
-
   private tailrec fun unsafeTryOffer(a: A, tryStrategy: Boolean = true): Kind<F, Boolean> =
     when (val current = state.value) {
       is State.Surplus ->
@@ -109,8 +90,6 @@ internal class ConcurrentQueue<F, A> internal constructor(
           callTakeAndPeeks(a, taker, current.peeks.values) // Update succeeded, call callbacks with value
         } else just(true) // Update succeeded, no callbacks need to be called.
       }
-
-      is State.Shutdown -> just(false)
     }
 
   private tailrec fun unsafeTryOfferAll(aas: Collection<A>, tryStrategy: Boolean = true): Kind<F, Boolean> =
@@ -133,8 +112,6 @@ internal class ConcurrentQueue<F, A> internal constructor(
           } else just(true)
         }
       }
-
-      is State.Shutdown -> just(false)
     }
 
   private tailrec fun unsafeOffer(a: A, onPut: Callback<Unit>): Kind<F, CancelToken<F>> =
@@ -166,11 +143,6 @@ internal class ConcurrentQueue<F, A> internal constructor(
             just(unit())
           }
         } else unsafeOffer(a, onPut)
-      }
-
-      is State.Shutdown -> {
-        onPut(Either.Left(QueueShutdown))
-        just(unit())
       }
     }
 
@@ -223,11 +195,6 @@ internal class ConcurrentQueue<F, A> internal constructor(
           } else unsafeOfferAll(a, onPut) // recurse
         }
       }
-
-      is State.Shutdown -> {
-        onPut(Either.Left(QueueShutdown))
-        just(unit())
-      }
     }
 
   private tailrec fun unsafeCancelOffer(ids: List<Token>): Unit =
@@ -237,7 +204,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
         if (state.compareAndSet(current, update)) Unit
         else unsafeCancelOffer(ids)
       }
-      else -> Unit
+      is State.Deficit -> Unit
     }
 
   private tailrec fun unsafeTryTake(): Kind<F, Option<A>> =
@@ -262,7 +229,6 @@ internal class ConcurrentQueue<F, A> internal constructor(
         }
       }
       is State.Deficit -> just(None)
-      is State.Shutdown -> just(None)
     }
 
   private tailrec fun unsafeTake(onTake: Callback<A>): Kind<F, CancelToken<F>> =
@@ -302,11 +268,6 @@ internal class ConcurrentQueue<F, A> internal constructor(
         if (state.compareAndSet(current, update)) just(later { unsafeCancelTake(id) })
         else unsafeTake(onTake)
       }
-
-      is State.Shutdown -> {
-        onTake(Either.Left(QueueShutdown))
-        just(unit())
-      }
     }
 
   private tailrec fun unsafeCancelTake(id: Token): Unit =
@@ -317,7 +278,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
         if (state.compareAndSet(current, update)) Unit
         else unsafeCancelTake(id)
       }
-      else -> Unit
+      is State.Surplus -> Unit
     }
 
   private tailrec fun unsafeTakeAll(): Kind<F, List<A>> =
@@ -340,7 +301,6 @@ internal class ConcurrentQueue<F, A> internal constructor(
         }
       }
       is State.Deficit -> just(emptyList())
-      is State.Shutdown -> raiseError(QueueShutdown)
     }
 
   private fun unsafePeekAll(): Kind<F, List<A>> =
@@ -351,14 +311,12 @@ internal class ConcurrentQueue<F, A> internal constructor(
         val allOffered = current.offers.values.map { it.a }
         just(all + allOffered)
       }
-      is State.Shutdown -> raiseError(QueueShutdown)
     }
 
   private fun unsafeTryPeek(): Kind<F, Option<A>> =
     when (val current = state.value) {
       is State.Surplus -> just(Some(current.values.head()))
       is State.Deficit -> just(None)
-      is State.Shutdown -> just(None)
     }
 
   private tailrec fun unsafePeek(onPeek: Callback<A>): Kind<F, CancelToken<F>> =
@@ -375,10 +333,6 @@ internal class ConcurrentQueue<F, A> internal constructor(
         if (state.compareAndSet(current, update)) just(later { unsafeCancelRead(id) })
         else unsafePeek(onPeek)
       }
-      is State.Shutdown -> {
-        onPeek(Either.Left(QueueShutdown))
-        just(unit())
-      }
     }
 
   private tailrec fun unsafeCancelRead(id: Token): Unit =
@@ -390,64 +344,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
         if (state.compareAndSet(current, update)) Unit
         else unsafeCancelRead(id)
       }
-      else -> Unit
-    }
-
-  private tailrec fun unsafeRegisterAwaitShutdown(shutdown: Callback<Unit>): Kind<F, CancelToken<F>> =
-    when (val curr = state.value) {
-      is State.Deficit -> {
-        val token = Token()
-        val newShutdowns = curr.shutdownHook + Pair(token, shutdown)
-        val update: State<F, A> = curr.copy(shutdownHook = newShutdowns)
-
-        if (state.compareAndSet(curr, update)) just(later { unsafeCancelAwaitShutdown(token) })
-        else unsafeRegisterAwaitShutdown(shutdown)
-      }
-      is State.Surplus -> {
-        val token = Token()
-        val newShutdowns = curr.shutdownHook + Pair(token, shutdown)
-        val update: State<F, A> = curr.copy(shutdownHook = newShutdowns)
-
-        if (state.compareAndSet(curr, update)) just(later { unsafeCancelAwaitShutdown(token) })
-        else unsafeRegisterAwaitShutdown(shutdown)
-      }
-      State.Shutdown -> {
-        shutdown(rightUnit)
-        just(CF.unit())
-      }
-    }
-
-  private tailrec fun unsafeCancelAwaitShutdown(id: Token): Unit =
-    when (val curr = state.value) {
-      is State.Deficit -> {
-        val update: State<F, A> = curr.copy(shutdownHook = curr.shutdownHook - id)
-
-        if (state.compareAndSet(curr, update)) Unit
-        else unsafeCancelAwaitShutdown(id)
-      }
-      is State.Surplus -> {
-        val update: State<F, A> = curr.copy(shutdownHook = curr.shutdownHook - id)
-
-        if (state.compareAndSet(curr, update)) Unit
-        else unsafeCancelAwaitShutdown(id)
-      }
-      else -> Unit
-    }
-
-  private tailrec fun unsafeShutdown(): Kind<F, Unit> =
-    when (val current = state.value) {
-      is State.Shutdown -> raiseError(QueueShutdown)
-      is State.Surplus ->
-        if (state.compareAndSet(current, State.shutdown())) later {
-          current.offers.values.forEach { (_, cb) -> cb(QueueShutdown.left()) }
-          current.shutdownHook.values.forEach { cb -> cb(rightUnit) }
-        } else unsafeShutdown()
-      is State.Deficit ->
-        if (state.compareAndSet(current, State.shutdown())) later {
-          current.takes.forEach { (_, cb) -> cb(QueueShutdown.left()) }
-          current.peeks.forEach { (_, cb) -> cb(QueueShutdown.left()) }
-          current.shutdownHook.values.forEach { cb -> cb(rightUnit) }
-        } else unsafeShutdown()
+      is State.Surplus -> Unit
     }
 
   /**
@@ -473,13 +370,9 @@ internal class ConcurrentQueue<F, A> internal constructor(
       val shutdownHook: Map<Token, Callback<Unit>>
     ) : State<F, A>()
 
-    object Shutdown : State<Any?, Nothing>()
-
     companion object {
       private val empty: Deficit<Any?, Any?> = Deficit(emptyMap(), emptyMap(), emptyMap())
       fun <F, A> empty(): Deficit<F, A> = empty as Deficit<F, A>
-      fun <F, A> shutdown(): State<F, A> =
-        Shutdown as State<F, A>
     }
   }
 
@@ -588,7 +481,8 @@ internal class ConcurrentQueue<F, A> internal constructor(
   private fun Iterable<Callback<A>>.callAll(value: Either<Nothing, A>): Kind<F, Unit> =
     later { forEach { cb -> cb(value) } }
 
-  val noOpCallback: Callback<Unit> = { _: Either<Throwable, Unit> -> Unit }
+  private val noOpCallback: Callback<Unit> =
+    { _: Either<Throwable, Unit> -> Unit }
 
   companion object {
     fun <F, A> empty(CF: Concurrent<F>): Kind<F, Queue<F, A>> = CF.later {
@@ -597,7 +491,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
   }
 }
 
-private fun <K, V> List<Map.Entry<K, V>>.toMap(): Map<K, V> =
+internal fun <K, V> List<Map.Entry<K, V>>.toMap(): Map<K, V> =
   when (size) {
     0 -> emptyMap()
     else -> LinkedHashMap<K, V>(size).apply {

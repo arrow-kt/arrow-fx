@@ -167,30 +167,6 @@ class QueueTest : UnitSpec() {
         }
       }
 
-      "$label - taking from a shutdown queue creates a QueueShutdown error" {
-        IO.fx {
-          val q = !queue(10)
-          !q.shutdown()
-          !q.take()
-        }.equalUnderTheLaw(IO.raiseError(QueueShutdown))
-      }
-
-      "$label - takeAll from a shutdown queue creates a QueueShutdown error" {
-        IO.fx {
-          val q = !queue(10)
-          !q.shutdown()
-          !q.takeAll()
-        }.equalUnderTheLaw(IO.raiseError(QueueShutdown))
-      }
-
-      "$label - peekAll from a shutdown queue creates a QueueShutdown error" {
-        IO.fx {
-          val q = !queue(10)
-          !q.shutdown()
-          !q.peekAll()
-        }.equalUnderTheLaw(IO.raiseError(QueueShutdown))
-      }
-
       "$label - time out peeking from an empty queue" {
         IO.fx {
           val wontComplete = queue(10).flatMap(Queue<ForIO, Int>::peek)
@@ -229,14 +205,6 @@ class QueueTest : UnitSpec() {
         }
       }
 
-      "$label - peeking a shutdown queue creates a QueueShutdown error" {
-        IO.fx {
-          val q = !queue(10)
-          !q.shutdown()
-          !q.peek()
-        }.equalUnderTheLaw(IO.raiseError(QueueShutdown))
-      }
-
       "$label - peek does not remove value from Queue" {
         forAll(Gen.int()) { i ->
           IO.fx {
@@ -247,106 +215,6 @@ class QueueTest : UnitSpec() {
             Tuple2(peeked, took)
           }.equalUnderTheLaw(IO.just(Tuple2(i, listOf(i))))
         }
-      }
-
-      "$label - offering to a shutdown queue creates a QueueShutdown error" {
-        forAll(Gen.int()) { i ->
-          IO.fx {
-            val q = !queue(10)
-            !q.shutdown()
-            !q.offer(i)
-          }.equalUnderTheLaw(IO.raiseError(QueueShutdown))
-        }
-      }
-
-      "$label - offerAll to a shutdown queue creates a QueueShutdown error" {
-        IO.fx {
-          val q = !queue(10)
-          !q.shutdown()
-          !q.offerAll(1, 2)
-        }.equalUnderTheLaw(IO.raiseError(QueueShutdown))
-      }
-
-      "$label - joining a forked, incomplete take call on a shutdown queue creates a QueueShutdown error" {
-        IO.fx {
-          val q = !queue(10)
-          val t = !q.take().fork(ctx)
-          !q.shutdown()
-          !t.join()
-        }.equalUnderTheLaw(IO.raiseError(QueueShutdown))
-      }
-
-      "$label - create a shutdown hook completing a promise, then shutdown the queue, the promise should be completed" {
-        IO.fx {
-          val q = !queue(10)
-          val p = !Promise<ForIO, Boolean>(IO.concurrent())
-          !(q.awaitShutdown().followedBy(p.complete(true))).fork()
-          val completed = !p.tryGet()
-          !q.shutdown()
-          val res = !p.get()
-          Tuple2(completed, res)
-        }.equalUnderTheLaw(IO.just(Tuple2(None, true)))
-      }
-
-      "$label - create a shutdown hook completing a promise twice, then shutdown the queue, both promises should be completed" {
-        IO.fx {
-          val q = !queue(10)
-          val p1 = !Promise<ForIO, Boolean>(IO.concurrent())
-          val p2 = !Promise<ForIO, Boolean>(IO.concurrent())
-          !(q.awaitShutdown().followedBy(p1.complete(true))).fork()
-          !(q.awaitShutdown().followedBy(p2.complete(true))).fork()
-          val completed = !p1.tryGet()
-          val completed2 = !p2.tryGet()
-          !q.shutdown()
-          val p = !mapN(p1.get(), p2.get()) { (p1, p2) -> p1 && p2 }
-          Tuple3(completed, completed2, p)
-        }.equalUnderTheLaw(IO.just(Tuple3(None, None, true)))
-      }
-
-      "$label - shut it down, create a shutdown hook completing a promise, the promise should be completed immediately" {
-        IO.fx {
-          val q = !queue(10)
-          !q.shutdown()
-          val p = !Promise<ForIO, Boolean>(IO.concurrent())
-          !(q.awaitShutdown().followedBy(p.complete(true))).fork()
-          !p.get()
-        }.equalUnderTheLaw(IO.just(true))
-      }
-
-      "$label - tryOffer on a shutdown Queue returns false" {
-        forAll(Gen.int()) { i ->
-          IO.fx {
-            val q = !queue(10)
-            !q.shutdown()
-            !q.tryOffer(i)
-          }.equalUnderTheLaw(IO.just(false))
-        }
-      }
-
-      "$label - tryOfferAll on a shutdown Queue returns false" {
-        forAll(Gen.int()) { i ->
-          IO.fx {
-            val q = !queue(10)
-            !q.shutdown()
-            !q.tryOffer(i)
-          }.equalUnderTheLaw(IO.just(false))
-        }
-      }
-
-      "$label - tryTake on a shutdown Queue returns false" {
-        IO.fx {
-          val q = !queue(10)
-          !q.shutdown()
-          !q.tryTake()
-        }.equalUnderTheLaw(IO.just(None))
-      }
-
-      "$label - tryPeek on a shutdown Queue returns false" {
-        IO.fx {
-          val q = !queue(10)
-          !q.shutdown()
-          !q.tryPeek()
-        }.equalUnderTheLaw(IO.just(None))
       }
 
       "$label - tryTake on an empty Queue returns None" {
@@ -636,18 +504,6 @@ class QueueTest : UnitSpec() {
             !join2 // Check if fiber completed
             setOf(first, second, third)
           }.equalUnderTheLaw(IO.just(setOf(t.a, t.b, t.c)))
-        }
-      }
-
-      "$label - joining a forked offer call made to a shut down queue creates a QueueShutdown error" {
-        forAll(Gen.int()) { i ->
-          IO.fx {
-            val q = !queue(1)
-            !q.offer(i)
-            val o = !q.offer(i).fork(ctx)
-            !q.shutdown()
-            !o.join()
-          }.equalUnderTheLaw(IO.raiseError(QueueShutdown))
         }
       }
     }
