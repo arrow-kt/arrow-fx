@@ -8,6 +8,8 @@ buildscript {
     }
     dependencies {
         classpath "org.jetbrains.kotlinx:atomicfu-gradle-plugin:$ATOMICFU_VERSION"
+        // TODO: make use of KOTLINX_VALIDATOR_VERSION when available
+        classpath "org.jetbrains.kotlinx:binary-compatibility-validator:0.2.2"
     }
 }
 
@@ -27,6 +29,8 @@ apply from: "$GENERIC_CONF"
 subprojects {
     apply plugin: 'kotlinx-atomicfu'
 }
+
+apply plugin: 'binary-compatibility-validator'
 
 configure(subprojects 
             - project("arrow-fx-reactor") 
