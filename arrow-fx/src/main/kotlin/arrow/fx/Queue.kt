@@ -28,20 +28,20 @@ inline fun <F, A> QueueOf<F, A>.fix(): Queue<F, A> =
  * import arrow.fx.*
  * import arrow.fx.typeclasses.*
  * import arrow.fx.extensions.fx
+ * import kotlin.coroutines.EmptyCoroutineContext
  *
  * //sampleStart
  * suspend fun main(args: Array<String>): Unit = IO.fx {
- *   fun consumeInts(e: Dequeue<ForIO, Int>, max: Int): IO<Unit> =
- *     (0..max).parTraverse(EmptyCoroutineContext) { i ->
- *       IO.sleep(i * 10.milliseconds)
- *         .followedBy(e.offer(i))
- *     }
+ *   fun consumeInts(e: Dequeue<ForIO, Int>, max: Int): IOOf<Unit> =
+ *     (0..max).toList().parTraverse(EmptyCoroutineContext) { i ->
+ *       IO.sleep(i * 10.milliseconds).followedBy(
+ *         e.take().effectMap { println("I took $it") }
+ *       )
+ *     }.void()
  *
- *     val queue = !Queue.unbounded<Int>()
- *     !produceInts(queue, 1000).fork()
- *     !IO.sleep(4.seconds)
- *     val res = !queue.takeAll()
- *     !effect { println(res) }
+ *   val queue = !Queue.unbounded<Int>()
+ *   !consumeInts(queue, 1000).fork()
+ *   !IO.sleep(4.seconds)
  * }.suspended()
  * //sampleEnd
  * ```
