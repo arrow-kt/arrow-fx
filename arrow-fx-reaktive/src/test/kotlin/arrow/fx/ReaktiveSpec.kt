@@ -1,5 +1,5 @@
 package arrow.fx
 
-import arrow.test.UnitSpec
+import arrow.core.test.UnitSpec
 
 abstract class ReaktiveSpec : UnitSpec()

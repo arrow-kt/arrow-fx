@@ -16,10 +16,10 @@ import arrow.fx.reaktive.extensions.observablek.timer.timer
 import arrow.fx.reaktive.fix
 import arrow.fx.reaktive.k
 import arrow.fx.reaktive.value
+import arrow.fx.test.laws.ConcurrentLaws
 import arrow.fx.typeclasses.ExitCase
-import arrow.test.generators.GenK
-import arrow.test.generators.throwable
-import arrow.test.laws.ConcurrentLaws
+import arrow.core.test.generators.GenK
+import arrow.core.test.generators.throwable
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import com.badoo.reaktive.maybe.blockingGet

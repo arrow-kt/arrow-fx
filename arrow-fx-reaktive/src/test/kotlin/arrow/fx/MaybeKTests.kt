@@ -17,10 +17,10 @@ import arrow.fx.reaktive.fix
 import arrow.fx.reaktive.k
 import arrow.fx.reaktive.unsafeRunSync
 import arrow.fx.reaktive.value
+import arrow.fx.test.laws.ConcurrentLaws
 import arrow.fx.typeclasses.ExitCase
-import arrow.test.generators.GenK
-import arrow.test.generators.throwable
-import arrow.test.laws.ConcurrentLaws
+import arrow.core.test.generators.GenK
+import arrow.core.test.generators.throwable
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import com.badoo.reaktive.maybe.Maybe
@@ -166,12 +166,12 @@ class MaybeKTests : ReaktiveSpec() {
 
     "MaybeK should cancel KindConnection on dispose" {
       Promise.uncancelable<ForMaybeK, Unit>(MaybeK.async()).flatMap { latch ->
-        MaybeK {
-          MaybeK.cancelable<Unit> {
-            latch.complete(Unit)
-          }.maybe.subscribe().dispose()
-        }.flatMap { latch.get() }
-      }.value()
+          MaybeK {
+            MaybeK.cancelable<Unit> {
+              latch.complete(Unit)
+            }.maybe.subscribe().dispose()
+          }.flatMap { latch.get() }
+        }.value()
         .test()
         .assertSuccess(Unit)
     }
