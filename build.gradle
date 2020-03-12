@@ -31,6 +31,10 @@ subprojects {
 
 apply plugin: 'binary-compatibility-validator'
 
+apiValidation {
+    ignoredProjects += ["arrow-docs", "arrow-fx-test"]
+}
+
 configure(subprojects 
             - project("arrow-fx-reactor") 
             - project("arrow-benchmarks-fx:arrow-kio-benchmarks")) 
