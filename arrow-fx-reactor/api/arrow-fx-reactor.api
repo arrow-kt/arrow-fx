@@ -35,6 +35,8 @@ public final class arrow/fx/reactor/FluxK$Companion {
 	public final fun asyncF (Lkotlin/jvm/functions/Function2;)Larrow/fx/reactor/FluxK;
 	public final fun cancelable (Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
 	public final fun cancelableF (Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
+	public final fun cancellable (Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
+	public final fun cancellableF (Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
 	public final fun defer (Lkotlin/jvm/functions/Function0;)Larrow/fx/reactor/FluxK;
 	public final fun invoke (Lkotlin/jvm/functions/Function0;)Larrow/fx/reactor/FluxK;
 	public final fun just (Ljava/lang/Object;)Larrow/fx/reactor/FluxK;
@@ -101,6 +103,8 @@ public final class arrow/fx/reactor/MonoK$Companion {
 	public final fun asyncF (Lkotlin/jvm/functions/Function2;)Larrow/fx/reactor/MonoK;
 	public final fun cancelable (Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/MonoK;
 	public final fun cancelableF (Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/MonoK;
+	public final fun cancellable (Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/MonoK;
+	public final fun cancellableF (Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/MonoK;
 	public final fun defer (Lkotlin/jvm/functions/Function0;)Larrow/fx/reactor/MonoK;
 	public final fun invoke (Lkotlin/jvm/functions/Function0;)Larrow/fx/reactor/MonoK;
 	public final fun just (Ljava/lang/Object;)Larrow/fx/reactor/MonoK;
@@ -129,12 +133,14 @@ public final class arrow/fx/reactor/MonoKKt$sam$i$java_util_function_Consumer$0 
 
 public abstract interface class arrow/fx/reactor/extensions/FluxKApplicative : arrow/typeclasses/Applicative {
 	public abstract fun ap (Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/FluxK;
+	public abstract fun apEval (Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public abstract fun just (Ljava/lang/Object;)Larrow/fx/reactor/FluxK;
 	public abstract fun map (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
 }
 
 public final class arrow/fx/reactor/extensions/FluxKApplicative$DefaultImpls {
 	public static fun ap (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/FluxK;
+	public static fun apEval (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun followedBy (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun fproduct (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
@@ -156,6 +162,15 @@ public final class arrow/fx/reactor/extensions/FluxKApplicative$DefaultImpls {
 	public static fun map2Eval (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKApplicative;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Lkotlin/Unit;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Lkotlin/Unit;Lkotlin/Unit;)Larrow/Kind;
@@ -178,8 +193,18 @@ public final class arrow/fx/reactor/extensions/FluxKApplicative$DefaultImpls {
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKApplicative;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/FluxKApplicative;Larrow/Kind;)Larrow/Kind;
 }
 
@@ -190,6 +215,7 @@ public abstract interface class arrow/fx/reactor/extensions/FluxKApplicativeErro
 
 public final class arrow/fx/reactor/extensions/FluxKApplicativeError$DefaultImpls {
 	public static fun ap (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/FluxK;
+	public static fun apEval (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun attempt (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;)Larrow/Kind;
 	public static fun catch (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/typeclasses/ApplicativeError;Lkotlin/jvm/functions/Function0;)Larrow/Kind;
@@ -221,6 +247,15 @@ public final class arrow/fx/reactor/extensions/FluxKApplicativeError$DefaultImpl
 	public static fun map2Eval (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKApplicativeError;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Lkotlin/Unit;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Lkotlin/Unit;Lkotlin/Unit;)Larrow/Kind;
@@ -246,8 +281,18 @@ public final class arrow/fx/reactor/extensions/FluxKApplicativeError$DefaultImpl
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKApplicativeError;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/FluxKApplicativeError;Larrow/Kind;)Larrow/Kind;
 }
 
@@ -261,6 +306,7 @@ public final class arrow/fx/reactor/extensions/FluxKAsync$DefaultImpls {
 	public static fun Ref (Larrow/fx/reactor/extensions/FluxKAsync;Ljava/lang/Object;)Larrow/Kind;
 	public static fun andS (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun ap (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/FluxK;
+	public static fun apEval (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun async (Larrow/fx/reactor/extensions/FluxKAsync;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
 	public static fun asyncF (Larrow/fx/reactor/extensions/FluxKAsync;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
@@ -323,8 +369,19 @@ public final class arrow/fx/reactor/extensions/FluxKAsync$DefaultImpls {
 	public static fun map2Eval (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKAsync;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun mproduct (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun never (Larrow/fx/reactor/extensions/FluxKAsync;)Larrow/Kind;
+	public static fun onCancel (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun onError (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun orS (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Lkotlin/Unit;)Larrow/Kind;
@@ -360,9 +417,20 @@ public final class arrow/fx/reactor/extensions/FluxKAsync$DefaultImpls {
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun uncancelable (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;)Larrow/Kind;
+	public static fun uncancellable (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKAsync;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;)Larrow/Kind;
 	public static fun whenS (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/FluxKAsync;Larrow/Kind;)Larrow/Kind;
 }
@@ -374,6 +442,7 @@ public abstract interface class arrow/fx/reactor/extensions/FluxKBracket : arrow
 public final class arrow/fx/reactor/extensions/FluxKBracket$DefaultImpls {
 	public static fun andS (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun ap (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/FluxK;
+	public static fun apEval (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun attempt (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;)Larrow/Kind;
 	public static fun bracket (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
@@ -421,7 +490,18 @@ public final class arrow/fx/reactor/extensions/FluxKBracket$DefaultImpls {
 	public static fun map2Eval (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKBracket;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun mproduct (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun onCancel (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun onError (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun orS (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Lkotlin/Unit;)Larrow/Kind;
@@ -456,9 +536,20 @@ public final class arrow/fx/reactor/extensions/FluxKBracket$DefaultImpls {
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun uncancelable (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;)Larrow/Kind;
+	public static fun uncancellable (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKBracket;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;)Larrow/Kind;
 	public static fun whenS (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/FluxKBracket;Larrow/Kind;)Larrow/Kind;
 }
@@ -471,6 +562,7 @@ public final class arrow/fx/reactor/extensions/FluxKConcurrentEffect$DefaultImpl
 	public static fun Ref (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Ljava/lang/Object;)Larrow/Kind;
 	public static fun andS (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun ap (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/FluxK;
+	public static fun apEval (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun async (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
 	public static fun asyncF (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
@@ -533,8 +625,19 @@ public final class arrow/fx/reactor/extensions/FluxKConcurrentEffect$DefaultImpl
 	public static fun map2Eval (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun mproduct (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun never (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;)Larrow/Kind;
+	public static fun onCancel (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun onError (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun orS (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Lkotlin/Unit;)Larrow/Kind;
@@ -572,9 +675,20 @@ public final class arrow/fx/reactor/extensions/FluxKConcurrentEffect$DefaultImpl
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun uncancelable (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;)Larrow/Kind;
+	public static fun uncancellable (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;)Larrow/Kind;
 	public static fun whenS (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/FluxKConcurrentEffect;Larrow/Kind;)Larrow/Kind;
 }
@@ -587,6 +701,7 @@ public final class arrow/fx/reactor/extensions/FluxKEffect$DefaultImpls {
 	public static fun Ref (Larrow/fx/reactor/extensions/FluxKEffect;Ljava/lang/Object;)Larrow/Kind;
 	public static fun andS (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun ap (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/FluxK;
+	public static fun apEval (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun async (Larrow/fx/reactor/extensions/FluxKEffect;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
 	public static fun asyncF (Larrow/fx/reactor/extensions/FluxKEffect;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
@@ -649,8 +764,19 @@ public final class arrow/fx/reactor/extensions/FluxKEffect$DefaultImpls {
 	public static fun map2Eval (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKEffect;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun mproduct (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun never (Larrow/fx/reactor/extensions/FluxKEffect;)Larrow/Kind;
+	public static fun onCancel (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun onError (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun orS (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Lkotlin/Unit;)Larrow/Kind;
@@ -687,9 +813,20 @@ public final class arrow/fx/reactor/extensions/FluxKEffect$DefaultImpls {
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun uncancelable (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;)Larrow/Kind;
+	public static fun uncancellable (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKEffect;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;)Larrow/Kind;
 	public static fun whenS (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/FluxKEffect;Larrow/Kind;)Larrow/Kind;
 }
@@ -700,11 +837,14 @@ public abstract interface class arrow/fx/reactor/extensions/FluxKFoldable : arro
 }
 
 public final class arrow/fx/reactor/extensions/FluxKFoldable$DefaultImpls {
+	public static fun all (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Z
 	public static fun combineAll (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;Larrow/typeclasses/Monoid;)Ljava/lang/Object;
 	public static fun exists (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Z
 	public static fun find (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/core/Option;
 	public static fun firstOption (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;)Larrow/core/Option;
 	public static fun firstOption (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/core/Option;
+	public static fun firstOrNone (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;)Larrow/core/Option;
+	public static fun firstOrNone (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/core/Option;
 	public static fun fold (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;Larrow/typeclasses/Monoid;)Ljava/lang/Object;
 	public static fun foldLeft (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;Ljava/lang/Object;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;
 	public static fun foldM (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;Larrow/typeclasses/Monad;Ljava/lang/Object;Lkotlin/jvm/functions/Function2;)Larrow/Kind;
@@ -714,6 +854,7 @@ public final class arrow/fx/reactor/extensions/FluxKFoldable$DefaultImpls {
 	public static fun forAll (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Z
 	public static fun get (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;J)Larrow/core/Option;
 	public static fun isEmpty (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;)Z
+	public static fun isNotEmpty (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;)Z
 	public static fun nonEmpty (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;)Z
 	public static fun orEmpty (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/typeclasses/Applicative;Larrow/typeclasses/Monoid;)Larrow/Kind;
 	public static fun reduceLeftOption (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;Lkotlin/jvm/functions/Function2;)Larrow/core/Option;
@@ -722,6 +863,7 @@ public final class arrow/fx/reactor/extensions/FluxKFoldable$DefaultImpls {
 	public static fun reduceRightToOption (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;)Larrow/core/Eval;
 	public static fun sequence_ (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;Larrow/typeclasses/Applicative;)Larrow/Kind;
 	public static fun size (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;Larrow/typeclasses/Monoid;)J
+	public static fun toList (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;)Ljava/util/List;
 	public static fun traverse_ (Larrow/fx/reactor/extensions/FluxKFoldable;Larrow/Kind;Larrow/typeclasses/Applicative;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 }
 
@@ -739,12 +881,12 @@ public final class arrow/fx/reactor/extensions/FluxKFunctor$DefaultImpls {
 	public static fun tupleLeft (Larrow/fx/reactor/extensions/FluxKFunctor;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun tupleRight (Larrow/fx/reactor/extensions/FluxKFunctor;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKFunctor;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/FluxKFunctor;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/FluxKFunctor;Larrow/Kind;)Larrow/Kind;
 }
 
-public abstract interface class arrow/fx/reactor/extensions/FluxKFunctorFilter : arrow/typeclasses/FunctorFilter {
+public abstract interface class arrow/fx/reactor/extensions/FluxKFunctorFilter : arrow/fx/reactor/extensions/FluxKFunctor, arrow/typeclasses/FunctorFilter {
 	public abstract fun filterMap (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
-	public abstract fun map (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
 }
 
 public final class arrow/fx/reactor/extensions/FluxKFunctorFilter$DefaultImpls {
@@ -760,13 +902,14 @@ public final class arrow/fx/reactor/extensions/FluxKFunctorFilter$DefaultImpls {
 	public static fun tupleLeft (Larrow/fx/reactor/extensions/FluxKFunctorFilter;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun tupleRight (Larrow/fx/reactor/extensions/FluxKFunctorFilter;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKFunctorFilter;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/FluxKFunctorFilter;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/FluxKFunctorFilter;Larrow/Kind;)Larrow/Kind;
 }
 
-public abstract interface class arrow/fx/reactor/extensions/FluxKMonad : arrow/typeclasses/Monad {
+public abstract interface class arrow/fx/reactor/extensions/FluxKMonad : arrow/fx/reactor/extensions/FluxKApplicative, arrow/typeclasses/Monad {
 	public abstract fun ap (Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/FluxK;
+	public abstract fun apEval (Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public abstract fun flatMap (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
-	public abstract fun just (Ljava/lang/Object;)Larrow/fx/reactor/FluxK;
 	public abstract fun map (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
 	public abstract fun tailRecM (Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
 }
@@ -774,6 +917,7 @@ public abstract interface class arrow/fx/reactor/extensions/FluxKMonad : arrow/t
 public final class arrow/fx/reactor/extensions/FluxKMonad$DefaultImpls {
 	public static fun andS (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun ap (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/FluxK;
+	public static fun apEval (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun branch (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun effectM (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
@@ -806,6 +950,15 @@ public final class arrow/fx/reactor/extensions/FluxKMonad$DefaultImpls {
 	public static fun map2Eval (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKMonad;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun mproduct (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun orS (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
@@ -835,8 +988,18 @@ public final class arrow/fx/reactor/extensions/FluxKMonad$DefaultImpls {
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKMonad;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;)Larrow/Kind;
 	public static fun whenS (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/FluxKMonad;Larrow/Kind;)Larrow/Kind;
 }
@@ -849,6 +1012,7 @@ public final class arrow/fx/reactor/extensions/FluxKMonadDefer$DefaultImpls {
 	public static fun Ref (Larrow/fx/reactor/extensions/FluxKMonadDefer;Ljava/lang/Object;)Larrow/Kind;
 	public static fun andS (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun ap (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/FluxK;
+	public static fun apEval (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun attempt (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;)Larrow/Kind;
 	public static fun bracket (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
@@ -901,7 +1065,18 @@ public final class arrow/fx/reactor/extensions/FluxKMonadDefer$DefaultImpls {
 	public static fun map2Eval (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKMonadDefer;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun mproduct (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun onCancel (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun onError (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun orS (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Lkotlin/Unit;)Larrow/Kind;
@@ -936,9 +1111,20 @@ public final class arrow/fx/reactor/extensions/FluxKMonadDefer$DefaultImpls {
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun uncancelable (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;)Larrow/Kind;
+	public static fun uncancellable (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKMonadDefer;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;)Larrow/Kind;
 	public static fun whenS (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/FluxKMonadDefer;Larrow/Kind;)Larrow/Kind;
 }
@@ -951,6 +1137,7 @@ public abstract interface class arrow/fx/reactor/extensions/FluxKMonadError : ar
 public final class arrow/fx/reactor/extensions/FluxKMonadError$DefaultImpls {
 	public static fun andS (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun ap (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/FluxK;
+	public static fun apEval (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun attempt (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;)Larrow/Kind;
 	public static fun branch (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
@@ -994,6 +1181,15 @@ public final class arrow/fx/reactor/extensions/FluxKMonadError$DefaultImpls {
 	public static fun map2Eval (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKMonadError;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun mproduct (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun orS (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
@@ -1028,26 +1224,31 @@ public final class arrow/fx/reactor/extensions/FluxKMonadError$DefaultImpls {
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKMonadError;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;)Larrow/Kind;
 	public static fun whenS (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/FluxKMonadError;Larrow/Kind;)Larrow/Kind;
 }
 
-public abstract interface class arrow/fx/reactor/extensions/FluxKMonadFilter : arrow/typeclasses/MonadFilter {
-	public abstract fun ap (Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/FluxK;
+public abstract interface class arrow/fx/reactor/extensions/FluxKMonadFilter : arrow/fx/reactor/extensions/FluxKMonad, arrow/typeclasses/MonadFilter {
 	public abstract fun empty ()Larrow/fx/reactor/FluxK;
 	public abstract fun filterMap (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
-	public abstract fun flatMap (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
-	public abstract fun just (Ljava/lang/Object;)Larrow/fx/reactor/FluxK;
-	public abstract fun map (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
-	public abstract fun map2 (Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
-	public abstract fun tailRecM (Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
 }
 
 public final class arrow/fx/reactor/extensions/FluxKMonadFilter$DefaultImpls {
 	public static fun andS (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun ap (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/FluxK;
+	public static fun apEval (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun bindingFilter (Larrow/fx/reactor/extensions/FluxKMonadFilter;Lkotlin/jvm/functions/Function2;)Larrow/Kind;
 	public static fun branch (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
@@ -1081,10 +1282,19 @@ public final class arrow/fx/reactor/extensions/FluxKMonadFilter$DefaultImpls {
 	public static fun map (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun map (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun map (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
-	public static fun map2 (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
+	public static fun map2 (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun map2Eval (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKMonadFilter;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun mproduct (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun orS (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
@@ -1114,8 +1324,18 @@ public final class arrow/fx/reactor/extensions/FluxKMonadFilter$DefaultImpls {
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKMonadFilter;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;)Larrow/Kind;
 	public static fun whenS (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/FluxKMonadFilter;Larrow/Kind;)Larrow/Kind;
 }
@@ -1126,6 +1346,7 @@ public abstract interface class arrow/fx/reactor/extensions/FluxKMonadThrow : ar
 public final class arrow/fx/reactor/extensions/FluxKMonadThrow$DefaultImpls {
 	public static fun andS (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun ap (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/FluxK;
+	public static fun apEval (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun attempt (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;)Larrow/Kind;
 	public static fun branch (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
@@ -1169,6 +1390,15 @@ public final class arrow/fx/reactor/extensions/FluxKMonadThrow$DefaultImpls {
 	public static fun map2Eval (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKMonadThrow;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun mproduct (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun orS (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
@@ -1204,8 +1434,18 @@ public final class arrow/fx/reactor/extensions/FluxKMonadThrow$DefaultImpls {
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKMonadThrow;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;)Larrow/Kind;
 	public static fun whenS (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/FluxKMonadThrow;Larrow/Kind;)Larrow/Kind;
 }
@@ -1226,11 +1466,14 @@ public abstract interface class arrow/fx/reactor/extensions/FluxKTraverse : arro
 }
 
 public final class arrow/fx/reactor/extensions/FluxKTraverse$DefaultImpls {
+	public static fun all (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Z
 	public static fun combineAll (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Larrow/typeclasses/Monoid;)Ljava/lang/Object;
 	public static fun exists (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Z
 	public static fun find (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/core/Option;
 	public static fun firstOption (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;)Larrow/core/Option;
 	public static fun firstOption (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/core/Option;
+	public static fun firstOrNone (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;)Larrow/core/Option;
+	public static fun firstOrNone (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/core/Option;
 	public static fun flatTraverse (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Larrow/typeclasses/Monad;Larrow/typeclasses/Applicative;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun fold (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Larrow/typeclasses/Monoid;)Ljava/lang/Object;
 	public static fun foldLeft (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Ljava/lang/Object;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;
@@ -1243,6 +1486,7 @@ public final class arrow/fx/reactor/extensions/FluxKTraverse$DefaultImpls {
 	public static fun get (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;J)Larrow/core/Option;
 	public static fun imap (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun isEmpty (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;)Z
+	public static fun isNotEmpty (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;)Z
 	public static fun lift (Larrow/fx/reactor/extensions/FluxKTraverse;Lkotlin/jvm/functions/Function1;)Lkotlin/jvm/functions/Function1;
 	public static fun map (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
 	public static fun mapConst (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
@@ -1256,11 +1500,13 @@ public final class arrow/fx/reactor/extensions/FluxKTraverse$DefaultImpls {
 	public static fun sequence (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Larrow/typeclasses/Applicative;)Larrow/Kind;
 	public static fun sequence_ (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Larrow/typeclasses/Applicative;)Larrow/Kind;
 	public static fun size (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Larrow/typeclasses/Monoid;)J
+	public static fun toList (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;)Ljava/util/List;
 	public static fun traverse (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Larrow/typeclasses/Applicative;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun traverse_ (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Larrow/typeclasses/Applicative;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun tupleLeft (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun tupleRight (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/FluxKTraverse;Larrow/Kind;)Larrow/Kind;
 }
 
@@ -1276,12 +1522,14 @@ public final class arrow/fx/reactor/extensions/FluxkKt {
 
 public abstract interface class arrow/fx/reactor/extensions/MonoKApplicative : arrow/fx/reactor/extensions/MonoKFunctor, arrow/typeclasses/Applicative {
 	public abstract fun ap (Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/MonoK;
+	public abstract fun apEval (Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public abstract fun just (Ljava/lang/Object;)Larrow/fx/reactor/MonoK;
 	public abstract fun map (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/MonoK;
 }
 
 public final class arrow/fx/reactor/extensions/MonoKApplicative$DefaultImpls {
 	public static fun ap (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/MonoK;
+	public static fun apEval (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun followedBy (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun fproduct (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
@@ -1303,6 +1551,15 @@ public final class arrow/fx/reactor/extensions/MonoKApplicative$DefaultImpls {
 	public static fun map2Eval (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKApplicative;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Lkotlin/Unit;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Lkotlin/Unit;Lkotlin/Unit;)Larrow/Kind;
@@ -1325,8 +1582,18 @@ public final class arrow/fx/reactor/extensions/MonoKApplicative$DefaultImpls {
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKApplicative;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/MonoKApplicative;Larrow/Kind;)Larrow/Kind;
 }
 
@@ -1337,6 +1604,7 @@ public abstract interface class arrow/fx/reactor/extensions/MonoKApplicativeErro
 
 public final class arrow/fx/reactor/extensions/MonoKApplicativeError$DefaultImpls {
 	public static fun ap (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/MonoK;
+	public static fun apEval (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun attempt (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;)Larrow/Kind;
 	public static fun catch (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/typeclasses/ApplicativeError;Lkotlin/jvm/functions/Function0;)Larrow/Kind;
@@ -1368,6 +1636,15 @@ public final class arrow/fx/reactor/extensions/MonoKApplicativeError$DefaultImpl
 	public static fun map2Eval (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKApplicativeError;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Lkotlin/Unit;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Lkotlin/Unit;Lkotlin/Unit;)Larrow/Kind;
@@ -1393,8 +1670,18 @@ public final class arrow/fx/reactor/extensions/MonoKApplicativeError$DefaultImpl
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKApplicativeError;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/MonoKApplicativeError;Larrow/Kind;)Larrow/Kind;
 }
 
@@ -1408,6 +1695,7 @@ public final class arrow/fx/reactor/extensions/MonoKAsync$DefaultImpls {
 	public static fun Ref (Larrow/fx/reactor/extensions/MonoKAsync;Ljava/lang/Object;)Larrow/Kind;
 	public static fun andS (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun ap (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/MonoK;
+	public static fun apEval (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun async (Larrow/fx/reactor/extensions/MonoKAsync;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/MonoK;
 	public static fun asyncF (Larrow/fx/reactor/extensions/MonoKAsync;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/MonoK;
@@ -1470,8 +1758,19 @@ public final class arrow/fx/reactor/extensions/MonoKAsync$DefaultImpls {
 	public static fun map2Eval (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKAsync;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun mproduct (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun never (Larrow/fx/reactor/extensions/MonoKAsync;)Larrow/Kind;
+	public static fun onCancel (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun onError (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun orS (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Lkotlin/Unit;)Larrow/Kind;
@@ -1507,9 +1806,20 @@ public final class arrow/fx/reactor/extensions/MonoKAsync$DefaultImpls {
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun uncancelable (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;)Larrow/Kind;
+	public static fun uncancellable (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKAsync;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;)Larrow/Kind;
 	public static fun whenS (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/MonoKAsync;Larrow/Kind;)Larrow/Kind;
 }
@@ -1521,6 +1831,7 @@ public abstract interface class arrow/fx/reactor/extensions/MonoKBracket : arrow
 public final class arrow/fx/reactor/extensions/MonoKBracket$DefaultImpls {
 	public static fun andS (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun ap (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/MonoK;
+	public static fun apEval (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun attempt (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;)Larrow/Kind;
 	public static fun bracket (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
@@ -1568,7 +1879,18 @@ public final class arrow/fx/reactor/extensions/MonoKBracket$DefaultImpls {
 	public static fun map2Eval (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKBracket;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun mproduct (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun onCancel (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun onError (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun orS (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Lkotlin/Unit;)Larrow/Kind;
@@ -1603,9 +1925,20 @@ public final class arrow/fx/reactor/extensions/MonoKBracket$DefaultImpls {
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun uncancelable (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;)Larrow/Kind;
+	public static fun uncancellable (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKBracket;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;)Larrow/Kind;
 	public static fun whenS (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/MonoKBracket;Larrow/Kind;)Larrow/Kind;
 }
@@ -1618,6 +1951,7 @@ public final class arrow/fx/reactor/extensions/MonoKConcurrentEffect$DefaultImpl
 	public static fun Ref (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Ljava/lang/Object;)Larrow/Kind;
 	public static fun andS (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun ap (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/MonoK;
+	public static fun apEval (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun async (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/MonoK;
 	public static fun asyncF (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/MonoK;
@@ -1680,8 +2014,19 @@ public final class arrow/fx/reactor/extensions/MonoKConcurrentEffect$DefaultImpl
 	public static fun map2Eval (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun mproduct (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun never (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;)Larrow/Kind;
+	public static fun onCancel (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun onError (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun orS (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Lkotlin/Unit;)Larrow/Kind;
@@ -1719,9 +2064,20 @@ public final class arrow/fx/reactor/extensions/MonoKConcurrentEffect$DefaultImpl
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun uncancelable (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;)Larrow/Kind;
+	public static fun uncancellable (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;)Larrow/Kind;
 	public static fun whenS (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/MonoKConcurrentEffect;Larrow/Kind;)Larrow/Kind;
 }
@@ -1734,6 +2090,7 @@ public final class arrow/fx/reactor/extensions/MonoKEffect$DefaultImpls {
 	public static fun Ref (Larrow/fx/reactor/extensions/MonoKEffect;Ljava/lang/Object;)Larrow/Kind;
 	public static fun andS (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun ap (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/MonoK;
+	public static fun apEval (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun async (Larrow/fx/reactor/extensions/MonoKEffect;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/MonoK;
 	public static fun asyncF (Larrow/fx/reactor/extensions/MonoKEffect;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/MonoK;
@@ -1796,8 +2153,19 @@ public final class arrow/fx/reactor/extensions/MonoKEffect$DefaultImpls {
 	public static fun map2Eval (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKEffect;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun mproduct (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun never (Larrow/fx/reactor/extensions/MonoKEffect;)Larrow/Kind;
+	public static fun onCancel (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun onError (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun orS (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Lkotlin/Unit;)Larrow/Kind;
@@ -1834,9 +2202,20 @@ public final class arrow/fx/reactor/extensions/MonoKEffect$DefaultImpls {
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun uncancelable (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;)Larrow/Kind;
+	public static fun uncancellable (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKEffect;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;)Larrow/Kind;
 	public static fun whenS (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/MonoKEffect;Larrow/Kind;)Larrow/Kind;
 }
@@ -1855,11 +2234,13 @@ public final class arrow/fx/reactor/extensions/MonoKFunctor$DefaultImpls {
 	public static fun tupleLeft (Larrow/fx/reactor/extensions/MonoKFunctor;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun tupleRight (Larrow/fx/reactor/extensions/MonoKFunctor;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKFunctor;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/MonoKFunctor;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/MonoKFunctor;Larrow/Kind;)Larrow/Kind;
 }
 
 public abstract interface class arrow/fx/reactor/extensions/MonoKMonad : arrow/fx/reactor/extensions/MonoKApplicative, arrow/typeclasses/Monad {
 	public abstract fun ap (Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/MonoK;
+	public abstract fun apEval (Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public abstract fun flatMap (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/MonoK;
 	public abstract fun map (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/MonoK;
 	public abstract fun tailRecM (Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/MonoK;
@@ -1868,6 +2249,7 @@ public abstract interface class arrow/fx/reactor/extensions/MonoKMonad : arrow/f
 public final class arrow/fx/reactor/extensions/MonoKMonad$DefaultImpls {
 	public static fun andS (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun ap (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/MonoK;
+	public static fun apEval (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun branch (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun effectM (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
@@ -1900,6 +2282,15 @@ public final class arrow/fx/reactor/extensions/MonoKMonad$DefaultImpls {
 	public static fun map2Eval (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKMonad;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun mproduct (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun orS (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
@@ -1929,8 +2320,18 @@ public final class arrow/fx/reactor/extensions/MonoKMonad$DefaultImpls {
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKMonad;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;)Larrow/Kind;
 	public static fun whenS (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/MonoKMonad;Larrow/Kind;)Larrow/Kind;
 }
@@ -1943,6 +2344,7 @@ public final class arrow/fx/reactor/extensions/MonoKMonadDefer$DefaultImpls {
 	public static fun Ref (Larrow/fx/reactor/extensions/MonoKMonadDefer;Ljava/lang/Object;)Larrow/Kind;
 	public static fun andS (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun ap (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/MonoK;
+	public static fun apEval (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun attempt (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;)Larrow/Kind;
 	public static fun bracket (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
@@ -1995,7 +2397,18 @@ public final class arrow/fx/reactor/extensions/MonoKMonadDefer$DefaultImpls {
 	public static fun map2Eval (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKMonadDefer;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun mproduct (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun onCancel (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun onError (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun orS (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Lkotlin/Unit;)Larrow/Kind;
@@ -2030,9 +2443,20 @@ public final class arrow/fx/reactor/extensions/MonoKMonadDefer$DefaultImpls {
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun uncancelable (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;)Larrow/Kind;
+	public static fun uncancellable (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKMonadDefer;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;)Larrow/Kind;
 	public static fun whenS (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/MonoKMonadDefer;Larrow/Kind;)Larrow/Kind;
 }
@@ -2046,6 +2470,7 @@ public abstract interface class arrow/fx/reactor/extensions/MonoKMonadError : ar
 public final class arrow/fx/reactor/extensions/MonoKMonadError$DefaultImpls {
 	public static fun andS (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun ap (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/MonoK;
+	public static fun apEval (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun attempt (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;)Larrow/Kind;
 	public static fun branch (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
@@ -2089,6 +2514,15 @@ public final class arrow/fx/reactor/extensions/MonoKMonadError$DefaultImpls {
 	public static fun map2Eval (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKMonadError;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun mproduct (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun orS (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
@@ -2123,8 +2557,18 @@ public final class arrow/fx/reactor/extensions/MonoKMonadError$DefaultImpls {
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKMonadError;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;)Larrow/Kind;
 	public static fun whenS (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/MonoKMonadError;Larrow/Kind;)Larrow/Kind;
 }
@@ -2135,6 +2579,7 @@ public abstract interface class arrow/fx/reactor/extensions/MonoKMonadThrow : ar
 public final class arrow/fx/reactor/extensions/MonoKMonadThrow$DefaultImpls {
 	public static fun andS (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun ap (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/MonoK;
+	public static fun apEval (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/core/Eval;)Larrow/core/Eval;
 	public static fun apTap (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun attempt (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;)Larrow/Kind;
 	public static fun branch (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
@@ -2178,6 +2623,15 @@ public final class arrow/fx/reactor/extensions/MonoKMonadThrow$DefaultImpls {
 	public static fun map2Eval (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/core/Eval;Lkotlin/jvm/functions/Function1;)Larrow/core/Eval;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Ljava/lang/Object;)Larrow/Kind;
 	public static fun mapConst (Larrow/fx/reactor/extensions/MonoKMonadThrow;Ljava/lang/Object;Larrow/Kind;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
+	public static fun mapN (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun mproduct (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 	public static fun orS (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun product (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
@@ -2213,8 +2667,18 @@ public final class arrow/fx/reactor/extensions/MonoKMonadThrow$DefaultImpls {
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun tupled (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
+	public static fun tupledN (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKMonadThrow;)Larrow/Kind;
 	public static fun unit (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;)Larrow/Kind;
+	public static fun void (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;)Larrow/Kind;
 	public static fun whenS (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;Larrow/Kind;)Larrow/Kind;
 	public static fun widen (Larrow/fx/reactor/extensions/MonoKMonadThrow;Larrow/Kind;)Larrow/Kind;
 }
@@ -2276,7 +2740,10 @@ public final class arrow/fx/reactor/extensions/fluxk/bracket/FluxKBracketKt {
 	public static final fun bracketCase (Larrow/Kind;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
 	public static final fun guarantee (Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/FluxK;
 	public static final fun guaranteeCase (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
+	public static final fun onCancel (Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/FluxK;
+	public static final fun onError (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/FluxK;
 	public static final fun uncancelable (Larrow/Kind;)Larrow/fx/reactor/FluxK;
+	public static final fun uncancellable (Larrow/Kind;)Larrow/fx/reactor/FluxK;
 }
 
 public final class arrow/fx/reactor/extensions/fluxk/concurrentEffect/FluxKConcurrentEffectKt {
@@ -2290,11 +2757,14 @@ public final class arrow/fx/reactor/extensions/fluxk/effect/FluxKEffectKt {
 }
 
 public final class arrow/fx/reactor/extensions/fluxk/foldable/FluxKFoldableKt {
+	public static final fun all (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Z
 	public static final fun combineAll (Larrow/Kind;Larrow/typeclasses/Monoid;)Ljava/lang/Object;
 	public static final fun exists (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Z
 	public static final fun find (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/core/Option;
 	public static final fun firstOption (Larrow/Kind;)Larrow/core/Option;
 	public static final fun firstOption (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/core/Option;
+	public static final fun firstOrNone (Larrow/Kind;)Larrow/core/Option;
+	public static final fun firstOrNone (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/core/Option;
 	public static final fun fold (Larrow/Kind;Larrow/typeclasses/Monoid;)Ljava/lang/Object;
 	public static final fun foldLeft (Larrow/Kind;Ljava/lang/Object;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;
 	public static final fun foldM (Larrow/Kind;Larrow/typeclasses/Monad;Ljava/lang/Object;Lkotlin/jvm/functions/Function2;)Larrow/Kind;
@@ -2305,6 +2775,7 @@ public final class arrow/fx/reactor/extensions/fluxk/foldable/FluxKFoldableKt {
 	public static final fun forAll (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Z
 	public static final fun get (Larrow/Kind;J)Larrow/core/Option;
 	public static final fun isEmpty (Larrow/Kind;)Z
+	public static final fun isNotEmpty (Larrow/Kind;)Z
 	public static final fun nonEmpty (Larrow/Kind;)Z
 	public static final fun orEmpty (Larrow/typeclasses/Applicative;Larrow/typeclasses/Monoid;)Larrow/fx/reactor/FluxK;
 	public static final fun reduceLeftOption (Larrow/Kind;Lkotlin/jvm/functions/Function2;)Larrow/core/Option;
@@ -2313,6 +2784,7 @@ public final class arrow/fx/reactor/extensions/fluxk/foldable/FluxKFoldableKt {
 	public static final fun reduceRightToOption (Larrow/Kind;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;)Larrow/core/Eval;
 	public static final fun sequence_ (Larrow/Kind;Larrow/typeclasses/Applicative;)Larrow/Kind;
 	public static final fun size (Larrow/Kind;Larrow/typeclasses/Monoid;)J
+	public static final fun toList (Larrow/Kind;)Ljava/util/List;
 	public static final fun traverse_ (Larrow/Kind;Larrow/typeclasses/Applicative;Lkotlin/jvm/functions/Function1;)Larrow/Kind;
 }
 
@@ -2327,6 +2799,7 @@ public final class arrow/fx/reactor/extensions/fluxk/functor/FluxKFunctorKt {
 	public static final fun tupleLeft (Larrow/Kind;Ljava/lang/Object;)Larrow/fx/reactor/FluxK;
 	public static final fun tupleRight (Larrow/Kind;Ljava/lang/Object;)Larrow/fx/reactor/FluxK;
 	public static final fun unit (Larrow/Kind;)Larrow/fx/reactor/FluxK;
+	public static final fun void (Larrow/Kind;)Larrow/fx/reactor/FluxK;
 	public static final fun widen (Larrow/Kind;)Larrow/fx/reactor/FluxK;
 }
 
@@ -2444,7 +2917,10 @@ public final class arrow/fx/reactor/extensions/monok/bracket/MonoKBracketKt {
 	public static final fun bracketCase (Larrow/Kind;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/MonoK;
 	public static final fun guarantee (Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/MonoK;
 	public static final fun guaranteeCase (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/MonoK;
+	public static final fun onCancel (Larrow/Kind;Larrow/Kind;)Larrow/fx/reactor/MonoK;
+	public static final fun onError (Larrow/Kind;Lkotlin/jvm/functions/Function1;)Larrow/fx/reactor/MonoK;
 	public static final fun uncancelable (Larrow/Kind;)Larrow/fx/reactor/MonoK;
+	public static final fun uncancellable (Larrow/Kind;)Larrow/fx/reactor/MonoK;
 }
 
 public final class arrow/fx/reactor/extensions/monok/concurrentEffect/MonoKConcurrentEffectKt {
@@ -2468,6 +2944,7 @@ public final class arrow/fx/reactor/extensions/monok/functor/MonoKFunctorKt {
 	public static final fun tupleLeft (Larrow/Kind;Ljava/lang/Object;)Larrow/fx/reactor/MonoK;
 	public static final fun tupleRight (Larrow/Kind;Ljava/lang/Object;)Larrow/fx/reactor/MonoK;
 	public static final fun unit (Larrow/Kind;)Larrow/fx/reactor/MonoK;
+	public static final fun void (Larrow/Kind;)Larrow/fx/reactor/MonoK;
 	public static final fun widen (Larrow/Kind;)Larrow/fx/reactor/MonoK;
 }
 

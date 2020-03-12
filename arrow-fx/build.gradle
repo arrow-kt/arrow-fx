@@ -9,6 +9,10 @@ plugins {
     id "ru.vyarus.animalsniffer"
 }
 
+apiValidation {
+    ignoredProjects += ["arrow-docs", "arrow-fx-test"]
+}
+
 apply from: "$SUBPROJECT_CONF"
 apply from: "$DOC_CONF"
 apply from: "$PUBLISH_CONF"
