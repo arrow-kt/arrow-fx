@@ -28,7 +28,7 @@ subprojects {
     apply plugin: 'kotlinx-atomicfu'
 }
 
-configure(subprojects 
+configure(subprojects
             - project("arrow-fx-reactor") 
             - project("arrow-benchmarks-fx:arrow-kio-benchmarks")) 
 {

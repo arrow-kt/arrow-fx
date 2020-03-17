@@ -295,7 +295,7 @@ interface Queue<F, A> : QueueOf<F, A>, Dequeue<F, A>, Enqueue<F, A> {
      * Create a [Queue] with [BackpressureStrategy.Bounded].
      *
      * Offering to a bounded queue at capacity will cause the fiber making
-     * the call to be suspended until the queue has space to receive the offer value.
+     * the call to be suspended until the queue has space to receive the offered value.
      *
      * ```kotlin:ank:playground
      * import arrow.fx.*
