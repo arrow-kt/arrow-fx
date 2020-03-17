@@ -77,11 +77,11 @@ internal class ConcurrentQueue<F, A> internal constructor(
 
         val update: State<F, A> =
           if (taker == null) { // If no takers or values, we can safely store a single value in Surplus.
-            State.Surplus(IQueue(a), emptyMap(), current.shutdownHook)
+            State.Surplus(IQueue(a), emptyMap())
           } else { // Else we need to remove the first taker from the current state
             val rest = current.takes.entries.drop(1)
             if (rest.isEmpty()) current.copy(emptyMap(), emptyMap())
-            else State.Deficit(emptyMap(), rest.toMap(), current.shutdownHook)
+            else State.Deficit(emptyMap(), rest.toMap())
           }
 
         if (!state.compareAndSet(current, update)) {
@@ -102,8 +102,8 @@ internal class ConcurrentQueue<F, A> internal constructor(
           unsafeOfferAllDecifitForStrategy(aas, tryStrategy, current) ?: unsafeTryOfferAll(aas, tryStrategy)
         } else {
           val update =
-            if (aas.count() == current.takes.values.size) State.empty<F, A>().copy(shutdownHook = current.shutdownHook)
-            else current.copy(peeks = emptyMap(), takes = current.takes.entries.drop(aas.count()).toMap(), shutdownHook = current.shutdownHook)
+            if (aas.count() == current.takes.values.size) State.empty<F, A>()
+            else current.copy(peeks = emptyMap(), takes = current.takes.entries.drop(aas.count()).toMap())
 
           if (!state.compareAndSet(current, update)) {
             unsafeTryOfferAll(aas, tryStrategy)
@@ -119,7 +119,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
       is State.Surplus -> {
         val id = Token()
         val newMap = current.offers + Pair(id, Tuple2(a, onPut))
-        if (state.compareAndSet(current, State.Surplus(current.values, newMap, current.shutdownHook))) just(later { unsafeCancelOffer(listOf(id)) })
+        if (state.compareAndSet(current, State.Surplus(current.values, newMap))) just(later { unsafeCancelOffer(listOf(id)) })
         else unsafeOffer(a, onPut)
       }
 
@@ -127,11 +127,11 @@ internal class ConcurrentQueue<F, A> internal constructor(
         val first = current.takes.values.firstOrNull()
         val update: State<F, A> =
           if (current.takes.isEmpty()) {
-            State.Surplus(IQueue(a), emptyMap(), current.shutdownHook)
+            State.Surplus(IQueue(a), emptyMap())
           } else {
             val rest = current.takes.entries.drop(1)
             if (rest.isEmpty()) current.copy(emptyMap(), emptyMap())
-            else State.Deficit(emptyMap(), rest.toMap(), current.shutdownHook)
+            else State.Deficit(emptyMap(), rest.toMap())
           }
 
         if (state.compareAndSet(current, update)) {
@@ -159,7 +159,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
 
         val newMap = current.offers + newOffers
 
-        val update: State<F, A> = State.Surplus(current.values, newMap, current.shutdownHook)
+        val update: State<F, A> = State.Surplus(current.values, newMap)
 
         if (state.compareAndSet(current, update)) just(later { unsafeCancelOffer(tokens + id) })
         else unsafeOfferAll(a, onPut)
@@ -181,13 +181,13 @@ internal class ConcurrentQueue<F, A> internal constructor(
           val lastOffer = Pair(id, Tuple2(needOffered.last(), onPut)) // When last value is offered, than offerAll completes.
           val newOffers = tokens.zip(tupled, ::Pair) + lastOffer
 
-          val update = State.Surplus<F, A>(IQueue(values), newOffers.toMap(), current.shutdownHook)
+          val update = State.Surplus<F, A>(IQueue(values), newOffers.toMap())
 
           if (state.compareAndSet(current, update)) streamAllPeeksAndTakers(takerValues, current.peeks.values, current.takes.values).map {
             unit()
           } else unsafeOfferAll(a, onPut) // recurse
         } else {
-          val update = State.Surplus<F, A>(IQueue(a.drop(current.takes.size)), emptyMap(), current.shutdownHook)
+          val update = State.Surplus<F, A>(IQueue(a.drop(current.takes.size)), emptyMap())
 
           if (state.compareAndSet(current, update)) streamAllPeeksAndTakers(a, current.peeks.values, current.takes.values).map {
             onPut(rightUnit)
@@ -213,7 +213,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
         val (head, tail) = current.values.dequeue()
         if (current.offers.isEmpty()) {
           val update: State<F, A> =
-            if (tail.isEmpty()) State.empty<F, A>().copy(shutdownHook = current.shutdownHook)
+            if (tail.isEmpty()) State.empty<F, A>()
             else current.copy(values = tail)
 
           if (state.compareAndSet(current, update)) just(Some(head))
@@ -221,7 +221,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
         } else {
           val (ax, notify) = current.offers.values.first()
           val xs = current.offers.entries.drop(1)
-          val update: State<F, A> = State.Surplus(tail.enqueue(ax), xs.toMap(), current.shutdownHook)
+          val update: State<F, A> = State.Surplus(tail.enqueue(ax), xs.toMap())
 
           if (state.compareAndSet(current, update)) {
             later { notify(rightUnit) }.map { Some(head) } // Notify offer that it finished, and return value.
@@ -238,7 +238,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
         if (current.offers.isEmpty()) {
 
           val update: State<F, A> =
-            if (tail.isEmpty()) State.empty<F, A>().copy(shutdownHook = current.shutdownHook)
+            if (tail.isEmpty()) State.empty<F, A>()
             else current.copy(values = tail)
 
           if (state.compareAndSet(current, update)) {
@@ -250,7 +250,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
         } else {
           val (ax, notify) = current.offers.values.first()
           val xs = current.offers.entries.drop(0)
-          val update: State<F, A> = State.Surplus(tail.enqueue(ax), xs.toMap(), current.shutdownHook)
+          val update: State<F, A> = State.Surplus(tail.enqueue(ax), xs.toMap())
 
           if (state.compareAndSet(current, update)) {
             later { notify(rightUnit) }.map { // Notify offer that it finished,
@@ -264,7 +264,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
       is State.Deficit -> {
         val id = Token()
         val newQueue = current.takes + Pair(id, onTake)
-        val update: State<F, A> = State.Deficit(current.peeks, newQueue, current.shutdownHook)
+        val update: State<F, A> = State.Deficit(current.peeks, newQueue)
         if (state.compareAndSet(current, update)) just(later { unsafeCancelTake(id) })
         else unsafeTake(onTake)
       }
@@ -274,7 +274,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
     when (val current = state.value) {
       is State.Deficit -> {
         val newMap = current.takes - id
-        val update = State.Deficit<F, A>(current.peeks, newMap, current.shutdownHook)
+        val update = State.Deficit<F, A>(current.peeks, newMap)
         if (state.compareAndSet(current, update)) Unit
         else unsafeCancelTake(id)
       }
@@ -286,14 +286,14 @@ internal class ConcurrentQueue<F, A> internal constructor(
       is State.Surplus -> {
         val all = current.values.toList()
         if (current.offers.isEmpty()) {
-          val update: State<F, A> = State.empty<F, A>().copy(shutdownHook = current.shutdownHook)
+          val update: State<F, A> = State.empty<F, A>()
 
           if (state.compareAndSet(current, update)) just(all)
           else unsafeTakeAll()
         } else {
           val allValues = current.offers.values.map { it.a }
           val allOffers = current.offers.values.map { it.b }
-          val update = State.empty<F, A>().copy(shutdownHook = current.shutdownHook)
+          val update = State.empty<F, A>()
 
           // Call all outstanding offer calls that they're  finished, and return all available + offered values.
           if (state.compareAndSet(current, update)) later { allOffers.forEach { cb -> cb(rightUnit) } }.map { all + allValues }
@@ -328,7 +328,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
       is State.Deficit -> {
         val id = Token()
         val newReads = current.peeks + Pair(id, onPeek)
-        val update: State<F, A> = State.Deficit(newReads, current.takes, current.shutdownHook)
+        val update: State<F, A> = State.Deficit(newReads, current.takes)
 
         if (state.compareAndSet(current, update)) just(later { unsafeCancelRead(id) })
         else unsafePeek(onPeek)
@@ -339,7 +339,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
     when (val current = state.value) {
       is State.Deficit -> {
         val newMap = current.peeks - id
-        val update: State<F, A> = State.Deficit(newMap, current.takes, current.shutdownHook)
+        val update: State<F, A> = State.Deficit(newMap, current.takes)
 
         if (state.compareAndSet(current, update)) Unit
         else unsafeCancelRead(id)
@@ -354,24 +354,20 @@ internal class ConcurrentQueue<F, A> internal constructor(
    *
    * [Surplus]: Contains a queue of values and two maps of registered id & offer/shutdown callbacks waiting to
    *   offer once there is room (if the queue is bounded, dropping or sliding).
-   *
-   * [Shutdown]: Holds no values, an offer or take in Shutdown state creates a QueueShutdown error.
    */
   sealed class State<F, out A> {
     data class Deficit<F, A>(
       val peeks: Map<Token, Callback<A>>,
-      val takes: Map<Token, Callback<A>>,
-      val shutdownHook: Map<Token, Callback<Unit>>
+      val takes: Map<Token, Callback<A>>
     ) : State<F, A>()
 
     data class Surplus<F, A>(
       val values: IQueue<A>,
-      val offers: Map<Token, Tuple2<A, Callback<Unit>>>,
-      val shutdownHook: Map<Token, Callback<Unit>>
+      val offers: Map<Token, Tuple2<A, Callback<Unit>>>
     ) : State<F, A>()
 
     companion object {
-      private val empty: Deficit<Any?, Any?> = Deficit(emptyMap(), emptyMap(), emptyMap())
+      private val empty: Deficit<Any?, Any?> = Deficit(emptyMap(), emptyMap())
       fun <F, A> empty(): Deficit<F, A> = empty as Deficit<F, A>
     }
   }
@@ -426,7 +422,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
           a.count() > deficit.takes.size && (a.count() - deficit.takes.size) > strategy.capacity -> just(false)
 
           a.count() > deficit.takes.size -> { // Offer to deficit and update to Surplus, capacity check above
-            val update = State.Surplus<F, A>(IQueue(a.drop(deficit.takes.size)), emptyMap(), deficit.shutdownHook)
+            val update = State.Surplus<F, A>(IQueue(a.drop(deficit.takes.size)), emptyMap())
 
             if (state.compareAndSet(deficit, update)) streamAllPeeksAndTakers(a, deficit.peeks.values, deficit.takes.values)
             else null // recurse
@@ -439,7 +435,7 @@ internal class ConcurrentQueue<F, A> internal constructor(
         else {
           val newQueue = if (afterTakers > strategy.capacity) IQueue(a.drop(deficit.takes.size).drop(afterTakers - strategy.capacity))
           else IQueue(a.drop(deficit.takes.size))
-          val update = State.Surplus<F, A>(newQueue, emptyMap(), deficit.shutdownHook)
+          val update = State.Surplus<F, A>(newQueue, emptyMap())
 
           if (state.compareAndSet(deficit, update)) streamAllPeeksAndTakers(a, deficit.peeks.values, deficit.takes.values)
           else null // recurse
@@ -452,13 +448,13 @@ internal class ConcurrentQueue<F, A> internal constructor(
           val newQueue = if (afterTakers > strategy.capacity) IQueue(a.drop(deficit.takes.size).take(strategy.capacity))
           else IQueue(a.drop(deficit.takes.size))
 
-          val update = State.Surplus<F, A>(newQueue, emptyMap(), deficit.shutdownHook)
+          val update = State.Surplus<F, A>(newQueue, emptyMap())
           if (state.compareAndSet(deficit, update)) streamAllPeeksAndTakers(a, deficit.peeks.values, deficit.takes.values)
           else null // recurse
         }
       }
       is BackpressureStrategy.Unbounded -> {
-        val update = State.Surplus<F, A>(IQueue(a.drop(deficit.takes.size)), emptyMap(), deficit.shutdownHook)
+        val update = State.Surplus<F, A>(IQueue(a.drop(deficit.takes.size)), emptyMap())
         if (state.compareAndSet(deficit, update)) streamAllPeeksAndTakers(a, deficit.peeks.values, deficit.takes.values)
         else null
       }

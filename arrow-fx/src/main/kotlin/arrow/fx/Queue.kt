@@ -228,10 +228,13 @@ interface Enqueue<F, A> {
   /**
    * Offers a value to the [Queue], and behaves differently depending on the [Queue.BackpressureStrategy].
    *
-   *  - Semantically blocks until room available in [Queue] for [Queue.BackpressureStrategy.Bounded]
-   *  - Returns immediately and slides values through the [Queue] for [Queue.BackpressureStrategy.Sliding]
-   *  - Returns immediately and drops values from the [Queue] for [Queue.BackpressureStrategy.Dropping]
-   *  - Returns immediately and always offers to the [Queue] for [Queue.BackpressureStrategy.Unbounded]
+   *  - Semantically blocks until room available in [Queue], check [Queue.bounded] for an example.
+   *
+   *  - Returns immediately and slides values through the [Queue], check [Queue.sliding] for an example.
+   *
+   *  - Returns immediately and drops values from the [Queue], check [Queue.dropping] for an example.
+   *
+   *  - Returns immediately and always offers to the [Queue], check [Queue.unbounded] for an example.
    *
    *  @see [tryOffer] for a [Queue] that always returns immediately, and returns [true] if the value was succesfully put into the [Queue].
    */
