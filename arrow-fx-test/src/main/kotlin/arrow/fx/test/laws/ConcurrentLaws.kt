@@ -22,6 +22,7 @@ import arrow.fx.MVar
 import arrow.fx.Promise
 import arrow.fx.Semaphore
 import arrow.fx.Timer
+import arrow.fx.internal.UnsafePromise
 import arrow.fx.typeclasses.Concurrent
 import arrow.fx.typeclasses.ExitCase
 import arrow.fx.typeclasses.milliseconds
@@ -278,15 +279,15 @@ object ConcurrentLaws {
   fun <F> Concurrent<F>.cancellableReceivesCancelSignal(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
     forAll(Gen.int()) { i ->
       fx.concurrent {
-        val release = Promise<F, Int>(this@cancellableReceivesCancelSignal).bind()
-        val latch = Promise<F, Unit>(this@cancellableReceivesCancelSignal).bind()
+        val release = Promise.uncancellable<F, Int>(this@cancellableReceivesCancelSignal).bind()
+        val latch = UnsafePromise<Unit>()
 
         val (_, cancel) = cancellable<Unit> {
-          latch.complete(Unit)
-            .flatMap { release.complete(i) }
+          latch.complete(Right(Unit))
+          release.complete(i)
         }.fork(ctx).bind()
 
-        asyncF<Unit> { cb -> latch.get().map { cb(Right(it)) } }.bind()
+        async<Unit> { cb -> latch.get(cb) }.bind()
 
         cancel.bind()
         release.get().bind()
