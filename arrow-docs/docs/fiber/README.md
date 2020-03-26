@@ -21,12 +21,12 @@ import arrow.fx.extensions.fx
 import arrow.fx.typeclasses.Fiber
 import arrow.fx.IO
 
-fun <A, B, C> parallelMap(first: IO<A>,
-                     second: IO<B>,
-                     f: (A, B) -> C): IO<C> =
-  IO.fx {
-    val (fiberOne: Fiber<ForIO, A>) = first.fork(Default)
-    val (fiberTwo: Fiber<ForIO, B>) = second.fork(Default)
+fun <A, B, C> parallelMap(first: IO<Nothing, A>,
+                     second: IO<Nothing, B>,
+                     f: (A, B) -> C): IO<Nothing, C> =
+  IO.fx<C> {
+    val (fiberOne: Fiber<IOPartialOf<Nothing>, A>) = first.fork(Default)
+    val (fiberTwo: Fiber<IOPartialOf<Nothing>, B>) = second.fork(Default)
     f(!fiberOne.join(), !fiberTwo.join())
   }
 
