@@ -7,6 +7,9 @@ import arrow.fx.rx2.MaybeK
 import arrow.fx.rx2.MaybeKOf
 import arrow.fx.rx2.extensions.fx
 import arrow.fx.rx2.extensions.maybek.async.async
+import arrow.fx.rx2.extensions.maybek.functor.functor
+import arrow.fx.rx2.extensions.maybek.applicative.applicative
+import arrow.fx.rx2.extensions.maybek.monad.monad
 import arrow.fx.rx2.extensions.maybek.monad.flatMap
 import arrow.fx.rx2.extensions.maybek.timer.timer
 import arrow.fx.rx2.fix
@@ -14,8 +17,10 @@ import arrow.fx.rx2.k
 import arrow.fx.rx2.unsafeRunSync
 import arrow.fx.rx2.value
 import arrow.fx.typeclasses.ExitCase
-import arrow.test.generators.GenK
-import arrow.test.generators.throwable
+import arrow.core.test.generators.GenK
+import arrow.core.test.generators.throwable
+import arrow.fx.rx2.extensions.concurrent
+import arrow.fx.test.laws.ConcurrentLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import io.kotlintest.properties.Gen
@@ -31,17 +36,18 @@ import java.util.concurrent.TimeoutException
 class MaybeKTests : RxJavaSpec() {
 
   init {
-    // testLaws(
-    //   ConcurrentLaws.laws(
-    //     MaybeK.concurrent(),
-    //     MaybeK.timer(),
-    //     MaybeK.functor(),
-    //     MaybeK.applicative(),
-    //     MaybeK.monad(),
-    //     MaybeK.genk(),
-    //     MaybeK.eqK(),
-    //     testStackSafety = false
-    //   )
+    testLaws(
+      ConcurrentLaws.laws(
+        MaybeK.concurrent(),
+        MaybeK.timer(),
+        MaybeK.functor(),
+        MaybeK.applicative(),
+        MaybeK.monad(),
+        MaybeK.genk(),
+        MaybeK.eqK(),
+        testStackSafety = false
+      )
+    )
 
       /*
       TODO: MonadFilter instances are not lawsful

@@ -2,6 +2,7 @@ package arrow.fx
 
 import arrow.Kind
 import arrow.core.Try
+import arrow.core.test.generators.GenK
 import arrow.fx.rx2.FlowableK
 import arrow.fx.rx2.FlowableKOf
 import arrow.fx.rx2.ForFlowableK
@@ -13,7 +14,6 @@ import arrow.fx.rx2.fix
 import arrow.fx.rx2.k
 import arrow.fx.rx2.value
 import arrow.fx.typeclasses.ExitCase
-import arrow.test.generators.GenK
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import io.kotlintest.properties.Gen
@@ -139,12 +139,12 @@ class FlowableKTests : RxJavaSpec() {
 
     "FlowableK.cancellable should cancel CancelToken on dispose" {
       Promise.uncancellable<ForFlowableK, Unit>(FlowableK.async()).flatMap { latch ->
-        FlowableK {
-          FlowableK.cancellable<Unit>(fa = {
-            latch.complete(Unit)
-          }).flowable.subscribe().dispose()
-        }.flatMap { latch.get() }
-      }.value()
+          FlowableK {
+            FlowableK.cancellable<Unit>(fa = {
+              latch.complete(Unit)
+            }).flowable.subscribe().dispose()
+          }.flatMap { latch.get() }
+        }.value()
         .test()
         .assertValue(Unit)
         .awaitTerminalEvent(100, TimeUnit.MILLISECONDS)

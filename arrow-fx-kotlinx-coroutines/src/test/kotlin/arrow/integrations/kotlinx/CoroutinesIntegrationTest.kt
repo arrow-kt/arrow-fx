@@ -2,36 +2,30 @@ package arrow.integrations.kotlinx
 
 import arrow.core.Right
 import arrow.core.Some
-import arrow.Kind
 import arrow.core.extensions.eq
 import arrow.core.internal.AtomicRefW
+import arrow.core.test.UnitSpec
+import arrow.core.test.generators.throwable
+import arrow.core.test.laws.equalUnderTheLaw
 import arrow.fx.IO
-import arrow.fx.IOPartialOf
 import arrow.fx.IOResult
+import arrow.fx.onCancel
 import arrow.fx.bracketCase
 import arrow.fx.extensions.exitcase2.eq.eq
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.async.effectMap
-import arrow.fx.extensions.io.applicative.applicative
 import arrow.fx.extensions.io.monad.followedBy
-import arrow.fx.extensions.io.concurrent.waitFor
-import arrow.fx.fix
 import arrow.fx.handleErrorWith
 import arrow.fx.flatMap
 import arrow.fx.onCancel
-import arrow.fx.typeclasses.Duration
+import arrow.fx.handleErrorWith
 import arrow.fx.typeclasses.ExitCase2
 import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
 import arrow.fx.unsafeRunAsync
-import arrow.fx.unsafeRunSync
-import arrow.test.UnitSpec
 import arrow.test.eq
-import arrow.test.generators.throwable
-import arrow.test.laws.equalUnderTheLaw
-import arrow.test.laws.shouldBeEq
+import arrow.fx.test.laws.shouldBeEq
 import arrow.typeclasses.Eq
-import arrow.typeclasses.EqK
 import io.kotlintest.fail
 import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll
@@ -45,6 +39,7 @@ import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.test.TestCoroutineDispatcher
 import kotlinx.coroutines.test.TestCoroutineExceptionHandler
 import kotlinx.coroutines.test.TestCoroutineScope
+import arrow.fx.test.eq.eqK
 
 @ObsoleteCoroutinesApi
 @Suppress("IMPLICIT_NOTHING_AS_TYPE_PARAMETER")
@@ -129,7 +124,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
           }
           !IO.effect { scope.cancel() }
           !promise.get()
-        }.equalUnderTheLaw(IO.just(i), IO.eqK<Nothing>(500.milliseconds).liftEq(Int.eq()))
+        }.equalUnderTheLaw(IO.just(i), IO.eqK<Nothing>(timeout = 500.milliseconds).liftEq(Int.eq()))
       }
     }
 
@@ -143,7 +138,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
         }
         IO.sleep(500.milliseconds)
           .unsafeRunAsync { scope.cancel() }
-      }.equalUnderTheLaw(IO.just(1), IO.eqK<Nothing>(2.seconds).liftEq(Int.eq()))
+      }.equalUnderTheLaw(IO.just(1), IO.eqK<Nothing>(timeout = 2.seconds).liftEq(Int.eq()))
     }
 
     // --------------- unsafeRunScoped ---------------
@@ -175,20 +170,20 @@ class CoroutinesIntegrationTest : UnitSpec() {
           }
           !IO.effect { scope.cancel() }
           !promise.get()
-        }.equalUnderTheLaw(IO.just(i), IO.eqK<Nothing>(500.milliseconds).liftEq(Int.eq()))
+        }.equalUnderTheLaw(IO.just(i), IO.eqK<Nothing>(timeout = 500.milliseconds).liftEq(Int.eq()))
       }
     }
 
     "unsafeRunScoped can cancel even for infinite asyncs" {
-        IO.fx<Nothing, Int> {
-          val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
-          val promise = !Promise<Int>()
-          !IO.effect {
-            IO(all) { -1 }.flatMap { IO.never }.onCancel(promise.complete(1)).unsafeRunScoped(scope) { }
-          }
-          !IO.sleep(500.milliseconds).effectMap { scope.cancel() }
-          !promise.get()
-        }.unsafeRunTimed(2.seconds) shouldBe Some(Right(1))
+      IO.fx<Nothing, Int> {
+        val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
+        val promise = !Promise<Int>()
+        !IO.effect {
+          IO(all) { -1 }.flatMap { IO.never }.onCancel(promise.complete(1)).unsafeRunScoped(scope) { }
+        }
+        !IO.sleep(500.milliseconds).effectMap { scope.cancel() }
+        !promise.get()
+      }.unsafeRunTimed(2.seconds) shouldBe Some(Right(1))
     }
 
     "should complete when running a pure value with unsafeRunScoped" {
@@ -278,13 +273,4 @@ fun <A> Eq<A>.nullable(): Eq<A?> = Eq { a, b ->
       aa.eqv(bb)
     } ?: false
   } ?: b?.let { false } ?: true
-}
-
-internal fun <E> IO.Companion.eqK(timeout: Duration = 5.seconds, EQE: Eq<E> = Eq.any()) = object : EqK<IOPartialOf<E>> {
-  override fun <A> Kind<IOPartialOf<E>, A>.eqK(other: Kind<IOPartialOf<E>, A>, EQ: Eq<A>): Boolean =
-    IOResult.eq(EQE, EQ, Eq.any()).run {
-      IO.applicative<Nothing>().mapN(fix().result(), other.fix().result()) { (a, b) -> a.eqv(b) }
-        .waitFor(timeout)
-        .unsafeRunSync()
-    }
 }

@@ -5,9 +5,10 @@ import arrow.core.Either
 import arrow.core.Left
 import arrow.core.Right
 import arrow.core.Tuple2
-import arrow.core.internal.AtomicIntW
 import arrow.core.identity
 import arrow.fx.IO.Companion.effect
+import arrow.core.internal.AtomicIntW
+import arrow.core.test.UnitSpec
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.dispatchers.dispatchers
@@ -15,7 +16,6 @@ import arrow.fx.extensions.runBlocking
 import arrow.fx.extensions.unsafeRun
 import arrow.fx.typeclasses.Concurrent
 import arrow.fx.typeclasses.UnsafeRun
-import arrow.test.UnitSpec
 import arrow.unsafe
 import io.kotlintest.shouldBe
 import io.kotlintest.shouldThrow

@@ -1,6 +1,9 @@
 package arrow.fx
 
 import arrow.Kind
+import arrow.core.test.UnitSpec
+import arrow.core.test.generators.GenK
+import arrow.core.test.generators.throwable
 import arrow.fx.reactor.FluxK
 import arrow.fx.reactor.FluxKOf
 import arrow.fx.reactor.ForFluxK
@@ -11,9 +14,6 @@ import arrow.fx.reactor.fix
 import arrow.fx.reactor.k
 import arrow.fx.reactor.value
 import arrow.fx.typeclasses.ExitCase
-import arrow.test.UnitSpec
-import arrow.test.generators.GenK
-import arrow.test.generators.throwable
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import io.kotlintest.matchers.startWith

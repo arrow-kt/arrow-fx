@@ -330,17 +330,17 @@ fun <EE> IO.Companion.timer(CF: Concurrent<IOPartialOf<EE>>): Timer<IOPartialOf<
 @extension
 interface IOSemigroup<E, A> : Semigroup<IO<E, A>> {
 
-  fun AI(): Semigroup<A>
+  fun SG(): Semigroup<A>
 
   override fun IO<E, A>.combine(b: IO<E, A>): IO<E, A> =
-    FlatMap { a1: A -> b.map { a2: A -> AI().run { a1.combine(a2) } } }
+    FlatMap { a1: A -> b.map { a2: A -> SG().run { a1.combine(a2) } } }
 }
 
 @extension
 interface IOMonoid<E, A> : Monoid<IO<E, A>>, IOSemigroup<E, A> {
-  override fun AI(): Monoid<A>
+  override fun SG(): Monoid<A>
 
-  override fun empty(): IO<E, A> = IO.just(AI().empty())
+  override fun empty(): IO<E, A> = IO.just(SG().empty())
 }
 
 interface IOUnsafeRun : UnsafeRun<IOPartialOf<Nothing>> {

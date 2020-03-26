@@ -1,6 +1,5 @@
 package arrow.fx
 
-import arrow.Kind
 import arrow.core.Either
 import arrow.core.Left
 import arrow.core.None
@@ -11,6 +10,9 @@ import arrow.core.Tuple3
 import arrow.core.Tuple4
 import arrow.core.identity
 import arrow.core.right
+import arrow.core.test.UnitSpec
+import arrow.core.test.concurrency.SideEffect
+import arrow.core.test.laws.SemigroupKLaws
 import arrow.fx.IO.Companion.just
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.async.async
@@ -31,14 +33,9 @@ import arrow.fx.internal.parMap3
 import arrow.fx.typeclasses.ExitCase2
 import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
-import arrow.test.UnitSpec
-import arrow.test.concurrency.SideEffect
-import arrow.test.generators.GenK
-import arrow.test.generators.throwable
-import arrow.test.laws.ConcurrentLaws
-import arrow.test.laws.SemigroupKLaws
-import arrow.typeclasses.Eq
-import arrow.typeclasses.EqK
+import arrow.fx.test.eq.eqK
+import arrow.fx.test.generators.genK
+import arrow.fx.test.laws.ConcurrentLaws
 import io.kotlintest.fail
 import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll
@@ -729,18 +726,4 @@ internal class TestContext : AbstractCoroutineContextElement(TestContext) {
   companion object Key : kotlin.coroutines.CoroutineContext.Key<CoroutineName>
 
   override fun toString(): String = "TestContext(${Integer.toHexString(hashCode())})"
-}
-
-internal fun <E> IO.Companion.eqK() = object : EqK<IOPartialOf<E>> {
-  override fun <A> Kind<IOPartialOf<E>, A>.eqK(other: Kind<IOPartialOf<E>, A>, EQ: Eq<A>): Boolean = EQ<E, A>(EQ).run {
-    fix().eqv(other.fix())
-  }
-}
-
-internal fun IO.Companion.genK() = object : GenK<IOPartialOf<Nothing>> {
-  override fun <A> genK(gen: Gen<A>): Gen<Kind<IOPartialOf<Nothing>, A>> =
-    Gen.oneOf(
-      gen.map(IO.Companion::just),
-      Gen.throwable().map { raiseException<A>(it) }
-    )
 }

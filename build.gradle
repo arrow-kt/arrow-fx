@@ -28,7 +28,7 @@ subprojects {
     apply plugin: 'kotlinx-atomicfu'
 }
 
-configure(subprojects 
+configure(subprojects
             - project("arrow-fx-reactor") 
             - project("arrow-benchmarks-fx:arrow-kio-benchmarks")) 
 {
@@ -37,4 +37,5 @@ configure(subprojects
     dependencies {
         signature 'net.sf.androidscents.signature:android-api-level-21:5.0.1_r2@signature'
     }
+
 }

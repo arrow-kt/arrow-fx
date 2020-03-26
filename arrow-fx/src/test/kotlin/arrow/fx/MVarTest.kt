@@ -7,33 +7,30 @@ import arrow.core.Some
 import arrow.core.Tuple3
 import arrow.core.Tuple4
 import arrow.core.Tuple7
-import arrow.core.extensions.eq
+import arrow.core.test.UnitSpec
 import arrow.core.toT
-import arrow.fx.IO.Companion.effect
 import arrow.fx.extensions.fx
-import arrow.fx.extensions.io.apply.map2
 import arrow.fx.extensions.io.async.async
 import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.concurrent.parSequence
 import arrow.fx.typeclasses.milliseconds
-import arrow.test.UnitSpec
-import arrow.test.laws.equalUnderTheLaw
-import arrow.test.laws.shouldBeEq
+import arrow.fx.test.laws.equalUnderTheLaw
+import arrow.fx.typeclasses.ConcurrentSyntax
 import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll
 import io.kotlintest.shouldBe
 
 class MVarTest : UnitSpec() {
 
+  fun <A> fx(c: suspend ConcurrentSyntax<IOPartialOf<Nothing>>.() -> A): IO<Nothing, A> =
+    IO.concurrent<Nothing>().fx.concurrent(c).fix()
+
   init {
 
     fun tests(label: String, mvar: MVarFactory<IOPartialOf<Nothing>>) {
-      fun IOOf<Nothing, Unit>.test(): Boolean =
-        equalUnderTheLaw(IO.unit, EQ())
-
       "$label - empty; put; isNotEmpty; take; put; take" {
         forAll(Gen.int(), Gen.int()) { a, b ->
-          IO.fx<Nothing, Unit> {
+          fx {
             val av = mvar.empty<Int>().bind()
             val isEmpty = av.isEmpty().bind()
             av.put(a).bind()
@@ -41,14 +38,14 @@ class MVarTest : UnitSpec() {
             val r1 = av.take().bind()
             av.put(b).bind()
             val r2 = av.take().bind()
-            !IO.effect { Tuple4(isEmpty, isNotEmpty, r1, r2) shouldBe Tuple4(true, true, a, b) }
-          }.test()
+            Tuple4(isEmpty, isNotEmpty, r1, r2)
+          }.equalUnderTheLaw(IO.just(Tuple4(true, true, a, b)))
         }
       }
 
       "$label - empty; tryPut; tryPut; isNotEmpty; tryTake; tryTake; put; take" {
         forAll(Gen.int(), Gen.int(), Gen.int()) { a, b, c ->
-          IO.fx<Nothing, Unit> {
+          fx {
             val av = mvar.empty<Int>().bind()
             val isEmpty = av.isEmpty().bind()
             val p1 = av.tryPut(a).bind()
@@ -58,16 +55,13 @@ class MVarTest : UnitSpec() {
             val r2 = av.tryTake().bind()
             av.put(c).bind()
             val r3 = av.take().bind()
-            !IO.effect {
-              Tuple7(isEmpty, p1, p2, isNotEmpty, r1, r2, r3) shouldBe
-                Tuple7(true, true, false, true, Some(a), None, c)
-            }
-          }.test()
+            Tuple7(isEmpty, p1, p2, isNotEmpty, r1, r2, r3)
+          }.equalUnderTheLaw(IO.just(Tuple7(true, true, false, true, Some(a), None, c)))
         }
       }
 
       "$label - empty; take; put; take; put" {
-        IO.fx<Nothing, Unit> {
+        fx {
           val av = mvar.empty<Int>().bind()
 
           val f1 = av.take().fork().bind()
@@ -79,12 +73,12 @@ class MVarTest : UnitSpec() {
           val aa = f1.join().bind()
           val bb = f2.join().bind()
 
-          !IO.effect { setOf(aa, bb) shouldBe setOf(10, 20) }
-        }.test()
+          setOf(aa, bb)
+        }.equalUnderTheLaw(IO.just(setOf(10, 20)))
       }
 
       "$label - empty; put; put; put; take; take; take" {
-        IO.fx<Nothing, Unit> {
+        fx {
           val av = mvar.empty<Int>().bind()
 
           val f1 = av.put(10).fork().bind()
@@ -99,12 +93,12 @@ class MVarTest : UnitSpec() {
           f2.join().bind()
           f3.join().bind()
 
-          !IO.effect { setOf(aa, bb, cc) shouldBe setOf(10, 20, 30) }
-        }.test()
+          setOf(aa, bb, cc)
+        }.equalUnderTheLaw(IO.just(setOf(10, 20, 30)))
       }
 
       "$label - empty; take; take; take; put; put; put" {
-        IO.fx<Nothing, Unit> {
+        fx {
           val av = mvar.empty<Int>().bind()
 
           val f1 = av.take().fork().bind()
@@ -119,56 +113,56 @@ class MVarTest : UnitSpec() {
           val bb = f2.join().bind()
           val cc = f3.join().bind()
 
-          !IO.effect { setOf(aa, bb, cc) shouldBe setOf(10, 20, 30) }
-        }.test()
+          setOf(aa, bb, cc)
+        }.equalUnderTheLaw(IO.just(setOf(10, 20, 30)))
       }
 
       "$label - initial; isNotEmpty; take; put; take" {
         forAll(Gen.int(), Gen.int()) { a, b ->
-          IO.fx<Nothing, Unit> {
+          fx {
             val av = mvar.just(a).bind()
             val isNotEmpty = av.isNotEmpty().bind()
             val r1 = av.take().bind()
             av.put(b).bind()
             val r2 = av.take().bind()
 
-            !IO.effect { Tuple3(isNotEmpty, r1, r2) shouldBe Tuple3(true, a, b) }
-          }.test()
+            Tuple3(isNotEmpty, r1, r2)
+          }.equalUnderTheLaw(IO.just(Tuple3(true, a, b)))
         }
       }
 
       "$label - initial; take; put; take" {
         forAll(Gen.int(), Gen.int()) { a, b ->
-          IO.fx<Nothing, Tuple3<Boolean, Int, Int>> {
+          fx {
             val av = !mvar.just(a)
             val isEmpty = !av.isEmpty()
             val r1 = !av.take()
             !av.put(b)
             val r2 = !av.take()
             Tuple3(isEmpty, r1, r2)
-          }.equalUnderTheLaw(IO.just(Tuple3(false, a, b)), EQ())
+          }.equalUnderTheLaw(IO.just(Tuple3(false, a, b)))
         }
       }
 
       "$label - initial; read; take" {
         forAll(Gen.int()) { i ->
-          IO.fx<Nothing, Unit> {
+          fx {
             val av = mvar.just(i).bind()
             val read = av.read().bind()
             val take = av.take().bind()
-            !IO.effect { (read toT take) shouldBe (i toT i) }
-          }.test()
+            read toT take
+          }.equalUnderTheLaw(IO.just(i toT i))
         }
       }
 
       "$label - empty; read; put" {
         forAll(Gen.int()) { a ->
-          IO.fx<Nothing, Int> {
+          fx {
             val av = !mvar.empty<Int>()
             val read = !av.read().fork()
             !av.put(a)
             !read.join()
-          }.equalUnderTheLaw(IO.just(a), EQ())
+          }.equalUnderTheLaw(IO.just(a))
         }
       }
 
@@ -177,7 +171,7 @@ class MVarTest : UnitSpec() {
           mvar.put(null).flatMap { mvar.read() }
         }
 
-        task.shouldBeEq(IO.just(null), EQ())
+        task.equalUnderTheLaw(IO.just(null))
       }
 
       "$label - take/put test is stack safe" {
@@ -189,7 +183,7 @@ class MVarTest : UnitSpec() {
 
         val count = 10000
         val task = mvar.just(1).flatMap { ch -> loop(count, 0, ch) }
-        task.shouldBeEq(IO.just(count), EQ())
+        task.equalUnderTheLaw(IO.just(count))
       }
 
       "$label - stack overflow test" {
@@ -239,13 +233,13 @@ class MVarTest : UnitSpec() {
           }
 
         val count = 10000L
-        IO.fx<Nothing, Long> {
+        fx {
           val channel = !mvar.just(Option(0L))
           val producerFiber = !producer(channel, (0L until count).toList()).fork()
           val consumerFiber = !consumer(channel, 0L).fork()
           !producerFiber.join()
           !consumerFiber.join()
-        }.shouldBeEq(IO.just(count * (count - 1) / 2), EQ(Long.eq()))
+        }.equalUnderTheLaw(IO.just(count * (count - 1) / 2))
       }
 
       fun testStackSequential(channel: MVar<IOPartialOf<Nothing>, Int>): Tuple3<Int, IO<Nothing, Int>, IO<Nothing, Unit>> {
@@ -263,29 +257,29 @@ class MVarTest : UnitSpec() {
       }
 
       "$label - put is stack safe when repeated sequentially" {
-        IO.fx<Nothing, Unit> {
+        fx {
           val channel = !mvar.empty<Int>()
           val (count, reads, writes) = testStackSequential(channel)
           !writes.fork()
           val r = !reads
           !effect { r shouldBe count }
-        }.shouldBeEq(IO.unit, EQ())
+        }.equalUnderTheLaw(IO.unit)
       }
 
       "$label - take is stack safe when repeated sequentially" {
-        IO.fx<Nothing, Unit> {
+        fx {
           val channel = !mvar.empty<Int>()
           val (count, reads, writes) = testStackSequential(channel)
           val fr = !reads.fork()
           !writes
           val r = !fr.join()
           !effect { r shouldBe count }
-        }.shouldBeEq(IO.unit, EQ())
+        }.equalUnderTheLaw(IO.unit)
       }
 
       "$label - concurrent take and put" {
         val count = 1_000
-        IO.fx<Nothing, Int> {
+        fx {
           val mVar = !mvar.empty<Int>()
           val ref = !Ref<Int>(0)
           val takes = (0 until count).map { mVar.read().map2(mVar.take()) { (a, b) -> a + b }.flatMap { x -> ref.update { it + x } } }.parSequence()
@@ -295,7 +289,7 @@ class MVarTest : UnitSpec() {
           !f1.join()
           !f2.join()
           !ref.get()
-        }.shouldBeEq(IO.just(count * 2), EQ())
+        }.equalUnderTheLaw(IO.just(count * 2))
       }
     }
 
@@ -303,7 +297,7 @@ class MVarTest : UnitSpec() {
       tests(label, mvar)
 
       "$label - put is cancellable" {
-        IO.fx<Nothing, Set<Int>> {
+        fx {
           val mVar = !mvar.just(0)
           !mVar.put(1).fork()
           val p2 = !mVar.put(2).fork()
@@ -314,11 +308,11 @@ class MVarTest : UnitSpec() {
           val r1 = !mVar.take()
           val r3 = !mVar.take()
           setOf(r1, r3)
-        }.shouldBeEq(IO.just(setOf(1, 3)), EQ())
+        }.equalUnderTheLaw(IO.just(setOf(1, 3)))
       }
 
       "$label - take is cancellable" {
-        IO.fx<Nothing, Set<Int>> {
+        fx {
           val mVar = !mvar.empty<Int>()
           val t1 = !mVar.take().fork()
           val t2 = !mVar.take().fork()
@@ -330,11 +324,11 @@ class MVarTest : UnitSpec() {
           val r1 = !t1.join()
           val r3 = !t3.join()
           setOf(r1, r3)
-        }.shouldBeEq(IO.just(setOf(1, 3)), EQ())
+        }.equalUnderTheLaw(IO.just(setOf(1, 3)))
       }
 
       "$label - read is cancellable" {
-        IO.fx<Nothing, Race2<Int, Int>> {
+        fx {
           val mVar = !mvar.empty<Int>()
           val finished = !Promise<Int>()
           val fiber = !mVar.read().flatMap(finished::complete).fork()
@@ -343,7 +337,7 @@ class MVarTest : UnitSpec() {
           !mVar.put(10)
           val fallback = IO.sleep(200.milliseconds).followedBy(IO.just(0))
           !IO.raceN(finished.get(), fallback)
-        }.shouldBeEq(IO.just(Right(0)), EQ())
+        }.equalUnderTheLaw(IO.just(Right(0)))
       }
     }
 
