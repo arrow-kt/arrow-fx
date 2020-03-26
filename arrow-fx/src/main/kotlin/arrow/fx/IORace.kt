@@ -64,7 +64,7 @@ interface IORace {
    *     return result
    *   }
    *
-   *   IO.concurrent().example().fix().unsafeRunSync().let(::println)
+   *   IO.concurrent<Nothing>().example().fix().unsafeRunSync().let(::println)
    * }
    * ```
    *

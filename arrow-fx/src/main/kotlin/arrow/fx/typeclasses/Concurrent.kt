@@ -94,7 +94,7 @@ interface Concurrent<F> : Async<F> {
    *     }
    *
    *   //sampleEnd
-   *   IO.concurrent().example().fix().unsafeRunSync()
+   *   IO.concurrent<Nothing>().example().fix().unsafeRunSync()
    * }
    * ```
    *
@@ -131,7 +131,7 @@ interface Concurrent<F> : Async<F> {
    *   }
    *   //sampleEnd
    *
-   *   val r = IO.concurrent().example().fix().unsafeRunSync()
+   *   val r = IO.concurrent<Nothing>().example().fix().unsafeRunSync()
    *   println("Race winner result is: $r")
    * }
    * ```
@@ -170,7 +170,7 @@ interface Concurrent<F> : Async<F> {
    *     }
    *   //sampleEnd
    *
-   *   val r = IO.concurrent().example().fix().unsafeRunSync()
+   *   val r = IO.concurrent<Nothing>().example().fix().unsafeRunSync()
    *   println("Race winner result is: $r")
    * }
    * ```
@@ -342,7 +342,7 @@ interface Concurrent<F> : Async<F> {
    *    }
    *
    *  //sampleEnd
-   *    IO.concurrent().processListInParallel()
+   *    IO.concurrent<Nothing>().processListInParallel()
    *      .fix()
    *      .unsafeRunSync()
    * }
@@ -395,7 +395,7 @@ interface Concurrent<F> : Async<F> {
    *       .map { id -> getUserById(id) }
    *       .parSequence()
    *  //sampleEnd
-   *   IO.concurrent().processInParallel()
+   *   IO.concurrent<Nothing>().processInParallel()
    *     .fix().unsafeRunSync()
    * }
    * ```
@@ -449,7 +449,7 @@ interface Concurrent<F> : Async<F> {
    *   return result
    *   }
    *
-   *   IO.concurrent().example().fix().unsafeRunSync().let(::println)
+   *   IO.concurrent<Nothing>().example().fix().unsafeRunSync().let(::println)
    * }
    * ```
    *
@@ -493,7 +493,7 @@ interface Concurrent<F> : Async<F> {
    *   return result
    *   }
    *
-   *   IO.concurrent().example().fix().unsafeRunSync().let(::println)
+   *   IO.concurrent<Nothing>().example().fix().unsafeRunSync().let(::println)
    * }
    * ```
    *
@@ -882,7 +882,7 @@ interface Concurrent<F> : Async<F> {
    *   return result
    *   }
    *
-   *   IO.concurrent().example().fix().unsafeRunSync().let(::println)
+   *   IO.concurrent<Nothing>().example().fix().unsafeRunSync().let(::println)
    * }
    * ```
    *
@@ -1094,7 +1094,7 @@ interface Concurrent<F> : Async<F> {
    *     }
    *
    *   //sampleEnd
-   *   IO.concurrent().promiseExample()
+   *   IO.concurrent<Nothing>().promiseExample()
    *     .fix().unsafeRunSync()
    * }
    * ```
@@ -1127,7 +1127,7 @@ interface Concurrent<F> : Async<F> {
    *     }
    *
    *   //sampleEnd
-   *   IO.concurrent().promiseExample()
+   *   IO.concurrent<Nothing>().promiseExample()
    *     .fix().unsafeRunSync()
    * }
    * ```
@@ -1161,7 +1161,7 @@ interface Concurrent<F> : Async<F> {
    *     }
    *
    *   //sampleEnd
-   *   IO.concurrent().mvarExample()
+   *   IO.concurrent<Nothing>().mvarExample()
    *     .fix().unsafeRunSync().let(::println)
    * }
    * ```
@@ -1237,7 +1237,7 @@ interface Concurrent<F> : Async<F> {
    *     return world.waitFor(1.seconds, fallbackWorld)
    *   }
    *   //sampleEnd
-   *   IO.concurrent().timedOutWorld()
+   *   IO.concurrent<Nothing>().timedOutWorld()
    *     .fix().unsafeRunSync()
    * }
    * ```
@@ -1266,7 +1266,7 @@ interface Concurrent<F> : Async<F> {
    *     return world.waitFor(3.seconds)
    *   }
    *   //sampleEnd
-   *   IO.concurrent().timedOutWorld()
+   *   IO.concurrent<Nothing>().timedOutWorld()
    *     .fix().unsafeRunSync()
    * }
    * ```

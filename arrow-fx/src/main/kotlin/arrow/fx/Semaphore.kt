@@ -198,7 +198,7 @@ interface Semaphore<F> {
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   val semaphore = Semaphore<ForIO>(5, IO.concurrent())
+     *   val semaphore = Semaphore<ForIO>(5, IO.concurrent<Nothing>())
      *   //sampleEnd
      * }
      */

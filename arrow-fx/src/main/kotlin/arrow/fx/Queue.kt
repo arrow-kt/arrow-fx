@@ -334,7 +334,7 @@ interface Queue<F, A> : QueueOf<F, A>, Dequeue<F, A>, Enqueue<F, A> {
      *
      * suspend fun main(args: Array<String>): Unit = IO.fx {
      *  val capacity = 2
-     *  val q = !Queue.sliding<ForIO, Int>(capacity, IO.concurrent())
+     *  val q = !Queue.sliding<ForIO, Int>(capacity, IO.concurrent<Nothing>())
      *  !q.offer(42)
      *  !q.offer(43)
      *  !q.offer(44) // <-- This `offer` exceeds the capacity, causing the oldest value to be removed
@@ -364,7 +364,7 @@ interface Queue<F, A> : QueueOf<F, A>, Dequeue<F, A>, Enqueue<F, A> {
      *
      * suspend fun main(args: Array<String>): Unit = IO.fx {
      *   val capacity = 2
-     *   val q = !Queue.dropping<ForIO, Int>(capacity, IO.concurrent())
+     *   val q = !Queue.dropping<ForIO, Int>(capacity, IO.concurrent<Nothing>())
      *   !q.offer(42)
      *   !q.offer(43)
      *   !q.offer(44) // <-- This `offer` exceeds the capacity and will be dropped immediately
@@ -393,7 +393,7 @@ interface Queue<F, A> : QueueOf<F, A>, Dequeue<F, A>, Enqueue<F, A> {
      * import arrow.fx.extensions.io.concurrent.concurrent
      *
      * suspend fun main(args: Array<String>): Unit = IO.fx {
-     *   val q = !Queue.unbounded<ForIO, Int>(IO.concurrent())
+     *   val q = !Queue.unbounded<ForIO, Int>(IO.concurrent<Nothing>())
      *   !q.offer(42)
      *   // ...
      *   !q.offer(42000000)
@@ -429,7 +429,7 @@ interface Queue<F, A> : QueueOf<F, A>, Dequeue<F, A>, Enqueue<F, A> {
  *
  * //sampleStart
  * suspend fun main(): Unit = IO.fx {
- *   val factory: QueueFactory<ForIO> = Queue.factory(IO.concurrent())
+ *   val factory: QueueFactory<ForIO> = Queue.factory(IO.concurrent<Nothing>())
  *   val unbounded = !factory.unbounded<Int>()
  *   val bounded = !factory.bounded<String>(10)
  *   val sliding = !factory.sliding<Double>(4)

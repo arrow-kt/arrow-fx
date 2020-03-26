@@ -52,11 +52,11 @@ class File(url: String) {
     override fun toString(): String = "This file contains some interesting content!"
 }
 
-fun openFile(uri: String): IO<File> = IO { File(uri).open() }
+fun openFile(uri: String): IO<Nothing, File> = IO { File(uri).open() }
 
-fun closeFile(file: File): IO<Unit> = IO { file.close() }
+fun closeFile(file: File): IO<Nothing, Unit> = IO { file.close() }
 
-fun fileToString(file: File): IO<String> = IO { file.toString() }
+fun fileToString(file: File): IO<Nothing, String> = IO { file.toString() }
 ```
 
 Note that we wrapped them into [`IO`]({{ '/effects/io' | relative_url }}). [`IO`]({{ '/effects/io' | relative_url }})
@@ -77,11 +77,11 @@ class File(url: String) {
     override fun toString(): String = "This file contains some interesting content!"
 }
 
-fun openFile(uri: String): IO<File> = IO { File(uri).open() }
+fun openFile(uri: String): IO<Nothing, File> = IO { File(uri).open() }
 
-fun closeFile(file: File): IO<Unit> = IO { file.close() }
+fun closeFile(file: File): IO<Nothing, Unit> = IO { file.close() }
 
-fun fileToString(file: File): IO<String> = IO { file.toString() }
+fun fileToString(file: File): IO<Nothing, String> = IO { file.toString() }
 
 fun main(args: Array<String>) {
 //sampleStart
@@ -234,11 +234,11 @@ class File(url: String) {
     override fun toString(): String = "This file contains some interesting content!"
 }
 
-fun openFile(uri: String): IO<File> = IO { File(uri).open() }
+fun openFile(uri: String): IO<Nothing, File> = IO { File(uri).open() }
 
-fun closeFile(file: File): IO<Unit> = IO { file.close() }
+fun closeFile(file: File): IO<Nothing, Unit> = IO { file.close() }
 
-fun fileToString(file: File): IO<String> = IO { file.toString() }
+fun fileToString(file: File): IO<Nothing, String> = IO { file.toString() }
 
 fun main(args: Array<String>) {
 //sampleStart
@@ -270,11 +270,11 @@ class File(url: String) {
     override fun toString(): String = "This file contains some interesting content!"
 }
 
-fun openFile(uri: String): IO<File> = IO { File(uri).open() }
+fun openFile(uri: String): IO<Nothing, File> = IO { File(uri).open() }
 
-fun closeFile(file: File): IO<Unit> = IO { file.close() }
+fun closeFile(file: File): IO<Nothing, Unit> = IO { file.close() }
 
-fun fileToString(file: File): IO<String> = IO { file.toString() }
+fun fileToString(file: File): IO<Nothing, String> = IO { file.toString() }
 
 fun main(args: Array<String>) {
 //sampleStart

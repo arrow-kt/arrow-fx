@@ -213,7 +213,7 @@ interface MVar<F, A> {
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   val mvar: IOOf<MVar<ForIO, Int>> = MVar.empty(IO.concurrent())
+     *   val mvar: IOOf<MVar<ForIO, Int>> = MVar.empty(IO.concurrent<Nothing>())
      *   //sampleEnd
      * }
      * ```
@@ -230,7 +230,7 @@ interface MVar<F, A> {
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   val mvar: IOOf<MVar<ForIO, Int>> = MVar.cancellable(5, IO.concurrent())
+     *   val mvar: IOOf<MVar<ForIO, Int>> = MVar.cancellable(5, IO.concurrent<Nothing>())
      *   //sampleEnd
      * }
      * ```
@@ -251,7 +251,7 @@ interface MVar<F, A> {
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   val mvar: IOOf<MVar<ForIO, Int>> = MVar.cancellable(5, IO.concurrent())
+     *   val mvar: IOOf<MVar<ForIO, Int>> = MVar.cancellable(5, IO.concurrent<Nothing>())
      *   //sampleEnd
      * }
      * ```
@@ -348,7 +348,7 @@ interface MVar<F, A> {
  *
  * fun main(args: Array<String>) {
  *   //sampleStart
- *   val mvarFactory: MVarFactory<ForIO> = MVar.factoryCancellable(IO.concurrent())
+ *   val mvarFactory: MVarFactory<ForIO> = MVar.factoryCancellable(IO.concurrent<Nothing>())
  *   val intVar: IOOf<MVar<ForIO, Int>> = mvarFactory.just(5)
  *   val stringVar: IOOf<MVar<ForIO, String>> = mvarFactory.empty<String>()
  *   //sampleEnd
