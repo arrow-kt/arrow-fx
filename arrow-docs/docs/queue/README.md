@@ -21,7 +21,7 @@ import arrow.fx.extensions.io.concurrent.concurrent
 fun main(args: Array<String>) {
   val result =
   //sampleStart
-    IO.fx {
+    IO.fx<Int> {
       val q = !Queue.bounded<IOPartialOf<Nothing>, Int>(10, IO.concurrent())
       !q.offer(42)
       !q.take()
@@ -42,7 +42,7 @@ import arrow.fx.extensions.io.concurrent.concurrent
 fun main(args: Array<String>) {
   val result =
   //sampleStart
-    IO.fx {
+    IO.fx<Int> {
       val q = !Queue.bounded<IOPartialOf<Nothing>, Int>(10, IO.concurrent())
       val waiting = !q.take().fork()
       !q.offer(42)
@@ -69,7 +69,7 @@ import arrow.fx.extensions.io.concurrent.concurrent
 fun main(args: Array<String>) {
   val result =
   //sampleStart
-    IO.fx {
+    IO.fx<List<Int>> {
       val capacity = 2
       val q = !Queue.bounded<IOPartialOf<Nothing>, Int>(capacity, IO.concurrent())
       !q.offer(42)
@@ -95,7 +95,7 @@ import arrow.fx.extensions.io.concurrent.concurrent
 fun main(args: Array<String>) {
   val result =
   //sampleStart
-    IO.fx {
+    IO.fx<List<Int>> {
       val capacity = 2
       val q = !Queue.dropping<IOPartialOf<Nothing>, Int>(capacity, IO.concurrent())
       !q.offer(42)
@@ -123,7 +123,7 @@ import arrow.fx.extensions.io.concurrent.concurrent
 fun main(args: Array<String>) {
   val result =
   //sampleStart
-    IO.fx {
+    IO.fx<List<Int>> {
       val capacity = 2
       val q = !Queue.sliding<IOPartialOf<Nothing>, Int>(capacity, IO.concurrent())
       !q.offer(42)
@@ -151,7 +151,7 @@ import arrow.fx.extensions.io.concurrent.concurrent
 fun main(args: Array<String>) {
   val result =
   //sampleStart
-    IO.fx {
+    IO.fx<Int> {
       val q = !Queue.unbounded<IOPartialOf<Nothing>, Int>(IO.concurrent())
       !q.offer(42)
       // ...
