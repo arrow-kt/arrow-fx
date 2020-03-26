@@ -56,9 +56,9 @@ which allows us to register an operation to run on cancellation, error, or compl
 import arrow.fx.extensions.io.monad.flatMap
 import arrow.fx.extensions.io.monad.map
 
-fun <A, B, C> parallelMap2(first: IO<A>,
-                          second: IO<B>,
-                          f: (A, B) -> C): IO<C> =
+fun <A, B, C> parallelMap2(first: IO<Nothing, A>,
+                          second: IO<Nothing, B>,
+                          f: (A, B) -> C): IO<Nothing, C> =
       first.fork(Default).bracket(use = { (joinA, _) ->
           second.fork(Default).bracket(use = { (joinB, _) ->
             joinA.flatMap { a ->
