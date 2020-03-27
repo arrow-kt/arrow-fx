@@ -1017,7 +1017,7 @@ fun <E, A, B, E2 : E> IOOf<E, A>.followedBy(fb: IOOf<E2, B>): IO<E2, B> =
  * Given both the value and the function are within [IO], **ap**ply the function to the value.
  *
  * ```kotlin:ank:playground
- * import arrow.fx.IO
+ * import arrow.fx.*
  *
  * fun main() {
  *   //sampleStart
