@@ -69,6 +69,7 @@ Now, let's say we want to open a file, do some work with it, and then close it. 
 process look like this:
 
 ```kotlin:ank:playground
+import arrow.fx.bracket
 import arrow.fx.IO
 
 class File(url: String) {

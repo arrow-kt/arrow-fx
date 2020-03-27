@@ -78,6 +78,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * ```kotlin:ank:playground:extension
      * import arrow.fx.IO
      * import kotlinx.coroutines.Dispatchers
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
@@ -127,6 +128,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
@@ -143,6 +145,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
@@ -159,6 +162,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
+     * import arrow.fx.unsafeRunSync
      *
      * object NetworkError
      *
@@ -178,6 +182,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * ```kotlin:ank:playground
      * import arrow.fx.IO
      * import arrow.fx.typeclasses.seconds
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   val result =
@@ -203,6 +208,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
@@ -220,6 +226,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
@@ -240,6 +247,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * import arrow.core.*
      * import arrow.fx.*
      * import java.lang.RuntimeException
+     * import arrow.fx.unsafeRunSync
      *
      * typealias Callback = (List<String>?, Throwable?) -> Unit
      *
@@ -292,6 +300,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * import arrow.core.*
      * import arrow.fx.*
      * import java.lang.RuntimeException
+     * import arrow.fx.unsafeRunSync
      *
      * typealias Callback = (List<String>?, Throwable?) -> Unit
      *
@@ -355,6 +364,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * import arrow.core.*
      * import arrow.fx.*
      * import java.lang.RuntimeException
+     * import arrow.fx.unsafeRunSync
      *
      * typealias Callback = (List<String>?, Throwable?) -> Unit
      *
@@ -425,6 +435,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * import arrow.core.*
      * import arrow.fx.*
      * import java.lang.RuntimeException
+     * import arrow.fx.unsafeRunSync
      *
      * typealias Callback = (List<String>?, Throwable?) -> Unit
      *
@@ -500,6 +511,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
@@ -517,6 +529,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
@@ -535,6 +548,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * ```kotlin:ank:playground
      * import arrow.fx.IO
      * import arrow.core.Eval
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   fun longCalculation(): Int = 9999
@@ -559,6 +573,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * ```kotlin:ank:playground
      * import arrow.core.*
      * import arrow.fx.IO
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
@@ -587,6 +602,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
@@ -628,6 +644,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
    *
    * ```kotlin:ank:playground
    * import arrow.fx.IO
+   * import arrow.fx.unsafeRunSync
    *
    * fun main(args: Array<String>) {
    *   val result =
@@ -650,6 +667,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
    * ```kotlin:ank:playground
    * import arrow.fx.IO
    * import kotlinx.coroutines.Dispatchers
+   * import arrow.fx.unsafeRunSync
    *
    * fun main(args: Array<String>) {
    *   //sampleStart
@@ -669,6 +687,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
    *
    * ```kotlin:ank:playground
    * import arrow.fx.IO
+   * import arrow.fx.unsafeRunSync
    *
    * fun main(args: Array<String>) {
    *   //sampleStart
@@ -863,6 +882,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
  * ```kotlin:ank:playground
  * import arrow.fx.IO
  * import arrow.fx.handleError
+ * import arrow.fx.unsafeRunSync
  *
  * fun main(args: Array<String>) {
  *   //sampleStart
@@ -888,6 +908,7 @@ fun <A> IOOf<Nothing, A>.handleError(f: (Throwable) -> A): IO<Nothing, A> =
  * import arrow.fx.IO
  * import arrow.fx.handleErrorWith
  * import arrow.fx.typeclasses.milliseconds
+ * import arrow.fx.unsafeRunSync
  *
  * fun main(args: Array<String>) {
  *   fun getMessage(e: Throwable): IO<Nothing, String> = IO.sleep(250.milliseconds)
@@ -918,6 +939,7 @@ fun <E, A, E2> IOOf<E, A>.fallbackWith(fa: IOOf<E2, A>): IO<E2, A> =
  *
  * ```kotlin:ank:playground
  * import arrow.fx.IO
+ * import arrow.fx.unsafeRunSync
  *
  * fun main(args: Array<String>) {
  *   val result =
@@ -937,6 +959,7 @@ fun <E, A, B> IOOf<E, A>.redeem(ft: (Throwable) -> B, fe: (E) -> B, fb: (A) -> B
  *
  * ```kotlin:ank:playground
  * import arrow.fx.IO
+ * import arrow.fx.unsafeRunSync
  *
  * fun main(args: Array<String>) {
  *   val result =
@@ -977,6 +1000,7 @@ fun <E, A> IOOf<E, A>.guaranteeCase(finalizer: (ExitCase2<E>) -> IOOf<E, Unit>):
  *
  * ```kotlin:ank:playground
  * import arrow.fx.IO
+ * import arrow.fx.unsafeRunSync
  *
  * fun main(args: Array<String>) {
  *   val result =
@@ -1000,6 +1024,7 @@ fun <E, A, B, E2 : E> IOOf<E, A>.flatMap(f: (A) -> IOOf<E2, B>): IO<E2, B> =
  *
  * ```kotlin:ank:playground
  * import arrow.fx.IO
+ * import arrow.fx.unsafeRunSync
  *
  * fun main(args: Array<String>) {
  *   //sampleStart
@@ -1059,6 +1084,7 @@ fun <E, A, E2, B> IOOf<E, A>.bimap(fe: (E) -> E2, fa: (A) -> B): IO<E2, B> =
  *
  * ```kotlin:ank:playground
  * import arrow.fx.IO
+ * import arrow.fx.unsafeRunSync
  *
  * class File(url: String) {
  *   fun open(): File = this
@@ -1111,7 +1137,8 @@ fun <E, A, B> IOOf<E, A>.bracket(release: (A) -> IOOf<E, Unit>, use: (A) -> IOOf
  * ```kotlin:ank:playground
  * import arrow.fx.*
  * import arrow.fx.typeclasses.ExitCase
- *
+ * import arrow.fx.unsafeRunSync
+ *  
  * class File(url: String) {
  *   fun open(): File = this
  *   fun close(): Unit {}
@@ -1193,6 +1220,7 @@ fun <E, A> IOOf<E, A>.onException(finalizer: (Throwable) -> IOOf<E, Unit>): IO<E
  * import arrow.fx.*
  * import arrow.fx.extensions.fx
  * import kotlinx.coroutines.Dispatchers
+ * import arrow.fx.unsafeRunSync
  *
  * fun main(args: Array<String>) {
  *   //sampleStart
