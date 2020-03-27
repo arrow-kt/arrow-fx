@@ -27,7 +27,7 @@ interface MVar<F, A> {
    *
    * fun main(args: Array<String>) {
    * //sampleStart
-   * val mvar = MVar.factoryUncancellable(IO.async())
+   * val mvar = MVar.factoryUncancellable<IOPartialOf<Nothing>>(IO.async())
    *
    * mvar.empty<Int>().flatMap { v ->
    *   v.isEmpty()
@@ -52,7 +52,7 @@ interface MVar<F, A> {
    *
    * fun main(args: Array<String>) {
    * //sampleStart
-   * val mvar = MVar.factoryUncancellable(IO.async())
+   * val mvar = MVar.factoryUncancellable<IOPartialOf<Nothing>>(IO.async())
    *
    * mvar.just(10).flatMap { v ->
    *   v.isNotEmpty()
@@ -78,7 +78,7 @@ interface MVar<F, A> {
    *
    * fun main(args: Array<String>) {
    * //sampleStart
-   * val mvar = MVar.factoryUncancellable(IO.async())
+   * val mvar = MVar.factoryUncancellable<IOPartialOf<Nothing>>(IO.async())
    *
    * mvar.empty<Int>().flatMap { v ->
    *   v.put(5).flatMap {
@@ -102,7 +102,7 @@ interface MVar<F, A> {
    *
    * fun main(args: Array<String>) {
    * //sampleStart
-   * val mvar = MVar.factoryUncancellable(IO.async())
+   * val mvar = MVar.factoryUncancellable<IOPartialOf<Nothing>>(IO.async())
    *
    * mvar.empty<Int>().flatMap { v ->
    *  v.tryPut(5)
@@ -127,7 +127,7 @@ interface MVar<F, A> {
    *
    * fun main(args: Array<String>) {
    * //sampleStart
-   * val mvar = MVar.factoryUncancellable(IO.async())
+   * val mvar = MVar.factoryUncancellable<IOPartialOf<Nothing>>(IO.async())
    *
    * mvar.just(5).flatMap { v ->
    * v.take()
@@ -153,7 +153,7 @@ interface MVar<F, A> {
    *
    * fun main(args: Array<String>) {
    * //sampleStart
-   * val mvar = MVar.factoryUncancellable(IO.async())
+   * val mvar = MVar.factoryUncancellable<IOPartialOf<Nothing>>(IO.async())
    *
    * mvar.just(5).flatMap { v ->
    *   v.tryTake()
@@ -179,7 +179,7 @@ interface MVar<F, A> {
    * import arrow.fx.extensions.io.monad.map
    * fun main(args: Array<String>) {
    * //sampleStart
-   * val mvar = MVar.factoryUncancellable(IO.async())
+   * val mvar = MVar.factoryUncancellable<IOPartialOf<Nothing>>(IO.async())
    *
    * mvar.just(5).flatMap { v ->
    *   v.read()
