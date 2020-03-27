@@ -431,7 +431,7 @@ interface IORace {
    *
    * fun main(args: Array<String>) {
    *     //sampleStart
-   *     val result = IO.fx {
+   *     val result = IO.fx<String> {
    *       val racePair = !IO.racePair(Dispatchers.Default, never<Int>(), just("Hello World!"))
    *       racePair.fold(
    *         { _, _ -> "never cannot win race" },
@@ -539,7 +539,7 @@ interface IORace {
    *
    * fun main(args: Array<String>) {
    *   //sampleStart
-   *   val result = IO.fx {
+   *   val result = IO.fx<String> {
    *     val raceResult = !IO.raceTriple(Dispatchers.Default, never<Int>(), just("Hello World!"), never<Double>())
    *     raceResult.fold(
    *       { _, _, _ -> "never cannot win before complete" },
