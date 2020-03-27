@@ -598,10 +598,11 @@ sealed class IO<out E, out A> : IOOf<E, A> {
    * Run the [IO] in a suspended environment.
    *
    * ```kotlin:ank:playground
+   * import arrow.core.Either
    * import arrow.fx.IO
    *
    * //sampleStart
-   * suspend fun main(args: Array<String>): Unit =
+   * suspend fun main(args: Array<String>): Either<Nothing, Unit> =
    *   IO.effect { println("Hello World!") }
    *   .suspended()
    * //sampleEnd
