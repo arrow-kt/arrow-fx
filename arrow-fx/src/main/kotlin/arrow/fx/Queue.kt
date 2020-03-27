@@ -25,6 +25,7 @@ inline fun <F, A> QueueOf<F, A>.fix(): Queue<F, A> =
  * You can use [Dequeue] to restrict certain functions or layers of your applications to only consume values.
  *
  * ```kotlin:ank:playground
+ * import arrow.fx.IO
  * import arrow.fx.typeclasses.*
  * import arrow.fx.extensions.fx
  * import arrow.fx.extensions.io.async.effectMap

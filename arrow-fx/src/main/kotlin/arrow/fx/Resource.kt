@@ -33,6 +33,7 @@ inline fun <F, E, A> ResourceOf<F, E, A>.fix(): Resource<F, E, A> =
  * ```kotlin:ank:playground
  * import arrow.fx.IO
  * import arrow.fx.extensions.fx
+ * import arrow.fx.unsafeRunSync
  *
  * object Consumer
  * object Handle
@@ -74,6 +75,7 @@ inline fun <F, E, A> ResourceOf<F, E, A>.fix(): Resource<F, E, A> =
  * ```kotlin:ank:playground
  * import arrow.fx.IO
  * import arrow.fx.extensions.io.bracket.bracket
+ * import arrow.fx.unsafeRunSync
  *
  * object Consumer
  * object Handle
@@ -115,6 +117,7 @@ inline fun <F, E, A> ResourceOf<F, E, A>.fix(): Resource<F, E, A> =
  * import arrow.fx.extensions.resource.monad.monad
  * import arrow.fx.extensions.io.bracket.bracket
  * import arrow.fx.fix
+ * import arrow.fx.unsafeRunSync
  *
  * object Consumer
  * object Handle
@@ -161,6 +164,7 @@ sealed class Resource<F, E, A> : ResourceOf<F, E, A> {
    * import arrow.fx.Resource
    * import arrow.fx.extensions.io.bracket.bracket
    * import arrow.fx.fix
+   * import arrow.fx.unsafeRunSync
    *
    * fun acquireResource(): IO<Nothing, Int> = IO { println("Getting expensive resource"); 42 }
    * fun releaseResource(r: Int): IO<Nothing, Unit> = IO { println("Releasing expensive resource: $r") }
@@ -282,6 +286,7 @@ sealed class Resource<F, E, A> : ResourceOf<F, E, A> {
      * import arrow.fx.Resource
      * import arrow.fx.extensions.io.bracket.bracket
      * import arrow.fx.fix
+     * import arrow.fx.unsafeRunSync
      *
      * fun acquireResource(): IO<Nothing, Int> = IO { println("Getting expensive resource"); 42 }
      * fun releaseResource(r: Int): IO<Nothing, Unit> = IO { println("Releasing expensive resource: $r") }
