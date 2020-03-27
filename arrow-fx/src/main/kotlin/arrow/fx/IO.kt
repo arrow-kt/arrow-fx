@@ -1138,7 +1138,7 @@ fun <E, A, B> IOOf<E, A>.bracket(release: (A) -> IOOf<E, Unit>, use: (A) -> IOOf
  * import arrow.fx.*
  * import arrow.fx.typeclasses.ExitCase
  * import arrow.fx.unsafeRunSync
- *  
+ *
  * class File(url: String) {
  *   fun open(): File = this
  *   fun close(): Unit {}
