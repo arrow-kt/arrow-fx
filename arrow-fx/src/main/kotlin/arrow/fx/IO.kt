@@ -176,7 +176,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
     fun <E, A> raiseError(e: E): IO<E, A> = RaiseError(e)
 
     /**
-     *  Sleeps for a given [duration] wifthout blocking a thread.
+     *  Sleeps for a given [duration] without blocking a thread.
      *
      * ```kotlin:ank:playground
      * import arrow.fx.*
