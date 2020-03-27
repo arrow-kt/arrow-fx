@@ -49,7 +49,7 @@ inline fun <F, E, A> ResourceOf<F, E, A>.fix(): Resource<F, E, A> =
  * fun shutDownFancyService(service: Service): IO<Nothing, Unit> = IO { println("Closed service") }
  *
  * //sampleStart
- * val program = IO.fx<Nothing> {
+ * val program = IO.fx<Unit> {
  *   val consumer = !createConsumer()
  *   val handle = !createDBHandle()
  *   val service = !createFancyService(consumer, handle)
