@@ -859,13 +859,11 @@ sealed class IO<out E, out A> : IOOf<E, A> {
  * Handle the error by mapping the error to a value of [A].
  *
  * ```kotlin:ank:playground
- * import arrow.fx.IO
- * import arrow.fx.handleError
- * import arrow.fx.unsafeRunSync
+ * import arrow.fx.*
  *
  * fun main(args: Array<String>) {
  *   //sampleStart
- *   val result = IO.raiseError<Int>(RuntimeException("Boom"))
+ *   val result = IO.raiseException<Int>(RuntimeException("Boom"))
  *     .handleError { e -> "Goodbye World! after $e" }
  *   //sampleEnd
  *   println(result.unsafeRunSync())
@@ -884,17 +882,14 @@ fun <A> IOOf<Nothing, A>.handleError(f: (Throwable) -> A): IO<Nothing, A> =
  * Handle the error by resolving the error with an effect that results in [A].
  *
  * ```kotlin:ank:playground
- * import arrow.fx.IO
- * import arrow.fx.handleErrorWith
+ * import arrow.fx.*
  * import arrow.fx.typeclasses.milliseconds
- * import arrow.fx.unsafeRunSync
  *
  * fun main(args: Array<String>) {
  *   fun getMessage(e: Throwable): IO<Nothing, String> = IO.sleep(250.milliseconds)
  *     .followedBy(IO.effect { "Delayed goodbye World! after $e" })
- *
  *   //sampleStart
- *   val result = IO.raiseError<Int>(RuntimeException("Boom"))
+ *   val result = IO.raiseException<Int>(RuntimeException("Boom"))
  *     .handleErrorWith { e -> getMessage(e) }
  *   //sampleEnd
  *   println(result.unsafeRunSync())
@@ -917,14 +912,14 @@ fun <E, A, E2> IOOf<E, A>.fallbackWith(fa: IOOf<E2, A>): IO<E2, A> =
  * Redeem an [IO] to an [IO] of [B] by resolving the error **or** mapping the value [A] to [B].
  *
  * ```kotlin:ank:playground
- * import arrow.fx.IO
- * import arrow.fx.unsafeRunSync
+ * import arrow.core.identity
+ * import arrow.fx.*
  *
  * fun main(args: Array<String>) {
  *   val result =
- *   //sampleStart
- *   IO.raiseError<Int>(RuntimeException("Hello from Error"))
- *     .redeem({ e -> e.message ?: "" }, Int::toString)
+ *     //sampleStart
+ *     IO.raiseException<Int>(RuntimeException("Hello from Error"))
+ *       .redeem({ e -> e.message ?: "" }, ::identity, Int::toString)
  *   //sampleEnd
  *   println(result.unsafeRunSync())
  * }
@@ -937,14 +932,14 @@ fun <E, A, B> IOOf<E, A>.redeem(ft: (Throwable) -> B, fe: (E) -> B, fb: (A) -> B
  * Redeem an [IO] to an [IO] of [B] by resolving the error **or** mapping the value [A] to [B] **with** an effect.
  *
  * ```kotlin:ank:playground
- * import arrow.fx.IO
- * import arrow.fx.unsafeRunSync
+ * import arrow.core.identity
+ * import arrow.fx.*
  *
  * fun main(args: Array<String>) {
  *   val result =
- *   //sampleStart
- *   IO.just("1")
- *     .redeemWith({ e -> IO.just(-1) }, { str -> IO { str.toInt() } })
+ *     //sampleStart
+ *     IO.just("1")
+ *       .redeemWith({ e -> IO.just(-1) }, ::identity, { str -> IO { str.toInt() } })
  *   //sampleEnd
  *   println(result.unsafeRunSync())
  * }
@@ -1002,8 +997,7 @@ fun <E, A, B, E2 : E> IOOf<E, A>.flatMap(f: (A) -> IOOf<E2, B>): IO<E2, B> =
  * Compose this [IO] with another [IO] [fb] while ignoring the output.
  *
  * ```kotlin:ank:playground
- * import arrow.fx.IO
- * import arrow.fx.unsafeRunSync
+ * import arrow.fx.*
  *
  * fun main(args: Array<String>) {
  *   //sampleStart
@@ -1027,10 +1021,10 @@ fun <E, A, B, E2 : E> IOOf<E, A>.followedBy(fb: IOOf<E2, B>): IO<E2, B> =
  *
  * fun main() {
  *   //sampleStart
- *   val someF: IO<(Int) -> Long> = IO.just { i: Int -> i.toLong() + 1 }
+ *   val someF: IO<Nothing, (Int) -> Long> = IO.just { i: Int -> i.toLong() + 1 }
  *   val a = IO.just(3).ap(someF)
- *   val b = IO.raiseError<Int>(RuntimeException("Boom")).ap(someF)
- *   val c = IO.just(3).ap(IO.raiseError<(Int) -> Long>(RuntimeException("Boom")))
+ *   val b = IO.raiseException<Int>(RuntimeException("Boom")).ap(someF)
+ *   val c = IO.just(3).ap(IO.raiseException<(Int) -> Long>(RuntimeException("Boom")))
  *   //sampleEnd
  *   println("a: $a, b: $b, c: $c")
  * }
@@ -1198,17 +1192,15 @@ fun <E, A> IOOf<E, A>.onException(finalizer: (Throwable) -> IOOf<E, Unit>): IO<E
  * ```kotlin:ank:playground
  * import arrow.fx.*
  * import arrow.fx.extensions.fx
- * import kotlinx.coroutines.Dispatchers
- * import arrow.fx.unsafeRunSync
+ * import arrow.fx.extensions.io.dispatchers.dispatchers
  *
  * fun main(args: Array<String>) {
  *   //sampleStart
- *   val result = IO.fx {
+ *   val result = IO.fx<Nothing, Unit> {
  *     val (join, cancel) = !IO.effect {
  *       println("Hello from a fiber on ${Thread.currentThread().name}")
- *     }.fork(Dispatchers.Default)
+ *     }.fork(IO.dispatchers<Nothing>().io())
  *   }
- *
  *   //sampleEnd
  *   result.unsafeRunSync()
  * }
