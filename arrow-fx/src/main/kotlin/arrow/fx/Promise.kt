@@ -103,7 +103,7 @@ interface Promise<F, A> {
    *       p.complete(2)
    *     }
    *   }.attempt().unsafeRunSync() ==
-   *     IO.raiseError<Int>(Promise.AlreadyFulfilled).attempt().unsafeRunSync()
+   *     IO.raiseException<Int>(Promise.AlreadyFulfilled).attempt().unsafeRunSync()
    *   //sampleEnd
    * }
    * ```
@@ -154,14 +154,14 @@ interface Promise<F, A> {
    *   promise.flatMap { p ->
    *     p.error(RuntimeException("Boom"))
    *   }.attempt().unsafeRunSync() ==
-   *     IO.raiseError<Int>(RuntimeException("Boom")).attempt().unsafeRunSync()
+   *     IO.raiseException<Int>(RuntimeException("Boom")).attempt().unsafeRunSync()
    *
    *   promise.flatMap { p ->
    *     p.complete(1).flatMap {
    *       p.error(RuntimeException("Boom"))
    *     }
    *   }.attempt().unsafeRunSync() ==
-   *     IO.raiseError<Int>(Promise.AlreadyFulfilled).attempt().unsafeRunSync()
+   *     IO.raiseException<Int>(Promise.AlreadyFulfilled).attempt().unsafeRunSync()
    *   //sampleEnd
    * }
    * ```
@@ -186,7 +186,7 @@ interface Promise<F, A> {
    *   promise.flatMap { p ->
    *     p.tryError(throwable)
    *   }.attempt().unsafeRunSync() ==
-   *     IO.raiseError<Int>(throwable).attempt().unsafeRunSync()
+   *     IO.raiseException<Int>(throwable).attempt().unsafeRunSync()
    *
    *   promise.flatMap { p ->
    *     p.complete(1).flatMap {
