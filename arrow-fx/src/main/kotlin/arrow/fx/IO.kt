@@ -162,34 +162,32 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
-     * import arrow.fx.unsafeRunSync
      *
      * object NetworkError
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   val result: IO<Nothing, NetworkError, Int> = IO.raiseError(NetworkError)
+     *   val result: IO<NetworkError, Int> = IO.raiseError(NetworkError)
      *   //sampleEnd
-     *   println(result.unsafeRunSync())
+     *   println(result.unsafeRunSyncEither())
      * }
      * ```
      */
     fun <E, A> raiseError(e: E): IO<E, A> = RaiseError(e)
 
     /**
-     *  Sleeps for a given [duration] without blocking a thread.
+     *  Sleeps for a given [duration] wifthout blocking a thread.
      *
      * ```kotlin:ank:playground
-     * import arrow.fx.IO
+     * import arrow.fx.*
      * import arrow.fx.typeclasses.seconds
-     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   val result =
-     *   //sampleStart
-     *   IO.sleep(3.seconds).flatMap {
-     *     IO.effect { println("Hello World!") }
-     *   }
+     *     //sampleStart
+     *     IO.sleep(3.seconds).flatMap {
+     *       IO.effect { println("Hello World!") }
+     *     }
      *   //sampleEnd
      *   result.unsafeRunSync()
      * }
@@ -244,33 +242,28 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * This combinator can be used to wrap callbacks or other similar impure code **that require no cancellation code**.
      *
      * ```kotlin:ank:playground
-     * import arrow.core.*
      * import arrow.fx.*
      * import java.lang.RuntimeException
-     * import arrow.fx.unsafeRunSync
      *
      * typealias Callback = (List<String>?, Throwable?) -> Unit
-     *
      * class GithubId
      * object GithubService {
      *   fun getUsernames(callback: Callback) {
      *     //execute operation and call callback at some point in future
      *   }
      * }
-     *
      * fun main(args: Array<String>) {
      *   //sampleStart
      *   fun getUsernames(): IO<Nothing, List<String>> =
-     *     IO.async { cb: (Either<Throwable, List<String>>) -> Unit ->
+     *     IO.async { cb: (IOResult<Nothing, List<String>>) -> Unit ->
      *       GithubService.getUsernames { names, throwable ->
      *         when {
-     *           names != null -> cb(Right(names))
-     *           throwable != null -> cb(Left(throwable))
-     *           else -> cb(Left(RuntimeException("Null result and no exception")))
+     *           names != null -> cb(IOResult.Success(names))
+     *           throwable != null -> cb(IOResult.Exception(throwable))
+     *           else -> cb(IOResult.Exception(RuntimeException("Null result and no exception")))
      *         }
      *       }
      *     }
-     *
      *   val result = getUsernames()
      *   //sampleEnd
      *   println(result.unsafeRunSync())
@@ -297,10 +290,8 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * This combinator can be used to wrap callbacks or other similar impure code **that require no cancellation code**.
      *
      * ```kotlin:ank:playground
-     * import arrow.core.*
      * import arrow.fx.*
      * import java.lang.RuntimeException
-     * import arrow.fx.unsafeRunSync
      *
      * typealias Callback = (List<String>?, Throwable?) -> Unit
      *
@@ -309,22 +300,20 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *     //execute operation and call callback at some point in future
      *   }
      * }
-     *
      * fun main(args: Array<String>) {
      *   //sampleStart
      *   fun getUsernames(): IO<Nothing, List<String>> =
-     *     IO.asyncF { cb: (Either<Throwable, List<String>>) -> Unit ->
+     *     IO.asyncF { cb: (IOResult<Nothing, List<String>>) -> Unit ->
      *       IO {
      *         GithubService.getUsernames { names, throwable ->
      *           when {
-     *             names != null -> cb(Right(names))
-     *             throwable != null -> cb(Left(throwable))
-     *             else -> cb(Left(RuntimeException("Null result and no exception")))
+     *             names != null -> cb(IOResult.Success(names))
+     *             throwable != null -> cb(IOResult.Exception(throwable))
+     *             else -> cb(IOResult.Exception(RuntimeException("Null result and no exception")))
      *           }
      *         }
      *       }
      *     }
-     *
      *   val result = getUsernames()
      *   //sampleEnd
      *   println(result.unsafeRunSync())
@@ -361,14 +350,13 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * This combinator can be used to wrap callbacks or other similar impure code that requires cancellation code.
      *
      * ```kotlin:ank:playground
-     * import arrow.core.*
      * import arrow.fx.*
      * import java.lang.RuntimeException
      * import arrow.fx.unsafeRunSync
      *
      * typealias Callback = (List<String>?, Throwable?) -> Unit
-     *
      * class GithubId
+     *
      * object GithubService {
      *   private val listeners: MutableMap<GithubId, Callback> = mutableMapOf()
      *   fun getUsernames(callback: Callback): GithubId {
@@ -377,7 +365,6 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *     //execute operation and call callback at some point in future
      *     return id
      *   }
-     *
      *   fun unregisterCallback(id: GithubId): Unit {
      *     listeners.remove(id)
      *   }
@@ -386,18 +373,16 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * fun main(args: Array<String>) {
      *   //sampleStart
      *   fun getUsernames(): IO<Nothing, List<String>> =
-     *     IO.cancellable { cb: (Either<Throwable, List<String>>) -> Unit ->
+     *     IO.cancellable { cb: (IOResult<Nothing, List<String>>) -> Unit ->
      *       val id = GithubService.getUsernames { names, throwable ->
      *         when {
-     *           names != null -> cb(Right(names))
-     *           throwable != null -> cb(Left(throwable))
-     *           else -> cb(Left(RuntimeException("Null result and no exception")))
+     *           names != null -> cb(IOResult.Success(names))
+     *           throwable != null -> cb(IOResult.Exception(throwable))
+     *           else -> cb(IOResult.Exception(RuntimeException("Null result and no exception")))
      *         }
      *       }
-     *
      *       IO { GithubService.unregisterCallback(id) }
      *     }
-     *
      *   val result = getUsernames()
      *   //sampleEnd
      *   println(result.unsafeRunSync())
@@ -432,14 +417,12 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * This combinator can be used to wrap callbacks or other similar impure code that requires cancellation code.
      *
      * ```kotlin:ank:playground
-     * import arrow.core.*
      * import arrow.fx.*
      * import java.lang.RuntimeException
-     * import arrow.fx.unsafeRunSync
      *
      * typealias Callback = (List<String>?, Throwable?) -> Unit
-     *
      * class GithubId
+     *
      * object GithubService {
      *   private val listeners: MutableMap<GithubId, Callback> = mutableMapOf()
      *   fun getUsernames(callback: Callback): GithubId {
@@ -448,29 +431,25 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *     //execute operation and call callback at some point in future
      *     return id
      *   }
-     *
      *   fun unregisterCallback(id: GithubId): Unit {
      *     listeners.remove(id)
      *   }
      * }
-     *
      * fun main(args: Array<String>) {
      *   //sampleStart
      *   fun getUsernames(): IO<Nothing, List<String>> =
-     *     IO.cancellableF { cb: (Either<Throwable, List<String>>) -> Unit ->
+     *     IO.cancellableF { cb: (IOResult<Nothing, List<String>>) -> Unit ->
      *       IO {
      *         val id = GithubService.getUsernames { names, throwable ->
      *           when {
-     *             names != null -> cb(Right(names))
-     *             throwable != null -> cb(Left(throwable))
-     *             else -> cb(Left(RuntimeException("Null result and no exception")))
+     *             names != null -> cb(IOResult.Success(names))
+     *             throwable != null -> cb(IOResult.Exception(throwable))
+     *             else -> cb(IOResult.Exception(RuntimeException("Null result and no exception")))
      *           }
      *         }
-     *
      *         IO { GithubService.unregisterCallback(id) }
      *       }
      *     }
-     *
      *   val result = getUsernames()
      *   //sampleEnd
      *   println(result.unsafeRunSync())
@@ -691,7 +670,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
    *
    * fun main(args: Array<String>) {
    *   //sampleStart
-   *   val resultA = IO.raiseError<Int>(RuntimeException("Boom!")).attempt()
+   *   val resultA = IO.raiseException<Int>(RuntimeException("Boom!")).attempt()
    *   val resultB = IO.just("Hello").attempt()
    *   //sampleEnd
    *   println("resultA: ${resultA.unsafeRunSync()}, resultB: ${resultB.unsafeRunSync()}")
@@ -1138,7 +1117,7 @@ fun <E, A, B> IOOf<E, A>.bracket(release: (A) -> IOOf<E, Unit>, use: (A) -> IOOf
  * import arrow.fx.*
  * import arrow.fx.typeclasses.ExitCase
  * import arrow.fx.unsafeRunSync
- *  
+ *
  * class File(url: String) {
  *   fun open(): File = this
  *   fun close(): Unit {}
