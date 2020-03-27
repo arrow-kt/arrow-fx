@@ -67,12 +67,12 @@ inline fun <A, B> DecisionOf<A, B>.fix(): Schedule.Decision<A, B> =
  *
  * Constructing a simple schedule which recurs 10 times until it succeeds:
  * ```kotlin:ank
- * import arrow.fx.ForIO
+ * import arrow.fx.IOPartialOf
  * import arrow.fx.IO
  * import arrow.fx.Schedule
  * import arrow.fx.extensions.io.monad.monad
  *
- * fun <A> recurTenTimes() = Schedule.recurs<ForIO, A>(IO.monad(), 10)
+ * fun <A> recurTenTimes() = Schedule.recurs<IOPartialOf<Nothing>, A>(IO.monad<Nothing>(), 10)
  * ```
  *
  * A more complex schedule is best put together using the [withMonad] constructor:
