@@ -143,6 +143,7 @@ We can run the program for `IO`:
 
 ```kotlin:ank:playground
 import arrow.fx.IO
+import arrow.fx.IOPartialOf
 import arrow.fx.extensions.io.bracket.bracket
 import arrow.Kind
 import arrow.fx.typeclasses.Bracket
@@ -164,7 +165,7 @@ class Program<F>(BF: Bracket<F, Throwable>) : Bracket<F, Throwable> by BF {
 
 fun main(args: Array<String>) {
 //sampleStart
-val ioProgram = Program(IO.bracket())
+val ioProgram = Program<IOPartialOf<Nothing>>(IO.bracket())
 
 val safeComputation = with (ioProgram) {
   openFile("data.json").bracket(
@@ -262,6 +263,7 @@ It requires passing `release` and `use` lambdas. It ensures acquiring, using, an
 `fun <A, B> Kind<F, A>.bracketCase(release: (A, ExitCase<Throwable>) -> Kind<F, Unit>, use: (A) -> Kind<F, B>): Kind<F, B>`
 
 ```kotlin:ank:playground
+import arrow.fx.bracketCase
 import arrow.fx.IO
 import arrow.fx.typeclasses.ExitCase
 
