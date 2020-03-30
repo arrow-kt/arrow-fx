@@ -262,8 +262,8 @@ It requires passing `release` and `use` lambdas. It ensures acquiring, using, an
 `fun <A, B> Kind<F, A>.bracketCase(release: (A, ExitCase<Throwable>) -> Kind<F, Unit>, use: (A) -> Kind<F, B>): Kind<F, B>`
 
 ```kotlin:ank:playground
-import arrow.fx.IO
-import arrow.fx.typeclasses.ExitCase
+import arrow.fx.*
+import arrow.fx.typeclasses.ExitCase2
 
 class File(url: String) {
     fun open(): File = this
@@ -282,9 +282,10 @@ fun main(args: Array<String>) {
 val safeComputation = openFile("data.json").bracketCase(
     release = { file, exitCase ->
       when (exitCase) {
-        is ExitCase.Completed -> { /* do something */ }
-        is ExitCase.Cancelled -> { /* do something */ }
-        is ExitCase.Error -> { /* do something */ }
+        ExitCase2.Completed -> { /* do something */ }
+        ExitCase2.Cancelled -> { /* do something */ }
+        is ExitCase2.Error<Nothing> -> { /* do something */ }
+        is ExitCase2.Exception -> { /* do Something */ }
       }
       closeFile(file)
     },
