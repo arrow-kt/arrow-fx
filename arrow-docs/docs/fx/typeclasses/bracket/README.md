@@ -164,7 +164,7 @@ class Program<F>(BF: Bracket<F, Throwable>) : Bracket<F, Throwable> by BF {
 
 fun main(args: Array<String>) {
 //sampleStart
-val ioProgram = Program(IO.bracket())
+val ioProgram = Program(IO.bracket<Nothing>())
 
 val safeComputation = with (ioProgram) {
   openFile("data.json").bracket(

@@ -49,7 +49,7 @@ inline fun <F, E, A> ResourceOf<F, E, A>.fix(): Resource<F, E, A> =
  * fun shutDownFancyService(service: Service): IO<Nothing, Unit> = IO { println("Closed service") }
  *
  * //sampleStart
- * val program = IO.fx<Unit> {
+ * val program = IO.fx<Nothing, Unit> {
  *   val consumer = !createConsumer()
  *   val handle = !createDBHandle()
  *   val service = !createFancyService(consumer, handle)
@@ -163,7 +163,6 @@ sealed class Resource<F, E, A> : ResourceOf<F, E, A> {
    * import arrow.fx.IO
    * import arrow.fx.Resource
    * import arrow.fx.extensions.io.bracket.bracket
-   * import arrow.fx.fix
    * import arrow.fx.unsafeRunSync
    *
    * fun acquireResource(): IO<Nothing, Int> = IO { println("Getting expensive resource"); 42 }
@@ -175,7 +174,7 @@ sealed class Resource<F, E, A> : ResourceOf<F, E, A> {
    *     IO { println("Expensive resource under use! $it") }
    *   }
    *   //sampleEnd
-   *   program.fix().unsafeRunSync()
+   *   program.unsafeRunSync()
    * }
    * ```
    */
@@ -285,7 +284,6 @@ sealed class Resource<F, E, A> : ResourceOf<F, E, A> {
      * import arrow.fx.IO
      * import arrow.fx.Resource
      * import arrow.fx.extensions.io.bracket.bracket
-     * import arrow.fx.fix
      * import arrow.fx.unsafeRunSync
      *
      * fun acquireResource(): IO<Nothing, Int> = IO { println("Getting expensive resource"); 42 }
@@ -297,7 +295,7 @@ sealed class Resource<F, E, A> : ResourceOf<F, E, A> {
      *   //sampleEnd
      *   resource.use {
      *     IO { println("Expensive resource under use! $it") }
-     *   }.fix().unsafeRunSync()
+     *   }.unsafeRunSync()
      * }
      * ```
      */
