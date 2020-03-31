@@ -137,22 +137,22 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * ```
      */
     fun <A> just(a: A): IO<Nothing, A> = Pure(a)
-
+    
     /**
-     * Raise an exception in a pure way without actually throwing.
+     * Yeets an exception in a pure way without actually throwing.
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   val result: IO<Nothing, Int> = IO.raiseException<Int>(RuntimeException("Boom"))
+     *   val result: IO<Nothing, Int> = IO.yeet<Int>(RuntimeException("Boom"))
      *   //sampleEnd
      *   println(result.unsafeRunSync())
      * }
      * ```
      */
-    fun <A> raiseException(e: Throwable): IO<Nothing, A> = RaiseException(e)
+    fun <A> yeet(e: Throwable): IO<Nothing, A> = RaiseException(e)
 
     /**
      * Raise an error in a pure way
@@ -164,13 +164,13 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   val result: IO<Nothing, NetworkError, Int> = IO.raiseError(NetworkError)
+     *   val result: IO<Nothing, NetworkError, Int> = IO.kobe(NetworkError)
      *   //sampleEnd
      *   println(result.unsafeRunSync())
      * }
      * ```
      */
-    fun <E, A> raiseError(e: E): IO<E, A> = RaiseError(e)
+    fun <E, A> kobe(e: E): IO<E, A> = RaiseError(e)
 
     /**
      *  Sleeps for a given [duration] without blocking a thread.
