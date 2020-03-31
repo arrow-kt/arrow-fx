@@ -1,4 +1,4 @@
-package arrow.test
+package arrow.fx.test
 
 import arrow.fx.IOResult
 import arrow.typeclasses.Eq

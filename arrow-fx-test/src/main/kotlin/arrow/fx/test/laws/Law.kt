@@ -14,7 +14,7 @@ import arrow.core.test.generators.tuple4
 import arrow.core.test.generators.tuple5
 import arrow.fx.IOResult
 import arrow.fx.unsafeRunSync
-import arrow.test.eq
+import arrow.fx.test.eq
 import arrow.typeclasses.Eq
 import io.kotlintest.Matcher
 import io.kotlintest.Result
