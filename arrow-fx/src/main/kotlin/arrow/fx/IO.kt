@@ -139,7 +139,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
     fun <A> just(a: A): IO<Nothing, A> = Pure(a)
 
     /**
-     * Yeets an exception in a pure way without actually throwing.
+     * Yeets an exception as far away as possible
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
@@ -155,7 +155,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
     fun <A> yeet(e: Throwable): IO<Nothing, A> = RaiseException(e)
 
     /**
-     * Kobes an error in a pure way
+     * Kobes an error with perfect accuracy *swish swish*
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
