@@ -17,6 +17,7 @@ import arrow.fx.IOOf
 import arrow.fx.MVar
 import arrow.fx.OnCancel
 import arrow.fx.Promise
+import arrow.fx.Queue
 import arrow.fx.Race2
 import arrow.fx.Race3
 import arrow.fx.RacePair
@@ -483,6 +484,22 @@ interface IOSyntax<E> : BindSyntax<IOPartialOf<E>> {
    */
   fun <A> MVar(): IO<Nothing, MVar<IOPartialOf<Nothing>, A>> =
     MVar.empty<IOPartialOf<Nothing>, A>(IO.concurrent<Nothing>()).fix()
+
+  /** @see [Queue.Companion.bounded] **/
+  fun <A> Queue.Companion.bounded(capacity: Int): IO<Nothing, Queue<IOPartialOf<Nothing>, A>> =
+    Queue.bounded<IOPartialOf<Nothing>, A>(capacity, IO.concurrent<Nothing>()).fix()
+
+  /** @see [Queue.Companion.sliding] **/
+  fun <A> Queue.Companion.sliding(capacity: Int): IO<Nothing, Queue<IOPartialOf<Nothing>, A>> =
+    Queue.sliding<IOPartialOf<Nothing>, A>(capacity, IO.concurrent<Nothing>()).fix()
+
+  /** @see [Queue.Companion.dropping] **/
+  fun <A> Queue.Companion.dropping(capacity: Int): IO<Nothing, Queue<IOPartialOf<Nothing>, A>> =
+    Queue.dropping<IOPartialOf<Nothing>, A>(capacity, IO.concurrent<Nothing>()).fix()
+
+  /** @see [Queue.Companion.unbounded] **/
+  fun <A> Queue.Companion.unbounded(): IO<Nothing, Queue<IOPartialOf<Nothing>, A>> =
+    Queue.unbounded<IOPartialOf<Nothing>, A>(IO.concurrent<Nothing>()).fix()
 
   fun <E, A> IOOf<E, A>.waitFor(duration: Duration, default: IOOf<E, A>): IO<E, A> =
     IO.raceN(EmptyCoroutineContext, IO.sleep(duration), this).FlatMap {

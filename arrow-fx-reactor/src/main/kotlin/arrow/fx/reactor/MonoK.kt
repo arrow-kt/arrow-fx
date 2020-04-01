@@ -168,7 +168,6 @@ data class MonoK<out A>(val mono: Mono<out A>) : MonoKOf<A> {
      * import arrow.core.Either
      * import arrow.core.right
      * import arrow.fx.reactor.MonoK
-     * import arrow.fx.reactor.MonoKConnection
      * import arrow.fx.reactor.value
      *
      * class Resource {

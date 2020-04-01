@@ -187,7 +187,6 @@ data class FluxK<out A>(val flux: Flux<out A>) : FluxKOf<A> {
      * import arrow.core.Either
      * import arrow.core.right
      * import arrow.fx.reactor.FluxK
-     * import arrow.fx.reactor.FluxKConnection
      * import arrow.fx.reactor.value
      *
      * class Resource {
