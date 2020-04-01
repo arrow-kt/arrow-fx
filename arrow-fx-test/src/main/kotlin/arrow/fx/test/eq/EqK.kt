@@ -17,7 +17,7 @@ import arrow.fx.typeclasses.FiberPartialOf
 import arrow.fx.typeclasses.fix
 import arrow.fx.typeclasses.seconds
 import arrow.fx.unsafeRunSync
-import arrow.test.eq
+import arrow.fx.test.eq
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 
