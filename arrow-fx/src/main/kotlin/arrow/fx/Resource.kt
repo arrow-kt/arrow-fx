@@ -33,6 +33,7 @@ inline fun <F, E, A> ResourceOf<F, E, A>.fix(): Resource<F, E, A> =
  * ```kotlin:ank:playground
  * import arrow.fx.IO
  * import arrow.fx.extensions.fx
+ * import arrow.fx.unsafeRunSync
  *
  * object Consumer
  * object Handle
@@ -48,7 +49,7 @@ inline fun <F, E, A> ResourceOf<F, E, A>.fix(): Resource<F, E, A> =
  * fun shutDownFancyService(service: Service): IO<Nothing, Unit> = IO { println("Closed service") }
  *
  * //sampleStart
- * val program = IO.fx {
+ * val program = IO.fx<Nothing, Unit> {
  *   val consumer = !createConsumer()
  *   val handle = !createDBHandle()
  *   val service = !createFancyService(consumer, handle)
@@ -74,6 +75,7 @@ inline fun <F, E, A> ResourceOf<F, E, A>.fix(): Resource<F, E, A> =
  * ```kotlin:ank:playground
  * import arrow.fx.IO
  * import arrow.fx.extensions.io.bracket.bracket
+ * import arrow.fx.unsafeRunSync
  *
  * object Consumer
  * object Handle
@@ -115,6 +117,7 @@ inline fun <F, E, A> ResourceOf<F, E, A>.fix(): Resource<F, E, A> =
  * import arrow.fx.extensions.resource.monad.monad
  * import arrow.fx.extensions.io.bracket.bracket
  * import arrow.fx.fix
+ * import arrow.fx.unsafeRunSync
  *
  * object Consumer
  * object Handle
@@ -130,7 +133,7 @@ inline fun <F, E, A> ResourceOf<F, E, A>.fix(): Resource<F, E, A> =
  * fun shutDownFancyService(service: Service): IO<Nothing, Unit> = IO { println("Closed service") }
  *
  * //sampleStart
- * val managedTProgram = Resource.monad(IO.bracket()).fx.monad {
+ * val managedTProgram = Resource.monad(IO.bracket<Nothing>()).fx.monad {
  *   val consumer = Resource(::createConsumer, ::closeConsumer, IO.bracket()).bind()
  *   val handle = Resource(::createDBHandle, ::closeDBHandle, IO.bracket()).bind()
  *   Resource({ createFancyService(consumer, handle) }, ::shutDownFancyService, IO.bracket()).bind()
@@ -160,18 +163,18 @@ sealed class Resource<F, E, A> : ResourceOf<F, E, A> {
    * import arrow.fx.IO
    * import arrow.fx.Resource
    * import arrow.fx.extensions.io.bracket.bracket
-   * import arrow.fx.fix
+   * import arrow.fx.unsafeRunSync
    *
    * fun acquireResource(): IO<Nothing, Int> = IO { println("Getting expensive resource"); 42 }
    * fun releaseResource(r: Int): IO<Nothing, Unit> = IO { println("Releasing expensive resource: $r") }
    *
    * fun main() {
    *   //sampleStart
-   *   val program = Resource(::acquireResource, ::releaseResource, IO.bracket()).use {
+   *   val program = Resource(::acquireResource, ::releaseResource, IO.bracket<Nothing>()).use {
    *     IO { println("Expensive resource under use! $it") }
    *   }
    *   //sampleEnd
-   *   program.fix().unsafeRunSync()
+   *   program.unsafeRunSync()
    * }
    * ```
    */
@@ -281,18 +284,18 @@ sealed class Resource<F, E, A> : ResourceOf<F, E, A> {
      * import arrow.fx.IO
      * import arrow.fx.Resource
      * import arrow.fx.extensions.io.bracket.bracket
-     * import arrow.fx.fix
+     * import arrow.fx.unsafeRunSync
      *
      * fun acquireResource(): IO<Nothing, Int> = IO { println("Getting expensive resource"); 42 }
      * fun releaseResource(r: Int): IO<Nothing, Unit> = IO { println("Releasing expensive resource: $r") }
      *
      * fun main() {
      *   //sampleStart
-     *   val resource = Resource(::acquireResource, ::releaseResource, IO.bracket())
+     *   val resource = Resource(::acquireResource, ::releaseResource, IO.bracket<Nothing>())
      *   //sampleEnd
      *   resource.use {
      *     IO { println("Expensive resource under use! $it") }
-     *   }.fix().unsafeRunSync()
+     *   }.unsafeRunSync()
      * }
      * ```
      */

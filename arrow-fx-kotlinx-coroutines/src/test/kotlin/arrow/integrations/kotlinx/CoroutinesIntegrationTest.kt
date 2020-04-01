@@ -23,7 +23,7 @@ import arrow.fx.typeclasses.ExitCase2
 import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
 import arrow.fx.unsafeRunAsync
-import arrow.test.eq
+import arrow.fx.test.eq
 import arrow.fx.test.laws.shouldBeEq
 import arrow.typeclasses.Eq
 import io.kotlintest.fail

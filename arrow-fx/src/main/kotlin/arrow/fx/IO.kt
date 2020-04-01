@@ -78,6 +78,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * ```kotlin:ank:playground:extension
      * import arrow.fx.IO
      * import kotlinx.coroutines.Dispatchers
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
@@ -127,6 +128,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
@@ -143,6 +145,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
@@ -164,9 +167,9 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   val result: IO<Nothing, NetworkError, Int> = IO.raiseError(NetworkError)
+     *   val result: IO<NetworkError, Int> = IO.raiseError(NetworkError)
      *   //sampleEnd
-     *   println(result.unsafeRunSync())
+     *   println(result.unsafeRunSyncEither())
      * }
      * ```
      */
@@ -176,15 +179,15 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *  Sleeps for a given [duration] without blocking a thread.
      *
      * ```kotlin:ank:playground
-     * import arrow.fx.IO
+     * import arrow.fx.*
      * import arrow.fx.typeclasses.seconds
      *
      * fun main(args: Array<String>) {
      *   val result =
-     *   //sampleStart
-     *   IO.sleep(3.seconds).flatMap {
-     *     IO.effect { println("Hello World!") }
-     *   }
+     *     //sampleStart
+     *     IO.sleep(3.seconds).flatMap {
+     *       IO.effect { println("Hello World!") }
+     *     }
      *   //sampleEnd
      *   result.unsafeRunSync()
      * }
@@ -203,6 +206,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
@@ -220,6 +224,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
@@ -237,32 +242,28 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * This combinator can be used to wrap callbacks or other similar impure code **that require no cancellation code**.
      *
      * ```kotlin:ank:playground
-     * import arrow.core.*
      * import arrow.fx.*
      * import java.lang.RuntimeException
      *
      * typealias Callback = (List<String>?, Throwable?) -> Unit
-     *
      * class GithubId
      * object GithubService {
      *   fun getUsernames(callback: Callback) {
      *     //execute operation and call callback at some point in future
      *   }
      * }
-     *
      * fun main(args: Array<String>) {
      *   //sampleStart
      *   fun getUsernames(): IO<Nothing, List<String>> =
-     *     IO.async { cb: (Either<Throwable, List<String>>) -> Unit ->
+     *     IO.async { cb: (IOResult<Nothing, List<String>>) -> Unit ->
      *       GithubService.getUsernames { names, throwable ->
      *         when {
-     *           names != null -> cb(Right(names))
-     *           throwable != null -> cb(Left(throwable))
-     *           else -> cb(Left(RuntimeException("Null result and no exception")))
+     *           names != null -> cb(IOResult.Success(names))
+     *           throwable != null -> cb(IOResult.Exception(throwable))
+     *           else -> cb(IOResult.Exception(RuntimeException("Null result and no exception")))
      *         }
      *       }
      *     }
-     *
      *   val result = getUsernames()
      *   //sampleEnd
      *   println(result.unsafeRunSync())
@@ -289,7 +290,6 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * This combinator can be used to wrap callbacks or other similar impure code **that require no cancellation code**.
      *
      * ```kotlin:ank:playground
-     * import arrow.core.*
      * import arrow.fx.*
      * import java.lang.RuntimeException
      *
@@ -300,22 +300,20 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *     //execute operation and call callback at some point in future
      *   }
      * }
-     *
      * fun main(args: Array<String>) {
      *   //sampleStart
      *   fun getUsernames(): IO<Nothing, List<String>> =
-     *     IO.asyncF { cb: (Either<Throwable, List<String>>) -> Unit ->
+     *     IO.asyncF { cb: (IOResult<Nothing, List<String>>) -> Unit ->
      *       IO {
      *         GithubService.getUsernames { names, throwable ->
      *           when {
-     *             names != null -> cb(Right(names))
-     *             throwable != null -> cb(Left(throwable))
-     *             else -> cb(Left(RuntimeException("Null result and no exception")))
+     *             names != null -> cb(IOResult.Success(names))
+     *             throwable != null -> cb(IOResult.Exception(throwable))
+     *             else -> cb(IOResult.Exception(RuntimeException("Null result and no exception")))
      *           }
      *         }
      *       }
      *     }
-     *
      *   val result = getUsernames()
      *   //sampleEnd
      *   println(result.unsafeRunSync())
@@ -352,13 +350,13 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * This combinator can be used to wrap callbacks or other similar impure code that requires cancellation code.
      *
      * ```kotlin:ank:playground
-     * import arrow.core.*
      * import arrow.fx.*
      * import java.lang.RuntimeException
+     * import arrow.fx.unsafeRunSync
      *
      * typealias Callback = (List<String>?, Throwable?) -> Unit
-     *
      * class GithubId
+     *
      * object GithubService {
      *   private val listeners: MutableMap<GithubId, Callback> = mutableMapOf()
      *   fun getUsernames(callback: Callback): GithubId {
@@ -367,7 +365,6 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *     //execute operation and call callback at some point in future
      *     return id
      *   }
-     *
      *   fun unregisterCallback(id: GithubId): Unit {
      *     listeners.remove(id)
      *   }
@@ -376,18 +373,16 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * fun main(args: Array<String>) {
      *   //sampleStart
      *   fun getUsernames(): IO<Nothing, List<String>> =
-     *     IO.cancellable { cb: (Either<Throwable, List<String>>) -> Unit ->
+     *     IO.cancellable { cb: (IOResult<Nothing, List<String>>) -> Unit ->
      *       val id = GithubService.getUsernames { names, throwable ->
      *         when {
-     *           names != null -> cb(Right(names))
-     *           throwable != null -> cb(Left(throwable))
-     *           else -> cb(Left(RuntimeException("Null result and no exception")))
+     *           names != null -> cb(IOResult.Success(names))
+     *           throwable != null -> cb(IOResult.Exception(throwable))
+     *           else -> cb(IOResult.Exception(RuntimeException("Null result and no exception")))
      *         }
      *       }
-     *
      *       IO { GithubService.unregisterCallback(id) }
      *     }
-     *
      *   val result = getUsernames()
      *   //sampleEnd
      *   println(result.unsafeRunSync())
@@ -422,13 +417,12 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * This combinator can be used to wrap callbacks or other similar impure code that requires cancellation code.
      *
      * ```kotlin:ank:playground
-     * import arrow.core.*
      * import arrow.fx.*
      * import java.lang.RuntimeException
      *
      * typealias Callback = (List<String>?, Throwable?) -> Unit
-     *
      * class GithubId
+     *
      * object GithubService {
      *   private val listeners: MutableMap<GithubId, Callback> = mutableMapOf()
      *   fun getUsernames(callback: Callback): GithubId {
@@ -437,29 +431,25 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *     //execute operation and call callback at some point in future
      *     return id
      *   }
-     *
      *   fun unregisterCallback(id: GithubId): Unit {
      *     listeners.remove(id)
      *   }
      * }
-     *
      * fun main(args: Array<String>) {
      *   //sampleStart
      *   fun getUsernames(): IO<Nothing, List<String>> =
-     *     IO.cancellableF { cb: (Either<Throwable, List<String>>) -> Unit ->
+     *     IO.cancellableF { cb: (IOResult<Nothing, List<String>>) -> Unit ->
      *       IO {
      *         val id = GithubService.getUsernames { names, throwable ->
      *           when {
-     *             names != null -> cb(Right(names))
-     *             throwable != null -> cb(Left(throwable))
-     *             else -> cb(Left(RuntimeException("Null result and no exception")))
+     *             names != null -> cb(IOResult.Success(names))
+     *             throwable != null -> cb(IOResult.Exception(throwable))
+     *             else -> cb(IOResult.Exception(RuntimeException("Null result and no exception")))
      *           }
      *         }
-     *
      *         IO { GithubService.unregisterCallback(id) }
      *       }
      *     }
-     *
      *   val result = getUsernames()
      *   //sampleEnd
      *   println(result.unsafeRunSync())
@@ -500,6 +490,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
@@ -517,6 +508,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
@@ -535,6 +527,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * ```kotlin:ank:playground
      * import arrow.fx.IO
      * import arrow.core.Eval
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   fun longCalculation(): Int = 9999
@@ -559,6 +552,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * ```kotlin:ank:playground
      * import arrow.core.*
      * import arrow.fx.IO
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
@@ -587,6 +581,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * ```kotlin:ank:playground
      * import arrow.fx.IO
+     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
@@ -603,10 +598,11 @@ sealed class IO<out E, out A> : IOOf<E, A> {
    * Run the [IO] in a suspended environment.
    *
    * ```kotlin:ank:playground
+   * import arrow.core.Either
    * import arrow.fx.IO
    *
    * //sampleStart
-   * suspend fun main(args: Array<String>): Unit =
+   * suspend fun main(args: Array<String>): Either<Nothing, Unit> =
    *   IO.effect { println("Hello World!") }
    *   .suspended()
    * //sampleEnd
@@ -628,6 +624,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
    *
    * ```kotlin:ank:playground
    * import arrow.fx.IO
+   * import arrow.fx.unsafeRunSync
    *
    * fun main(args: Array<String>) {
    *   val result =
@@ -650,6 +647,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
    * ```kotlin:ank:playground
    * import arrow.fx.IO
    * import kotlinx.coroutines.Dispatchers
+   * import arrow.fx.unsafeRunSync
    *
    * fun main(args: Array<String>) {
    *   //sampleStart
@@ -669,10 +667,11 @@ sealed class IO<out E, out A> : IOOf<E, A> {
    *
    * ```kotlin:ank:playground
    * import arrow.fx.IO
+   * import arrow.fx.unsafeRunSync
    *
    * fun main(args: Array<String>) {
    *   //sampleStart
-   *   val resultA = IO.raiseError<Int>(RuntimeException("Boom!")).attempt()
+   *   val resultA = IO.raiseException<Int>(RuntimeException("Boom!")).attempt()
    *   val resultB = IO.just("Hello").attempt()
    *   //sampleEnd
    *   println("resultA: ${resultA.unsafeRunSync()}, resultB: ${resultB.unsafeRunSync()}")
@@ -861,12 +860,11 @@ sealed class IO<out E, out A> : IOOf<E, A> {
  * Handle the error by mapping the error to a value of [A].
  *
  * ```kotlin:ank:playground
- * import arrow.fx.IO
- * import arrow.fx.handleError
+ * import arrow.fx.*
  *
  * fun main(args: Array<String>) {
  *   //sampleStart
- *   val result = IO.raiseError<Int>(RuntimeException("Boom"))
+ *   val result = IO.raiseException<Int>(RuntimeException("Boom"))
  *     .handleError { e -> "Goodbye World! after $e" }
  *   //sampleEnd
  *   println(result.unsafeRunSync())
@@ -885,16 +883,14 @@ fun <A> IOOf<Nothing, A>.handleError(f: (Throwable) -> A): IO<Nothing, A> =
  * Handle the error by resolving the error with an effect that results in [A].
  *
  * ```kotlin:ank:playground
- * import arrow.fx.IO
- * import arrow.fx.handleErrorWith
+ * import arrow.fx.*
  * import arrow.fx.typeclasses.milliseconds
  *
  * fun main(args: Array<String>) {
  *   fun getMessage(e: Throwable): IO<Nothing, String> = IO.sleep(250.milliseconds)
  *     .followedBy(IO.effect { "Delayed goodbye World! after $e" })
- *
  *   //sampleStart
- *   val result = IO.raiseError<Int>(RuntimeException("Boom"))
+ *   val result = IO.raiseException<Int>(RuntimeException("Boom"))
  *     .handleErrorWith { e -> getMessage(e) }
  *   //sampleEnd
  *   println(result.unsafeRunSync())
@@ -917,13 +913,14 @@ fun <E, A, E2> IOOf<E, A>.fallbackWith(fa: IOOf<E2, A>): IO<E2, A> =
  * Redeem an [IO] to an [IO] of [B] by resolving the error **or** mapping the value [A] to [B].
  *
  * ```kotlin:ank:playground
- * import arrow.fx.IO
+ * import arrow.core.identity
+ * import arrow.fx.*
  *
  * fun main(args: Array<String>) {
  *   val result =
- *   //sampleStart
- *   IO.raiseError<Int>(RuntimeException("Hello from Error"))
- *     .redeem({ e -> e.message ?: "" }, Int::toString)
+ *     //sampleStart
+ *     IO.raiseException<Int>(RuntimeException("Hello from Error"))
+ *       .redeem({ e -> e.message ?: "" }, ::identity, Int::toString)
  *   //sampleEnd
  *   println(result.unsafeRunSync())
  * }
@@ -936,13 +933,14 @@ fun <E, A, B> IOOf<E, A>.redeem(ft: (Throwable) -> B, fe: (E) -> B, fb: (A) -> B
  * Redeem an [IO] to an [IO] of [B] by resolving the error **or** mapping the value [A] to [B] **with** an effect.
  *
  * ```kotlin:ank:playground
- * import arrow.fx.IO
+ * import arrow.core.identity
+ * import arrow.fx.*
  *
  * fun main(args: Array<String>) {
  *   val result =
- *   //sampleStart
- *   IO.just("1")
- *     .redeemWith({ e -> IO.just(-1) }, { str -> IO { str.toInt() } })
+ *     //sampleStart
+ *     IO.just("1")
+ *       .redeemWith({ e -> IO.just(-1) }, ::identity, { str -> IO { str.toInt() } })
  *   //sampleEnd
  *   println(result.unsafeRunSync())
  * }
@@ -977,6 +975,7 @@ fun <E, A> IOOf<E, A>.guaranteeCase(finalizer: (ExitCase2<E>) -> IOOf<E, Unit>):
  *
  * ```kotlin:ank:playground
  * import arrow.fx.IO
+ * import arrow.fx.unsafeRunSync
  *
  * fun main(args: Array<String>) {
  *   val result =
@@ -999,7 +998,7 @@ fun <E, A, B, E2 : E> IOOf<E, A>.flatMap(f: (A) -> IOOf<E2, B>): IO<E2, B> =
  * Compose this [IO] with another [IO] [fb] while ignoring the output.
  *
  * ```kotlin:ank:playground
- * import arrow.fx.IO
+ * import arrow.fx.*
  *
  * fun main(args: Array<String>) {
  *   //sampleStart
@@ -1019,14 +1018,14 @@ fun <E, A, B, E2 : E> IOOf<E, A>.followedBy(fb: IOOf<E2, B>): IO<E2, B> =
  * Given both the value and the function are within [IO], **ap**ply the function to the value.
  *
  * ```kotlin:ank:playground
- * import arrow.fx.IO
+ * import arrow.fx.*
  *
  * fun main() {
  *   //sampleStart
- *   val someF: IO<(Int) -> Long> = IO.just { i: Int -> i.toLong() + 1 }
+ *   val someF: IO<Nothing, (Int) -> Long> = IO.just { i: Int -> i.toLong() + 1 }
  *   val a = IO.just(3).ap(someF)
- *   val b = IO.raiseError<Int>(RuntimeException("Boom")).ap(someF)
- *   val c = IO.just(3).ap(IO.raiseError<(Int) -> Long>(RuntimeException("Boom")))
+ *   val b = IO.raiseException<Int>(RuntimeException("Boom")).ap(someF)
+ *   val c = IO.just(3).ap(IO.raiseException<(Int) -> Long>(RuntimeException("Boom")))
  *   //sampleEnd
  *   println("a: $a, b: $b, c: $c")
  * }
@@ -1059,6 +1058,7 @@ fun <E, A, E2, B> IOOf<E, A>.bimap(fe: (E) -> E2, fa: (A) -> B): IO<E2, B> =
  *
  * ```kotlin:ank:playground
  * import arrow.fx.IO
+ * import arrow.fx.unsafeRunSync
  *
  * class File(url: String) {
  *   fun open(): File = this
@@ -1111,6 +1111,7 @@ fun <E, A, B> IOOf<E, A>.bracket(release: (A) -> IOOf<E, Unit>, use: (A) -> IOOf
  * ```kotlin:ank:playground
  * import arrow.fx.*
  * import arrow.fx.typeclasses.ExitCase
+ * import arrow.fx.unsafeRunSync
  *
  * class File(url: String) {
  *   fun open(): File = this
@@ -1192,16 +1193,15 @@ fun <E, A> IOOf<E, A>.onException(finalizer: (Throwable) -> IOOf<E, Unit>): IO<E
  * ```kotlin:ank:playground
  * import arrow.fx.*
  * import arrow.fx.extensions.fx
- * import kotlinx.coroutines.Dispatchers
+ * import arrow.fx.extensions.io.dispatchers.dispatchers
  *
  * fun main(args: Array<String>) {
  *   //sampleStart
- *   val result = IO.fx {
+ *   val result = IO.fx<Nothing, Unit> {
  *     val (join, cancel) = !IO.effect {
  *       println("Hello from a fiber on ${Thread.currentThread().name}")
- *     }.fork(Dispatchers.Default)
+ *     }.fork(IO.dispatchers<Nothing>().io())
  *   }
- *
  *   //sampleEnd
  *   result.unsafeRunSync()
  * }
