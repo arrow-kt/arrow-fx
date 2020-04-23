@@ -10,8 +10,8 @@ internal class ForwardDisposable {
 
   fun cancel(): Disposable {
     fun loop(d: Disposable): Unit = state.value.let { current ->
-      when(current) {
-        is State.Empty -> if(!state.compareAndSet(current, State.Empty(listOf(d) + current.stack))) loop(d)
+      when (current) {
+        is State.Empty -> if (!state.compareAndSet(current, State.Empty(listOf(d) + current.stack))) loop(d)
         is State.Active -> {
           state.lazySet(finished)
           Platform.trampoline { current.token.dispose() }
@@ -26,7 +26,7 @@ internal class ForwardDisposable {
   }
 
   fun complete(value: Disposable): Unit = state.value.let { current ->
-    when(current) {
+    when (current) {
       is State.Active -> {
         value.dispose()
         throw IllegalStateException(current.toString())
