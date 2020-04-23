@@ -19,7 +19,6 @@ import arrow.fx.reactor.extensions.fx
 import arrow.fx.reactor.fix
 import arrow.fx.reactor.k
 import arrow.fx.reactor.value
-import arrow.fx.test.laws.AsyncLaws
 import arrow.fx.test.laws.ConcurrentLaws
 import arrow.fx.test.laws.TimerLaws
 import arrow.fx.typeclasses.ExitCase

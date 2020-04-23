@@ -4,7 +4,6 @@ import arrow.Kind
 import arrow.core.Either
 import arrow.core.Eval
 import arrow.core.Left
-import arrow.core.NonFatal
 import arrow.core.Option
 import arrow.core.Right
 import arrow.core.identity
