@@ -219,7 +219,7 @@ data class FluxK<out A>(val flux: Flux<out A>) : FluxKOf<A> {
 
     fun <A> asyncF(fa: ((Either<Throwable, A>) -> Unit) -> FluxKOf<Unit>): FluxK<A> =
       Flux.create { sink: FluxSink<A> ->
-        fa { callback: Either<Throwable, A> ->
+        val dispose = fa { callback: Either<Throwable, A> ->
           callback.fold({
             sink.error(it)
           }, {
@@ -227,6 +227,8 @@ data class FluxK<out A>(val flux: Flux<out A>) : FluxKOf<A> {
             sink.complete()
           })
         }.fix().flux.subscribe({}, sink::error)
+
+        sink.onCancel { dispose.dispose() }
       }.k()
 
     @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(fa)"))
