@@ -91,32 +91,27 @@ data class FluxK<out A>(val flux: Flux<out A>) : FluxKOf<A> {
    *  ```
    */
   fun <B> bracketCase(use: (A) -> FluxKOf<B>, release: (A, ExitCase<Throwable>) -> FluxKOf<Unit>): FluxK<B> =
-    FluxK(Flux.create<B> { sink ->
-      flux.subscribe({ a ->
-        if (sink.isCancelled) release(a, ExitCase.Cancelled).fix().flux.subscribe({}, sink::error)
-        else try {
-          sink.onDispose(use(a).fix()
-            .flatMap { b -> release(a, ExitCase.Completed).fix().map { b } }
-            .handleErrorWith { e -> release(a, ExitCase.Error(e)).fix().flatMap { FluxK.raiseError<B>(e) } }
-            .flux
-            .doOnCancel { release(a, ExitCase.Cancelled).fix().flux.subscribe({}, sink::error) }
-            .subscribe({ sink.next(it) }, sink::error, { }, {
-              sink.onRequest(it::request)
-            })
-          )
-        } catch (e: Throwable) {
-          if (NonFatal(e)) {
-            release(a, ExitCase.Error(e)).fix().flux.subscribe({
-              sink.error(e)
-            }, { e2 ->
-              sink.error(Platform.composeErrors(e, e2))
-            })
-          } else {
-            throw e
-          }
-        }
-      }, sink::error, sink::complete)
-    })
+    Flux.create<B> { emitter ->
+      val dispose =
+        handleErrorWith { e -> Flux.defer { Flux.just(emitter.error(e)) }.flatMap { Flux.error<A>(e) }.k() }
+          .value()
+          .concatMap { a ->
+            if (emitter.isCancelled) {
+              release(a, ExitCase.Cancelled).value().subscribe({}, emitter::error)
+              Flux.never<B>()
+            } else {
+              Flux.defer { use(a).value() }
+                .doOnError { t: Throwable ->
+                  Flux.defer { release(a, ExitCase.Error(t.nonFatalOrThrow())).value() }.subscribe({ emitter.error(t) }, { e -> emitter.error(Platform.composeErrors(t, e)) })
+                }.doOnComplete {
+                  Flux.defer { release(a, ExitCase.Completed).value() }.subscribe({ emitter.complete() }, emitter::error)
+                }.doOnCancel {
+                  Flux.defer { release(a, ExitCase.Cancelled).value() }.subscribe({}, {})
+                }
+            }
+          }.subscribe({ emitter.next(it) }, {}, {})
+      emitter.onCancel { dispose.dispose() }
+    }.k()
 
   fun <B> concatMap(f: (A) -> FluxKOf<B>): FluxK<B> =
     flux.concatMap { f(it).fix().flux }.k()
