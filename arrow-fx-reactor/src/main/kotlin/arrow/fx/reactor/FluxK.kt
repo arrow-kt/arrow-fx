@@ -11,12 +11,15 @@ import arrow.core.internal.AtomicRefW
 import arrow.core.nonFatalOrThrow
 import arrow.fx.internal.Platform
 import arrow.fx.reactor.CoroutineContextReactorScheduler.asScheduler
+import arrow.fx.reactor.extensions.ForwardDisposable
 import arrow.fx.typeclasses.CancelToken
 import arrow.fx.typeclasses.Disposable
 import arrow.fx.typeclasses.ExitCase
+import arrow.fx.typeclasses.Fiber
 import arrow.typeclasses.Applicative
 import reactor.core.publisher.Flux
 import reactor.core.publisher.FluxSink
+import reactor.core.publisher.ReplayProcessor
 import kotlin.coroutines.CoroutineContext
 
 class ForFluxK private constructor() {
@@ -91,26 +94,34 @@ data class FluxK<out A>(val flux: Flux<out A>) : FluxKOf<A> {
    */
   fun <B> bracketCase(use: (A) -> FluxKOf<B>, release: (A, ExitCase<Throwable>) -> FluxKOf<Unit>): FluxK<B> =
     Flux.create<B> { emitter ->
-      val dispose =
-        handleErrorWith { e -> Flux.defer { Flux.just(emitter.error(e)) }.flatMap { Flux.error<A>(e) }.k() }
-          .value()
-          .concatMap { a ->
-            if (emitter.isCancelled) {
-              release(a, ExitCase.Cancelled).value().subscribe({}, emitter::error)
-              Flux.never<B>()
-            } else {
-              Flux.defer { use(a).value() }
-                .doOnError { t: Throwable ->
-                  Flux.defer { release(a, ExitCase.Error(t.nonFatalOrThrow())).value() }.subscribe({ emitter.error(t) }, { e -> emitter.error(Platform.composeErrors(t, e)) })
-                }.doOnComplete {
-                  Flux.defer { release(a, ExitCase.Completed).value() }.subscribe({ emitter.complete() }, emitter::error)
-                }.doOnCancel {
-                  Flux.defer { release(a, ExitCase.Cancelled).value() }.subscribe({}, {})
-                }
-            }
-          }.subscribe({ emitter.next(it) }, {}, {})
-      emitter.onCancel { dispose.dispose() }
+      val cancelable = ForwardDisposable()
+      emitter.onCancel(cancelable.cancel())
+
+      value().subscribe(
+        { a: A ->
+          cancelable.complete(
+            Flux.defer { use(a).value() }
+              .doOnCancel { Flux.defer { release(a, ExitCase.Cancelled).value() }.subscribe() }
+              .subscribe({ b ->
+                Flux.defer { release(a, ExitCase.Completed).value() }
+                  .subscribe({ emitter.next(b) }, { e -> emitter.error(e) })
+              }, { e ->
+                Flux.defer { release(a, ExitCase.Error(e)).value() }
+                  .subscribe({ emitter.error(e) }, { e2 -> emitter.error(Platform.composeErrors(e, e2)) })
+              }, {})
+          )
+        },
+        { e: Throwable -> emitter.error(e) },
+        {}
+      )
     }.k()
+
+  fun guaranteeCase(f: (ExitCase<Throwable>) -> FluxKOf<Unit>): FluxK<A> =
+    value()
+      .doOnError { t: Throwable -> Flux.defer { f(ExitCase.Error(t)).value() }.blockFirst() }
+      .doOnComplete { Flux.defer { f(ExitCase.Completed).value() }.blockFirst() }
+      .doOnCancel { Flux.defer { f(ExitCase.Cancelled).value() }.blockFirst() }
+      .k()
 
   fun <B> concatMap(f: (A) -> FluxKOf<B>): FluxK<B> =
     flux.concatMap { f(it).fix().flux }.k()
@@ -133,6 +144,18 @@ data class FluxK<out A>(val flux: Flux<out A>) : FluxKOf<A> {
     foldRight(Eval.always { GA.just(Flux.empty<B>().k()) }) { a, eval ->
       GA.run { f(a).map2Eval(eval) { Flux.concat(Flux.just<B>(it.a), it.b.flux).k() } }
     }.value()
+
+  fun fork(coroutineContext: CoroutineContext): FluxK<Fiber<ForFluxK, A>> =
+    coroutineContext.asScheduler().let { scheduler ->
+      Flux.create<Fiber<ForFluxK, A>> { emitter ->
+        val s: ReplayProcessor<A> = ReplayProcessor.create<A>()
+        val conn: reactor.core.Disposable = value()
+          .subscribeOn(scheduler)
+          .subscribe(s::onNext, s::onError, s::onComplete)
+
+        emitter.next(Fiber(s.k(), FluxK { conn.dispose() }))
+      }.k()
+    }
 
   fun continueOn(ctx: CoroutineContext): FluxK<A> =
     flux.publishOn(ctx.asScheduler()).k()
@@ -213,16 +236,18 @@ data class FluxK<out A>(val flux: Flux<out A>) : FluxKOf<A> {
 
     fun <A> asyncF(fa: ((Either<Throwable, A>) -> Unit) -> FluxKOf<Unit>): FluxK<A> =
       Flux.create { sink: FluxSink<A> ->
-        val dispose = fa { callback: Either<Throwable, A> ->
-          callback.fold({
-            sink.error(it)
-          }, {
-            sink.next(it)
-            sink.complete()
-          })
-        }.fix().flux.subscribe({}, sink::error)
-
-        sink.onCancel { dispose.dispose() }
+        val cancellable = ForwardDisposable()
+        sink.onCancel(cancellable.cancel())
+        cancellable.complete(
+          fa { callback: Either<Throwable, A> ->
+            callback.fold({
+              sink.error(it)
+            }, {
+              sink.next(it)
+              sink.complete()
+            })
+          }.fix().flux.subscribe({}, sink::error)
+        )
       }.k()
 
     @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(fa)"))

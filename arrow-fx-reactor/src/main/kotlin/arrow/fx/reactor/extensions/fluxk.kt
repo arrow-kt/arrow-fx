@@ -149,6 +149,9 @@ interface FluxKMonadThrow : MonadThrow<ForFluxK>, FluxKMonadError
 interface FluxKBracket : Bracket<ForFluxK, Throwable>, FluxKMonadThrow {
   override fun <A, B> FluxKOf<A>.bracketCase(release: (A, ExitCase<Throwable>) -> Kind<ForFluxK, Unit>, use: (A) -> FluxKOf<B>): FluxK<B> =
     fix().bracketCase({ use(it) }, { a, e -> release(a, e) })
+
+  override fun <A> Kind<ForFluxK, A>.guaranteeCase(finalizer: (ExitCase<Throwable>) -> Kind<ForFluxK, Unit>): Kind<ForFluxK, A> =
+    fix().guaranteeCase(finalizer)
 }
 
 @extension
@@ -176,17 +179,7 @@ interface FluxKAsync :
 interface FluxKConcurrent : Concurrent<ForFluxK>, FluxKAsync {
 
   override fun <A> Kind<ForFluxK, A>.fork(coroutineContext: CoroutineContext): FluxK<Fiber<ForFluxK, A>> =
-    coroutineContext.asScheduler().let { scheduler ->
-      Flux.create<Fiber<ForFluxK, A>> { emitter ->
-        if (!emitter.isCancelled) {
-          val s: ReplayProcessor<A> = ReplayProcessor.create<A>()
-          val conn: ReactorDisposable = value().subscribeOn(scheduler).subscribe(s::onNext, s::onError)
-          emitter.next(Fiber(s.k(), FluxK {
-            conn.dispose()
-          }))
-        }
-      }.k()
-    }
+    fix().fork(coroutineContext)
 
   override fun <A, B> parTupledN(ctx: CoroutineContext, fa: FluxKOf<A>, fb: FluxKOf<B>): FluxK<Tuple2<A, B>> =
     fa.value().zipWith(fb.value(), BiFunction<A, B, Tuple2<A, B>> { t, u -> Tuple2(t, u) }).subscribeOn(ctx.asScheduler()).k()
