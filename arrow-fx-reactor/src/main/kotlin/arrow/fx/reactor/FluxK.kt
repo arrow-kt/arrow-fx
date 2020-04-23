@@ -117,11 +117,21 @@ data class FluxK<out A>(val flux: Flux<out A>) : FluxKOf<A> {
     }.k()
 
   fun guaranteeCase(f: (ExitCase<Throwable>) -> FluxKOf<Unit>): FluxK<A> =
-    value()
-      .doOnError { t: Throwable -> Flux.defer { f(ExitCase.Error(t)).value() }.blockFirst() }
-      .doOnComplete { Flux.defer { f(ExitCase.Completed).value() }.blockFirst() }
-      .doOnCancel { Flux.defer { f(ExitCase.Cancelled).value() }.blockFirst() }
-      .k()
+    Flux.create<A> { emitter ->
+      val cancelable = ForwardDisposable()
+      emitter.onCancel(cancelable.cancel())
+
+      cancelable.complete(value()
+        .doOnCancel { Flux.defer { f(ExitCase.Cancelled).value() }.subscribe() }
+        .subscribe(
+          { a ->
+            Flux.defer { f(ExitCase.Completed).value() }
+              .subscribe({ emitter.next(a) }, { e -> emitter.error(e) }, emitter::complete)
+          }, { e ->
+          Flux.defer { f(ExitCase.Error(e)).value() }
+            .subscribe({ emitter.error(e) }, { e2 -> emitter.error(Platform.composeErrors(e, e2)) }, emitter::complete)
+        }))
+    }.k()
 
   fun <B> concatMap(f: (A) -> FluxKOf<B>): FluxK<B> =
     flux.concatMap { f(it).fix().flux }.k()
