@@ -23,11 +23,11 @@ import arrow.fx.reactor.fix
 import arrow.fx.reactor.k
 import arrow.fx.reactor.value
 import arrow.fx.typeclasses.Async
-import arrow.fx.typeclasses.AsyncSyntax
 import arrow.fx.typeclasses.Bracket
 import arrow.fx.typeclasses.CancelToken
 import arrow.fx.typeclasses.Concurrent
 import arrow.fx.typeclasses.ConcurrentEffect
+import arrow.fx.typeclasses.ConcurrentSyntax
 import arrow.fx.typeclasses.Dispatchers
 import arrow.fx.typeclasses.Disposable
 import arrow.fx.typeclasses.Duration
@@ -52,7 +52,6 @@ import reactor.core.publisher.FluxSink
 import reactor.core.publisher.Mono
 import reactor.core.publisher.ReplayProcessor
 import reactor.core.publisher.toFlux
-import java.util.function.BiFunction
 import reactor.core.Disposable as ReactorDisposable
 import kotlin.coroutines.CoroutineContext
 import arrow.fx.reactor.handleErrorWith as fluxHandleErrorWith
@@ -182,7 +181,7 @@ interface FluxKConcurrent : Concurrent<ForFluxK>, FluxKAsync {
     fix().fork(coroutineContext)
 
   override fun <A, B> parTupledN(ctx: CoroutineContext, fa: FluxKOf<A>, fb: FluxKOf<B>): FluxK<Tuple2<A, B>> =
-    fa.value().zipWith(fb.value(), BiFunction<A, B, Tuple2<A, B>> { t, u -> Tuple2(t, u) }).subscribeOn(ctx.asScheduler()).k()
+    fa.value().zipWith(fb.value(), tupled()).subscribeOn(ctx.asScheduler()).k()
 
   override fun <A, B, C> parTupledN(ctx: CoroutineContext, fa: FluxKOf<A>, fb: FluxKOf<B>, fc: FluxKOf<C>): FluxK<Tuple3<A, B, C>> =
     Flux.zip(fa.value(), fb.value(), fc.value())
@@ -345,9 +344,8 @@ fun FluxK.Companion.monadErrorSwitch(): FluxKMonadError = object : FluxKMonadErr
     fix().switchMap { f(it).fix() }
 }
 
-// TODO FluxK does not yet have a Concurrent instance
-fun <A> FluxK.Companion.fx(c: suspend AsyncSyntax<ForFluxK>.() -> A): FluxK<A> =
-  FluxK.async().fx.async(c).fix()
+fun <A> FluxK.Companion.fx(c: suspend ConcurrentSyntax<ForFluxK>.() -> A): FluxK<A> =
+  FluxK.concurrent().fx.concurrent(c).fix()
 
 @extension
 interface FluxKTimer : Timer<ForFluxK> {

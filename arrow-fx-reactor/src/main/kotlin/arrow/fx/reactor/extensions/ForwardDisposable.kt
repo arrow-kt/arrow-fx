@@ -4,6 +4,14 @@ import arrow.fx.internal.Platform
 import kotlinx.atomicfu.atomic
 import reactor.core.Disposable
 
+/**
+ * [ForwardDisposable] allows you to link 2 [Disposable]s.
+ *
+ * This is useful for when you want to link the cancel lifecycle of an `Emitter`
+ * to running an [Disposable] stream.
+ *
+ * This is used in `bracket`, `guaranteeCase` & `asyncF`.
+ */
 internal class ForwardDisposable {
 
   private val state = atomic(init)

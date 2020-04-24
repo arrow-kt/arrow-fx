@@ -1,6 +1,7 @@
 package arrow.fx
 
 import arrow.Kind
+import arrow.core.Try
 import arrow.core.left
 import arrow.fx.reactor.ForMonoK
 import arrow.fx.reactor.MonoK
@@ -20,7 +21,8 @@ import arrow.fx.reactor.value
 import arrow.fx.typeclasses.ExitCase
 import arrow.core.test.UnitSpec
 import arrow.core.test.generators.GenK
-import arrow.fx.test.laws.AsyncLaws
+import arrow.fx.reactor.extensions.concurrent
+import arrow.fx.test.laws.ConcurrentLaws
 import arrow.fx.test.laws.TimerLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
@@ -42,26 +44,22 @@ class MonoKTest : UnitSpec() {
     mono.doOnNext { Thread.currentThread().name shouldNot startWith(name) }
 
   fun <T> EQ(): Eq<MonoKOf<T>> = object : Eq<MonoKOf<T>> {
-    override fun MonoKOf<T>.eqv(b: MonoKOf<T>): Boolean =
-      try {
-        this.value().block() == b.value().block()
-      } catch (throwable: Throwable) {
-        val errA = try {
-          this.value().block()
-          throw IllegalArgumentException()
-        } catch (err: Throwable) {
-          err
-        }
+    override fun MonoKOf<T>.eqv(b: MonoKOf<T>): Boolean {
+      val res1 = Try { value().timeout(Duration.ofSeconds(5)).block() }
+      val res2 = Try { b.value().timeout(Duration.ofSeconds(5)).block() }
 
-        val errB = try {
-          b.value().block()
-          throw IllegalStateException()
-        } catch (err: Throwable) {
-          err
-        }
-
-        errA == errB
-      }
+      return res1.fold({ t1 ->
+        res2.fold({ t2 ->
+          if (t1::class.java == java.util.concurrent.TimeoutException::class.java) throw t1
+          if (t2::class.java == java.util.concurrent.TimeoutException::class.java) throw t2
+          (t1::class.java == t2::class.java)
+        }, { false })
+      }, { v1 ->
+        res2.fold({ false }, {
+          v1 == it
+        })
+      })
+    }
   }
 
   fun EQK() = object : EqK<ForMonoK> {
@@ -73,7 +71,7 @@ class MonoKTest : UnitSpec() {
 
   init {
     testLaws(
-      AsyncLaws.laws(MonoK.async(), MonoK.functor(), MonoK.applicative(), MonoK.monad(), MonoK.genK(), EQK(), testStackSafety = false),
+      ConcurrentLaws.laws(MonoK.concurrent(), MonoK.timer(), MonoK.functor(), MonoK.applicative(), MonoK.monad(), MonoK.genK(), EQK(), testStackSafety = false),
       TimerLaws.laws(MonoK.async(), MonoK.timer(), EQK())
     )
 
