@@ -108,11 +108,13 @@ data class FluxK<out A>(val flux: Flux<out A>) : FluxKOf<A> {
               }, { e ->
                 Flux.defer { release(a, ExitCase.Error(e)).value() }
                   .subscribe({ emitter.error(e) }, { e2 -> emitter.error(Platform.composeErrors(e, e2)) })
-              }, {})
+              }, {
+                if (!acquireActive.value) emitter.complete()
+              })
           )
         },
         { e: Throwable -> emitter.error(e) },
-        {}
+        { acquireActive.value = false }
       )
     }.k()
 
