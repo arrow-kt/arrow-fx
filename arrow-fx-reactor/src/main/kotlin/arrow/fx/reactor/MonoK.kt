@@ -148,17 +148,15 @@ data class MonoK<out A>(val mono: Mono<out A>) : MonoKOf<A> {
         }))
     }.k()
 
-  fun fork(coroutineContext: CoroutineContext): MonoK<Fiber<ForMonoK, A>> =
-    coroutineContext.asScheduler().let { scheduler ->
-      Mono.create<Fiber<ForMonoK, A>> { emitter ->
-        val s: ReplayProcessor<A> = ReplayProcessor.create<A>()
+  fun fork(ctx: CoroutineContext): MonoK<Fiber<ForMonoK, A>> =
+    MonoK {
+      val s: ReplayProcessor<A> = ReplayProcessor.create<A>()
 
-        val conn: reactor.core.Disposable = value()
-          .subscribeOn(scheduler)
-          .subscribe(s::onNext, s::onError, s::onComplete)
+      val conn: reactor.core.Disposable = value()
+        .subscribeOn(ctx.asScheduler())
+        .subscribe(s::onNext, s::onError, s::onComplete)
 
-        emitter.success(Fiber(s.next().k(), MonoK { conn.dispose() }))
-      }.k()
+      Fiber(s.next().k(), MonoK { conn.dispose() })
     }
 
   fun continueOn(ctx: CoroutineContext): MonoK<A> =
@@ -191,7 +189,7 @@ data class MonoK<out A>(val mono: Mono<out A>) : MonoKOf<A> {
       Mono.error<A>(t).k()
 
     operator fun <A> invoke(fa: () -> A): MonoK<A> =
-      defer { just(fa()) }
+      MonoK(Mono.fromCallable(fa))
 
     fun <A> defer(fa: () -> MonoKOf<A>): MonoK<A> =
       Mono.defer { fa().value() }.k()

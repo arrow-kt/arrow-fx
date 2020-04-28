@@ -1211,13 +1211,13 @@ fun <E, A> IOOf<E, A>.onException(finalizer: (Throwable) -> IOOf<E, Unit>): IO<E
  * @param ctx [CoroutineContext] to execute the source [IO] on.
  * @return [IO] with suspended execution of source [IO] on context [ctx].
  */
-fun <E, A> IOOf<E, A>.fork(ctx: CoroutineContext = IO.dispatchers<Nothing>().default()): IO<E, Fiber<IOPartialOf<E>, A>> =
-  IO.async { cb ->
+fun <E, A> IOOf<E, A>.fork(ctx: CoroutineContext = IO.dispatchers<Nothing>().default()): IO<Nothing, Fiber<IOPartialOf<E>, A>> =
+  IO {
     val promise = UnsafePromise<E, A>()
     // A new IOConnection, because its cancellation is now decoupled from our current one.
     val conn = IOConnection()
     IORunLoop.startCancellable(IOForkedStart(this, ctx), conn, promise::complete)
-    cb(IOResult.Success(IOFiber(promise, conn)))
+    IOFiber(promise, conn)
   }
 
 fun <A> IOOf<Nothing, A>.unsafeRunSync(): A =

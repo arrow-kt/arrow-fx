@@ -155,16 +155,14 @@ data class FluxK<out A>(val flux: Flux<out A>) : FluxKOf<A> {
       GA.run { f(a).map2Eval(eval) { Flux.concat(Flux.just<B>(it.a), it.b.flux).k() } }
     }.value()
 
-  fun fork(coroutineContext: CoroutineContext): FluxK<Fiber<ForFluxK, A>> =
-    coroutineContext.asScheduler().let { scheduler ->
-      Flux.create<Fiber<ForFluxK, A>> { emitter ->
-        val s: ReplayProcessor<A> = ReplayProcessor.create<A>()
-        val conn: reactor.core.Disposable = value()
-          .subscribeOn(scheduler)
-          .subscribe(s::onNext, s::onError, s::onComplete)
+  fun fork(ctx: CoroutineContext): FluxK<Fiber<ForFluxK, A>> =
+    FluxK {
+      val s: ReplayProcessor<A> = ReplayProcessor.create<A>()
+      val conn: reactor.core.Disposable = value()
+        .subscribeOn(ctx.asScheduler())
+        .subscribe(s::onNext, s::onError, s::onComplete)
 
-        emitter.next(Fiber(s.k(), FluxK { conn.dispose() }))
-      }.k()
+      Fiber(s.k(), FluxK { conn.dispose() })
     }
 
   fun continueOn(ctx: CoroutineContext): FluxK<A> =

@@ -63,7 +63,7 @@ interface MonoKApplicative : Applicative<ForMonoK>, MonoKFunctor {
   override fun <A> just(a: A): MonoK<A> =
     MonoK.just(a)
 
-  override fun <A, B> Kind<ForMonoK, A>.apEval(ff: Eval<Kind<ForMonoK, (A) -> B>>): Eval<Kind<ForMonoK, B>> =
+  override fun <A, B> MonoKOf<A>.apEval(ff: Eval<Kind<ForMonoK, (A) -> B>>): Eval<Kind<ForMonoK, B>> =
     Eval.now(fix().ap(MonoK.defer { ff.value() }))
 }
 
@@ -81,7 +81,7 @@ interface MonoKMonad : Monad<ForMonoK>, MonoKApplicative {
   override fun <A, B> tailRecM(a: A, f: kotlin.Function1<A, MonoKOf<Either<A, B>>>): MonoK<B> =
     MonoK.tailRecM(a, f)
 
-  override fun <A, B> Kind<ForMonoK, A>.apEval(ff: Eval<Kind<ForMonoK, (A) -> B>>): Eval<Kind<ForMonoK, B>> =
+  override fun <A, B> MonoKOf<A>.apEval(ff: Eval<Kind<ForMonoK, (A) -> B>>): Eval<Kind<ForMonoK, B>> =
     Eval.now(fix().ap(MonoK.defer { ff.value() }))
 }
 
@@ -114,7 +114,7 @@ interface MonoKBracket : Bracket<ForMonoK, Throwable>, MonoKMonadThrow {
   override fun <A, B> MonoKOf<A>.bracketCase(release: (A, ExitCase<Throwable>) -> MonoKOf<Unit>, use: (A) -> MonoKOf<B>): MonoK<B> =
     fix().bracketCase({ use(it) }, { a, e -> release(a, e) })
 
-  override fun <A> Kind<ForMonoK, A>.guaranteeCase(finalizer: (ExitCase<Throwable>) -> Kind<ForMonoK, Unit>): MonoK<A> =
+  override fun <A> MonoKOf<A>.guaranteeCase(finalizer: (ExitCase<Throwable>) -> Kind<ForMonoK, Unit>): MonoK<A> =
     fix().guaranteeCase(finalizer)
 }
 
@@ -138,8 +138,8 @@ interface MonoKAsync : Async<ForMonoK>, MonoKMonadDefer {
 
 interface MonoKConcurrent : Concurrent<ForMonoK>, MonoKAsync {
 
-  override fun <A> Kind<ForMonoK, A>.fork(coroutineContext: CoroutineContext): MonoK<Fiber<ForMonoK, A>> =
-    fix().fork(coroutineContext)
+  override fun <A> MonoKOf<A>.fork(ctx: CoroutineContext): MonoK<Fiber<ForMonoK, A>> =
+    fix().fork(ctx)
 
   override fun <A, B> parTupledN(ctx: CoroutineContext, fa: MonoKOf<A>, fb: MonoKOf<B>): MonoK<Tuple2<A, B>> =
     fa.value().zipWith(fb.value(), tupled()).subscribeOn(ctx.asScheduler()).k()
