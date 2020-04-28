@@ -47,6 +47,7 @@ import arrow.typeclasses.MonadError
 import arrow.typeclasses.MonadFilter
 import arrow.typeclasses.MonadThrow
 import arrow.typeclasses.Traverse
+import reactor.core.Disposables
 import reactor.core.publisher.Flux
 import reactor.core.publisher.FluxSink
 import reactor.core.publisher.Mono
@@ -196,79 +197,107 @@ interface FluxKConcurrent : Concurrent<ForFluxK>, FluxKAsync {
 
   override fun <A, B> CoroutineContext.racePair(fa: FluxKOf<A>, fb: FluxKOf<B>): FluxK<RacePair<ForFluxK, A, B>> =
     asScheduler().let { scheduler ->
+      val active = AtomicBooleanW(true)
+      val forward = Disposables.composite()
+
       Flux.create<RacePair<ForFluxK, A, B>> { emitter ->
         val sa = ReplayProcessor.create<A>()
         val sb = ReplayProcessor.create<B>()
 
+        emitter.onCancel(forward)
+
         val dda = fa.value()
           .subscribeOn(scheduler)
           .subscribe(sa::onNext, sa::onError)
+          .also { forward.add(it) }
+
         val ddb = fb.value()
           .subscribeOn(scheduler)
           .subscribe(sb::onNext, sb::onError)
-
-        emitter.onCancel { dda.dispose(); ddb.dispose() }
+          .also { forward.add(it) }
 
         val ffa = Fiber(sa.k(), FluxK { dda.dispose() })
         val ffb = Fiber(sb.k(), FluxK { ddb.dispose() })
 
         sa.subscribe({
-          emitter.next(RacePair.First(it, ffb))
-        }, { e -> onError(ddb, emitter, e) }, emitter::complete)
+          if (active.getAndSet(false)) {
+            emitter.next(RacePair.First(it, ffb))
+            emitter.complete()
+          }
+        }, { e -> onError(active, ddb, emitter, e) }, {})
 
         sb.subscribe({
-          emitter.next(RacePair.Second(ffa, it))
-        }, { e -> onError(dda, emitter, e) }, emitter::complete)
+          if (active.getAndSet(false)) {
+            emitter.next(RacePair.Second(ffa, it))
+            emitter.complete()
+          }
+        }, { e -> onError(active, dda, emitter, e) }, {})
       }
         .subscribeOn(scheduler)
         .k()
     }
 
   fun <A, B> onError(
+    active: AtomicBooleanW,
     other2: ReactorDisposable,
     sink: FluxSink<RacePair<ForFluxK, A, B>>,
     err: Throwable
-  ) {
+  ): Unit = if (active.getAndSet(false)) {
     other2.dispose()
     sink.error(err)
-  }
+  } else Unit
 
   override fun <A, B, C> CoroutineContext.raceTriple(fa: FluxKOf<A>, fb: FluxKOf<B>, fc: FluxKOf<C>): FluxK<RaceTriple<ForFluxK, A, B, C>> =
     asScheduler().let { scheduler ->
-      val active = AtomicBooleanW(true) // Prevent race-conditions in Success & Error'ing at same time.
+      val active = AtomicBooleanW(true)
+      val forward = Disposables.composite()
 
       Flux.create<RaceTriple<ForFluxK, A, B, C>> { emitter ->
-        val sa = ReplayProcessor.create<A>() // These should probably be `Queue` instead, put once, take once.
+        val sa = ReplayProcessor.create<A>()
         val sb = ReplayProcessor.create<B>()
         val sc = ReplayProcessor.create<C>()
+
+        emitter.onCancel(forward)
 
         val dda = fa.value()
           .subscribeOn(scheduler)
           .subscribe(sa::onNext, sa::onError)
+          .also { forward.add(it) }
+
         val ddb = fb.value()
           .subscribeOn(scheduler)
           .subscribe(sb::onNext, sb::onError)
+          .also { forward.add(it) }
+
         val ddc = fc.value()
           .subscribeOn(scheduler)
           .subscribe(sc::onNext, sc::onError)
-
-        emitter.onCancel { dda.dispose(); ddb.dispose(); ddc.dispose() }
+          .also { forward.add(it) }
 
         val ffa = Fiber(sa.k(), FluxK { dda.dispose() })
         val ffb = Fiber(sb.k(), FluxK { ddb.dispose() })
         val ffc = Fiber(sc.k(), FluxK { ddc.dispose() })
 
         sa.subscribe({
-          if (active.getAndSet(false)) emitter.next(RaceTriple.First(it, ffb, ffc))
-        }, { e -> onError(active, ddb, ddc, emitter, sa, e) }, emitter::complete)
+          if (active.getAndSet(false)) {
+            emitter.next(RaceTriple.First(it, ffb, ffc))
+            emitter.complete()
+          }
+        }, { e -> onError(active, ddb, ddc, emitter, e) }, {})
 
         sb.subscribe({
-          if (active.getAndSet(false)) emitter.next(RaceTriple.Second(ffa, it, ffc))
-        }, { e -> onError(active, dda, ddc, emitter, sb, e) }, emitter::complete)
+          if (active.getAndSet(false)) {
+            emitter.next(RaceTriple.Second(ffa, it, ffc))
+            emitter.complete()
+          }
+        }, { e -> onError(active, dda, ddc, emitter, e) }, {})
 
         sc.subscribe({
-          if (active.getAndSet(false)) emitter.next(RaceTriple.Third(ffa, ffb, it))
-        }, { e -> onError(active, dda, ddb, emitter, sc, e) }, emitter::complete)
+          if (active.getAndSet(false)) {
+            emitter.next(RaceTriple.Third(ffa, ffb, it))
+            emitter.complete()
+          }
+        }, { e -> onError(active, dda, ddb, emitter, e) }, {})
       }
         .subscribeOn(scheduler)
         .k()
@@ -279,15 +308,12 @@ interface FluxKConcurrent : Concurrent<ForFluxK>, FluxKAsync {
     other2: ReactorDisposable,
     other3: ReactorDisposable,
     sink: FluxSink<RaceTriple<ForFluxK, A, B, C>>,
-    processor: ReplayProcessor<*>,
     err: Throwable
   ): Unit = if (active.getAndSet(false)) {
     other2.dispose()
     other3.dispose()
     sink.error(err)
-  } else {
-    processor.onError(err)
-  }
+  } else Unit
 }
 
 fun FluxK.Companion.concurrent(dispatchers: Dispatchers<ForFluxK> = FluxK.dispatchers()): Concurrent<ForFluxK> =

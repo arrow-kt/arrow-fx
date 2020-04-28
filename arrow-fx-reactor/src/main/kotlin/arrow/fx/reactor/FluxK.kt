@@ -7,16 +7,17 @@ import arrow.core.Left
 import arrow.core.Option
 import arrow.core.Right
 import arrow.core.identity
+import arrow.core.internal.AtomicBooleanW
 import arrow.core.internal.AtomicRefW
 import arrow.core.nonFatalOrThrow
 import arrow.fx.internal.Platform
 import arrow.fx.reactor.CoroutineContextReactorScheduler.asScheduler
-import arrow.fx.reactor.extensions.ForwardDisposable
 import arrow.fx.typeclasses.CancelToken
 import arrow.fx.typeclasses.Disposable
 import arrow.fx.typeclasses.ExitCase
 import arrow.fx.typeclasses.Fiber
 import arrow.typeclasses.Applicative
+import reactor.core.Disposables
 import reactor.core.publisher.Flux
 import reactor.core.publisher.FluxSink
 import reactor.core.publisher.ReplayProcessor
@@ -94,12 +95,13 @@ data class FluxK<out A>(val flux: Flux<out A>) : FluxKOf<A> {
    */
   fun <B> bracketCase(use: (A) -> FluxKOf<B>, release: (A, ExitCase<Throwable>) -> FluxKOf<Unit>): FluxK<B> =
     Flux.create<B> { emitter ->
-      val cancelable = ForwardDisposable()
-      emitter.onCancel(cancelable.cancel())
+      val acquireActive = AtomicBooleanW(true)
+      val cancelable = Disposables.composite()
+      emitter.onCancel(cancelable)
 
       value().subscribe(
         { a: A ->
-          cancelable.complete(
+          cancelable.add(
             Flux.defer { use(a).value() }
               .doOnCancel { Flux.defer { release(a, ExitCase.Cancelled).value() }.subscribe() }
               .subscribe({ b ->
@@ -120,10 +122,10 @@ data class FluxK<out A>(val flux: Flux<out A>) : FluxKOf<A> {
 
   fun guaranteeCase(f: (ExitCase<Throwable>) -> FluxKOf<Unit>): FluxK<A> =
     Flux.create<A> { emitter ->
-      val cancelable = ForwardDisposable()
-      emitter.onCancel(cancelable.cancel())
+      val cancelable = Disposables.composite()
+      emitter.onCancel(cancelable)
 
-      cancelable.complete(value()
+      cancelable.add(value()
         .doOnCancel { Flux.defer { f(ExitCase.Cancelled).value() }.subscribe() }
         .subscribe(
           { a ->
@@ -246,9 +248,9 @@ data class FluxK<out A>(val flux: Flux<out A>) : FluxKOf<A> {
 
     fun <A> asyncF(fa: ((Either<Throwable, A>) -> Unit) -> FluxKOf<Unit>): FluxK<A> =
       Flux.create { sink: FluxSink<A> ->
-        val cancellable = ForwardDisposable()
-        sink.onCancel(cancellable.cancel())
-        cancellable.complete(
+        val cancellable = Disposables.composite()
+        sink.onCancel(cancellable)
+        cancellable.add(
           fa { callback: Either<Throwable, A> ->
             callback.fold({
               sink.error(it)

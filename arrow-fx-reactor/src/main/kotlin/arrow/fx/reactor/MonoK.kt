@@ -10,11 +10,11 @@ import arrow.core.nonFatalOrThrow
 import arrow.fx.internal.Platform
 import arrow.fx.internal.Platform.onceOnly
 import arrow.fx.reactor.CoroutineContextReactorScheduler.asScheduler
-import arrow.fx.reactor.extensions.ForwardDisposable
 import arrow.fx.typeclasses.CancelToken
 import arrow.fx.typeclasses.Disposable
 import arrow.fx.typeclasses.ExitCase
 import arrow.fx.typeclasses.Fiber
+import reactor.core.Disposables
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.publisher.MonoSink
@@ -103,12 +103,12 @@ data class MonoK<out A>(val mono: Mono<out A>) : MonoKOf<A> {
    */
   fun <B> bracketCase(use: (A) -> MonoKOf<B>, release: (A, ExitCase<Throwable>) -> MonoKOf<Unit>): MonoK<B> =
     Mono.create<B> { emitter ->
-      val cancelable = ForwardDisposable()
-      emitter.onCancel(cancelable.cancel())
+      val cancelable = Disposables.composite()
+      emitter.onCancel(cancelable)
 
       value().subscribe(
         { a: A ->
-          cancelable.complete(
+          cancelable.add(
             Mono.defer { use(a).value() }
               .doOnCancel { Mono.defer { release(a, ExitCase.Cancelled).value() }.subscribe() }
               .subscribe({ b ->
@@ -130,10 +130,10 @@ data class MonoK<out A>(val mono: Mono<out A>) : MonoKOf<A> {
 
   fun guaranteeCase(f: (ExitCase<Throwable>) -> MonoKOf<Unit>): MonoK<A> =
     Mono.create<A> { emitter ->
-      val cancelable = ForwardDisposable()
-      emitter.onCancel(cancelable.cancel())
+      val cancelable = Disposables.composite()
+      emitter.onCancel(cancelable)
 
-      cancelable.complete(value()
+      cancelable.add(value()
         .doOnCancel { Mono.defer { f(ExitCase.Cancelled).value() }.subscribe() }
         .subscribe(
           { a ->
@@ -233,9 +233,9 @@ data class MonoK<out A>(val mono: Mono<out A>) : MonoKOf<A> {
 
     fun <A> asyncF(fa: ((Either<Throwable, A>) -> Unit) -> MonoKOf<Unit>): MonoK<A> =
       Mono.create { sink: MonoSink<A> ->
-        val cancellable = ForwardDisposable()
-        sink.onCancel(cancellable.cancel())
-        cancellable.complete(
+        val cancellable = Disposables.composite()
+        sink.onCancel(cancellable)
+        cancellable.add(
           fa { either: Either<Throwable, A> ->
             either.fold({
               sink.error(it)

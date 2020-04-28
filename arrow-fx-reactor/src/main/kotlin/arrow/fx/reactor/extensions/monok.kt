@@ -40,6 +40,7 @@ import arrow.typeclasses.Functor
 import arrow.typeclasses.Monad
 import arrow.typeclasses.MonadError
 import arrow.typeclasses.MonadThrow
+import reactor.core.Disposables
 import reactor.core.publisher.Mono
 import reactor.core.publisher.MonoSink
 import reactor.core.publisher.ReplayProcessor
@@ -158,30 +159,34 @@ interface MonoKConcurrent : Concurrent<ForMonoK>, MonoKAsync {
   override fun <A, B> CoroutineContext.racePair(fa: MonoKOf<A>, fb: MonoKOf<B>): MonoK<RacePair<ForMonoK, A, B>> =
     asScheduler().let { scheduler ->
       val active = AtomicBooleanW(true)
+      val forward = Disposables.composite()
 
       Mono.create<RacePair<ForMonoK, A, B>> { emitter ->
         val sa = ReplayProcessor.create<A>()
         val sb = ReplayProcessor.create<B>()
 
+        emitter.onCancel(forward)
+
         val dda = fa.value()
           .subscribeOn(scheduler)
           .subscribe(sa::onNext, sa::onError)
+          .also { forward.add(it) }
+
         val ddb = fb.value()
           .subscribeOn(scheduler)
           .subscribe(sb::onNext, sb::onError)
-
-        emitter.onCancel { dda.dispose(); ddb.dispose() }
+          .also { forward.add(it) }
 
         val ffa = Fiber(sa.next().k(), MonoK { dda.dispose() })
         val ffb = Fiber(sb.next().k(), MonoK { ddb.dispose() })
 
         sa.subscribe({
           if (active.getAndSet(false)) emitter.success(RacePair.First(it, ffb))
-        }, { e -> onError(active, ddb, emitter, e) }, { emitter.success() })
+        }, { e -> onError(active, forward, emitter, e) }, { emitter.success() })
 
         sb.subscribe({
           if (active.getAndSet(false)) emitter.success(RacePair.Second(ffa, it))
-        }, { e -> onError(active, dda, emitter, e) }, { emitter.success() })
+        }, { e -> onError(active, forward, emitter, e) }, { emitter.success() })
       }
         .subscribeOn(scheduler)
         .k()
@@ -190,23 +195,29 @@ interface MonoKConcurrent : Concurrent<ForMonoK>, MonoKAsync {
   override fun <A, B, C> CoroutineContext.raceTriple(fa: MonoKOf<A>, fb: MonoKOf<B>, fc: MonoKOf<C>): MonoK<RaceTriple<ForMonoK, A, B, C>> =
     asScheduler().let { scheduler ->
       val active = AtomicBooleanW(true)
+      val forward = Disposables.composite()
 
       Mono.create<RaceTriple<ForMonoK, A, B, C>> { emitter ->
         val sa = ReplayProcessor.create<A>() // These should probably be `Queue` instead, put once, take once.
         val sb = ReplayProcessor.create<B>()
         val sc = ReplayProcessor.create<C>()
 
+        emitter.onCancel(forward)
+
         val dda = fa.value()
           .subscribeOn(scheduler)
           .subscribe(sa::onNext, sa::onError)
+          .also { forward.add(it) }
+
         val ddb = fb.value()
           .subscribeOn(scheduler)
           .subscribe(sb::onNext, sb::onError)
+          .also { forward.add(it) }
+
         val ddc = fc.value()
           .subscribeOn(scheduler)
           .subscribe(sc::onNext, sc::onError)
-
-        emitter.onCancel { dda.dispose(); ddb.dispose(); ddc.dispose() }
+          .also { forward.add(it) }
 
         val ffa = Fiber(sa.next().k(), MonoK { dda.dispose() })
         val ffb = Fiber(sb.next().k(), MonoK { ddb.dispose() })
@@ -214,15 +225,15 @@ interface MonoKConcurrent : Concurrent<ForMonoK>, MonoKAsync {
 
         sa.subscribe({
           if (active.getAndSet(false)) emitter.success(RaceTriple.First(it, ffb, ffc))
-        }, { e -> onError(active, ddb, ddc, emitter, sa, e) }, { emitter.success() })
+        }, { e -> onError(active, ddb, ddc, emitter, e) }, { emitter.success() })
 
         sb.subscribe({
           if (active.getAndSet(false)) emitter.success(RaceTriple.Second(ffa, it, ffc))
-        }, { e -> onError(active, dda, ddc, emitter, sb, e) }, { emitter.success() })
+        }, { e -> onError(active, dda, ddc, emitter, e) }, { emitter.success() })
 
         sc.subscribe({
           if (active.getAndSet(false)) emitter.success(RaceTriple.Third(ffa, ffb, it))
-        }, { e -> onError(active, dda, ddb, emitter, sc, e) }, { emitter.success() })
+        }, { e -> onError(active, dda, ddb, emitter, e) }, { emitter.success() })
       }
         .subscribeOn(scheduler)
         .k()
@@ -243,7 +254,6 @@ interface MonoKConcurrent : Concurrent<ForMonoK>, MonoKAsync {
     other2: reactor.core.Disposable,
     other3: reactor.core.Disposable,
     sink: MonoSink<RaceTriple<ForMonoK, A, B, C>>,
-    processor: ReplayProcessor<*>,
     err: Throwable
   ): Unit = if (active.getAndSet(false)) {
     other2.dispose()
