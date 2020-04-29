@@ -15,7 +15,6 @@ import arrow.core.test.generators.tuple2
 import arrow.core.test.generators.tuple3
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.applicative.applicative
-import arrow.fx.extensions.io.async.effectMap
 import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.dispatchers.dispatchers
 import arrow.fx.test.laws.equalUnderTheLaw
@@ -31,13 +30,13 @@ import kotlin.coroutines.CoroutineContext
 class QueueTest : UnitSpec() {
 
   fun <A> fx(c: suspend ConcurrentSyntax<IOPartialOf<Nothing>>.() -> A): IO<Nothing, A> =
-    IO.concurrent<Nothing>().fx.concurrent(c).fix()
+    IO.concurrent().fx.concurrent(c).fix()
 
   init {
 
     fun allStrategyTests(
       label: String,
-      ctx: CoroutineContext = IO.dispatchers<Nothing>().default(),
+      ctx: CoroutineContext = IO.dispatchers().default(),
       queue: (Int) -> IO<Nothing, Queue<IOPartialOf<Nothing>, Int>>
     ) {
 
@@ -336,7 +335,7 @@ class QueueTest : UnitSpec() {
 
     fun strategyAtCapacityTests(
       label: String,
-      ctx: CoroutineContext = IO.dispatchers<Nothing>().default(),
+      ctx: CoroutineContext = IO.dispatchers().default(),
       queue: (Int) -> IO<Nothing, Queue<IOPartialOf<Nothing>, Int>>
     ) {
       "$label - tryOffer returns false over capacity" {
@@ -376,7 +375,7 @@ class QueueTest : UnitSpec() {
     }
 
     fun boundedStrategyTests(
-      ctx: CoroutineContext = IO.dispatchers<Nothing>().default(),
+      ctx: CoroutineContext = IO.dispatchers().default(),
       queue: (Int) -> IO<Nothing, Queue<IOPartialOf<Nothing>, Int>>
     ) {
       val label = "BoundedQueue"
@@ -602,7 +601,7 @@ class QueueTest : UnitSpec() {
     }
 
     fun slidingStrategyTests(
-      ctx: CoroutineContext = IO.dispatchers<Nothing>().default(),
+      ctx: CoroutineContext = IO.dispatchers().default(),
       queue: (Int) -> IO<Nothing, Queue<IOPartialOf<Nothing>, Int>>
     ) {
       val label = "SlidingQueue"
@@ -634,7 +633,7 @@ class QueueTest : UnitSpec() {
     }
 
     fun droppingStrategyTests(
-      ctx: CoroutineContext = IO.dispatchers<Nothing>().default(),
+      ctx: CoroutineContext = IO.dispatchers().default(),
       queue: (Int) -> IO<Nothing, Queue<IOPartialOf<Nothing>, Int>>
     ) {
       val label = "DroppingQueue"
@@ -680,7 +679,7 @@ class QueueTest : UnitSpec() {
     }
 
     fun unboundedStrategyTests(
-      ctx: CoroutineContext = IO.dispatchers<Nothing>().default(),
+      ctx: CoroutineContext = IO.dispatchers().default(),
       queue: (Int) -> IO<Nothing, Queue<IOPartialOf<Nothing>, Int>>
     ) {
       allStrategyTests("UnboundedQueue", ctx, queue)

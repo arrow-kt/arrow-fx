@@ -27,7 +27,7 @@ open class Cancellable {
   var size: Int = 0
 
   fun evalCancellable(n: Int): IO<Nothing, Int> =
-    IO.concurrent<Nothing>().cancellable<Int> { cb ->
+    IO.concurrent().cancellable<Int> { cb ->
       cb(Right(n))
       IO.unit
     }.fix()

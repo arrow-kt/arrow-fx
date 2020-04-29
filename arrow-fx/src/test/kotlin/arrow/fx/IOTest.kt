@@ -17,7 +17,6 @@ import arrow.fx.IO.Companion.just
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.async.async
 import arrow.fx.extensions.io.concurrent.concurrent
-import arrow.fx.extensions.io.concurrent.raceN
 import arrow.fx.extensions.io.applicative.applicative
 import arrow.fx.extensions.io.dispatchers.dispatchers
 import arrow.fx.extensions.io.functor.functor
@@ -50,7 +49,7 @@ class IOTest : UnitSpec() {
 
   private val other = newSingleThreadContext("other")
   private val all = newSingleThreadContext("all")
-  private val NonBlocking = IO.dispatchers<Nothing>().default()
+  private val NonBlocking = IO.dispatchers().default()
 
   init {
     testLaws(
@@ -123,7 +122,7 @@ class IOTest : UnitSpec() {
     }
 
     "should time out on unending unsafeRunTimed" {
-      val never = IO.async<Nothing>().never<Int>().fix()
+      val never = IO.async().never<Int>().fix()
       val start = System.currentTimeMillis()
       val received = never.unsafeRunTimed(100.milliseconds)
       val elapsed = System.currentTimeMillis() - start
@@ -360,7 +359,7 @@ class IOTest : UnitSpec() {
     }
 
     "unsafeRunTimed times out with None result" {
-      val never = IO.async<Nothing>().never<Unit>().fix()
+      val never = IO.async().never<Unit>().fix()
       val result = never.unsafeRunTimed(100.milliseconds)
       result shouldBe None
     }
@@ -600,8 +599,8 @@ class IOTest : UnitSpec() {
 
     "forked pair race should run" {
       IO.fx<Either<Int, Int>> {
-        IO.dispatchers<Nothing>().io().raceN(
-          IO.timer<Nothing>().sleep(10.seconds).followedBy(IO.effect { 1 }),
+        IO.raceN(
+          IO.sleep(10.seconds).followedBy(IO.effect { 1 }),
           IO.effect { 3 }
         ).fork().bind().join().bind()
       }.unsafeRunSync() shouldBe 3.right()
@@ -609,9 +608,9 @@ class IOTest : UnitSpec() {
 
     "forked triple race should run" {
       IO.fx<Race3<Int, Int, Int>> {
-        IO.dispatchers<Nothing>().io().raceN(
-          IO.timer<Nothing>().sleep(10.seconds).followedBy(IO.effect { 1 }),
-          IO.timer<Nothing>().sleep(10.seconds).followedBy(IO.effect { 3 }),
+        IO.raceN(
+          IO.sleep(10.seconds).followedBy(IO.effect { 1 }),
+          IO.sleep(10.seconds).followedBy(IO.effect { 3 }),
           IO.effect { 2 }
         ).fork().bind().join().bind()
       }.unsafeRunSync() shouldBe Race3.Third(2)
@@ -643,27 +642,27 @@ class IOTest : UnitSpec() {
     }
 
     "ConcurrentParMap2 left handles null" {
-      IO.concurrent<Nothing>().parMap2(NonBlocking, IO.just<Int?>(null), IO.unit) { _, unit -> unit }
+      IO.concurrent().parMap2(NonBlocking, IO.just<Int?>(null), IO.unit) { _, unit -> unit }
         .fix().unsafeRunSync() shouldBe Unit
     }
 
     "ConcurrentParMap2 right handles null" {
-      IO.concurrent<Nothing>().parMap2(NonBlocking, IO.unit, IO.just<Int?>(null)) { unit, _ -> unit }
+      IO.concurrent().parMap2(NonBlocking, IO.unit, IO.just<Int?>(null)) { unit, _ -> unit }
         .fix().unsafeRunSync() shouldBe Unit
     }
 
     "ConcurrentParMap3 left handles null" {
-      IO.concurrent<Nothing>().parMap3(NonBlocking, IO.just<Int?>(null), IO.unit, IO.unit) { _, unit, _ -> unit }
+      IO.concurrent().parMap3(NonBlocking, IO.just<Int?>(null), IO.unit, IO.unit) { _, unit, _ -> unit }
         .fix().unsafeRunSync() shouldBe Unit
     }
 
     "ConcurrentParMap3 middle handles null" {
-      IO.concurrent<Nothing>().parMap3(NonBlocking, IO.unit, IO.just<Int?>(null), IO.unit) { unit, _, _ -> unit }
+      IO.concurrent().parMap3(NonBlocking, IO.unit, IO.just<Int?>(null), IO.unit) { unit, _, _ -> unit }
         .fix().unsafeRunSync() shouldBe Unit
     }
 
     "ConcurrentParMap3 right handles null" {
-      IO.concurrent<Nothing>().parMap3(NonBlocking, IO.unit, IO.unit, IO.just<Int?>(null)) { unit, _, _ -> unit }
+      IO.concurrent().parMap3(NonBlocking, IO.unit, IO.unit, IO.just<Int?>(null)) { unit, _, _ -> unit }
         .fix().unsafeRunSync() shouldBe Unit
     }
 

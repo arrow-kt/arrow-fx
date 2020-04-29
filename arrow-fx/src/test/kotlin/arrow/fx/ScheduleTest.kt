@@ -229,7 +229,7 @@ class ScheduleTest : UnitSpec() {
         val schedule = Schedule(IO.monad(), IO.just(0 as Any?)) { _: Unit, _ -> IO.just(dec.fix()) }
 
         val eff = SideEffect()
-        val ref = Ref(IO.monadDefer<Nothing>(), 0.seconds).fix().unsafeRunSync()
+        val ref = Ref(IO.monadDefer(), 0.seconds).fix().unsafeRunSync()
 
         val res = IO { if (eff.counter >= n) throw RuntimeException("WOOO") else eff.increment() }
           .repeat(IO.monadThrow(), refTimer(ref), schedule)
@@ -250,7 +250,7 @@ class ScheduleTest : UnitSpec() {
         val schedule = Schedule(IO.monad(), IO.just(0 as Any?)) { _: Throwable, _ -> IO.just(dec.fix()) }
 
         val eff = SideEffect()
-        val ref = Ref(IO.monadDefer<Nothing>(), 0.seconds).fix().unsafeRunSync()
+        val ref = Ref(IO.monadDefer(), 0.seconds).fix().unsafeRunSync()
 
         val res = IO {
           if (eff.counter <= n) {

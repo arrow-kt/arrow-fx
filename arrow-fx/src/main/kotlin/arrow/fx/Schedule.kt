@@ -126,7 +126,7 @@ inline fun <A, B> DecisionOf<A, B>.fix(): Schedule.Decision<A, B> =
  *   var counter = 0
  *   val io = IO { println("Run: ${counter++}") }
  *   //sampleStart
- *   val res = io.repeat(IO.concurrent<Nothing>(), Schedule.recurs(IO.monad(), 3))
+ *   val res = io.repeat(IO.concurrent(), Schedule.recurs(IO.monad(), 3))
  *   //sampleEnd
  *   println(res.fix().unsafeRunSync())
  * }
@@ -150,10 +150,10 @@ inline fun <A, B> DecisionOf<A, B>.fix(): Schedule.Decision<A, B> =
  *   var counter = 0
  *   val io = IO { println("Run: ${counter++}") }
  *   //sampleStart
- *   val res = io.repeat(IO.concurrent<Nothing>(), Schedule.unit<IOPartialOf<Nothing>, Unit>(IO.monad()).zipLeft(Schedule.recurs(IO.monad(), 3)))
+ *   val res = io.repeat(IO.concurrent(), Schedule.unit<IOPartialOf<Nothing>, Unit>(IO.monad()).zipLeft(Schedule.recurs(IO.monad(), 3)))
  *
  *   // equal to
- *   val res2 = io.repeat(IO.concurrent<Nothing>(), Schedule.recurs<IOPartialOf<Nothing>, Unit>(IO.monad(), 3).zipRight(Schedule.unit(IO.monad())))
+ *   val res2 = io.repeat(IO.concurrent(), Schedule.recurs<IOPartialOf<Nothing>, Unit>(IO.monad(), 3).zipRight(Schedule.unit(IO.monad())))
  *
  *   //sampleEnd
  *   println(res.fix().unsafeRunSync())
@@ -177,10 +177,10 @@ inline fun <A, B> DecisionOf<A, B>.fix(): Schedule.Decision<A, B> =
  *   var counter = 0
  *   val io = IO { println("Run: ${counter++}"); counter }
  *   //sampleStart
- *   val res = io.repeat(IO.concurrent<Nothing>(), Schedule.identity<IOPartialOf<Nothing>, Int>(IO.monad()).zipLeft(Schedule.recurs(IO.monad(), 3)))
+ *   val res = io.repeat(IO.concurrent(), Schedule.identity<IOPartialOf<Nothing>, Int>(IO.monad()).zipLeft(Schedule.recurs(IO.monad(), 3)))
  *
  *   // equal to
- *   val res2 = io.repeat(IO.concurrent<Nothing>(), Schedule.recurs<IOPartialOf<Nothing>, Int>(IO.monad(), 3).zipRight(Schedule.identity<IOPartialOf<Nothing>, Int>(IO.monad())))
+ *   val res2 = io.repeat(IO.concurrent(), Schedule.recurs<IOPartialOf<Nothing>, Int>(IO.monad(), 3).zipRight(Schedule.identity<IOPartialOf<Nothing>, Int>(IO.monad())))
  *
  *   //sampleEnd
  *   println(res.fix().unsafeRunSync())
@@ -204,10 +204,10 @@ inline fun <A, B> DecisionOf<A, B>.fix(): Schedule.Decision<A, B> =
  *   var counter = 0
  *   val io = IO { println("Run: ${counter++}"); counter }
  *   //sampleStart
- *   val res = io.repeat(IO.concurrent<Nothing>(), Schedule.collect<IOPartialOf<Nothing>, Int>(IO.monad()).zipLeft(Schedule.recurs(IO.monad(), 3)))
+ *   val res = io.repeat(IO.concurrent(), Schedule.collect<IOPartialOf<Nothing>, Int>(IO.monad()).zipLeft(Schedule.recurs(IO.monad(), 3)))
  *
  *   // equal to
- *   val res2 = io.repeat(IO.concurrent<Nothing>(), Schedule.recurs<IOPartialOf<Nothing>, Int>(IO.monad(), 3).zipRight(Schedule.collect<IOPartialOf<Nothing>, Int>(IO.monad())))
+ *   val res2 = io.repeat(IO.concurrent(), Schedule.recurs<IOPartialOf<Nothing>, Int>(IO.monad(), 3).zipRight(Schedule.collect<IOPartialOf<Nothing>, Int>(IO.monad())))
  *
  *   //sampleEnd
  *   println(res.fix().unsafeRunSync())
@@ -233,7 +233,7 @@ inline fun <A, B> DecisionOf<A, B>.fix(): Schedule.Decision<A, B> =
  *   var counter = 0
  *   val io = IO { println("Run: ${counter++}"); counter }
  *   //sampleStart
- *   val res = io.repeat(IO.concurrent<Nothing>(), Schedule.doWhile<IOPartialOf<Nothing>, Int>(IO.monad()) { it <= 3 })
+ *   val res = io.repeat(IO.concurrent(), Schedule.doWhile<IOPartialOf<Nothing>, Int>(IO.monad()) { it <= 3 })
  *   //sampleEnd
  *   println(res.fix().unsafeRunSync())
  * }

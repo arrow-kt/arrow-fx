@@ -95,7 +95,7 @@ interface Concurrent<F> : Async<F> {
    *     }
    *
    *   //sampleEnd
-   *   IO.concurrent<Nothing>().example().fix().unsafeRunSync()
+   *   IO.concurrent().example().fix().unsafeRunSync()
    * }
    * ```
    *
@@ -133,7 +133,7 @@ interface Concurrent<F> : Async<F> {
    *   }
    *   //sampleEnd
    *
-   *   val r = IO.concurrent<Nothing>().example().fix().unsafeRunSync()
+   *   val r = IO.concurrent().example().fix().unsafeRunSync()
    *   println("Race winner result is: $r")
    * }
    * ```
@@ -173,7 +173,7 @@ interface Concurrent<F> : Async<F> {
    *     }
    *   //sampleEnd
    *
-   *   val r = IO.concurrent<Nothing>().example().fix().unsafeRunSync()
+   *   val r = IO.concurrent().example().fix().unsafeRunSync()
    *   println("Race winner result is: $r")
    * }
    * ```
@@ -290,6 +290,36 @@ interface Concurrent<F> : Async<F> {
    * @see cancellable for a simpler non-suspending version.
    */
   fun <A> cancellableF(k: ((Either<Throwable, A>) -> Unit) -> Kind<F, CancelToken<F>>): Kind<F, A> =
+    // F.asyncF { cb =>
+    //   val state = new AtomicReference[Either[Throwable, Unit] => Unit](null)
+    //   val cb1 = (a: Either[Throwable, A]) => {
+    //     try {
+    //       cb(a)
+    //     } finally {
+    //       // This CAS can only succeed in case the operation is already finished
+    //       // and no cancellation token was installed yet
+    //       if (!state.compareAndSet(null, Callback.dummy1)) {
+    //         val cb2 = state.get()
+    //         state.lazySet(null)
+    //         cb2(Callback.rightUnit)
+    //       }
+    //     }
+    //   }
+    //   // Until we've got a cancellation token, the task needs to be evaluated
+    //   // uninterruptedly, otherwise risking a leak, hence the bracket
+    //   F.bracketCase(k(cb1)) { _ =>
+    //     F.async[Unit] { cb =>
+    //       if (!state.compareAndSet(null, cb)) {
+    //         cb(Callback.rightUnit)
+    //       }
+    //     }
+    //   } { (token, e) =>
+    //     e match {
+    //       case ExitCase.Canceled => token
+    //         case _ => F.unit
+    //     }
+    //   }
+    // }
     asyncF { cb ->
       val state = AtomicRefW<((Either<Throwable, Unit>) -> Unit)?>(null)
       val cb1 = { r: Either<Throwable, A> ->
@@ -347,7 +377,7 @@ interface Concurrent<F> : Async<F> {
    *    }
    *
    *  //sampleEnd
-   *    IO.concurrent<Nothing>().processListInParallel()
+   *    IO.concurrent().processListInParallel()
    *      .fix()
    *      .unsafeRunSync()
    * }
@@ -401,7 +431,7 @@ interface Concurrent<F> : Async<F> {
    *       .map { id -> getUserById(id) }
    *       .parSequence()
    *  //sampleEnd
-   *   IO.concurrent<Nothing>().processInParallel()
+   *   IO.concurrent().processInParallel()
    *     .fix().unsafeRunSync()
    * }
    * ```
@@ -456,7 +486,7 @@ interface Concurrent<F> : Async<F> {
    *   return result
    *   }
    *
-   *   IO.concurrent<Nothing>().example().fix().unsafeRunSync().let(::println)
+   *   IO.concurrent().example().fix().unsafeRunSync().let(::println)
    * }
    * ```
    *
@@ -501,7 +531,7 @@ interface Concurrent<F> : Async<F> {
    *   return result
    *   }
    *
-   *   IO.concurrent<Nothing>().example().fix().unsafeRunSync().let(::println)
+   *   IO.concurrent().example().fix().unsafeRunSync().let(::println)
    * }
    * ```
    *
@@ -891,7 +921,7 @@ interface Concurrent<F> : Async<F> {
    *   return result
    *   }
    *
-   *   IO.concurrent<Nothing>().example().fix().unsafeRunSync().let(::println)
+   *   IO.concurrent().example().fix().unsafeRunSync().let(::println)
    * }
    * ```
    *
@@ -1104,7 +1134,7 @@ interface Concurrent<F> : Async<F> {
    *     }
    *
    *   //sampleEnd
-   *   IO.concurrent<Nothing>().promiseExample()
+   *   IO.concurrent().promiseExample()
    *     .fix().unsafeRunSync()
    * }
    * ```
@@ -1138,7 +1168,7 @@ interface Concurrent<F> : Async<F> {
    *     }
    *
    *   //sampleEnd
-   *   IO.concurrent<Nothing>().promiseExample()
+   *   IO.concurrent().promiseExample()
    *     .fix().unsafeRunSync()
    * }
    * ```
@@ -1173,7 +1203,7 @@ interface Concurrent<F> : Async<F> {
    *     }
    *
    *   //sampleEnd
-   *   IO.concurrent<Nothing>().mvarExample()
+   *   IO.concurrent().mvarExample()
    *     .fix().unsafeRunSync().let(::println)
    * }
    * ```
@@ -1250,7 +1280,7 @@ interface Concurrent<F> : Async<F> {
    *     return world.waitFor(1.seconds, fallbackWorld)
    *   }
    *   //sampleEnd
-   *   IO.concurrent<Nothing>().timedOutWorld()
+   *   IO.concurrent().timedOutWorld()
    *     .fix().unsafeRunSync()
    * }
    * ```
@@ -1280,7 +1310,7 @@ interface Concurrent<F> : Async<F> {
    *     return world.waitFor(3.seconds)
    *   }
    *   //sampleEnd
-   *   IO.concurrent<Nothing>().timedOutWorld()
+   *   IO.concurrent().timedOutWorld()
    *     .fix().unsafeRunSync()
    * }
    * ```

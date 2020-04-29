@@ -8,7 +8,6 @@ import arrow.fx.IOOf
 import arrow.fx.IOResult
 import arrow.fx.IORunLoop
 import arrow.fx.fix
-import arrow.fx.handleErrorWith
 import arrow.fx.typeclasses.ExitCase2
 import kotlinx.atomicfu.atomic
 

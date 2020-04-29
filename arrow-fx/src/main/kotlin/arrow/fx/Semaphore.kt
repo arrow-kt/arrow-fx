@@ -198,7 +198,7 @@ interface Semaphore<F> {
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   val semaphore = Semaphore<IOPartialOf<Nothing>>(5, IO.concurrent<Nothing>())
+     *   val semaphore = Semaphore<IOPartialOf<Nothing>>(5, IO.concurrent())
      *   //sampleEnd
      * }
      */

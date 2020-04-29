@@ -26,6 +26,7 @@ import arrow.fx.internal.IOTick
 import arrow.fx.internal.Platform.maxStackDepthSize
 import arrow.fx.internal.Platform.onceOnly
 import arrow.fx.internal.Platform.unsafeResync
+import arrow.fx.internal.TimeoutException
 import arrow.fx.internal.UnsafePromise
 import arrow.fx.internal.scheduler
 import arrow.fx.typeclasses.Disposable
@@ -77,7 +78,6 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * ```kotlin:ank:playground:extension
      * import arrow.fx.IO
-     * import kotlinx.coroutines.Dispatchers
      * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
@@ -561,7 +561,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
     fun <E, A, B> tailRecM(a: A, f: (A) -> IOOf<E, Either<A, B>>): IO<E, B> =
       f(a).fix().flatMap {
         when (it) {
-          is Left -> tailRecM(it.a, f)
+          is Either.Left -> tailRecM(it.a, f)
           is Either.Right -> just(it.b)
         }
       }
@@ -606,6 +606,9 @@ sealed class IO<out E, out A> : IOOf<E, A> {
       it.fold(cont::resumeWithException, { e -> cont.resume(Left(e)) }, { a -> cont.resume(Right(a)) })
     }
   }
+
+  fun <B> effectMap(f: (A) -> B): IO<E, B> =
+    flatMap { a -> effect { f(a) } }
 
   /**
    * Transform the [IO] wrapped value of [A] into [B] preserving the [IO] structure.
@@ -1180,7 +1183,7 @@ fun <E, A> IOOf<E, A>.onException(finalizer: (Throwable) -> IOOf<Nothing, Unit>)
  *   val result = IO.fx<Nothing, Unit> {
  *     val (join, cancel) = !IO.effect {
  *       println("Hello from a fiber on ${Thread.currentThread().name}")
- *     }.fork(IO.dispatchers<Nothing>().io())
+ *     }.fork(IO.dispatchers().io())
  *   }
  *   //sampleEnd
  *   result.unsafeRunSync()
@@ -1191,13 +1194,13 @@ fun <E, A> IOOf<E, A>.onException(finalizer: (Throwable) -> IOOf<Nothing, Unit>)
  * @param ctx [CoroutineContext] to execute the source [IO] on.
  * @return [IO] with suspended execution of source [IO] on context [ctx].
  */
-fun <E, A> IOOf<E, A>.fork(ctx: CoroutineContext = IO.dispatchers<Nothing>().default()): IO<E, Fiber<IOPartialOf<E>, A>> =
-  IO.async { cb ->
+fun <E, A> IOOf<E, A>.fork(ctx: CoroutineContext = IO.dispatchers().default()): IO<E, Fiber<IOPartialOf<E>, A>> =
+  IO {
     val promise = UnsafePromise<E, A>()
     // A new IOConnection, because its cancellation is now decoupled from our current one.
     val conn = IOConnection()
     IORunLoop.startCancellable(IOForkedStart(this, ctx), conn, promise::complete)
-    cb(IOResult.Success(IOFiber(promise, conn)))
+    IOFiber(promise, conn)
   }
 
 fun <A> IOOf<Nothing, A>.unsafeRunSync(): A =
@@ -1230,6 +1233,22 @@ fun <A, B> IOOf<Nothing, A>.retry(schedule: Schedule<IOPartialOf<Nothing>, Throw
 
 fun <E, A> IOOf<E, A>.void(): IO<E, Unit> =
   fix().map(mapUnit)
+
+fun <E, A> IOOf<E, A>.waitFor(duration: Duration, default: IOOf<E, A>): IO<E, A> =
+  IO.raceN(EmptyCoroutineContext, IO.sleep(duration), this).flatMap {
+    it.fold(
+      { default },
+      { a -> IO.just(a) }
+    )
+  }
+
+fun <E, A> IOOf<E, A>.waitFor(duration: Duration): IO<E, A> =
+  IO.raceN(EmptyCoroutineContext, IO.sleep(duration), this).flatMap {
+    it.fold(
+      { IO.raiseException<A>(TimeoutException(duration.toString())) },
+      { a -> IO.just(a) }
+    )
+  }
 
 internal object IONothingYieldsError : ArrowInternalException() {
   override fun fillInStackTrace(): Throwable = this

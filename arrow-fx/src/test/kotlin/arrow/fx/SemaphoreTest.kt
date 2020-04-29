@@ -9,14 +9,12 @@ import arrow.fx.extensions.io.applicative.applicative
 import arrow.fx.extensions.io.applicativeError.handleError
 import arrow.fx.extensions.io.async.async
 import arrow.fx.extensions.io.concurrent.concurrent
-import arrow.fx.extensions.io.concurrent.parMapN
 import arrow.fx.extensions.io.functor.unit
 import arrow.fx.extensions.io.monad.flatMap
 import arrow.fx.extensions.io.monad.map
 import arrow.fx.test.eq.eq
 import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll
-import kotlinx.coroutines.Dispatchers
 
 class SemaphoreTest : UnitSpec() {
 
@@ -77,12 +75,12 @@ class SemaphoreTest : UnitSpec() {
       "$label - count with available permits" {
         val n = 18
         semaphore(20).flatMap { s ->
-            (0 until n).toList().traverse(IO.applicative()) { s.acquire() }.flatMap {
-              s.available().flatMap { available ->
-                s.count().map { count -> available toT count }
-              }
+          (0 until n).toList().traverse(IO.applicative()) { s.acquire() }.flatMap {
+            s.available().flatMap { available ->
+              s.count().map { count -> available toT count }
             }
           }
+        }
           .map { (available, count) -> available == count }
           .unsafeRunSync()
       }
@@ -123,14 +121,11 @@ class SemaphoreTest : UnitSpec() {
       "$label - offsetting acquires/releases - acquires parallel with releases" {
         val permits: List<Long> = listOf(1, 0, 20, 4, 0, 5, 2, 1, 1, 3)
         semaphore(0).flatMap { s ->
-            Dispatchers.Default.parMapN(
-                permits.traverse(IO.applicative()) { s.acquireN(it) }.unit(),
-                permits.reversed().traverse(IO.applicative()) { s.releaseN(it) }.unit()
-              ) { _, _ -> Unit }
-              .flatMap {
-                s.count()
-              }
-          }.map { count -> count.equalUnderTheLaw(0L, Long.eq()) }
+          IO.parTupledN(
+            permits.traverse(IO.applicative()) { s.acquireN(it) }.unit(),
+            permits.reversed().traverse(IO.applicative()) { s.releaseN(it) }.unit()
+          ).flatMap { s.count() }
+        }.map { count -> count.equalUnderTheLaw(0L, Long.eq()) }
           .unsafeRunSync()
       }
     }
@@ -139,9 +134,9 @@ class SemaphoreTest : UnitSpec() {
     tests("CancellableSemaphore") { Semaphore(it, IO.concurrent()) }
 
     "CancellableSemaphore - supports cancellation of acquire" {
-      Semaphore(0, IO.concurrent<Nothing>()).flatMap { s ->
-          s.acquire()
-        }.unsafeRunAsyncCancellable { }
+      Semaphore(0, IO.concurrent()).flatMap { s ->
+        s.acquire()
+      }.unsafeRunAsyncCancellable { }
         .invoke()
     }
   }

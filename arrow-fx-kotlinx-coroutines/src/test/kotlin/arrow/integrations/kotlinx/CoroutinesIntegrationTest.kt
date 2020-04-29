@@ -13,17 +13,13 @@ import arrow.fx.onCancel
 import arrow.fx.bracketCase
 import arrow.fx.extensions.exitcase2.eq.eq
 import arrow.fx.extensions.fx
-import arrow.fx.extensions.io.async.effectMap
 import arrow.fx.extensions.io.monad.followedBy
 import arrow.fx.handleErrorWith
 import arrow.fx.flatMap
-import arrow.fx.onCancel
-import arrow.fx.handleErrorWith
 import arrow.fx.typeclasses.ExitCase2
 import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
 import arrow.fx.unsafeRunAsync
-import arrow.fx.test.eq
 import arrow.fx.test.laws.shouldBeEq
 import arrow.typeclasses.Eq
 import io.kotlintest.fail

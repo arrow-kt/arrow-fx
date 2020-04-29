@@ -64,7 +64,7 @@ interface IORace {
    *     return result
    *   }
    *
-   *   IO.concurrent<Nothing>().example().fix().unsafeRunSync().let(::println)
+   *   IO.concurrent().example().fix().unsafeRunSync().let(::println)
    * }
    * ```
    *
@@ -276,7 +276,9 @@ interface IORace {
         other.cancel().fix().unsafeRunAsync { r2 ->
           main.pop()
           cb(IOResult.Error(r2.fold({
-            it.printStackTrace() // TODO send to undelivered cancellation error to async handler
+            // TODO create issue: send to `Enviroment#handleAsyncError` or return cancelation exception here instead
+            // The cancelation exceptions can be exposed and could include and additional `IOErrorException(a: Any)`
+            it.printStackTrace()
             err
           }, { err })))
         }
@@ -342,7 +344,9 @@ interface IORace {
         other2.cancel().fix().unsafeRunAsync { r2 ->
           other3.cancel().fix().unsafeRunAsync { r3 ->
             main.pop()
-            r2.fold({ it.printStackTrace() }, {}) // TODO send to undelivered cancellation error to async handler
+            // TODO create issue: send to `Enviroment#handleAsyncError` or return cancelation exception here instead
+            // The cancelation exceptions can be exposed and could include and additional `IOErrorException(a: Any)`
+            r2.fold({ it.printStackTrace() }, {})
             r3.fold({ it.printStackTrace() }, {})
             cb(IOResult.Error(err))
           }

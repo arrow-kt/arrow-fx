@@ -196,7 +196,7 @@ class EffectsSuspendDSLTests : UnitSpec() {
       val const = 1
       fxTest {
         IO.fx<Nothing, Int> {
-          val fiber = !IO.effect { const }.fork(IO.dispatchers<Nothing>().default())
+          val fiber = !IO.effect { const }.fork(IO.dispatchers().default())
           val n = !fiber.join()
           n
         }

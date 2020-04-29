@@ -39,6 +39,14 @@ sealed class ExitCase2<out E> {
   companion object
 }
 
+fun ExitCase2<Nothing>.toExitCase(): ExitCase<Throwable> =
+  when (this) {
+    ExitCase2.Completed -> ExitCase.Completed
+    ExitCase2.Cancelled -> ExitCase.Cancelled
+    is ExitCase2.Error -> this.error
+    is ExitCase2.Exception -> ExitCase.Error(this.exception)
+  }
+
 /**
  * ank_macro_hierarchy(arrow.fx.typeclasses.Bracket)
  *

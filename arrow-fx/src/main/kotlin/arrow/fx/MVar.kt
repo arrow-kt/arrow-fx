@@ -213,7 +213,7 @@ interface MVar<F, A> {
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   val mvar: IOOf<Nothing, MVar<IOPartialOf<Nothing>, Int>> = MVar.empty(IO.concurrent<Nothing>())
+     *   val mvar: IOOf<Nothing, MVar<IOPartialOf<Nothing>, Int>> = MVar.empty(IO.concurrent())
      *   //sampleEnd
      * }
      * ```
@@ -230,7 +230,7 @@ interface MVar<F, A> {
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   val mvar: IOOf<Nothing, MVar<IOPartialOf<Nothing>, Int>> = MVar.cancellable(5, IO.concurrent<Nothing>())
+     *   val mvar: IOOf<Nothing, MVar<IOPartialOf<Nothing>, Int>> = MVar.cancellable(5, IO.concurrent())
      *   //sampleEnd
      * }
      * ```
@@ -251,7 +251,7 @@ interface MVar<F, A> {
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   val mvar: IOOf<Nothing, MVar<IOPartialOf<Nothing>, Int>> = MVar.cancellable(5, IO.concurrent<Nothing>())
+     *   val mvar: IOOf<Nothing, MVar<IOPartialOf<Nothing>, Int>> = MVar.cancellable(5, IO.concurrent())
      *   //sampleEnd
      * }
      * ```
@@ -348,7 +348,7 @@ interface MVar<F, A> {
  *
  * fun main(args: Array<String>) {
  *   //sampleStart
- *   val mvarFactory: MVarFactory<IOPartialOf<Nothing>> = MVar.factoryCancellable(IO.concurrent<Nothing>())
+ *   val mvarFactory: MVarFactory<IOPartialOf<Nothing>> = MVar.factoryCancellable(IO.concurrent())
  *   val intVar: IOOf<Nothing, MVar<IOPartialOf<Nothing>, Int>> = mvarFactory.just(5)
  *   val stringVar: IOOf<Nothing, MVar<IOPartialOf<Nothing>, String>> = mvarFactory.empty<String>()
  *   //sampleEnd

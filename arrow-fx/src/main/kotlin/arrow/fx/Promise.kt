@@ -210,7 +210,7 @@ interface Promise<F, A> {
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   val promise: IOOf<Nothing, Promise<IOPartialOf<Nothing>, Int>> = Promise(IO.concurrent<Nothing>())
+     *   val promise: IOOf<Nothing, Promise<IOPartialOf<Nothing>, Int>> = Promise(IO.concurrent())
      *   //sampleEnd
      * }
      * ```
@@ -228,7 +228,7 @@ interface Promise<F, A> {
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   val unsafePromise: Promise<IOPartialOf<Nothing>, Int> = Promise.unsafeCancellable(IO.concurrent<Nothing>())
+     *   val unsafePromise: Promise<IOPartialOf<Nothing>, Int> = Promise.unsafeCancellable(IO.concurrent())
      *   //sampleEnd
      * }
      * ```

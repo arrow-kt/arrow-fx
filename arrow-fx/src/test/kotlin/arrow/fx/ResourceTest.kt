@@ -30,21 +30,21 @@ class ResourceTest : UnitSpec() {
 
     testLaws(
       MonadLaws.laws(
-        Resource.monad(IO.bracket<Nothing>()),
-        Resource.functor(IO.bracket<Nothing>()),
-        Resource.applicative(IO.bracket<Nothing>()),
-        Resource.selective(IO.bracket<Nothing>()),
-        Resource.genK(IO.bracket<Nothing>()),
+        Resource.monad(IO.bracket()),
+        Resource.functor(IO.bracket()),
+        Resource.applicative(IO.bracket()),
+        Resource.selective(IO.bracket()),
+        Resource.genK(IO.bracket()),
         Resource.eqK()
       ),
-      MonoidLaws.laws(Resource.monoid(Int.monoid(), IO.bracket<Nothing>()), Gen.int().map { Resource.just(it, IO.bracket<Nothing>()) }, EQ)
+      MonoidLaws.laws(Resource.monoid(Int.monoid(), IO.bracket()), Gen.int().map { Resource.just(it, IO.bracket()) }, EQ)
     )
 
     "Resource releases resources in reverse order of acquisition" {
       forFew(5, Gen.list(Gen.string())) { l ->
         val released = mutableListOf<String>()
-        l.traverse(Resource.applicative(IO.bracket<Nothing>())) {
-          Resource({ IO { it } }, { r -> IO { released.add(r); Unit } }, IO.bracket<Nothing>())
+        l.traverse(Resource.applicative(IO.bracket())) {
+          Resource({ IO { it } }, { r -> IO { released.add(r); Unit } }, IO.bracket())
         }.fix().use { IO.unit }.fix().unsafeRunSync()
 
         l == released.reversed()

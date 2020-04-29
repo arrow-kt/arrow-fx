@@ -4,8 +4,8 @@ import arrow.core.extensions.either.eq.eq
 import arrow.fx.IO
 import arrow.fx.IOOf
 import arrow.fx.fix
+import arrow.fx.waitFor
 import arrow.fx.extensions.io.applicative.applicative
-import arrow.fx.extensions.io.concurrent.waitFor
 import arrow.fx.typeclasses.Duration
 import arrow.fx.typeclasses.seconds
 import arrow.core.test.generators.tuple2

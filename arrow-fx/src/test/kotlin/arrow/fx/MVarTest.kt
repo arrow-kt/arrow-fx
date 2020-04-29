@@ -23,7 +23,7 @@ import io.kotlintest.shouldBe
 class MVarTest : UnitSpec() {
 
   fun <A> fx(c: suspend ConcurrentSyntax<IOPartialOf<Nothing>>.() -> A): IO<Nothing, A> =
-    IO.concurrent<Nothing>().fx.concurrent(c).fix()
+    IO.concurrent().fx.concurrent(c).fix()
 
   init {
 

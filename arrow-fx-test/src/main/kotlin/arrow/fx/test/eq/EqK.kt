@@ -8,7 +8,6 @@ import arrow.fx.IOPartialOf
 import arrow.fx.IOResult
 import arrow.fx.Schedule
 import arrow.fx.extensions.io.applicative.applicative
-import arrow.fx.extensions.io.concurrent.waitFor
 import arrow.fx.fix
 import arrow.fx.typeclasses.Duration
 import arrow.fx.typeclasses.Fiber
@@ -18,6 +17,7 @@ import arrow.fx.typeclasses.fix
 import arrow.fx.typeclasses.seconds
 import arrow.fx.unsafeRunSync
 import arrow.fx.test.eq
+import arrow.fx.waitFor
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 

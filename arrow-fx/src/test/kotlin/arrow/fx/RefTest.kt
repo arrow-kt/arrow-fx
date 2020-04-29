@@ -157,7 +157,7 @@ class RefTest : UnitSpec() {
       }
     }
 
-    IO.concurrent<Nothing>().tests(IO.eqK<Nothing>(), Ref.factory(IO.monadDefer()))
-    IO.concurrent<Nothing>().concurrentTests(IO.eqK<Nothing>(), Ref.factory(IO.monadDefer()))
+    IO.concurrent().tests(IO.eqK<Nothing>(), Ref.factory(IO.monadDefer()))
+    IO.concurrent().concurrentTests(IO.eqK<Nothing>(), Ref.factory(IO.monadDefer()))
   }
 }
