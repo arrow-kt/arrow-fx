@@ -816,7 +816,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
     override fun unsafeRunTimedTotal(limit: Duration): Option<Either<Nothing, A>> = unsafeResync(this, limit)
   }
 
-  internal class Bind<A, E, out B, out E2 : E>(val cont: IOOf<E, A>, val g: (A) -> IOOf<E, B>) : IO<E2, B>() {
+  internal class Bind<E, E2, A, out B>(val cont: IOOf<E, A>, val g: (A) -> IOOf<E2, B>) : IO<E2, B>() {
     override fun unsafeRunTimedTotal(limit: Duration): Option<Nothing> = throw AssertionError("Unreachable")
   }
 
@@ -950,8 +950,7 @@ fun <E, A, E2 : E, B> IOOf<E, A>.redeemWith(
   ft: (Throwable) -> IOOf<E2, B>,
   fe: (E) -> IOOf<E2, B>,
   fb: (A) -> IOOf<E2, B>
-): IO<E2, B> =
-  IO.Bind(this, IOFrame.Companion.RedeemWith(ft, fe, fb))
+): IO<E2, B> = IO.Bind(this, IOFrame.Companion.RedeemWith(ft, fe, fb))
 
 /**
  * Executes the given `finalizer` when the source is finished, either in success or in error, or if cancelled, allowing
@@ -986,13 +985,8 @@ fun <E, A> IOOf<E, A>.guaranteeCase(finalizer: (ExitCase2<E>) -> IOOf<E, Unit>):
  * }
  * ```
  */
-fun <E, A, B, E2 : E> IOOf<E, A>.flatMap(f: (A) -> IOOf<E2, B>): IO<E2, B> =
-  when (val current = fix()) {
-    is IO.RaiseException -> current
-    is IO.RaiseError<E> -> current as IO<E2, B>
-    is IO.Pure<A> -> IO.Suspend { f(current.a) }
-    else -> IO.Bind(current, f)
-  }
+fun <E, A, B> IOOf<E, A>.flatMap(f: (A) -> IOOf<E, B>): IO<E, B> =
+  IO.Bind(fix(), f)
 
 /**
  * Compose this [IO] with another [IO] [fb] while ignoring the output.
@@ -1011,7 +1005,7 @@ fun <E, A, B, E2 : E> IOOf<E, A>.flatMap(f: (A) -> IOOf<E2, B>): IO<E2, B> =
  *
  * @see flatMap if you need to act on the output of the original [IO].
  */
-fun <E, A, B, E2 : E> IOOf<E, A>.followedBy(fb: IOOf<E2, B>): IO<E2, B> =
+fun <E, A, B> IOOf<E, A>.followedBy(fb: IOOf<E, B>): IO<E, B> =
   flatMap { fb }
 
 /**
@@ -1034,13 +1028,8 @@ fun <E, A, B, E2 : E> IOOf<E, A>.followedBy(fb: IOOf<E2, B>): IO<E2, B> =
 fun <E, A, B> IOOf<E, A>.ap(ff: IOOf<E, (A) -> B>): IO<E, B> =
   flatMap { a -> ff.fix().map { it(a) } }
 
-fun <E, A, E2, B : A> IOOf<E, A>.flatMapLeft(f: (E) -> IOOf<E2, A>): IO<E2, A> =
-  when (val bio = fix()) {
-    is IO.RaiseError -> f(bio.error).fix()
-    is IO.Pure,
-    is IO.RaiseException -> bio as IO<E2, B>
-    else -> IO.Bind(bio, IOFrame.Companion.MapError(f))
-  }
+fun <E, A, E2> IOOf<E, A>.flatMapLeft(f: (E) -> IOOf<E2, A>): IO<E2, A> =
+  IO.Bind(this, IOFrame.Companion.MapError(f))
 
 fun <E, A, E2> IOOf<E, A>.mapError(f: (E) -> E2): IO<E2, A> =
   flatMapLeft { e -> IO.RaiseError(f(e)) }
