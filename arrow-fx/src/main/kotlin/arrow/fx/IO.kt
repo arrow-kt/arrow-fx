@@ -100,13 +100,12 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * ```kotlin:ank:playground:extension
      * import arrow.fx.IO
-     * import kotlinx.coroutines.Dispatchers
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
      *   suspend fun getThreadSuspended(): String = Thread.currentThread().name
      *
-     *   val result = IO.effect(Dispatchers.Default) { getThreadSuspended() }
+     *   val result = IO.effect(IO.dispatchers().default()) { getThreadSuspended() }
      *   //sampleEnd
      *   println(result)
      * }
@@ -392,7 +391,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * @param cb an asynchronous computation that might fail.
      * @see async for wrapping impure APIs without cancellation
      */
-    fun <E, A> cancellable(cb: ((IOResult<E, A>) -> Unit) -> IOOf<E, Unit>): IO<E, A> =
+    fun <E, A> cancellable(cb: ((IOResult<E, A>) -> Unit) -> IOOf<Nothing, Unit>): IO<E, A> =
       Async { conn: IOConnection, cbb: (IOResult<E, A>) -> Unit ->
         onceOnly(conn, cbb).let { cbb2 ->
           val cancellable = ForwardCancellable()
@@ -407,10 +406,6 @@ sealed class IO<out E, out A> : IOOf<E, A> {
           }
         }
       }
-
-    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(cb)"))
-    fun <E, A> cancelable(cb: ((IOResult<E, A>) -> Unit) -> IOOf<E, Unit>): IO<E, A> =
-      cancellable(cb)
 
     /**
      * Creates a cancellable instance of [IO] that executes an asynchronous process on evaluation.
@@ -459,7 +454,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      * @param cb a deferred asynchronous computation that might fail.
      * @see asyncF for wrapping impure APIs without cancellation
      */
-    fun <E, A> cancellableF(cb: ((IOResult<E, A>) -> Unit) -> IOOf<E, IOOf<E, Unit>>): IO<E, A> =
+    fun <E, A> cancellableF(cb: ((IOResult<E, A>) -> Unit) -> IOOf<Nothing, IOOf<Nothing, Unit>>): IO<E, A> =
       Async { conn: IOConnection, cbb: (IOResult<E, A>) -> Unit ->
         val cancellable = ForwardCancellable()
         val conn2 = IOConnection()
@@ -467,7 +462,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
         conn.push(conn2.cancel())
 
         onceOnly(conn, cbb).let { cbb2 ->
-          val fa: IOOf<E, IOOf<E, Unit>> = try {
+          val fa: IOOf<Nothing, IOOf<Nothing, Unit>> = try {
             cb(cbb2)
           } catch (throwable: Throwable) {
             cbb2(IOResult.Exception(throwable.nonFatalOrThrow()))
@@ -480,10 +475,6 @@ sealed class IO<out E, out A> : IOOf<E, A> {
           }
         }
       }
-
-    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellableF(cb)"))
-    fun <E, A> cancelableF(cb: ((IOResult<E, A>) -> Unit) -> IOOf<E, IOOf<E, Unit>>): IO<E, A> =
-      cancellableF(cb)
 
     /**
      * A pure [IO] value of [Unit].
@@ -963,7 +954,7 @@ fun <E, A, E2 : E, B> IOOf<E, A>.redeemWith(
  * @see [bracketCase] for the more general operation
  *
  */
-fun <E, A> IOOf<E, A>.guaranteeCase(finalizer: (ExitCase2<E>) -> IOOf<E, Unit>): IO<E, A> =
+fun <E, A> IOOf<E, A>.guaranteeCase(finalizer: (ExitCase2<E>) -> IOOf<Nothing, Unit>): IO<E, A> =
   IOBracket.guaranteeCase(this, finalizer)
 
 /**
@@ -1067,7 +1058,7 @@ fun <E, A, E2, B> IOOf<E, A>.bimap(fe: (E) -> E2, fa: (A) -> B): IO<E2, B> =
  * }
  * ```
  */
-fun <E, A, B> IOOf<E, A>.bracket(release: (A) -> IOOf<E, Unit>, use: (A) -> IOOf<E, B>): IO<E, B> =
+fun <E, A, B> IOOf<E, A>.bracket(release: (A) -> IOOf<Nothing, Unit>, use: (A) -> IOOf<E, B>): IO<E, B> =
   bracketCase({ a, _ -> release(a) }, use)
 
 /**
@@ -1130,7 +1121,7 @@ fun <E, A, B> IOOf<E, A>.bracket(release: (A) -> IOOf<E, Unit>, use: (A) -> IOOf
  * }
  *  ```
  */
-fun <A, E, B> IOOf<E, A>.bracketCase(release: (A, ExitCase2<E>) -> IOOf<E, Unit>, use: (A) -> IOOf<E, B>): IO<E, B> =
+fun <A, E, B> IOOf<E, A>.bracketCase(release: (A, ExitCase2<E>) -> IOOf<Nothing, Unit>, use: (A) -> IOOf<E, B>): IO<E, B> =
   IOBracket(this, release, use)
 
 /**
@@ -1141,7 +1132,7 @@ fun <A, E, B> IOOf<E, A>.bracketCase(release: (A, ExitCase2<E>) -> IOOf<E, Unit>
  * @see [guaranteeCase] for the version that can discriminate between termination conditions
  * @see [bracket] for the more general operation
  */
-fun <E, A> IOOf<E, A>.guarantee(finalizer: IOOf<E, Unit>): IO<E, A> =
+fun <E, A> IOOf<E, A>.guarantee(finalizer: IOOf<Nothing, Unit>): IO<E, A> =
   guaranteeCase { finalizer }
 
 /**
@@ -1149,7 +1140,7 @@ fun <E, A> IOOf<E, A>.guarantee(finalizer: IOOf<E, Unit>): IO<E, A> =
  *
  * Useful for wiring cancellation tokens between fibers, building inter-op with other effect systems or testing.
  */
-fun <E, A> IOOf<E, A>.onCancel(finalizer: IOOf<E, Unit>): IO<E, A> =
+fun <E, A> IOOf<E, A>.onCancel(finalizer: IOOf<Nothing, Unit>): IO<E, A> =
   guaranteeCase { case ->
     when (case) {
       ExitCase2.Cancelled -> finalizer
@@ -1157,7 +1148,7 @@ fun <E, A> IOOf<E, A>.onCancel(finalizer: IOOf<E, Unit>): IO<E, A> =
     }
   }
 
-fun <E, A> IOOf<E, A>.onError(finalizer: (E) -> IOOf<E, Unit>): IO<E, A> =
+fun <E, A> IOOf<E, A>.onError(finalizer: (E) -> IOOf<Nothing, Unit>): IO<E, A> =
   guaranteeCase { case ->
     when (case) {
       is ExitCase2.Error<E> -> finalizer(case.error)
@@ -1168,7 +1159,7 @@ fun <E, A> IOOf<E, A>.onError(finalizer: (E) -> IOOf<E, Unit>): IO<E, A> =
 /**
  * Executes the given [finalizer] when the source is finishes with an error.
  */
-fun <E, A> IOOf<E, A>.onException(finalizer: (Throwable) -> IOOf<E, Unit>): IO<E, A> =
+fun <E, A> IOOf<E, A>.onException(finalizer: (Throwable) -> IOOf<Nothing, Unit>): IO<E, A> =
   guaranteeCase { case ->
     when (case) {
       is ExitCase2.Exception -> finalizer(case.exception)

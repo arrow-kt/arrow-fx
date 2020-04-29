@@ -37,7 +37,7 @@ internal class ForwardCancellable {
     return IO.Async { conn, cb -> loop(conn, cb) }
   }
 
-  fun <E> complete(value: IOOf<E, Unit>): Unit = state.value.let { current ->
+  fun complete(value: IOOf<Nothing, Unit>): Unit = state.value.let { current ->
     when (current) {
       is Active -> {
         value.fix().unsafeRunAsyncEither {}
@@ -45,13 +45,13 @@ internal class ForwardCancellable {
       }
       is Empty -> if (current == init) {
         // If `init`, then `cancel` was not triggered yet
-        if (!state.compareAndSet(current, Active(value.rethrow)))
+        if (!state.compareAndSet(current, Active(value)))
           complete(value)
       } else {
         if (!state.compareAndSet(current, finished))
           complete(value)
         else
-          execute(value.rethrow, current.stack)
+          execute(value, current.stack)
       }
     }
   }

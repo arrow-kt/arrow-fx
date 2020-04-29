@@ -17,7 +17,7 @@ internal object IOBracket {
   /**
    * Implementation for `IO.bracketCase`.
    */
-  operator fun <E, E2 : E, A, B> invoke(acquire: IOOf<E, A>, release: (A, ExitCase2<E>) -> IOOf<E2, Unit>, use: (A) -> IOOf<E2, B>): IO<E2, B> =
+  operator fun <E, A, B> invoke(acquire: IOOf<E, A>, release: (A, ExitCase2<E>) -> IOOf<Nothing, Unit>, use: (A) -> IOOf<E, B>): IO<E, B> =
     IO.Async { conn, cb ->
       // Placeholder for the future finalizer
       val deferredRelease = ForwardCancellable()
@@ -29,19 +29,19 @@ internal object IOBracket {
       if (!conn.isCancelled()) {
         // Note `acquire` is uncancellable due to usage of `IORunLoop.start`
         // (in other words it is disconnected from our IOConnection)
-        IORunLoop.start(acquire, BracketStart<E, E2, A, B>(use, release, conn, deferredRelease, cb))
+        IORunLoop.start(acquire, BracketStart(use, release, conn, deferredRelease, cb))
       } else {
         deferredRelease.complete(IO.unit)
       }
     }
 
   // Internals of `IO.bracketCase`.
-  private class BracketStart<E, E2 : E, A, B>(
-    val use: (A) -> IOOf<E2, B>,
-    val release: (A, ExitCase2<E>) -> IOOf<E2, Unit>,
+  private class BracketStart<E, A, B>(
+    val use: (A) -> IOOf<E, B>,
+    val release: (A, ExitCase2<E>) -> IOOf<Nothing, Unit>,
     val conn: IOConnection,
     val deferredRelease: ForwardCancellable,
-    val cb: (IOResult<E2, B>) -> Unit
+    val cb: (IOResult<E, B>) -> Unit
   ) : (IOResult<E, A>) -> Unit {
     override fun invoke(ea: IOResult<E, A>) {
       // Introducing a light async boundary, otherwise executing the required logic directly will yield a StackOverflowException
@@ -49,7 +49,7 @@ internal object IOBracket {
         when (ea) {
           is IOResult.Success -> {
             val a = ea.value
-            val frame = BracketReleaseFrame<E2, A, B>(a, release)
+            val frame = BracketReleaseFrame<E, A, B>(a, release)
             val onNext = {
               val fb = try {
                 use(a)
@@ -61,24 +61,24 @@ internal object IOBracket {
             }
 
             // Registering our cancellable token ensures that in case cancellation is detected, release gets called
-            deferredRelease.complete(frame.cancel.rethrow)
+            deferredRelease.complete(frame.cancel)
             IORunLoop.startCancellable(onNext(), conn, cb)
           }
-          is IOResult.Error -> cb(ea as IOResult<E2, B>)
+          is IOResult.Error -> cb(ea)
           is IOResult.Exception -> cb(ea)
         }
       }
     }
   }
 
-  fun <E, A> guaranteeCase(source: IOOf<E, A>, release: (ExitCase2<E>) -> IOOf<E, Unit>): IO<E, A> =
+  fun <E, A> guaranteeCase(source: IOOf<E, A>, release: (ExitCase2<E>) -> IOOf<Nothing, Unit>): IO<E, A> =
     IO.Async { conn, cb ->
       Platform.trampoline {
         val frame = EnsureReleaseFrame<E, A>(release)
         val onNext = IO.Bind(source, frame)
         // Registering our cancellable token ensures that in case
         // cancellation is detected, `release` gets called
-        conn.push(frame.cancel.rethrow)
+        conn.push(frame.cancel)
 
         // Race condition check, avoiding starting `source` in case
         // the connection was already cancelled — n.b. we don't need
@@ -87,16 +87,16 @@ internal object IOBracket {
       }
     }
 
-  private class BracketReleaseFrame<E, A, B>(val a: A, val releaseFn: (A, ExitCase2<E>) -> IOOf<E, Unit>) :
+  private class BracketReleaseFrame<E, A, B>(val a: A, val releaseFn: (A, ExitCase2<E>) -> IOOf<Nothing, Unit>) :
     BaseReleaseFrame<E, A, B>() {
 
-    override fun release(c: ExitCase2<E>): IOOf<E, Unit> =
+    override fun release(c: ExitCase2<E>): IOOf<Nothing, Unit> =
       releaseFn(a, c)
   }
 
-  private class EnsureReleaseFrame<E, A>(val releaseFn: (ExitCase2<E>) -> IOOf<E, Unit>) : BaseReleaseFrame<E, Unit, A>() {
+  private class EnsureReleaseFrame<E, A>(val releaseFn: (ExitCase2<E>) -> IOOf<Nothing, Unit>) : BaseReleaseFrame<E, Unit, A>() {
 
-    override fun release(c: ExitCase2<E>): IOOf<E, Unit> = releaseFn(c)
+    override fun release(c: ExitCase2<E>): IOOf<Nothing, Unit> = releaseFn(c)
   }
 
   private abstract class BaseReleaseFrame<E, A, B> : IOFrame<E, B, IO<E, B>> {
@@ -105,15 +105,15 @@ internal object IOBracket {
     // of the release; otherwise `release` can be called twice
     private val waitsForResult = atomic(true)
 
-    abstract fun release(c: ExitCase2<E>): IOOf<E, Unit>
+    abstract fun release(c: ExitCase2<E>): IOOf<Nothing, Unit>
 
-    private fun applyRelease(e: ExitCase2<E>): IO<E, Unit> =
+    private fun applyRelease(e: ExitCase2<E>): IO<Nothing, Unit> =
       IO.defer {
         if (waitsForResult.compareAndSet(true, false)) release(e)
         else IO.unit
       }
 
-    val cancel: IOOf<E, Unit> = applyRelease(ExitCase2.Cancelled).fix().uncancellable()
+    val cancel: IOOf<Nothing, Unit> = applyRelease(ExitCase2.Cancelled).fix().uncancellable()
 
     // Unregistering cancel token, otherwise we can have a memory leak;
     // N.B. conn.pop() happens after the evaluation of `release`, because
@@ -162,11 +162,3 @@ internal object IOBracket {
       old
     }
 }
-
-// TODO hide in `IOConnection` and this would become Arrow's version of RxJava's
-//  `UndeliverableException` where a value is produced or an error occurs after cancellation.
-private class UnhandeledError(val error: Any?) : Throwable() {
-  override fun fillInStackTrace(): Throwable = this
-}
-internal val <E, A> IOOf<E, A>.rethrow: IO<Nothing, A>
-  get() = handleErrorWith({ t -> IO.raiseException<Nothing>(t) }, { e -> IO.raiseException(UnhandeledError(e)) })
