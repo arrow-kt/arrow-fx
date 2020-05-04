@@ -261,27 +261,21 @@ class IOTest : UnitSpec() {
     "should flatMap values correctly on success" {
       val run = just(1).flatMap { num -> IO { num + 1 } }.unsafeRunSync()
 
-      val expected = 2
-
-      run shouldBe expected
+      run shouldBe 2
     }
 
     "should flatten Either correctly for success" {
       val run = just(Either.right(1)).flatten().unsafeRunSync()
 
-      val expected = 1
-
-      run shouldBe expected
+      run shouldBe 1
     }
 
     "should flatten Either correctly for exception" {
-      val exception = RuntimeException("failed")
+      val error = RuntimeException("failed")
 
-      val run = just(Either.left(exception)).flatten().unsafeRunSyncEither()
+      val run = just(Either.left(error)).flatten().unsafeRunSyncEither()
 
-      val expected = Either.left(exception)
-
-      run shouldBe expected
+      run shouldBe Either.left(error)
     }
 
     "should create success IO from effect producing Either" {
@@ -293,12 +287,46 @@ class IOTest : UnitSpec() {
     }
 
     "should create error IO from effect producing Either" {
-      val exception = Throwable()
-      val failFun = suspend { Either.left(exception) }
+      val error = Throwable()
+      val failFun = suspend { Either.left(error) }
 
       val run = IO.effectEither { failFun() }.unsafeRunSyncEither()
 
-      run shouldBe Either.left(exception)
+      run shouldBe Either.left(error)
+    }
+
+    "transforms to success Either and flattens to success IO" {
+      fun Int.increment(): Either<Throwable, Int> = Either.right(this + 1)
+
+      val run = just(1).mapEither { it.increment() }.unsafeRunSyncEither()
+
+      run shouldBe Either.right(2)
+    }
+
+    "transforms to failure Either and flattens to failure IO" {
+      val error = Throwable()
+      fun fail(): Either<Throwable, Int> = Either.left(error)
+
+      val run = just(1).mapEither { fail() }.unsafeRunSyncEither()
+
+      run shouldBe Either.left(error)
+    }
+
+    "transforms effect to success Either and flattens to success IO" {
+      suspend fun Int.increment() = Either.right(this + 1)
+
+      val run = just(1).effectMapEither { it.increment() }.unsafeRunSyncEither()
+
+      run shouldBe Either.right(2)
+    }
+
+    "transforms effect to failure Either and flattens to failure IO" {
+      val error = Throwable()
+      val fail = suspend { Either.left(error) }
+
+      val run = just(1).effectMapEither { fail() }.unsafeRunSyncEither()
+
+      run shouldBe Either.left(error)
     }
 
     "invoke is called on every run call" {

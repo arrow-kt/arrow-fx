@@ -1016,7 +1016,7 @@ fun <E, A, B, E2 : E> IOOf<E, A>.flatMap(f: (A) -> IOOf<E2, B>): IO<E2, B> =
   }
 
 /**
- * Flattens an [IO] with a success of [Either] into an [IO] of [A], when the left is the same error ([E]) as the original [IO] and the right is [A].
+ * Flatten an [IO] with a success of [Either] into an [IO] of [A], when the left is the same error ([E]) as the original [IO] and the right is [A].
  *
  * @returns success if [Either.Right] or raises [E] otherwise.
  *
@@ -1033,12 +1033,46 @@ fun <E, A, B, E2 : E> IOOf<E, A>.flatMap(f: (A) -> IOOf<E2, B>): IO<E2, B> =
  *   println(result.unsafeRunSync())
  * }
  * ```
- *
  */
 fun <E, A> IO<E, EitherOf<E, A>>.flatten(): IO<E, A> =
   flatMap { it.fix().fold(::RaiseError, ::just) }
 
+/**
+ * Transform the value of an [IO] into an [Either] and consequently flatten into an [IO]
+ *
+ * @return success when [f] results in [Either.Right] or error when [f] results in [Either.Left]
+ *
+ * fun main(args: Array<String>) {
+ *   fun Int.increment() = Either.right(this + 1)
+ *   val result =
+ *   //sampleStart
+ *   IO.just(1).mapEither { it.increment() }
+ *   //sampleEnd
+ *   println(result.unsafeRunSyncEither())
+ * }
+ * ```
+ */
+fun <E, A, B, E2: E> IO<E2, A>.mapEither(f: (A) -> EitherOf<E, B>): IO<E, B> =
+  map(f).flatten()
 
+
+/**
+ * Transform, as a suspend effect, the value of an [IO] into an [Either] and consequently flatten into an [IO]
+ *
+ * @return success when [f] results in [Either.Right] or error when [f] results in [Either.Left]
+ *
+ * fun main(args: Array<String>) {
+ *   suspend fun Int.increment() = Either.right(this + 1)
+ *   val result =
+ *   //sampleStart
+ *   IO.just(1).mapEither { it.increment() }
+ *   //sampleEnd
+ *   println(result.unsafeRunSyncEither())
+ * }
+ * ```
+ */
+fun <E, A, B, E2 : E> IO<E2, A>.effectMapEither(f: suspend (A) -> EitherOf<E, B>): IO<E, B> =
+  effectMap(f).flatten()
 
 /**
  * Compose this [IO] with another [IO] [fb] while ignoring the output.
