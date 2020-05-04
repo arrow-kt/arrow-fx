@@ -121,7 +121,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      */
     fun <E, A> effectEither(f: suspend () -> EitherOf<E, A>): IO<E, A> =
-      Effect(effect = f).flatten()
+      Effect(effect = f).flattenEither()
 
     /**
      * Delay a suspended effect on provided [CoroutineContext].
@@ -1043,7 +1043,7 @@ fun <E, A, B, E2 : E> IOOf<E, A>.flatMap(f: (A) -> IOOf<E2, B>): IO<E2, B> =
  * }
  * ```
  */
-fun <E, A> IO<E, EitherOf<E, A>>.flatten(): IO<E, A> =
+fun <E, A> IO<E, EitherOf<E, A>>.flattenEither(): IO<E, A> =
   flatMap { it.fix().fold(::RaiseError, ::just) }
 
 /**
@@ -1062,7 +1062,7 @@ fun <E, A> IO<E, EitherOf<E, A>>.flatten(): IO<E, A> =
  * ```
  */
 fun <E, A, B> IO<E, A>.mapEither(f: (A) -> EitherOf<E, B>): IO<E, B> =
-  map(f).flatten()
+  map(f).flattenEither()
 
 /**
  * Transform, as a suspend effect, the value of an [IO] into an [Either] and consequently flatten into an [IO]
@@ -1080,7 +1080,7 @@ fun <E, A, B> IO<E, A>.mapEither(f: (A) -> EitherOf<E, B>): IO<E, B> =
  * ```
  */
 fun <E, A, B> IO<E, A>.effectMapEither(f: suspend (A) -> EitherOf<E, B>): IO<E, B> =
-  effectMap(f).flatten()
+  effectMap(f).flattenEither()
 
 /**
  * Compose this [IO] with another [IO] [fb] while ignoring the output.

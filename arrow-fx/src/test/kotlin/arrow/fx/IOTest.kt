@@ -276,7 +276,7 @@ class IOTest : UnitSpec() {
     }
 
     "should flatten Either correctly for success" {
-      val run = just(Either.right(1)).flatten().unsafeRunSync()
+      val run = just(Either.right(1)).flattenEither().unsafeRunSync()
 
       run shouldBe 1
     }
@@ -284,7 +284,7 @@ class IOTest : UnitSpec() {
     "should flatten Either correctly for exception" {
       val error = RuntimeException("failed")
 
-      val run = just(Either.left(error)).flatten().unsafeRunSyncEither()
+      val run = just(Either.left(error)).flattenEither().unsafeRunSyncEither()
 
       run shouldBe Either.left(error)
     }
