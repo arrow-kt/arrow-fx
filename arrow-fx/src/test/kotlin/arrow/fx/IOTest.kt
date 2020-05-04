@@ -1,6 +1,15 @@
 package arrow.fx
 
-import arrow.core.*
+import arrow.core.Either
+import arrow.core.Left
+import arrow.core.None
+import arrow.core.Right
+import arrow.core.Some
+import arrow.core.Tuple2
+import arrow.core.Tuple3
+import arrow.core.Tuple4
+import arrow.core.identity
+import arrow.core.right
 import arrow.core.test.UnitSpec
 import arrow.core.test.concurrency.SideEffect
 import arrow.core.test.laws.SemigroupKLaws
@@ -261,7 +270,9 @@ class IOTest : UnitSpec() {
     "should flatMap values correctly on success" {
       val run = just(1).flatMap { num -> IO { num + 1 } }.unsafeRunSync()
 
-      run shouldBe 2
+      val expected = 2
+
+      run shouldBe expected
     }
 
     "should flatten Either correctly for success" {
@@ -281,9 +292,9 @@ class IOTest : UnitSpec() {
     "should create success IO from effect producing Either" {
       suspend fun hello() = Either.catch { "hello" }
 
-      val run = IO.effectEither { hello() }.unsafeRunSyncEither().orNull()
+      val run = IO.effectEither { hello() }.unsafeRunSyncEither()
 
-      run shouldBe "hello"
+      run shouldBe Either.right("hello")
     }
 
     "should create error IO from effect producing Either" {

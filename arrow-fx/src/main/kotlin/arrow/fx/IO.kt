@@ -1,12 +1,21 @@
 package arrow.fx
 
 import arrow.Kind
-import arrow.core.*
 import arrow.core.Either.Left
+import arrow.core.EitherOf
+import arrow.core.Either
+import arrow.core.Eval
+import arrow.core.NonFatal
+import arrow.core.Option
+import arrow.core.Right
+import arrow.core.Some
+import arrow.core.andThen
+import arrow.core.identity
+import arrow.core.nonFatalOrThrow
+import arrow.core.fix
 import arrow.fx.IO.Companion.async
 import arrow.fx.IO.Companion.effect
 import arrow.fx.IO.Companion.just
-import arrow.fx.IO.Companion.raiseError
 import arrow.fx.IO.RaiseError
 import arrow.fx.OnCancel.Companion.CancellationException
 import arrow.fx.OnCancel.Silent
