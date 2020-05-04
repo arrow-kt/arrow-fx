@@ -1061,9 +1061,8 @@ fun <E, A> IO<E, EitherOf<E, A>>.flatten(): IO<E, A> =
  * }
  * ```
  */
-fun <E, A, B, E2: E> IO<E2, A>.mapEither(f: (A) -> EitherOf<E, B>): IO<E, B> =
+fun <E, A, B, E2 : E> IO<E2, A>.mapEither(f: (A) -> EitherOf<E, B>): IO<E, B> =
   map(f).flatten()
-
 
 /**
  * Transform, as a suspend effect, the value of an [IO] into an [Either] and consequently flatten into an [IO]
