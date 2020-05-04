@@ -1061,7 +1061,7 @@ fun <E, A> IO<E, EitherOf<E, A>>.flatten(): IO<E, A> =
  * }
  * ```
  */
-fun <E, A, B, E2 : E> IO<E2, A>.mapEither(f: (A) -> EitherOf<E, B>): IO<E, B> =
+fun <E, A, B> IO<E, A>.mapEither(f: (A) -> EitherOf<E, B>): IO<E, B> =
   map(f).flatten()
 
 /**
@@ -1079,7 +1079,7 @@ fun <E, A, B, E2 : E> IO<E2, A>.mapEither(f: (A) -> EitherOf<E, B>): IO<E, B> =
  * }
  * ```
  */
-fun <E, A, B, E2 : E> IO<E2, A>.effectMapEither(f: suspend (A) -> EitherOf<E, B>): IO<E, B> =
+fun <E, A, B> IO<E, A>.effectMapEither(f: suspend (A) -> EitherOf<E, B>): IO<E, B> =
   effectMap(f).flatten()
 
 /**
