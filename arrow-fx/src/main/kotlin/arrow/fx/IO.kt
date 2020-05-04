@@ -16,6 +16,7 @@ import arrow.core.fix
 import arrow.fx.IO.Companion.async
 import arrow.fx.IO.Companion.effect
 import arrow.fx.IO.Companion.just
+import arrow.fx.IO.Pure
 import arrow.fx.IO.RaiseError
 import arrow.fx.OnCancel.Companion.CancellationException
 import arrow.fx.OnCancel.Silent
@@ -124,7 +125,31 @@ sealed class IO<out E, out A> : IOOf<E, A> {
       Effect(effect = f).flattenEither()
 
     /**
-     * Delay a suspended effect on provided [CoroutineContext].
+     * Delay a suspended effect which results in an Either.
+     *
+     * @return a success [IO] when [f] returns [Either.Right]<[A]> or an error when [f] returns [Either.Left]<[E]>
+     *
+     * ```kotlin:ank:playground:extension
+     * import arrow.fx.IO
+     * import kotlinx.coroutines.Dispatchers
+     * import arrow.fx.unsafeRunSync
+     *
+     * fun main(args: Array<String>) {
+     *   //sampleStart
+     *   suspend fun helloWorld(): Either<Nothing, Unit> = Either.catch { println("Hello World!") }
+     *
+     *   val result = IO.effectEither { helloWorld() }
+     *   //sampleEnd
+     *   result.unsafeRunSync()
+     * }
+     * ```
+     *
+     */
+    fun <E, A> effectEither(ctx: CoroutineContext, f: suspend () -> EitherOf<E, A>): IO<E, A> =
+      Effect(ctx, effect = f).flattenEither()
+
+    /**
+     * Delay a suspended effect which results in an Either on provided [CoroutineContext].
      *
      * @param ctx [CoroutineContext] to run evaluation on.
      *
@@ -134,7 +159,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   suspend fun getThreadSuspended(): String = Thread.currentThread().name
+     *   suspend fun getThreadSuspended() = Either.right(Thread.currentThread().name)
      *
      *   val result = IO.effect(Dispatchers.Default) { getThreadSuspended() }
      *   //sampleEnd
@@ -1044,7 +1069,7 @@ fun <E, A, B, E2 : E> IOOf<E, A>.flatMap(f: (A) -> IOOf<E2, B>): IO<E2, B> =
  * ```
  */
 fun <E, A> IO<E, EitherOf<E, A>>.flattenEither(): IO<E, A> =
-  flatMap { it.fix().fold(::RaiseError, ::just) }
+  flatMap { it.fix().fold(::RaiseError, ::Pure) }
 
 /**
  * Transform the value of an [IO] into an [Either] and consequently flatten into an [IO]

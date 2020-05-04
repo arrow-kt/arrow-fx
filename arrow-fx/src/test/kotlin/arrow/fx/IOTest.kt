@@ -363,6 +363,11 @@ class IOTest : UnitSpec() {
       io.unsafeRunSync() shouldBe "all"
     }
 
+    "effectEither is called on the correct ctx" {
+      val io = IO.effectEither(all) { Either.right(Thread.currentThread().name) }
+      io.unsafeRunSync() shouldBe "all"
+    }
+
     "CoroutineContext state should be correctly managed between boundaries" {
       val ctxA = TestContext()
       val ctxB = CoroutineName("ctxB")
