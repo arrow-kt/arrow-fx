@@ -1,17 +1,12 @@
 package arrow.fx
 
 import arrow.Kind
-import arrow.core.Either
+import arrow.core.*
 import arrow.core.Either.Left
-import arrow.core.Eval
-import arrow.core.NonFatal
-import arrow.core.Option
-import arrow.core.Right
-import arrow.core.Some
-import arrow.core.andThen
-import arrow.core.identity
-import arrow.core.nonFatalOrThrow
 import arrow.fx.IO.Companion.async
+import arrow.fx.IO.Companion.effect
+import arrow.fx.IO.Companion.just
+import arrow.fx.IO.RaiseError
 import arrow.fx.OnCancel.Companion.CancellationException
 import arrow.fx.OnCancel.Silent
 import arrow.fx.OnCancel.ThrowCancellationException
@@ -993,6 +988,29 @@ fun <E, A, B, E2 : E> IOOf<E, A>.flatMap(f: (A) -> IOOf<E2, B>): IO<E2, B> =
     is IO.Pure<A> -> IO.Suspend { f(current.a) }
     else -> IO.Bind(current, f)
   }
+
+/**
+ * Flattens an [IO] with a success of [Either] into an [IO] of [A], when the left is the same error ([E]) as the original [IO] and the right is [A].
+ *
+ * @returns success if [Either.Right] or raises [E] otherwise.
+ *
+ *  * ```kotlin:ank:playground
+ * import arrow.fx.IO
+ * import arrow.fx.unsafeRunSync
+ * import arrow.core.Either
+ *
+ * fun main(args: Array<String>) {
+ *   val result =
+ *   //sampleStart
+ *   IO.just(Either.right("Hello")).flatten().flatMap { IO { "$it World" } }
+ *   //sampleEnd
+ *   println(result.unsafeRunSync())
+ * }
+ * ```
+ *
+ */
+fun <E, A> IO<E, EitherOf<E, A>>.flatten(): IO<E, A> =
+  flatMap { it.fix().fold(::RaiseError, ::just) }
 
 /**
  * Compose this [IO] with another [IO] [fb] while ignoring the output.

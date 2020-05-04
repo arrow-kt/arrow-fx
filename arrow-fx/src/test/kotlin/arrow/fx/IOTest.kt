@@ -17,12 +17,10 @@ import arrow.fx.IO.Companion.just
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.async.async
 import arrow.fx.extensions.io.concurrent.concurrent
-import arrow.fx.extensions.io.concurrent.raceN
 import arrow.fx.extensions.io.applicative.applicative
 import arrow.fx.extensions.io.dispatchers.dispatchers
 import arrow.fx.extensions.io.functor.functor
 import arrow.fx.extensions.io.monad.flatMap
-import arrow.fx.extensions.io.monad.map
 import arrow.fx.extensions.io.monad.monad
 import arrow.fx.extensions.io.semigroupK.semigroupK
 import arrow.fx.extensions.timer
@@ -273,6 +271,24 @@ class IOTest : UnitSpec() {
       val run = just(1).flatMap { num -> IO { num + 1 } }.unsafeRunSync()
 
       val expected = 2
+
+      run shouldBe expected
+    }
+
+    "should flatten Either correctly for success" {
+      val run = just(Either.right(1)).flatten().unsafeRunSync()
+
+      val expected = 1
+
+      run shouldBe expected
+    }
+
+    "should flatten Either correctly for exception" {
+      val exception = RuntimeException("failed")
+
+      val run = just(Either.left(exception)).flatten().unsafeRunSyncEither()
+
+      val expected = Either.left(exception)
 
       run shouldBe expected
     }
