@@ -6,10 +6,12 @@ import arrow.core.Either.Left
 import arrow.fx.IO.Companion.async
 import arrow.fx.IO.Companion.effect
 import arrow.fx.IO.Companion.just
+import arrow.fx.IO.Companion.raiseError
 import arrow.fx.IO.RaiseError
 import arrow.fx.OnCancel.Companion.CancellationException
 import arrow.fx.OnCancel.Silent
 import arrow.fx.OnCancel.ThrowCancellationException
+import arrow.fx.extensions.io.async.effectMap
 import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.dispatchers.dispatchers
 import arrow.fx.internal.ArrowInternalException
@@ -87,6 +89,30 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      */
     fun <A> effect(f: suspend () -> A): IO<Nothing, A> =
       Effect(effect = f)
+
+    /**
+     * Delay a suspended effect which results in an Either.
+     *
+     * @return a success [IO] when [f] returns [Either.Right]<[A]> or an error when [f] returns [Either.Left]<[E]>
+     *
+     * ```kotlin:ank:playground:extension
+     * import arrow.fx.IO
+     * import kotlinx.coroutines.Dispatchers
+     * import arrow.fx.unsafeRunSync
+     *
+     * fun main(args: Array<String>) {
+     *   //sampleStart
+     *   suspend fun helloWorld(): Either<Nothing, Unit> = Either.catch { println("Hello World!") }
+     *
+     *   val result = IO.effectEither { helloWorld() }
+     *   //sampleEnd
+     *   result.unsafeRunSync()
+     * }
+     * ```
+     *
+     */
+    fun <E, A> effectEither(f: suspend () -> EitherOf<E, A>): IO<E, A> =
+      Effect(effect = f).flatten()
 
     /**
      * Delay a suspended effect on provided [CoroutineContext].
@@ -1011,6 +1037,8 @@ fun <E, A, B, E2 : E> IOOf<E, A>.flatMap(f: (A) -> IOOf<E2, B>): IO<E2, B> =
  */
 fun <E, A> IO<E, EitherOf<E, A>>.flatten(): IO<E, A> =
   flatMap { it.fix().fold(::RaiseError, ::just) }
+
+
 
 /**
  * Compose this [IO] with another [IO] [fb] while ignoring the output.

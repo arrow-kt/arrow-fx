@@ -1,15 +1,6 @@
 package arrow.fx
 
-import arrow.core.Either
-import arrow.core.Left
-import arrow.core.None
-import arrow.core.Right
-import arrow.core.Some
-import arrow.core.Tuple2
-import arrow.core.Tuple3
-import arrow.core.Tuple4
-import arrow.core.identity
-import arrow.core.right
+import arrow.core.*
 import arrow.core.test.UnitSpec
 import arrow.core.test.concurrency.SideEffect
 import arrow.core.test.laws.SemigroupKLaws
@@ -291,6 +282,23 @@ class IOTest : UnitSpec() {
       val expected = Either.left(exception)
 
       run shouldBe expected
+    }
+
+    "should create success IO from effect producing Either" {
+      suspend fun hello() = Either.catch { "hello" }
+
+      val run = IO.effectEither { hello() }.unsafeRunSyncEither().orNull()
+
+      run shouldBe "hello"
+    }
+
+    "should create error IO from effect producing Either" {
+      val exception = Throwable()
+      val failFun = suspend { Either.left(exception) }
+
+      val run = IO.effectEither { failFun() }.unsafeRunSyncEither()
+
+      run shouldBe Either.left(exception)
     }
 
     "invoke is called on every run call" {
