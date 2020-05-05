@@ -15,7 +15,6 @@ import arrow.core.nonFatalOrThrow
 import arrow.core.fix
 import arrow.fx.IO.Companion.async
 import arrow.fx.IO.Companion.effect
-import arrow.fx.IO.Companion.just
 import arrow.fx.IO.Pure
 import arrow.fx.IO.RaiseError
 import arrow.fx.OnCancel.Companion.CancellationException
@@ -125,31 +124,29 @@ sealed class IO<out E, out A> : IOOf<E, A> {
       Effect(effect = f).flattenEither()
 
     /**
-     * Delay a suspended effect which results in an Either.
+     * Delay a suspended effect which results in an Either on provided [CoroutineContext].
      *
      * @return a success [IO] when [f] returns [Either.Right]<[A]> or an error when [f] returns [Either.Left]<[E]>
      *
      * ```kotlin:ank:playground:extension
      * import arrow.fx.IO
      * import kotlinx.coroutines.Dispatchers
-     * import arrow.fx.unsafeRunSync
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   suspend fun helloWorld(): Either<Nothing, Unit> = Either.catch { println("Hello World!") }
+     *   suspend fun getThreadSuspended() = Either.right(Thread.currentThread().name)
      *
-     *   val result = IO.effectEither { helloWorld() }
+     *   val result = IO.effect(Dispatchers.Default) { getThreadSuspended() }
      *   //sampleEnd
-     *   result.unsafeRunSync()
+     *   println(result)
      * }
      * ```
-     *
      */
     fun <E, A> effectEither(ctx: CoroutineContext, f: suspend () -> EitherOf<E, A>): IO<E, A> =
       Effect(ctx, effect = f).flattenEither()
 
     /**
-     * Delay a suspended effect which results in an Either on provided [CoroutineContext].
+     * Delay a suspended effect on provided [CoroutineContext].
      *
      * @param ctx [CoroutineContext] to run evaluation on.
      *
