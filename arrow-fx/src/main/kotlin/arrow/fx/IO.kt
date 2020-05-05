@@ -159,7 +159,7 @@ sealed class IO<out E, out A> : IOOf<E, A> {
      *
      * fun main(args: Array<String>) {
      *   //sampleStart
-     *   suspend fun getThreadSuspended() = Either.right(Thread.currentThread().name)
+     *   suspend fun getThreadSuspended(): String = Thread.currentThread().name
      *
      *   val result = IO.effect(Dispatchers.Default) { getThreadSuspended() }
      *   //sampleEnd
