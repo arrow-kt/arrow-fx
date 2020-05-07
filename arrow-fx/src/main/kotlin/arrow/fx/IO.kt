@@ -1059,7 +1059,7 @@ fun <E, A, B, E2 : E> IOOf<E, A>.flatMap(f: (A) -> IOOf<E2, B>): IO<E2, B> =
  * fun main(args: Array<String>) {
  *   val result =
  *   //sampleStart
- *   IO.just(Either.right("Hello")).flatten().flatMap { IO { "$it World" } }
+ *   IO.just(Either.right("Hello")).flattenEither().flatMap { IO { "$it World" } }
  *   //sampleEnd
  *   println(result.unsafeRunSync())
  * }
