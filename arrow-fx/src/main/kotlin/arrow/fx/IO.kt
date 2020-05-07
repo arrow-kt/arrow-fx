@@ -1095,7 +1095,7 @@ fun <E, A, B> IO<E, A>.mapEither(f: (A) -> EitherOf<E, B>): IO<E, B> =
  *   suspend fun Int.increment() = Either.right(this + 1)
  *   val result =
  *   //sampleStart
- *   IO.just(1).mapEither { it.increment() }
+ *   IO.just(1).effectMapEither { it.increment() }
  *   //sampleEnd
  *   println(result.unsafeRunSyncEither())
  * }
