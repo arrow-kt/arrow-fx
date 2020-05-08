@@ -18,10 +18,8 @@ import arrow.fx.extensions.io.async.effectMap
 import arrow.fx.flatMap
 import arrow.fx.onCancel
 import arrow.fx.test.eq.eqK
-import arrow.fx.test.laws.forFew
 import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
-import arrow.fx.unsafeRunSync
 import io.kotlintest.fail
 import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll
@@ -116,7 +114,7 @@ private class TestLifecycleOwner(
     updateState { State.CREATED }
   }
 
-  fun updateState(f: (old: State) -> State) {
+  private fun updateState(f: (old: State) -> State) {
     observers.updateAndGet {
       val updated = state.updateAndGet(f)
       it.forEach { observer ->
