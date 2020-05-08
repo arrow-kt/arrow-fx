@@ -7,12 +7,7 @@ import androidx.lifecycle.LifecycleOwner
 import arrow.fx.IO
 import arrow.fx.IOOf
 import arrow.fx.IOResult
-import arrow.fx.extensions.io.async.shift
 import arrow.fx.fix
-import arrow.fx.flatMap
-import arrow.fx.followedBy
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 
 /**
  * Unsafely run an [IO] and receive the values in a callback [cb] while participating in structured concurrency.
@@ -46,7 +41,3 @@ fun <E, A> IOOf<E, A>.unsafeRunScoped(
     })
   }
 }
-
-
-
-
