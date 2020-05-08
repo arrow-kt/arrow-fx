@@ -21,6 +21,7 @@ import arrow.fx.OnCancel.Companion.CancellationException
 import arrow.fx.OnCancel.Silent
 import arrow.fx.OnCancel.ThrowCancellationException
 import arrow.fx.extensions.io.async.effectMap
+import arrow.fx.extensions.io.concurrent.cancelable
 import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.dispatchers.dispatchers
 import arrow.fx.internal.ArrowInternalException
@@ -40,6 +41,8 @@ import arrow.fx.typeclasses.ExitCase
 import arrow.fx.typeclasses.ExitCase2
 import arrow.fx.typeclasses.Fiber
 import arrow.fx.typeclasses.mapUnit
+import java.util.concurrent.CancellationException
+import java.util.concurrent.CompletableFuture
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.resume
@@ -1368,3 +1371,25 @@ internal object IONothingYieldsError : ArrowInternalException() {
 internal object IOTimedResultedException : ArrowInternalException() {
   override fun fillInStackTrace(): Throwable = this
 }
+
+fun <A> CompletableFuture<A>.toIo(): IO<Throwable, A> =
+  IO.cancellable { cb ->
+    try {
+      cb(IOResult.Success(get()))
+    } catch (e: Throwable) {
+      cb(IOResult.Exception(e))
+    }
+    IO { cancel(true) }
+  }
+
+fun <A> IO<Throwable, A>.toCompletableFuture(): CompletableFuture<A> =
+  CompletableFuture<A>().also { future ->
+    runAsync { result ->
+      when(result) {
+        is IOResult.Success -> future.complete(result.value)
+        is IOResult.Error -> future.completeExceptionally(result.error)
+        is IOResult.Exception -> future.completeExceptionally(result.exception)
+      }
+      IO.unit
+    }
+  }
