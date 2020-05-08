@@ -18,6 +18,7 @@ import arrow.fx.extensions.io.async.effectMap
 import arrow.fx.flatMap
 import arrow.fx.onCancel
 import arrow.fx.test.eq.eqK
+import arrow.fx.test.laws.forFew
 import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
 import io.kotlintest.fail
@@ -29,6 +30,7 @@ import kotlinx.coroutines.newSingleThreadContext
 class ExtensionsKtTest : UnitSpec() {
 
   private val ctx = newSingleThreadContext("all")
+  private val eqK = IO.eqK<Nothing>()
 
   init {
 
@@ -84,7 +86,7 @@ class ExtensionsKtTest : UnitSpec() {
           IO.just(i).unsafeRunScoped(scope) { result ->
             result.fold({ fail("") }, { fail("") }, { cb(IOResult.Success(it)) })
           }
-        }.equalUnderTheLaw(IO.just(i), IO.eqK<Nothing>().liftEq(Int.eq()))
+        }.equalUnderTheLaw(IO.just(i), eqK.liftEq(Int.eq()))
       }
     }
 
@@ -95,6 +97,54 @@ class ExtensionsKtTest : UnitSpec() {
         scope.cancel()
         IO { ref.value = null }.unsafeRunScoped(scope) {}
         ref.value == i
+      }
+    }
+
+    // --------------- deferUntilActive ---------------
+
+
+    "deferUntilActive waits until next onCreate if already destroyed" {
+      forFew(1, Gen.int()) { i ->
+        IO.fx<Boolean> {
+          val scope = TestLifecycleOwner(AtomicRefW(Lifecycle.State.DESTROYED))
+          val mVar = MVar<Int?>(i).bind()
+
+          val a = IO { mVar.put(null) }
+            .deferUntilActive(ctx, scope).fork().bind()
+
+          mVar.take().map { it shouldBe i }.bind()
+          IO { scope.reanimate() }.bind()
+
+          a.join().bind()
+
+          mVar.take().map { it == null }.bind()
+        }.equalUnderTheLaw(IO.just(true), eqK.liftEq(Boolean.eq()))
+      }
+    }
+
+    "deferUntilActive waits until next onCreate" {
+      forAll(Gen.int()) { i ->
+        IO.fx<Boolean> {
+          val scope = TestLifecycleOwner()
+          val ref = AtomicRefW<Int?>(i)
+          val mv = !MVar<Unit>()
+          val a = !mv.take()
+            .effectMap { ref.value = null }
+            .deferUntilActive(ctx, scope).fork()
+
+          !IO {
+            scope.cancel()
+            ref.value shouldBe i
+          }
+
+          !IO { scope.reanimate() }
+          !mv.put(Unit)
+          !a.join()
+
+          val res = !IO { ref.value == null }
+
+          res
+        }.equalUnderTheLaw(IO.just(true), eqK.liftEq(Boolean.eq()))
       }
     }
   }
