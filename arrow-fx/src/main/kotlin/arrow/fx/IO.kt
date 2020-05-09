@@ -21,7 +21,6 @@ import arrow.fx.OnCancel.Companion.CancellationException
 import arrow.fx.OnCancel.Silent
 import arrow.fx.OnCancel.ThrowCancellationException
 import arrow.fx.extensions.io.async.effectMap
-import arrow.fx.extensions.io.concurrent.cancelable
 import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.dispatchers.dispatchers
 import arrow.fx.internal.ArrowInternalException
@@ -42,7 +41,6 @@ import arrow.fx.typeclasses.ExitCase2
 import arrow.fx.typeclasses.Fiber
 import arrow.fx.typeclasses.mapUnit
 import java.util.concurrent.CancellationException
-import java.util.concurrent.CompletableFuture
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.resume
