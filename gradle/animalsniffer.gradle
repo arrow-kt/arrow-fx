@@ -1,0 +1,34 @@
+class Signature {
+
+    static class Android {
+        static def api21 = "net.sf.androidscents.signature:android-api-level-21:5.0.1_r2@signature"
+        static def api24 = "net.sf.androidscents.signature:android-api-level-24:7.0_r2@signature"
+        static def api26 = "net.sf.androidscents.signature:android-api-level-26:8.0.0_r2@signature"
+    }
+
+    static class Java {
+        static def jdk7 = "org.codehaus.mojo.signature:java17:1.0@signature"
+        static def jdk8 = "org.codehaus.mojo.signature:java18:1.0@signature"
+    }
+
+}
+
+def signatureMappings = [
+    "arrow-fx-jdk8"   : [Signature.Android.api24, Signature.Java.jdk8],
+    "arrow-fx-reactor": [Signature.Android.api26, Signature.Java.jdk8]
+]
+
+def defaultSignatures = [Signature.Android.api21, Signature.Java.jdk7]
+
+def ignoredModules = [project("arrow-benchmarks-fx:arrow-kio-benchmarks")]
+
+configure(subprojects - ignoredModules) {
+    apply plugin: 'ru.vyarus.animalsniffer'
+    apply plugin: 'java'
+
+    def signatures = signatureMappings[name] ?: defaultSignatures
+
+    dependencies {
+        signatures.each { signature it }
+    }
+}
