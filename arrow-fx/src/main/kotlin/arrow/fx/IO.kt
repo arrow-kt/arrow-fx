@@ -40,7 +40,6 @@ import arrow.fx.typeclasses.ExitCase
 import arrow.fx.typeclasses.ExitCase2
 import arrow.fx.typeclasses.Fiber
 import arrow.fx.typeclasses.mapUnit
-import java.util.concurrent.CancellationException
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.resume
