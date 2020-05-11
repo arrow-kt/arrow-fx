@@ -23,6 +23,7 @@ dependencies {
     testRuntime "org.junit.vintage:junit-vintage-engine:$JUNIT_VINTAGE_VERSION"
     testCompile "io.kotlintest:kotlintest-runner-junit5:$KOTLIN_TEST_VERSION", excludeArrow
     testCompile project(":arrow-fx-test")
+    testCompile "io.mockk:mockk:$MOCKK_VERSION"
 }
 
 compileKotlin.kotlinOptions.jvmTarget = "1.8"
