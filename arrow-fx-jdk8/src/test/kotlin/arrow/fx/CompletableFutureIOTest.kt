@@ -5,6 +5,7 @@ import arrow.core.None
 import arrow.core.test.UnitSpec
 import arrow.fx.typeclasses.seconds
 import io.kotlintest.matchers.boolean.shouldBeTrue
+import io.kotlintest.matchers.types.shouldBeInstanceOf
 import io.kotlintest.shouldBe
 import io.mockk.Call
 import io.mockk.MockKAnswerScope
@@ -169,6 +170,32 @@ class CompletableFutureIOTest : UnitSpec() {
 
       io shouldBe null
     }
+
+    "IO.just -> Future with result" {
+      val io = IO.just("Great success!")
+
+      val future = io.toCompletableFuture()
+
+      future.toCompletableFuture().get() shouldBe "Great success!"
+    }
+
+    "IO.raiseError -> Future with error" {
+      val io = IO.raiseError<Throwable, String>(ExpectedError)
+
+      val future = io.toCompletableFuture()
+
+      future.toCompletableFuture().shouldFailWhen({ get() }) {
+        shouldBeInstanceOf<ExecutionException>()
+        cause shouldBe ExpectedError
+      }
+    }
+  }
+}
+
+private inline fun <A> A.shouldFailWhen(action: A.() -> Unit, f: Throwable.() -> Unit = {}) {
+  runCatching { action() }.apply {
+    isFailure.shouldBeTrue()
+    checkNotNull(exceptionOrNull()) { "Expected a failure" }.apply(f)
   }
 }
 

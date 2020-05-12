@@ -1,6 +1,7 @@
 package arrow.fx
 
 import arrow.core.Either
+import arrow.core.getOrHandle
 import me.eugeniomarletti.kotlin.metadata.shadow.utils.addToStdlib.safeAs
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
@@ -30,9 +31,7 @@ private inline fun <A> CompletionStage<A>.whenCompleteAsync(
 }
 
 private fun Throwable?.raiseOrForget(): IO<Throwable, Nothing> =
-  this
-    ?.let { IO.raiseError<Throwable, Nothing>(it) }
-    ?: IO.never
+  this?.let { IO.raiseError<Throwable, Nothing>(it) } ?: IO.never
 
 // TODO(pabs): Convert Either<Throwable, A>? to Wedge (future work) https://github.com/arrow-kt/arrow-core/issues/87
 private fun <A> completion(error: Throwable?, success: A?): Either<Throwable, A>? = when {
@@ -67,13 +66,8 @@ object CompletionStageCompleteWithoutResolution : Exception()
 data class MissingCause(val e: Throwable) : Exception()
 
 fun <A> IO<Throwable, A>.toCompletableFuture(): CompletionStage<A> =
-  CompletableFuture<A>().also { future ->
-    runAsync { result ->
-      when (result) {
-        is IOResult.Success -> future.complete(result.value)
-        is IOResult.Error -> future.completeExceptionally(result.error)
-        is IOResult.Exception -> future.completeExceptionally(result.exception)
-      }
-      IO.unit
-    }
+  CompletableFuture.supplyAsync {
+    unsafeRunSyncEither().getOrHandle { e -> throw e.sanitize() ?: CancellationException() }
+  }.apply {
+    onCancel(IO { cancel(true); Unit })
   }
