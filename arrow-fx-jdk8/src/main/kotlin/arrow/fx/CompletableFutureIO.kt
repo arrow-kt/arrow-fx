@@ -1,7 +1,6 @@
 package arrow.fx
 
 import arrow.core.Either
-import arrow.core.getOrHandle
 import me.eugeniomarletti.kotlin.metadata.shadow.utils.addToStdlib.safeAs
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
@@ -23,6 +22,26 @@ fun <A> Future<A>.toIoNow(): IO<Throwable, A>? = when {
   isDone -> runCatching { get() }.fold({ IO.just(it) }, { e -> e.sanitize().raiseOrForget() })
   else -> null
 }
+
+/**
+ * Thrown when there is no success, failure, or cancellation
+ */
+object CompletionStageCompleteWithoutResolution : Exception()
+
+/**
+ * Thrown when we get an exception without any cause
+ */
+data class MissingCause(val e: Throwable) : Exception()
+
+fun <A> IOOf<Nothing, A>.toCompletionStage(): CompletionStage<A> =
+  CompletableFuture<A>().also { future ->
+    onCancel(IO { future.cancel(true); Unit })
+      .unsafeRunAsyncCancellable { result -> result.fold(future::completeExceptionally, future::complete) }
+      .also { cancel -> future.whenComplete { _, _ -> cancel() } }
+  }
+
+fun <A> IOOf<Nothing, A>.toCompletableFuture(): CompletableFuture<A> =
+  toCompletionStage().toCompletableFuture()
 
 private inline fun <A> CompletionStage<A>.whenCompleteAsync(
   crossinline onReady: (IOResult<Throwable, A>) -> Unit
@@ -53,21 +72,4 @@ private val Throwable.safeCause
   get() = when (val cause = cause) {
     null -> MissingCause(this)
     else -> cause
-  }
-
-/**
- * Thrown when there is no success, failure, or cancellation
- */
-object CompletionStageCompleteWithoutResolution : Exception()
-
-/**
- * Thrown when we get an exception without any cause
- */
-data class MissingCause(val e: Throwable) : Exception()
-
-fun <A> IO<Throwable, A>.toCompletableFuture(): CompletionStage<A> =
-  CompletableFuture.supplyAsync {
-    unsafeRunSyncEither().getOrHandle { e -> throw e.sanitize() ?: CancellationException() }
-  }.apply {
-    onCancel(IO { cancel(true); Unit })
   }

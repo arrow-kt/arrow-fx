@@ -3,6 +3,8 @@ package arrow.fx
 import arrow.core.Either
 import arrow.core.None
 import arrow.core.test.UnitSpec
+import arrow.fx.extensions.io.concurrent.sleep
+import arrow.fx.extensions.io.monad.flatMap
 import arrow.fx.typeclasses.seconds
 import io.kotlintest.matchers.boolean.shouldBeTrue
 import io.kotlintest.matchers.types.shouldBeInstanceOf
@@ -12,6 +14,8 @@ import io.mockk.MockKAnswerScope
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.newSingleThreadContext
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
@@ -176,18 +180,44 @@ class CompletableFutureIOTest : UnitSpec() {
 
       val future = io.toCompletableFuture()
 
-      future.toCompletableFuture().get() shouldBe "Great success!"
+      future.get() shouldBe "Great success!"
     }
 
-    "IO.raiseError -> Future with error" {
-      val io = IO.raiseError<Throwable, String>(ExpectedError)
+    "IO.raiseException -> Future with error" {
+      val io = IO.raiseException<String>(ExpectedError)
 
       val future = io.toCompletableFuture()
 
-      future.toCompletableFuture().shouldFailWhen({ get() }) {
+      future.shouldFailWhen({ get() }) {
         shouldBeInstanceOf<ExecutionException>()
         cause shouldBe ExpectedError
       }
+    }
+
+    "Cancelled Future -> cancelled IO" {
+      var cancelled = false
+      val io = IO.cancellable<Nothing, String> { cb ->
+        IO { delay(1_000); cb(IOResult.Success("won't see this")) }
+        IO { cancelled = true }
+      }
+      val future = io.toCompletableFuture()
+
+      future.cancel(true)
+
+      cancelled.shouldBeTrue()
+    }
+
+    "Cancelled IO -> cancelled Future" {
+      val io = IO.cancellable<Nothing, String> { cb ->
+        IO { delay(1_000); cb(IOResult.Success("won't see this")) }
+        IO {}
+      }
+      val future = io.toCompletableFuture()
+
+      val cancel = io.unsafeRunAsyncCancellable {}
+      cancel()
+
+      future.isCancelled.shouldBeTrue()
     }
   }
 }
