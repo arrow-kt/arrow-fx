@@ -1,11 +1,4 @@
 buildscript {
-    repositories {
-        maven { url "https://dl.bintray.com/47deg/hood" }
-    }
-    
-    dependencies {
-        classpath "com.47deg:hood:0.8.0"
-    }
     ext {
         JMH_RESULT_FOR_MASTER_BRANCH = "$rootDir/master-branch.json"
         JMH_RESULT_FOR_PULL_REQUEST = "$rootDir/pull-request.json"
@@ -24,11 +17,11 @@ plugins {
 
     id "me.champeau.gradle.jmh" version "$JMH_PLUGIN_VERSION"
     id "io.morethan.jmhreport" version "$JMH_REPORT_PLUGIN_VERSION"
+    id "com.47deg.hood" version "0.8.1"
 }
 
 apply from: "$SUBPROJECT_CONF"
 apply from: "$DOC_CONF"
-apply plugin: "com.47deg.hood"
 
 dependencies {
     compile project(":arrow-fx")
@@ -78,8 +71,6 @@ jmhReport {
     jmhResultPath = project.file('build/reports/benchmarks.json')
     jmhReportOutput = project.file('build/reports')
 }
-
-tasks.jmh.finalizedBy tasks.jmhReport
 
 task jmhForMasterBranch {
     doLast {
