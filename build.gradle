@@ -5,11 +5,9 @@ buildscript {
         maven {
             url "https://plugins.gradle.org/m2/"
         }
-        google()
     }
     dependencies {
         classpath "org.jetbrains.kotlinx:atomicfu-gradle-plugin:$ATOMICFU_VERSION"
-        classpath("com.android.tools.build:gradle:3.6.0")
     }
 }
 
