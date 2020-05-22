@@ -4,7 +4,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Lifecycle.State
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
-import arrow.core.None
 import arrow.core.Right
 import arrow.core.Some
 import arrow.core.extensions.eq
