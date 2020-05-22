@@ -15,7 +15,8 @@ import kotlin.coroutines.CoroutineContext
 
 /**
  * Unsafely run an [IO] and receive the values in a callback [cb] while participating in structured concurrency.
- * Equivalent of [IO.unsafeRunAsyncCancellableEither] but with its cancellation token wired to [LifecycleOwner].
+ * Equivalent of [IO.unsafeRunAsyncCancellableEither] but with its cancellation token wired to [LifecycleOwner]'s lifecycle.
+ * Note that the operation will not be started if the owner state is already destroyed.
  *
  * @see [IO.unsafeRunAsyncCancellableEither] for a version that returns the cancellation token instead.
  */
@@ -24,7 +25,7 @@ fun <E, A> LifecycleOwner.unsafeRunIO(io: IOOf<E, A>, cb: (IOResult<E, A>) -> Un
 
 /**
  * Unsafely run an [IO] and receive the values in a callback [cb] while participating in structured concurrency.
- * Equivalent of [IO.unsafeRunAsyncCancellableEither] but with its cancellation token wired to [LifecycleOwner].
+ * Equivalent of [IO.unsafeRunAsyncCancellableEither] but with its cancellation token wired to [LifecycleOwner]'s lifecycle.
  * Note that the operation will not be started if the owner state is already destroyed.
  *
  * @see [IO.unsafeRunAsyncCancellableEither] for a version that returns the cancellation token instead.
@@ -39,8 +40,8 @@ fun <E, A> IOOf<E, A>.unsafeRunScoped(
     owner.lifecycle.addObserver(object : LifecycleEventObserver {
       override fun onStateChanged(source: LifecycleOwner, event: Event) {
         if (event == Event.ON_DESTROY) {
-          disposable()
           source.lifecycle.removeObserver(this)
+          disposable()
         }
       }
     })
