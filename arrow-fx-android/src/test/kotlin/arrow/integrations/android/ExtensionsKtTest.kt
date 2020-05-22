@@ -99,60 +99,14 @@ class ExtensionsKtTest : UnitSpec() {
         ref.value == i
       }
     }
-
-    // --------------- deferUntilActive ---------------
-
-    "deferUntilActive waits until next onCreate if already destroyed" {
-      forAll(Gen.int()) { i ->
-        IO.fx<Boolean> {
-          val scope = TestLifecycleOwner(State.DESTROYED)
-          val mVar = MVar<Int>().bind()
-
-          val a = mVar.put(i)
-            .deferUntilActive(ctx, scope).fork().bind()
-
-          mVar.tryTake().map { it is None }.bind()
-          IO { scope.reanimate() }.bind()
-
-          a.join().bind()
-          mVar.take().map { it == i }.bind()
-        }.equalUnderTheLaw(IO.just(true), eqK.liftEq(Boolean.eq()))
-      }
-    }
-
-    "deferUntilActive waits until next onCreate" {
-      forAll(Gen.int()) { i ->
-        IO.fx<Boolean> {
-          val scope = TestLifecycleOwner()
-          val mv1 = !MVar<Unit>()
-          val mv2 = !MVar<Int>()
-          val a = mv1.take().followedBy(mv2.put(i))
-            .deferUntilActive(ctx, scope).fork().bind()
-
-          IO { scope.cancel() }.bind()
-
-          mv1.put(Unit).bind()
-          mv2.tryTake().map { it is None }.bind()
-
-          IO { scope.reanimate() }.bind()
-          a.join()
-
-          val res = mv2.take().map { it == i }.bind()
-
-          res
-        }.equalUnderTheLaw(IO.just(true), eqK.liftEq(Boolean.eq()))
-      }
-    }
   }
 }
 
-private class TestLifecycleOwner(
-  state: State = State.CREATED
-) : LifecycleOwner {
+private class TestLifecycleOwner : LifecycleOwner {
   private val registry = LifecycleRegistry(this)
 
   init {
-    registry.currentState = state
+    registry.currentState = State.CREATED
   }
 
   override fun getLifecycle(): Lifecycle = registry

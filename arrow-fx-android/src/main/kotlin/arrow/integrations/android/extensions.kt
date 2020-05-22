@@ -7,11 +7,7 @@ import androidx.lifecycle.LifecycleOwner
 import arrow.fx.IO
 import arrow.fx.IOOf
 import arrow.fx.IOResult
-import arrow.fx.extensions.io.async.shift
-import arrow.fx.extensions.io.monad.followedBy
 import arrow.fx.fix
-import arrow.fx.flatMap
-import kotlin.coroutines.CoroutineContext
 
 /**
  * Unsafely run an [IO] and receive the values in a callback [cb] while participating in structured concurrency.
@@ -45,38 +41,5 @@ fun <E, A> IOOf<E, A>.unsafeRunScoped(
         }
       }
     })
-  }
-}
-
-fun <E, A> IOOf<E, A>.deferUntilActive(
-  ctx: CoroutineContext,
-  owner: LifecycleOwner
-): IO<E, A> {
-  fun ioOfEvent(eventTarget: Event): IO<Nothing, Unit> = ctx.shift<Nothing>().followedBy(IO.async { cb ->
-    owner.lifecycle.addObserver(object : LifecycleEventObserver {
-      override fun onStateChanged(source: LifecycleOwner, event: Event) {
-        if (event == eventTarget) {
-          source.lifecycle.removeObserver(this)
-          cb(IOResult.Success(Unit))
-        }
-      }
-    })
-  })
-
-  return when {
-    owner.lifecycle.currentState.isAtLeast(State.CREATED) -> {
-      IO.racePair(
-        ctx, this, ioOfEvent(Event.ON_DESTROY)
-      ).flatMap {
-        it.fold(ifA = { a, _ ->
-          IO.just(a)
-        }, ifB = { fiber, _ ->
-          ioOfEvent(Event.ON_CREATE).flatMap { fiber.join() }
-        })
-      }
-    }
-    else -> {
-      ioOfEvent(Event.ON_CREATE).flatMap { this }
-    }
   }
 }
