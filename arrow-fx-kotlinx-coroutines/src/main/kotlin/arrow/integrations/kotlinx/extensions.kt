@@ -76,7 +76,7 @@ fun <E, A> IOOf<E, A>.unsafeRunScoped(
     val disposable = fix().unsafeRunAsyncCancellableEither(cb = cb)
 
     job?.invokeOnCompletion { e ->
-      if (e is CancellationException) disposable?.invoke()
+      if (e is CancellationException) disposable()
       else Unit
     }
   }
@@ -100,7 +100,7 @@ fun <E, A> IOOf<E, A>.forkScoped(scope: CoroutineScope): IO<E, Fiber<IOPartialOf
         .unsafeRunAsyncCancellableEither(cb = promise::complete)
 
       job?.invokeOnCompletion { e ->
-        if (e is CancellationException) disposable.invoke()
+        if (e is CancellationException) disposable()
         else Unit
       }
 

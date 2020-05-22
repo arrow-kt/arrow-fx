@@ -1,9 +1,10 @@
 package arrow.integrations.android
 
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.Lifecycle.State
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import arrow.core.None
 import arrow.core.Right
 import arrow.core.Some
 import arrow.core.extensions.eq
@@ -18,7 +19,6 @@ import arrow.fx.extensions.io.async.effectMap
 import arrow.fx.flatMap
 import arrow.fx.onCancel
 import arrow.fx.test.eq.eqK
-import arrow.fx.test.laws.forFew
 import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
 import io.kotlintest.fail
@@ -102,22 +102,20 @@ class ExtensionsKtTest : UnitSpec() {
 
     // --------------- deferUntilActive ---------------
 
-
     "deferUntilActive waits until next onCreate if already destroyed" {
-      forFew(1, Gen.int()) { i ->
+      forAll(Gen.int()) { i ->
         IO.fx<Boolean> {
-          val scope = TestLifecycleOwner(AtomicRefW(Lifecycle.State.DESTROYED))
-          val mVar = MVar<Int?>(i).bind()
+          val scope = TestLifecycleOwner(State.DESTROYED)
+          val mVar = MVar<Int>().bind()
 
-          val a = IO { mVar.put(null) }
+          val a = mVar.put(i)
             .deferUntilActive(ctx, scope).fork().bind()
 
-          mVar.take().map { it shouldBe i }.bind()
+          mVar.tryTake().map { it is None }.bind()
           IO { scope.reanimate() }.bind()
 
           a.join().bind()
-
-          mVar.take().map { it == null }.bind()
+          mVar.take().map { it == i }.bind()
         }.equalUnderTheLaw(IO.just(true), eqK.liftEq(Boolean.eq()))
       }
     }
@@ -126,22 +124,20 @@ class ExtensionsKtTest : UnitSpec() {
       forAll(Gen.int()) { i ->
         IO.fx<Boolean> {
           val scope = TestLifecycleOwner()
-          val ref = AtomicRefW<Int?>(i)
-          val mv = !MVar<Unit>()
-          val a = !mv.take()
-            .effectMap { ref.value = null }
-            .deferUntilActive(ctx, scope).fork()
+          val mv1 = !MVar<Unit>()
+          val mv2 = !MVar<Int>()
+          val a = mv1.take().followedBy(mv2.put(i))
+            .deferUntilActive(ctx, scope).fork().bind()
 
-          !IO {
-            scope.cancel()
-            ref.value shouldBe i
-          }
+          IO { scope.cancel() }.bind()
 
-          !IO { scope.reanimate() }
-          !mv.put(Unit)
-          !a.join()
+          mv1.put(Unit).bind()
+          mv2.tryTake().map { it is None }.bind()
 
-          val res = !IO { ref.value == null }
+          IO { scope.reanimate() }.bind()
+          a.join()
+
+          val res = mv2.take().map { it == i }.bind()
 
           res
         }.equalUnderTheLaw(IO.just(true), eqK.liftEq(Boolean.eq()))
@@ -151,49 +147,21 @@ class ExtensionsKtTest : UnitSpec() {
 }
 
 private class TestLifecycleOwner(
-  private var state: AtomicRefW<State> = AtomicRefW(State.CREATED),
-  private val observers: AtomicRefW<List<LifecycleObserver>> = AtomicRefW(emptyList())
-) : LifecycleOwner, Lifecycle() {
-  override fun getLifecycle(): Lifecycle = this
+  state: State = State.CREATED
+) : LifecycleOwner {
+  private val registry = LifecycleRegistry(this)
+
+  init {
+    registry.currentState = state
+  }
+
+  override fun getLifecycle(): Lifecycle = registry
 
   fun cancel() {
-    updateState { State.DESTROYED }
+    registry.currentState = State.DESTROYED
   }
 
   fun reanimate() {
-    updateState { State.CREATED }
+    registry.currentState = State.CREATED
   }
-
-  private fun updateState(f: (old: State) -> State) {
-    observers.updateAndGet {
-      val updated = state.updateAndGet(f)
-      it.forEach { observer ->
-        if (observer is LifecycleEventObserver) observer.onStateChanged(this, updated.toEvent())
-        else Unit
-      }
-      it
-    }
-  }
-
-  override fun addObserver(observer: LifecycleObserver) {
-    observers.updateAndGet {
-      it + observer
-    }
-  }
-
-  override fun removeObserver(observer: LifecycleObserver) {
-    observers.updateAndGet {
-      it - observer
-    }
-  }
-
-  override fun getCurrentState(): State = state.value
-}
-
-private fun Lifecycle.State.toEvent(): Lifecycle.Event = when (this) {
-  Lifecycle.State.DESTROYED -> Lifecycle.Event.ON_DESTROY
-  Lifecycle.State.INITIALIZED -> Lifecycle.Event.ON_DESTROY
-  Lifecycle.State.CREATED -> Lifecycle.Event.ON_CREATE
-  Lifecycle.State.STARTED -> Lifecycle.Event.ON_START
-  Lifecycle.State.RESUMED -> Lifecycle.Event.ON_RESUME
 }
