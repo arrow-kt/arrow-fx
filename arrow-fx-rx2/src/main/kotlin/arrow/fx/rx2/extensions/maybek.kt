@@ -203,9 +203,15 @@ interface MaybeKConcurrent : Concurrent<ForMaybeK>, MaybeKAsync {
         val sb = ReplaySubject.create<B>()
         val dda = fa.value().subscribe(sa::onNext, sa::onError)
         val ddb = fb.value().subscribe(sb::onNext, sb::onError)
+
+        val fiberSa = ReplaySubject.create<A>()
+        val fiberSb = ReplaySubject.create<B>()
+        val fiberDda = fa.value().subscribe(fiberSa::onNext, fiberSa::onError)
+        val fiberDdb = fb.value().subscribe(fiberSb::onNext, fiberSb::onError)
         emitter.setCancellable { dda.dispose(); ddb.dispose() }
-        val ffa = Fiber(sa.firstElement().k(), MaybeK { dda.dispose() })
-        val ffb = Fiber(sb.firstElement().k(), MaybeK { ddb.dispose() })
+
+        val ffa = Fiber(fiberSa.firstElement().k(), MaybeK { fiberDda.dispose() })
+        val ffb = Fiber(fiberSb.firstElement().k(), MaybeK { fiberDdb.dispose() })
         sa.subscribe({
           emitter.onSuccess(RacePair.First(it, ffb))
         }, { e -> emitter.tryOnError(e) }, emitter::onComplete)
