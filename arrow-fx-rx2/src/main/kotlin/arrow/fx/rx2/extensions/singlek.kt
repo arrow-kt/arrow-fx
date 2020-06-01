@@ -182,9 +182,15 @@ interface SingleKConcurrent : Concurrent<ForSingleK>, SingleKAsync {
         val sb = ReplaySubject.create<B>()
         val dda = fa.value().subscribe(sa::onNext, sa::onError)
         val ddb = fb.value().subscribe(sb::onNext, sb::onError)
+
+        val fiberSa = ReplaySubject.create<A>()
+        val fiberSb = ReplaySubject.create<B>()
+        val fiberDda = fa.value().subscribe(fiberSa::onNext, fiberSa::onError)
+        val fiberDdb = fb.value().subscribe(fiberSb::onNext, fiberSb::onError)
         emitter.setCancellable { dda.dispose(); ddb.dispose() }
-        val ffa = Fiber(sa.firstOrError().k(), SingleK { dda.dispose() })
-        val ffb = Fiber(sb.firstOrError().k(), SingleK { ddb.dispose() })
+
+        val ffa = Fiber(fiberSa.firstOrError().k(), SingleK { fiberDda.dispose() })
+        val ffb = Fiber(fiberSb.firstOrError().k(), SingleK { fiberDdb.dispose() })
         sa.subscribe({
           emitter.onSuccess(RacePair.First(it, ffb))
         }, { e -> emitter.tryOnError(e) })
