@@ -181,13 +181,13 @@ class MVarTest : UnitSpec() {
               ch.put(1).flatMap { loop(n - 1, acc + x, ch) }
             }
 
-        val count = 10000
+        val count = 100
         val task = mvar.just(1).flatMap { ch -> loop(count, 0, ch) }
         task.equalUnderTheLaw(IO.just(count))
       }
 
       "$label - stack overflow test" {
-        val count = 10_000
+        val count = 100
 
         fun consumer(ch: Channel<Int>, sum: Long): IO<Nothing, Long> =
           ch.take().flatMap {
@@ -232,7 +232,7 @@ class MVarTest : UnitSpec() {
             })
           }
 
-        val count = 10000L
+        val count = 100L
         fx {
           val channel = !mvar.just(Option(0L))
           val producerFiber = !producer(channel, (0L until count).toList()).fork()
@@ -243,7 +243,7 @@ class MVarTest : UnitSpec() {
       }
 
       fun testStackSequential(channel: MVar<IOPartialOf<Nothing>, Int>): Tuple3<Int, IO<Nothing, Int>, IO<Nothing, Unit>> {
-        val count = 10000
+        val count = 100
 
         fun readLoop(n: Int, acc: Int): IO<Nothing, Int> =
           if (n > 0) channel.read().followedBy(channel.take().flatMap { readLoop(n - 1, acc + 1) })
@@ -278,7 +278,7 @@ class MVarTest : UnitSpec() {
       }
 
       "$label - concurrent take and put" {
-        val count = 1_000
+        val count = 100
         fx {
           val mVar = !mvar.empty<Int>()
           val ref = !Ref<Int>(0)
