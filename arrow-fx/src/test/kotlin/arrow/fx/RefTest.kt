@@ -148,7 +148,7 @@ class RefTest : UnitSpec() {
 
     fun <F> Concurrent<F>.concurrentTests(EQF: EqK<F>, RF: RefFactory<F>) {
       "concurrent modifications" {
-        val finalValue = 100
+        val finalValue = 1000
         RF.just(0).flatMap { r ->
           (0 until finalValue)
             .parTraverse { r.update { it + 1 } }
