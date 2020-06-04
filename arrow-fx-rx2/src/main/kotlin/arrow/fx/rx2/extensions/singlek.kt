@@ -29,6 +29,7 @@ import arrow.fx.typeclasses.MonadDefer
 import arrow.fx.typeclasses.Proc
 import arrow.fx.typeclasses.ProcF
 import arrow.extension
+import arrow.fx.internal.AtomicBooleanW
 import arrow.fx.rx2.asScheduler
 import arrow.fx.rx2.extensions.singlek.dispatchers.dispatchers
 import arrow.fx.rx2.unsafeRunAsync
@@ -182,19 +183,21 @@ interface SingleKConcurrent : Concurrent<ForSingleK>, SingleKAsync {
         val sb = ReplaySubject.create<B>()
         val dda = fa.value().subscribe(sa::onNext, sa::onError)
         val ddb = fb.value().subscribe(sb::onNext, sb::onError)
+        val shouldDisposeSa = AtomicBooleanW(true)
+        val shouldDisposeSb = AtomicBooleanW(true)
+        emitter.setCancellable {
+          if (shouldDisposeSa.value) dda.dispose()
+          if (shouldDisposeSb.value) ddb.dispose()
+        }
+        val ffb = Fiber(sb.firstOrError().k(), SingleK { ddb.dispose() })
+        val ffa = Fiber(sa.firstOrError().k(), SingleK { dda.dispose() })
 
-        val fiberSa = ReplaySubject.create<A>()
-        val fiberSb = ReplaySubject.create<B>()
-        val fiberDda = fa.value().subscribe(fiberSa::onNext, fiberSa::onError)
-        val fiberDdb = fb.value().subscribe(fiberSb::onNext, fiberSb::onError)
-        emitter.setCancellable { dda.dispose(); ddb.dispose() }
-
-        val ffa = Fiber(fiberSa.firstOrError().k(), SingleK { fiberDda.dispose() })
-        val ffb = Fiber(fiberSb.firstOrError().k(), SingleK { fiberDdb.dispose() })
         sa.subscribe({
+          shouldDisposeSb.value = false
           emitter.onSuccess(RacePair.First(it, ffb))
         }, { e -> emitter.tryOnError(e) })
         sb.subscribe({
+          shouldDisposeSa.value = false
           emitter.onSuccess(RacePair.Second(ffa, it))
         }, { e -> emitter.tryOnError(e) })
       }.subscribeOn(scheduler).observeOn(Schedulers.trampoline()).k()

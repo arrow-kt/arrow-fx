@@ -10,6 +10,7 @@ import arrow.extension
 import arrow.fx.RacePair
 import arrow.fx.RaceTriple
 import arrow.fx.Timer
+import arrow.fx.internal.AtomicBooleanW
 import arrow.fx.rx2.ForMaybeK
 import arrow.fx.rx2.MaybeK
 import arrow.fx.rx2.MaybeKOf
@@ -204,18 +205,21 @@ interface MaybeKConcurrent : Concurrent<ForMaybeK>, MaybeKAsync {
         val dda = fa.value().subscribe(sa::onNext, sa::onError)
         val ddb = fb.value().subscribe(sb::onNext, sb::onError)
 
-        val fiberSa = ReplaySubject.create<A>()
-        val fiberSb = ReplaySubject.create<B>()
-        val fiberDda = fa.value().subscribe(fiberSa::onNext, fiberSa::onError)
-        val fiberDdb = fb.value().subscribe(fiberSb::onNext, fiberSb::onError)
-        emitter.setCancellable { dda.dispose(); ddb.dispose() }
+        val shouldDisposeSa = AtomicBooleanW(true)
+        val shouldDisposeSb = AtomicBooleanW(true)
+        emitter.setCancellable {
+          if (shouldDisposeSa.value) dda.dispose()
+          if (shouldDisposeSb.value) ddb.dispose()
+        }
 
-        val ffa = Fiber(fiberSa.firstElement().k(), MaybeK { fiberDda.dispose() })
-        val ffb = Fiber(fiberSb.firstElement().k(), MaybeK { fiberDdb.dispose() })
+        val ffa = Fiber(sa.firstElement().k(), MaybeK { dda.dispose() })
+        val ffb = Fiber(sb.firstElement().k(), MaybeK { ddb.dispose() })
         sa.subscribe({
+          shouldDisposeSb.value = false
           emitter.onSuccess(RacePair.First(it, ffb))
         }, { e -> emitter.tryOnError(e) }, emitter::onComplete)
         sb.subscribe({
+          shouldDisposeSa.value = false
           emitter.onSuccess(RacePair.Second(ffa, it))
         }, { e -> emitter.tryOnError(e) }, emitter::onComplete)
       }.subscribeOn(scheduler).observeOn(Schedulers.trampoline()).k()
