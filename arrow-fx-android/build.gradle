@@ -21,9 +21,7 @@ repositories {
     jcenter()
 }
 
-//apply from: "$SUBPROJECT_CONF"
 apply from: "$DOC_CONF"
-//apply from: "$PUBLISH_CONF"
 
 apply plugin: 'com.android.application'
 
@@ -53,6 +51,7 @@ dependencies {
     testImplementation project(":arrow-fx-test")
 }
 
+//TODO move the config below to a common splace
 apply plugin: 'maven'
 apply plugin: 'signing'
 
