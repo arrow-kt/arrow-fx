@@ -18,6 +18,7 @@ suspend fun <A, B> racePair(fa: suspend () -> A, fb: suspend () -> B): RacePair<
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.*
+ * import arrow.core.Either
  *
  * suspend fun main(): Unit {
  *   //sampleStart
