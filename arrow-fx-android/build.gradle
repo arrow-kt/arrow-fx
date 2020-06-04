@@ -59,6 +59,10 @@ apply plugin: 'signing'
 version = VERSION_NAME
 group = GROUP
 
+def isReleaseBuild() {
+    return !VERSION_NAME.contains("SNAPSHOT")
+}
+
 def findProperty(String key) {
     [project.properties[key], System.getenv(key)].find { it != null }
 }
