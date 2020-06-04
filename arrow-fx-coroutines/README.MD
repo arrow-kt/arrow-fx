@@ -285,7 +285,7 @@ suspend fun main(): Unit {
 }
 ```
 
-A more advanced `Resource` example that reads 3 `DatabaseConnection`s in parallel
+A more advanced `Resource` example that reads 3 `File`s in parallel
 
 ```kotlin:ank
 class File(url: String) {
@@ -368,7 +368,7 @@ suspend main(): Unit {
 
 ### ForkConnected
 
-`forkConnected` launches a `suspend () -> A` function in a seperate processes called a `Fiber`, the lifecycle of this process is connected to its parent.
+`forkConnected` launches a `suspend () -> A` function on a given `CoroutineContext` inside a `Fiber`, the lifecycle of this `Fiber` is connected to its parent.
 If the parent cancels that this operation will also be cancelled.
 
 A `Fiber` is a data type that represents a `suspend fun join(): A` and `suspend fun cancel(): Unit` handle.
@@ -385,13 +385,13 @@ tailrec fun fun sleeper(): Unit {
 }
 
 
-class AndroidFragnent {
+class AndroidFragment : Fragment {
 
   val cancelPromise = Promise.unsafe<Unit>()
   
   override fun onCreateView(bundle: SavedBundleInstance): Unit {
      suspend {
-       ::sleeper.forkScoped(cancelPromise::get)
+       ::sleeper.forkScoped(ComputationPool, cancelPromise::get)
      }.startCoroutine(Continuation(EmptyCoroutineContext) { })
   }
   
@@ -402,7 +402,7 @@ class AndroidFragnent {
 }
 ```
 
-### ParMapN/parTupldN
+### ParMapN/parTupledN
 
 `parMapN` combines two `suspend` functions given a pure function `(A, B) -> C` in parallel on a given `CoroutineContext`. Both `suspend fun` will guarantee to dispatch on the given `CoroutineContext` before they start running.
 
