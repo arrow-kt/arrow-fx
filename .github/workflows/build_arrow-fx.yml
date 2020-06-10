@@ -25,10 +25,7 @@ jobs:
     - name: Run benchmark for master branch
       run: |
         git checkout master
-        # TODO: When this file is located on master branch
-        # ./gradlew :arrow-benchmarks-fx:jmhForMasterBranch
-        ./gradlew clean :arrow-benchmarks-fx:jmh
-        cp arrow-benchmarks-fx/build/reports/benchmarks.json master-branch.json
+        ./gradlew :arrow-benchmarks-fx:jmhForMasterBranch
     - name: Run benchmark for pull request
       run: |
         git checkout $GITHUB_SHA
