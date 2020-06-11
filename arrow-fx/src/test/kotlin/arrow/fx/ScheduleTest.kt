@@ -178,6 +178,7 @@ class ScheduleTest : UnitSpec() {
 
     "Schedule.never() == Schedule.recurs(0)" {
       scheduleEq.run {
+        // WIP
         val res = Schedule.never<ForIO, Any?>(IO.async()).runIdSchedule(0)
 
 //        Schedule.never<ForIO, Any?>(IO.async()).eqv(Schedule.recurs(IO.monad(), 0)) shouldBe true
