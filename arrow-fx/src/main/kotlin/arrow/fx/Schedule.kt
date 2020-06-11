@@ -691,13 +691,13 @@ sealed class Schedule<F, Input, Output> : ScheduleOf<F, Input, Output> {
       unfoldM(M, M.just(c)) { M.just(f(it)) }
 
     /**
-     * Create a schedule that continues forever and returns the number of iterations.
+     * Create a schedule that continues forever and returns the number of repetitions.
      */
     fun <F, A> forever(M: Monad<F>): Schedule<F, A, Int> =
       unfold(M, 0) { it + 1 }
 
     /**
-     * Create a schedule that continues n times and returns the number of iterations.
+     * Create a schedule that continues n times and returns the number of repetitions.
      */
     fun <F, A> recurs(M: Monad<F>, n: Int): Schedule<F, A, Int> =
       invoke(M, M.just(0)) { _, acc ->
