@@ -401,7 +401,7 @@ sealed class Schedule<F, Input, Output> : ScheduleOf<F, Input, Output> {
 
   /**
    * Add random jitter to a schedule.
-   * The argument [genRand] is supposed to be a computation with when run returns
+   * The argument [genRand] is supposed to be a computation that returns
    *  doubles. An example would be the following [IO] `IO { Random.nextDouble() }`.
    *
    * This is done to push the source of randomness to the caller which makes the function
@@ -699,7 +699,12 @@ sealed class Schedule<F, Input, Output> : ScheduleOf<F, Input, Output> {
      * Create a schedule that continues n times and returns the number of iterations.
      */
     fun <F, A> recurs(M: Monad<F>, n: Int): Schedule<F, A, Int> =
-      forever<F, A>(M).whileOutput { it <= n }
+      invoke(M, M.just(0)) { _, acc ->
+        M.just(
+          if (acc < n) Decision.cont(0.seconds, acc + 1, Eval.now(acc + 1))
+          else Decision.done(0.seconds, acc, Eval.now(acc))
+        )
+      }
 
     /**
      * Create a schedule that only ever retries once.
@@ -708,10 +713,13 @@ sealed class Schedule<F, Input, Output> : ScheduleOf<F, Input, Output> {
 
     /**
      * Create a schedule that never retries.
-     * This is a difference with zio, where they define never as a schedule that itself never executes.
      */
-    fun <F, A> never(M: Monad<F>): Schedule<F, A, Nothing> =
-      recurs<F, A>(M, 0).map { throw IllegalStateException("Impossible") }
+    fun <F, A> never(M: Async<F>): Schedule<F, A, Nothing> =
+      invoke(M, M.never<A>()) { a, _ ->
+        M.later {
+          Decision(false, 0.nanoseconds, a, Eval.later { throw IllegalStateException("Impossible") })
+        }
+      }
 
     /**
      * Create a schedule that uses another schedule to generate the delay of this schedule.
@@ -862,8 +870,6 @@ sealed class Schedule<F, Input, Output> : ScheduleOf<F, Input, Output> {
 
       fun <A> exponential(base: Duration, factor: Double = 2.0): Schedule<M, A, Duration> =
         exponential(MM(), base, factor)
-
-      fun <A> never(): Schedule<M, A, Nothing> = never(MM())
     }
 
     /**
