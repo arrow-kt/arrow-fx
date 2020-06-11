@@ -947,14 +947,14 @@ fun <F, E, A, B, C> Kind<F, A>.repeatOrElseEither(
 
   fun loop(last: A, state: Any?): Kind<F, Either<C, B>> =
     schedule.update(last, state)
-      .flatMap { desc ->
-        if (desc.cont)
-          T.sleep(desc.delay).flatMap { flatMap { a -> loop(a, desc.state) } }
-            .handleErrorWith { e -> orElse(e, desc.finish.value().some()).map { Left(it) } }
-        else just(desc.finish.value().right())
+      .flatMap { step ->
+        if (step.cont)
+          T.sleep(step.delay).followedBy(this@repeatOrElseEither).flatMap { a -> loop(a, step.state) }
+            .handleErrorWith { e -> orElse(e, step.finish.value().some()).map(::Left) }
+        else just(step.finish.value().right())
       }
 
-  return flatMap { a -> schedule.initialState.flatMap { b -> loop(a, b) } }
+  return this@repeatOrElseEither.flatMap { a -> schedule.initialState.flatMap { b -> loop(a, b) } }
     .handleErrorWith { e -> orElse(e, None).map(::Left) }
 }
 
@@ -1021,7 +1021,7 @@ fun <F, E, A, B, C> Kind<F, A>.retryOrElseEither(
   (schedule as Schedule.ScheduleImpl<F, Any?, E, B>)
 
   fun loop(state: Any?): Kind<F, Either<C, A>> =
-    map { it.right() }
+    this@retryOrElseEither.map { it.right() }
       .handleErrorWith { e ->
         schedule.update(e, state)
           .flatMap { dec ->
