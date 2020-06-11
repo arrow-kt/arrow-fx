@@ -15,7 +15,6 @@ import arrow.core.right
 import arrow.core.some
 import arrow.core.toT
 import arrow.fx.Schedule.Companion.withMonad
-import arrow.fx.typeclasses.Async
 import arrow.fx.typeclasses.Concurrent
 import arrow.fx.typeclasses.Duration
 import arrow.fx.typeclasses.MonadDefer
@@ -819,8 +818,7 @@ sealed class Schedule<F, Input, Output> : ScheduleOf<F, Input, Output> {
     interface ScheduleFor<M> {
       fun MM(): Monad<M>
 
-      fun <A> identity(): Schedule<M, A, A> =
-        identity(MM())
+      fun <A> identity(): Schedule<M, A, A> = identity(MM())
 
       fun <A, I> unfoldM(c: Kind<M, A>, f: (A) -> Kind<M, A>): Schedule<M, I, A> =
         unfoldM(MM(), c, f)
@@ -831,15 +829,12 @@ sealed class Schedule<F, Input, Output> : ScheduleOf<F, Input, Output> {
       fun <A> forever(): Schedule<M, A, Int> =
         forever(MM())
 
-      fun <A> unit(): Schedule<M, A, Unit> =
-        unit(MM())
+      fun <A> unit(): Schedule<M, A, Unit> = unit(MM())
 
       fun <A> recurs(n: Int): Schedule<M, A, Int> =
         recurs(MM(), n)
 
-      fun <A> once(): Schedule<M, A, Unit> =
-        once(MM())
-
+      fun <A> once(): Schedule<M, A, Unit> = once(MM())
       fun <S, A> delayed(delaySchedule: Schedule<M, A, Duration>): Schedule<M, A, Duration> =
         delayed(MM(), delaySchedule)
 
@@ -904,7 +899,7 @@ fun <F, E, A, B> Kind<F, A>.repeat(
   ME: MonadError<F, E>,
   T: Timer<F>,
   schedule: Schedule<F, A, B>
-): Kind<F, B> = repeatOrElse(ME, T, schedule) { e: E, _ -> ME.raiseError(e) }
+): Kind<F, B> = repeatOrElse(ME, T, schedule) { e, _ -> ME.raiseError(e) }
 
 /**
  * Run this effect once and, if it succeeded, decide using the passed policy if the effect should be repeated and if so, with how much delay.
@@ -914,18 +909,18 @@ fun <F, A, B> Kind<F, A>.repeatOrElse(
   CF: Concurrent<F>,
   schedule: Schedule<F, A, B>,
   orElse: (Throwable, Option<B>) -> Kind<F, B>
-): Kind<F, B> = repeatOrElseEither(CF, schedule, orElse).map { it.fold(::identity, ::identity) }
+): Kind<F, B> = CF.run { repeatOrElseEither(CF, schedule, orElse).map { it.fold(::identity, ::identity) } }
 
 /**
  * Run this effect once and, if it succeeded, decide using the passed policy if the effect should be repeated and if so, with how much delay.
  * Also offers a function to handle errors if they are encountered during repetition.
  */
 fun <F, E, A, B> Kind<F, A>.repeatOrElse(
-  M: Monad<F>,
+  ME: MonadError<F, E>,
   T: Timer<F>,
   schedule: Schedule<F, A, B>,
   orElse: (E, Option<B>) -> Kind<F, B>
-): Kind<F, B> = repeatOrElseEither(M, T, schedule, orElse).map { it.fold(::identity, ::identity) }
+): Kind<F, B> = ME.run { repeatOrElseEither(ME, T, schedule, orElse).map { it.fold(::identity, ::identity) } }
 
 /**
  * Run this effect once and, if it succeeded, decide using the passed policy if the effect should be repeated and if so, with how much delay.
@@ -942,11 +937,11 @@ fun <F, A, B, C> Kind<F, A>.repeatOrElseEither(
  * Also offers a function to handle errors if they are encountered during repetition.
  */
 fun <F, E, A, B, C> Kind<F, A>.repeatOrElseEither(
-  M: Monad<F>,
+  ME: MonadError<F, E>,
   T: Timer<F>,
   schedule: Schedule<F, A, B>,
   orElse: (E, Option<B>) -> Kind<F, C>
-): Kind<F, Either<C, B>> {
+): Kind<F, Either<C, B>> = ME.run {
   (schedule as Schedule.ScheduleImpl<F, Any?, A, B>)
 
   fun loop(last: A, state: Any?): Kind<F, Either<C, B>> =
@@ -954,12 +949,12 @@ fun <F, E, A, B, C> Kind<F, A>.repeatOrElseEither(
       .flatMap { desc ->
         if (desc.cont)
           flatMap { a -> T.sleep(desc.delay).flatMap { loop(a, desc.state) } }
-            .handleErrorWith { e -> orElse(e, desc.finish.value().some()).map(::Left) }
-        else M.just(desc.finish.value().right())
+            .handleErrorWith { e -> orElse(e, desc.finish.value().some()).map { Left(it) } }
+        else just(desc.finish.value().right())
       }
 
   return flatMap { a -> schedule.initialState.flatMap { b -> loop(a, b) } }
-    .handleErrorWith { e -> orElse(e, None).map(::Left) }
+    .handleErrorWith { e -> orElse(e, None).map { Left(it) } }
 }
 
 /**
@@ -989,18 +984,18 @@ fun <F, A, B> Kind<F, A>.retryOrElse(
   CF: Concurrent<F>,
   schedule: Schedule<F, Throwable, B>,
   orElse: (Throwable, B) -> Kind<F, A>
-): Kind<F, A> = retryOrElseEither(CF, schedule, orElse).map { it.fold(::identity, ::identity) }
+): Kind<F, A> = CF.run { retryOrElseEither(CF, schedule, orElse).map { it.fold(::identity, ::identity) } }
 
 /**
  * Run an effect and, if it fails, decide using the passed policy if the effect should be retried and if so, with how much delay.
  * Also offers a function to handle errors if they are encountered during retrial.
  */
 fun <F, E, A, B> Kind<F, A>.retryOrElse(
-  M: Monad<F>,
+  ME: MonadError<F, E>,
   T: Timer<F>,
   schedule: Schedule<F, E, B>,
   orElse: (E, B) -> Kind<F, A>
-): Kind<F, A> = retryOrElseEither(M, T, schedule, orElse).map { it.fold(::identity, ::identity) }
+): Kind<F, A> = ME.run { retryOrElseEither(ME, T, schedule, orElse).map { it.fold(::identity, ::identity) } }
 
 /**
  * Run an effect and, if it fails, decide using the passed policy if the effect should be retried and if so, with how much delay.
@@ -1017,15 +1012,15 @@ fun <F, A, B, C> Kind<F, A>.retryOrElseEither(
  * Also offers a function to handle errors if they are encountered during retrial.
  */
 fun <F, E, A, B, C> Kind<F, A>.retryOrElseEither(
-  M: Monad<F>,
+  ME: MonadError<F, E>,
   T: Timer<F>,
   schedule: Schedule<F, E, B>,
   orElse: (E, B) -> Kind<F, C>
-): Kind<F, Either<C, A>> {
+): Kind<F, Either<C, A>> = ME.run {
   (schedule as Schedule.ScheduleImpl<F, Any?, E, B>)
 
   fun loop(state: Any?): Kind<F, Either<C, A>> =
-    flatMap { M.just(it.right()) }
+    flatMap { just(it.right()) }
       .handleErrorWith { e ->
         schedule.update(e, state)
           .flatMap { dec ->
@@ -1034,5 +1029,5 @@ fun <F, E, A, B, C> Kind<F, A>.retryOrElseEither(
           }
       }
 
-  return schedule.initialState.flatMap(::loop)
+  schedule.initialState.flatMap(::loop)
 }
