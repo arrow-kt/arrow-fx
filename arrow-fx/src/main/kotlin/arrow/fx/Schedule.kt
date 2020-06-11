@@ -15,6 +15,7 @@ import arrow.core.right
 import arrow.core.some
 import arrow.core.toT
 import arrow.fx.Schedule.Companion.withMonad
+import arrow.fx.typeclasses.Async
 import arrow.fx.typeclasses.Concurrent
 import arrow.fx.typeclasses.Duration
 import arrow.fx.typeclasses.MonadDefer
@@ -714,9 +715,9 @@ sealed class Schedule<F, Input, Output> : ScheduleOf<F, Input, Output> {
     /**
      * Create a schedule that never retries.
      */
-    fun <F, A> never(M: Async<F>): Schedule<F, A, Nothing> =
-      invoke(M, M.never<A>()) { a, _ ->
-        M.later {
+    fun <F, A> never(AS: Async<F>): Schedule<F, A, Nothing> =
+      invoke(AS, AS.never<A>()) { a, _ ->
+        AS.later {
           Decision(false, 0.nanoseconds, a, Eval.later { throw IllegalStateException("Impossible") })
         }
       }
@@ -948,13 +949,13 @@ fun <F, E, A, B, C> Kind<F, A>.repeatOrElseEither(
     schedule.update(last, state)
       .flatMap { desc ->
         if (desc.cont)
-          flatMap { a -> T.sleep(desc.delay).flatMap { loop(a, desc.state) } }
+          T.sleep(desc.delay).flatMap { flatMap { a -> loop(a, desc.state) } }
             .handleErrorWith { e -> orElse(e, desc.finish.value().some()).map { Left(it) } }
         else just(desc.finish.value().right())
       }
 
   return flatMap { a -> schedule.initialState.flatMap { b -> loop(a, b) } }
-    .handleErrorWith { e -> orElse(e, None).map { Left(it) } }
+    .handleErrorWith { e -> orElse(e, None).map(::Left) }
 }
 
 /**
@@ -1020,7 +1021,7 @@ fun <F, E, A, B, C> Kind<F, A>.retryOrElseEither(
   (schedule as Schedule.ScheduleImpl<F, Any?, E, B>)
 
   fun loop(state: Any?): Kind<F, Either<C, A>> =
-    flatMap { just(it.right()) }
+    map { it.right() }
       .handleErrorWith { e ->
         schedule.update(e, state)
           .flatMap { dec ->
