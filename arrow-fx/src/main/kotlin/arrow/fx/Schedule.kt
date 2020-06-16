@@ -714,6 +714,8 @@ sealed class Schedule<F, Input, Output> : ScheduleOf<F, Input, Output> {
 
     /**
      * Create a schedule that never retries.
+     *
+     * Note that this will hang a program if used as a repeat/retry schedule unless cancelled.
      */
     fun <F, A> never(AS: Async<F>): Schedule<F, A, Nothing> =
       invoke(AS, AS.never<A>()) { a, _ ->
