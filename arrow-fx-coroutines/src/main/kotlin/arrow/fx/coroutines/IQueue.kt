@@ -11,7 +11,7 @@ package arrow.fx.coroutines
  *  queue is pivoted by replacing the ''out'' list by ''in.reverse'', and ''in'' by ''Nil''.
  *
  */
-class IQueue<A> internal constructor(
+data class IQueue<A> internal constructor(
   private val listIn: List<A>,
   private val listOut: List<A>,
   /** an O(1) size method. */
@@ -91,18 +91,6 @@ class IQueue<A> internal constructor(
     val newOut = listOut.filterNot(p)
     return IQueue(newIn, newOut, newIn.size + newOut.size)
   }
-
-  override fun equals(other: Any?): Boolean =
-    if (other is IQueue<*>) {
-      size == other.size &&
-        listIn == other.listIn &&
-        listOut == other.listOut
-    } else false
-
-  override fun hashCode(): Int =
-    fold(1) { acc, o ->
-      31 * acc + o.hashCode()
-    }
 
   override fun toString(): String =
     "IQueue(${listIn.joinToString(separator = ", ")}, ${listOut.joinToString(separator = ", ")})"
