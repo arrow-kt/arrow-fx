@@ -321,11 +321,11 @@ private class SemaphoreDefault(private val state: Atomic<SemaphoreState>) : Sema
           val waiting = prev.a
 
           val newSize = when (new) {
-            is Either.Left -> new.a.size
+            is Either.Left -> new.a.length()
             is Either.Right -> 0
           }
 
-          val released = waiting.size - newSize
+          val released = waiting.length() - newSize
           waiting.take(released).foldRight(Unit) { (_, gate), _ ->
             open(gate)
           }
