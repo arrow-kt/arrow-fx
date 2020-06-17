@@ -5,6 +5,7 @@ import arrow.Kind2
 import arrow.core.Either
 import arrow.core.ForId
 import arrow.core.Id
+import arrow.core.None
 import arrow.core.extensions.eq
 import arrow.core.extensions.id.eqK.eqK
 import arrow.core.extensions.id.monad.monad
@@ -15,7 +16,6 @@ import arrow.core.test.generators.GenK
 import arrow.core.test.generators.GenK2
 import arrow.core.test.generators.applicative
 import arrow.core.test.generators.intSmall
-import arrow.core.test.laws.AlternativeLaws
 import arrow.core.test.laws.ApplicativeLaws
 import arrow.core.test.laws.CategoryLaws
 import arrow.core.test.laws.MonoidLaws
@@ -23,10 +23,10 @@ import arrow.core.test.laws.ProfunctorLaws
 import arrow.core.toT
 import arrow.core.value
 import arrow.fx.extensions.io.applicativeError.attempt
+import arrow.fx.extensions.io.async.async
 import arrow.fx.extensions.io.monad.monad
 import arrow.fx.extensions.io.monadDefer.monadDefer
 import arrow.fx.extensions.io.monadThrow.monadThrow
-import arrow.fx.extensions.schedule.alternative.alternative
 import arrow.fx.extensions.schedule.applicative.applicative
 import arrow.fx.extensions.schedule.category.category
 import arrow.fx.extensions.schedule.monoid.monoid
@@ -35,6 +35,7 @@ import arrow.fx.test.eq.eqK
 import arrow.fx.test.generators.genK
 import arrow.fx.test.laws.forFew
 import arrow.fx.typeclasses.Duration
+import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
@@ -115,11 +116,6 @@ class ScheduleTest : ArrowFxSpec() {
         Schedule.genK<ForId, Int>(Id.monad()).genK(Gen.int()).map { it.fix() },
         eqK(Id.eqK(), Id.monad(), 0).liftEq(Int.eq())
       ),
-      AlternativeLaws.laws(
-        Schedule.alternative<ForId, Int>(Id.monad()),
-        Schedule.genK<ForId, Int>(Id.monad()),
-        eqK(Id.eqK(), Id.monad(), 0)
-      ),
       ProfunctorLaws.laws(
         Schedule.profunctor(),
         Schedule.genK2(Id.monad()),
@@ -163,8 +159,21 @@ class ScheduleTest : ArrowFxSpec() {
         val res = Schedule.recurs<ForId, Int>(Id.monad(), i).runIdSchedule(0, i + 1)
 
         if (i < 0) res.isEmpty()
-        else res.dropLast(1).forAll { it.cont && it.delay.amount == 0L } &&
-          res.last().let { it.cont.not() && it.delay.amount == 0L && it.finish.value() == i + 1 && it.state == i + 1 }
+        else {
+          res.dropLast(1).forEach {
+            it.cont shouldBe true
+            it.delay.amount shouldBe 0L
+          }
+
+          res.last().let {
+            it.cont shouldBe false
+            it.delay.amount shouldBe 0L
+            it.finish.value() shouldBe i
+            it.state shouldBe i
+          }
+
+          true
+        }
       }
     }
 
@@ -174,10 +183,12 @@ class ScheduleTest : ArrowFxSpec() {
       }
     }
 
-    "Schedule.never() == Schedule.recurs(0)" {
-      scheduleEq.run {
-        Schedule.never<ForId, Any?>(Id.monad()).eqv(Schedule.recurs(Id.monad(), 0)) shouldBe true
-      }
+    "Schedule.never() should execute once and timeout" {
+      val sideEffect = SideEffect()
+      IO { sideEffect.increment() }.repeat(Schedule.never(IO.async()))
+        .unsafeRunTimed(50.milliseconds) shouldBe None
+
+      sideEffect.counter shouldBe 1
     }
 
     "Schedule.spaced()" {
@@ -224,7 +235,7 @@ class ScheduleTest : ArrowFxSpec() {
     }
 
     "repeat" {
-      forAll(Schedule.Decision.genK().genK(Gen.int()), Gen.intSmall().filter { it < 100 }.filter { it >= 0 }) { dec, n ->
+      forAll(Schedule.Decision.genK().genK(Gen.int()), Gen.intSmall().filter { it in 0..99 }) { dec, n ->
         val schedule = Schedule(IO.monad(), IO.just(0 as Any?)) { _: Unit, _ -> IO.just(dec.fix()) }
 
         val eff = SideEffect()
@@ -235,12 +246,18 @@ class ScheduleTest : ArrowFxSpec() {
           .attempt()
           .fix().unsafeRunSync()
 
-        if (dec.fix().cont || n == 0) res.isLeft() &&
-          ref.get().fix().unsafeRunSync().nanoseconds == max(n - 1, 0) * dec.fix().delay.nanoseconds &&
-          eff.counter == n
-        else res.isRight() && eff.counter == 1 &&
-          ref.get().fix().unsafeRunSync().nanoseconds == 0L &&
-          (res as Either.Right).b == dec.fix().finish.value()
+        if (dec.fix().cont || n == 0) {
+          res.isLeft() shouldBe true
+          ref.get().fix().unsafeRunSync().nanoseconds shouldBe max(n, 0) * dec.fix().delay.nanoseconds
+          eff.counter shouldBe n
+        } else {
+          res.isRight() shouldBe true
+          eff.counter shouldBe 1
+          ref.get().fix().unsafeRunSync().nanoseconds shouldBe 0L
+          (res as Either.Right).b shouldBe dec.fix().finish.value()
+        }
+
+        true
       }
     }
 
@@ -260,12 +277,17 @@ class ScheduleTest : ArrowFxSpec() {
           .attempt()
           .fix().unsafeRunSync()
 
-        if (dec.fix().cont) res.isRight() &&
-          eff.counter == n + 1 &&
-          ref.get().fix().unsafeRunSync().nanoseconds == (n + 1) * dec.fix().delay.nanoseconds
-        else res.isLeft() &&
-          eff.counter == 1 &&
-          ref.get().fix().unsafeRunSync().nanoseconds == 0L
+        if (dec.fix().cont) {
+          res.isRight() shouldBe true
+          eff.counter shouldBe n + 1
+          ref.get().fix().unsafeRunSync().nanoseconds shouldBe (n + 1) * dec.fix().delay.nanoseconds
+        } else {
+          res.isLeft() shouldBe true
+          eff.counter shouldBe 1
+          ref.get().fix().unsafeRunSync().nanoseconds shouldBe 0L
+        }
+
+        true
       }
     }
   }
