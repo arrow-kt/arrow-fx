@@ -1,10 +1,12 @@
 rootProject.name = 'arrow-fx-lib'
 
 include 'arrow-fx'
+include 'arrow-fx-coroutines'
 include 'arrow-streams'
 include 'arrow-fx-reactor'
 include 'arrow-fx-rx2'
 include 'arrow-fx-kotlinx-coroutines'
+include 'arrow-fx-android'
 include 'arrow-benchmarks-fx:arrow-scala-benchmarks'
 include 'arrow-benchmarks-fx:arrow-kio-benchmarks'
 include 'arrow-benchmarks-fx'
