@@ -38,6 +38,7 @@ import kotlin.random.Random
    * suspend fun main(): Unit =
    *   Stream(1, 2, 3)
    *     .flatMap { i -> Stream(i, i, i) }
+   *     .compile()
    *     .toList()
    *     .let(::println) // [1, 1, 1, 2, 2, 2, 3, 3, 3]
    * //sampleEnd
@@ -58,6 +59,7 @@ import kotlin.random.Random
    *     .append { Stream.raiseError(RuntimeException("Boom!")) }
    *     .append { Stream(4, 5, 6) }
    *     .attempt()
+   *     .compile()
    *     .toList()
    *     .let(::println) // [Right(b=1), Right(b=2), Right(b=3), Left(a=java.lang.RuntimeException: Boom!)]
    * //sampleEnd
@@ -98,6 +100,7 @@ import kotlin.random.Random
    *     .buffer(4)
    *     .effectTap { i -> buf.add("<$i") }
    *     .take(10)
+   *     .compile()
    *     .toList()
    *     .let(::println) // [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
    *
@@ -131,6 +134,7 @@ import kotlin.random.Random
    *     .bufferAll()
    *     .effectTap { i -> buf.add("<$i") }
    *     .take(4)
+   *     .compile()
    *     .toList()
    *     .let(::println) // [0, 1, 2, 3]
    *
@@ -157,6 +161,7 @@ import kotlin.random.Random
    *     .effectTap { i -> buf.add(">$i") }
    *     .bufferBy { it % 2 == 0 }
    *     .effectTap { i -> buf.add("<$i") }
+   *     .compile()
    *     .toList()
    *     .let(::println) // [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
    *
@@ -206,6 +211,7 @@ import kotlin.random.Random
    * suspend fun main(): Unit =
    *   Stream.range(1..10)
    *     .delete { it % 2 == 0 }
+   *     .compile()
    *     .toList()
    *     .let(::println) // [1, 3, 4, 5, 6, 7, 8, 9, 10]
    * //sampleEnd
@@ -234,6 +240,7 @@ import kotlin.random.Random
    * suspend fun main(): Unit =
    *   Stream.range(0..10)
    *     .drop(5)
+   *     .compile()
    *     .toList()
    *     .let(::println) // [5, 6, 7, 8, 9, 10]
    * //sampleEnd
@@ -252,6 +259,7 @@ import kotlin.random.Random
    * suspend fun main(): Unit =
    *   Stream.range(0..5)
    *     .tail()
+   *     .compile()
    *     .toList()
    *     .let(::println) // [1, 2, 3, 4, 5]
    * //sampleEnd
@@ -272,7 +280,7 @@ import kotlin.random.Random
    * //sampleStart
    * suspend fun main(): Unit =
    *   Stream.range(0..10)
-   *     .dropRight(5)
+   *     .dropLast(5)
    *     .compile()
    *     .toList()
    *     .let(::println) // [0, 1, 2, 3, 4]
@@ -314,6 +322,7 @@ import kotlin.random.Random
    * suspend fun main(): Unit =
    *   Stream.range(0..10)
    *     .dropWhile { it != 4 }
+   *     .compile()
    *     .toList()
    *     .let(::println) // [4, 5, 6, 7, 8, 9, 10]
    * //sampleEnd
@@ -332,6 +341,7 @@ import kotlin.random.Random
    * suspend fun main(): Unit =
    *   Stream.range(0..10)
    *     .dropThrough { it != 4 }
+   *     .compile()
    *     .toList()
    *     .let(::println) // [5, 6, 7, 8, 9, 10]
    * //sampleEnd
@@ -357,6 +367,7 @@ import kotlin.random.Random
    * suspend fun main(): Unit =
    *   Stream.range(0..1000)
    *     .take(5)
+   *     .compile()
    *     .toList()
    *     .let(::println) // [0, 1, 2, 3, 4]
    * //sampleEnd
@@ -375,6 +386,7 @@ import kotlin.random.Random
    * suspend fun main(): Unit =
    *   Stream.range(0..1000)
    *     .first()
+   *     .compile()
    *     .toList()
    *     .let(::println) // [0]
    * //sampleEnd
@@ -393,6 +405,7 @@ import kotlin.random.Random
    * suspend fun main(): Unit =
    *   Stream.range(0..1000)
    *     .takeLast(5)
+   *     .compile()
    *     .toList()
    *     .let(::println) // [996, 997, 998, 999, 1000]
    * //sampleEnd
@@ -417,6 +430,7 @@ import kotlin.random.Random
    * suspend fun main(): Unit =
    *   Stream(null, 1, 2, null, 3)
    *     .first { it != null }
+   *     .compile()
    *     .toList()
    *     .let(::println) // [1]
    * //sampleEnd
@@ -443,6 +457,7 @@ import kotlin.random.Random
    * suspend fun main(): Unit =
    *   Stream(1, 2, 3)
    *     .last()
+   *     .compile()
    *     .toList()
    *     .let(::println) // [3]
    * //sampleEnd
@@ -459,11 +474,11 @@ import kotlin.random.Random
    *
    * //sampleStart
    * suspend fun main(): Unit {
-   *   Stream.range(0,10).exists { it == 4 }
+   *   Stream.range(0..10).exists { it == 4 }
    *     .compile().toList().let(::println) //[true]
    *
-   *   Stream.range(0,10).exists { it == 11 }
-   *     .compile().toList() //[false]
+   *   Stream.range(0..10).exists { it == 11 }
+   *     .compile().toList().let(::println) //[false]
    * }
    * //sampleEnd
    * ```
@@ -491,6 +506,7 @@ import kotlin.random.Random
    * suspend fun main(): Unit =
    *   Stream.range(0..1000)
    *     .takeWhile { it != 5 }
+   *     .compile()
    *     .toList()
    *     .let(::println) // [0, 1, 2, 3, 4]
    * //sampleEnd
@@ -509,6 +525,7 @@ import kotlin.random.Random
    * suspend fun main(): Unit =
    *   Stream.range(0..1000)
    *     .takeThrough { it != 5 }
+   *     .compile()
    *     .toList()
    *     .let(::println) // [0, 1, 2, 3, 4, 5]
    * //sampleEnd
@@ -529,6 +546,7 @@ import kotlin.random.Random
    *   Stream(1,2,3)
    *     .repeat()
    *     .take(8)
+   *     .compile()
    *     .toList()
    *     .let(::println) // [1, 2, 3, 1, 2, 3, 1, 2]
    * //sampleEnd
@@ -549,6 +567,7 @@ import kotlin.random.Random
    * suspend fun main(): Unit =
    *   Stream(1,2,3)
    *     .repeatN(3)
+   *     .compile()
    *     .toList()
    *     .let(::println) // [1, 2, 3, 1, 2, 3, 1, 2, 3]
    * //sampleEnd
@@ -567,8 +586,9 @@ import kotlin.random.Random
    * //sampleStart
    * suspend fun main(): Unit =
    *   Stream(1, 2, 3)
-   *     .effectMap { println(it) }
-   *     .drain()
+   *     .effectMap { print(it) }
+   *     .compile()
+   *     .drain() // 123
    * //sampleEnd
    * ```
    */
@@ -587,7 +607,8 @@ import kotlin.random.Random
    *   Stream(1, 2, 3)
    *     .effectTap { print(it) } // 123
    *     .compile()
-   *     .toList() // [1, 2, 3]
+   *     .toList()
+   *     .let(::println) // [1, 2, 3]
    * //sampleEnd
    * ```
    */
@@ -598,6 +619,7 @@ import kotlin.random.Random
    * Like [mapAccumulate], but accepts a function returning an suspend fun.
    *
    * ```kotlin:ank:playground
+   * import arrow.fx.coroutines.*
    * import arrow.fx.coroutines.stream.*
    *
    * //sampleStart
@@ -608,7 +630,8 @@ import kotlin.random.Random
    *       Pair(i, acc + i)
    *     }
    *     .compile()
-   *     .toList() // [(1,1), (2,3), (3,5), (4,7)]
+   *     .toList()
+   *     .let(::println) // [(1,1), (2,3), (3,5), (4,7)]
    * //sampleEnd
    * ```
    */
@@ -655,7 +678,7 @@ import kotlin.random.Random
    * //sampleStart
    * suspend fun main(): Unit =
    *   Stream(1, 2, 3).append { Stream(4, 5, 6) }
-   *     .mapChunks { ch -> c.map { it + 1 } }
+   *     .mapChunks { ch -> ch.map { it + 1 } }
    *     .compile()
    *     .toList().let(::println) // [2, 3, 4, 5, 6, 7]
    * //sampleEnd
@@ -680,7 +703,7 @@ import kotlin.random.Random
    * //sampleStart
    * suspend fun main(): Unit =
    *   Stream("Hello", "World")
-   *   .mapAccumulate(0) { l, s -> Pair(l + s.length(), s.first()) }
+   *   .mapAccumulate(0) { l, s -> Pair(l + s.length, s.first()) }
    *   .compile()
    *   .toList()
    *   .let(::println) //[(5,H), (10,W)]
@@ -860,11 +883,11 @@ import kotlin.random.Random
    *
    * //sampleStart
    * suspend fun main(): Unit =
-   *   Stream.range(0,10)
-   *   .filter { it % 2 == 0 }
-   *   .compile()
-   *   .toList()
-   *   .let(::println) //[0, 2, 4, 6, 8]
+   *   Stream.range(0..10)
+   *     .filter { it % 2 == 0 }
+   *     .compile()
+   *     .toList()
+   *     .let(::println) //[0, 2, 4, 6, 8]
    * //sampleEnd
    * ```
    */
@@ -951,6 +974,7 @@ import kotlin.random.Random
    * Alias for `map(f).foldMonoid`.
    *
    * ```kotlin:ank:playground
+   * import arrow.core.extensions.monoid
    * import arrow.fx.coroutines.stream.*
    *
    * //sampleStart
@@ -1047,7 +1071,7 @@ import kotlin.random.Random
    * //sampleStart
    * suspend fun main(): Unit =
    *   Stream(1, 2, 3)
-   *   ..zipWith(Stream(4, 5, 6, 7)) { acc, b -> acc + b }
+   *   .zipWith(Stream(4, 5, 6, 7)) { acc, b -> acc + b }
    *   .compile()
    *   .toList()
    *   .let(::println) //[5, 7, 9]
@@ -1184,7 +1208,7 @@ import kotlin.random.Random
    * //sampleStart
    * suspend fun main(): Unit =
    *   Stream("uno", "dos", "tres", "cuatro")
-   *   .zipWithScan(0) { acc, b -> acc + b.length() }
+   *   .zipWithScan(0) { acc, b -> acc + b.length }
    *   .compile()
    *   .toList()
    *   .let(::println) //[(uno,0), (dos,3), (tres,6), (cuatro,10)]
@@ -1209,7 +1233,7 @@ import kotlin.random.Random
    * //sampleStart
    * suspend fun main(): Unit =
    *   Stream("uno", "dos", "tres", "cuatro")
-   *   .zipWithScan1(0) { acc, b -> acc + b.length() }
+   *   .zipWithScan1(0) { acc, b -> acc + b.length }
    *   .compile()
    *   .toList()
    *   .let(::println) //[(uno,3), (dos,6), (tres,10), (cuatro,16)]
@@ -1283,7 +1307,7 @@ import kotlin.random.Random
    *
    * //sampleStart
    * suspend fun main(): Unit =
-   *   Stream(1,2,3).append { Stream.raiseError(RuntimeException()).append { Stream(4, 5, 6)) } }
+   *   Stream(1,2,3).append { Stream.raiseError<Int>(RuntimeException()).append { Stream(4, 5, 6) } }
    *     .mask()
    *     .compile()
    *     .toList().let(::println) //[1, 2, 3]
@@ -1452,17 +1476,20 @@ import kotlin.random.Random
      * If the effect fails, the returned stream fails.
      *
      * ```kotlin:ank:playground
+     * import arrow.core.Either
      * import arrow.fx.coroutines.*
      * import arrow.fx.coroutines.stream.*
      *
      * //sampleEnd
      * suspend fun main(): Unit {
      *   Stream.effect { 10 }
+     *     .compile()
      *     .toList()
      *     .let(::println) // [10]
      *
      *   Either.catch {
      *     Stream.effect { throw RuntimeException() }
+     *       .compile()
      *       .toList()
      *   }.let(::println) // Left(java.lang.RuntimeException)
      * }
@@ -1482,11 +1509,11 @@ import kotlin.random.Random
      * import arrow.fx.coroutines.stream.*
      *
      * //sampleEnd
-     * suspend fun main(): Unit {
+     * suspend fun main(): Unit =
      *   Stream.effect_ { println("Ran") }
+     *     .compile()
      *     .toList()
      *     .let(::println) // []
-     * }
      * //sampleStart
      * ```
      */
@@ -1509,6 +1536,7 @@ import kotlin.random.Random
      * suspend fun main(): Unit {
      *   Stream.constant(0)
      *     .take(5)
+     *     .compile()
      *     .toList()
      *     .let(::println) // [0, 0, 0, 0, 0]
      * }
@@ -1579,6 +1607,7 @@ import kotlin.random.Random
      * //sampleEnd
      * suspend fun main(): Unit =
      *   Stream.unfold(0) { i -> if (i < 5) Pair(i, i + 1) else null }
+     *     .compile()
      *     .toList()
      *     .let(::println) //[0, 1, 2, 3, 4]
      * //sampleStart
@@ -1615,7 +1644,7 @@ import kotlin.random.Random
      * //sampleStart
      * suspend fun main(): Unit =
      *   Stream.unfoldChunk(0) { i ->
-     *     if (i < 5) Pair(Chunk.array(i) { i }, i + 1)
+     *     if (i < 5) Pair(Chunk(i) { i }, i + 1)
      *     else null
      *   }
      *     .compile()
@@ -1656,6 +1685,7 @@ import kotlin.random.Random
      * //sampleStart
      * suspend fun main(): Unit =
      *   Stream.just(1)
+     *     .compile()
      *     .toList()
      *     .let(::println) //[0]
      * //sampleEnd
@@ -1746,6 +1776,7 @@ import kotlin.random.Random
      * //sampleStart
      * suspend fun main(): Unit =
      *   Stream.range(0..20 step 2)
+     *     .compile()
      *     .toList().let(::println) // [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
      * //sampleEnd
      * ```
@@ -1766,6 +1797,7 @@ import kotlin.random.Random
      * //sampleStart
      * suspend fun main(): Unit =
      *   Stream.range(0L..15 step 3)
+     *     .compile()
      *     .toList().let(::println) // [0, 3, 6, 9, 12, 15]
      * //sampleEnd
      * ```
@@ -1815,7 +1847,7 @@ import kotlin.random.Random
      * //sampleStart
      * suspend fun main(): Unit =
      *   timeOutOrNull(1.seconds) {
-     *     Stream.never<Int>().toList()
+     *     Stream.never<Int>().compile().drain()
      *   }.let(::println)
      * //sampleEnd
      * ```
@@ -1832,6 +1864,7 @@ import kotlin.random.Random
      * //sampleStart
      * suspend fun main(): Unit =
      *   Stream.emits(1, 2, 3)
+     *     .compile()
      *     .toList()
      *     .let(::println) // [1, 2, 3]
      * //sampleEnd
@@ -1879,6 +1912,7 @@ import kotlin.random.Random
  * suspend fun main(): Unit =
  *   Stream(1,2,3)
  *     .zipAll(Stream(4,5,6,7), 0,0)
+ *     .compile()
  *     .toList().let(::println) // [(1,4), (2,5), (3,6), (0,7)]
  * //sampleEnd
  *```
@@ -1897,7 +1931,8 @@ fun <O, B> Stream<O>.zipAll(that: Stream<B>, pad1: O, pad2: B): Stream<Pair<O, B
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream(1,2,3)
- *   ..zipAllWith(Stream(4,5,6,7), 0, 0) { acc, b -> acc + b }
+ *     .zipAllWith(Stream(4,5,6,7), 0, 0) { acc, b -> acc + b }
+ *     .compile()
  *     .toList().let(::println) // [5, 7, 9, 7]
  * //sampleEnd
  *```
@@ -1954,7 +1989,8 @@ fun <A, B, C> Stream<A>.zipAllWith(
  *
  * //sampleStart
  * suspend fun main(): Unit =
- *   Stream(1, 2, 3).onComplete(Stream(4, 5))
+ *   Stream(1, 2, 3).onComplete { Stream(4, 5) }
+ *     .compile()
  *     .toList().let(::println) // [1, 2, 3, 4, 5]
  * //sampleEnd
  *```
@@ -1970,12 +2006,17 @@ fun <O> Stream<O>.onComplete(s2: () -> Stream<O>): Stream<O> =
  * import arrow.fx.coroutines.stream.*
  *
  * //sampleStart
- * suspend fun main(): Unit =
- *   Stream(1, 2, 3).lastOr { 0 }
+ * suspend fun main(): Unit {
+ *   Stream(1, 2, 3)
+ *     .lastOr { 0 }
+ *     .compile()
  *     .toList().let(::println) // [3]
  *
- *   Stream.empty().lastOr { 0 }
+ *   Stream.empty<Int>()
+ *     .lastOr { 0 }
+ *     .compile()
  *     .toList().let(::println) // [0]
+ * }
  * //sampleEnd
  *```
  */
@@ -2028,6 +2069,8 @@ fun <O> Stream<O>.repartition(S: Semigroup<O>, f: (O) -> Chunk<O>): Stream<O> =
  * Filters any `null`.
  *
  * ```kotlin:ank:playground
+ * import arrow.core.Some
+ * import arrow.core.None
  * import arrow.fx.coroutines.stream.*
  *
  * //sampleStart
@@ -2052,7 +2095,7 @@ fun <O : Any> Stream<O?>.filterNull(): Stream<O> =
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream(1, 2, null, 3, null)
- *     .terminateOnNone()
+ *     .terminateOnNull()
  *     .compile()
  *     .toList()
  *     .let(::println) //[1, 2]
@@ -2079,6 +2122,8 @@ fun <O : Any> Stream<O?>.terminateOnNull(): Stream<O> =
  * Filters any [arrow.core.None].
  *
  * ```kotlin:ank:playground
+ * import arrow.core.Some
+ * import arrow.core.None
  * import arrow.fx.coroutines.stream.*
  *
  * //sampleStart
@@ -2098,6 +2143,8 @@ fun <O> Stream<Option<O>>.filterOption(): Stream<O> =
  * Halts the input stream at the first [arrow.core.None].
  *
  * ```kotlin:ank:playground
+ * import arrow.core.Some
+ * import arrow.core.None
  * import arrow.fx.coroutines.stream.*
  *
  * //sampleStart
@@ -2223,6 +2270,7 @@ fun <O> Stream<O>.intersperse(separator: O): Stream<O> =
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3).append { Stream(4, 5, 6) }
+ *     .compile()
  *     .toList().let(::println) // [1, 2, 3, 4, 5, 6]
  * //sampleEnd
  *```
@@ -2239,6 +2287,7 @@ fun <O> Stream<O>.append(s2: () -> Stream<O>): Stream<O> =
  * //sampleStart
  * suspend fun main(): Unit =
  *   (Chunk(-1, 0) prependTo Stream(1, 2, 3))
+ *   .compile()
  *   .toList().let(::println) // [-1, 0, 1, 2, 3]
  * //sampleEnd
  * ```
@@ -2255,7 +2304,8 @@ infix fun <O> Chunk<O>.prependTo(s: Stream<O>): Stream<O> =
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3).cons(Chunk(-1, 0))
- *   .toList().let(::println) // [-1, 0, 1, 2, 3]
+ *     .compile()
+ *     .toList().let(::println) // [-1, 0, 1, 2, 3]
  * //sampleEnd
  * ```
  */
@@ -2271,6 +2321,7 @@ fun <O> Stream<O>.cons(c: Chunk<O>): Stream<O> =
  * //sampleStart
  * suspend fun main(): Unit =
  *   (0 prependTo Stream(1, 2, 3))
+ *   .compile()
  *   .toList().let(::println) // [0, 1, 2, 3]
  * //sampleEnd
  * ```
@@ -2286,8 +2337,10 @@ infix fun <O> O.prependTo(s: Stream<O>): Stream<O> =
  *
  * //sampleStart
  * suspend fun main(): Unit =
- *   Stream(1, 2, 3).cons1(0))
- *   .toList().let(::println) // [0, 1, 2, 3]
+ *   Stream(1, 2, 3).cons1(0)
+ *     .compile()
+ *     .toList()
+ *   .  let(::println) // [0, 1, 2, 3]
  * //sampleEnd
  * ```
  */
@@ -2305,6 +2358,7 @@ fun <O> Stream<O>.cons1(o: O): Stream<O> =
  *   Stream(1, 2, 3)
  *     .append { Stream.raiseError(RuntimeException()) }
  *     .handleErrorWith { _: Throwable -> Stream.just(0) }
+ *     .compile()
  *     .toList()
  *     .let(::println) // [1, 2, 3, 0]
  * //sampleEnd
@@ -2327,7 +2381,7 @@ fun <O> Stream<Stream<O>>.flatten(): Stream<O> =
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3, 4, 5)
- *     .scan { a, b -> a + b }
+ *     .fold1 { a, b -> a + b }
  *     .compile()
  *     .toList()
  *     .let(::println) // [15]
@@ -2358,6 +2412,7 @@ fun <O> Stream<O>.reduceSemigroup(S: Semigroup<O>): Stream<O> =
  *    equivalent to the `Stream.never`: it never terminates nor yields any value.
  *
  * ```kotlin:ank:playground
+ * import arrow.core.extensions.monoid
  * import arrow.fx.coroutines.stream.*
  *
  * //sampleStart
@@ -2386,7 +2441,8 @@ fun <O> Stream<O>.foldMonoid(MO: Monoid<O>): Stream<O> =
  *   Stream(1,2,3,4)
  *   .scan(0) { a, b -> a + b }
  *   .compile()
- *   .toList() // [0, 1, 3, 6, 10]
+ *   .toList()
+ *   .let(::println) // [0, 1, 3, 6, 10]
  * //sampleEnd
  * ```
  *
@@ -2424,12 +2480,12 @@ fun <O> Stream<O>.scanMonoid(MO: Monoid<O>): Stream<O> =
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.stream.*
- * import arrow.core.extensions.semigroup
+ * import arrow.core.extensions.monoid
  *
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream("a", "aa", "aaa", "aaaa")
- *     .scanMap(Int.monoid()) { it.length() }
+ *     .scanMap(Int.monoid()) { it.length }
  *     .compile()
  *     .toList()
  *     .let(::println) //[0, 1, 3, 6, 10]
@@ -2461,7 +2517,8 @@ private fun <O, O2> Pull<O, Unit>.scan_(init: O2, f: (O2, O) -> O2): Pull<O2, Un
  *   Stream(1, 2, 3, 4)
  *    .scan1 { a, b -> a + b }
  *    .compile()
- *    .toList() //[1, 3, 6, 10]
+ *    .toList()
+ *    .let(::println) //[1, 3, 6, 10]
  * //sampleEnd
  * ```
  */
@@ -2491,26 +2548,26 @@ fun <O, S, O2> Stream<O>.scanChunks(
 /**
  * More general version of `scanChunks` where the current state (i.e., `S`) can be inspected
  * to determine if another chunk should be pulled or if the stream should terminate.
- * Termination is signaled by returning `None` from `f`. Otherwise, a function which consumes
- * the next chunk is returned wrapped in `Some`.
+ * Termination is signaled by returning `null` from `f`. Otherwise, a function which consumes
+ * the next chunk.
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.stream.*
  *
  * //sampleStart
  * fun <O> Stream<O>.take(n: Int): Stream<O> =
- *   s.scanChunksOpt(n) { n ->
+ *   scanChunksOpt<O, Int, O>(n) { n ->
  *     if (n <= 0) null
- *     else { chunk ->
- *       if (chunk.size() < n) Pair(n - chunk.size(), c)
+ *     else { chunk: Chunk<O> ->
+ *       if (chunk.size() < n) Pair(n - chunk.size(), chunk)
  *       else Pair(0, chunk.take(n))
  *     }
  *   }
  *
  * suspend fun main(): Unit =
- *   Stream.range(0,100).take(5)
+ *   Stream.range(0..100).take(5)
  *     .compile()
- *     .toList().let(::println) // [0, 1, 2, 3, 4
+ *     .toList().let(::println) // [0, 1, 2, 3, 4]
  * //sampleEnd
  * ```
  */
