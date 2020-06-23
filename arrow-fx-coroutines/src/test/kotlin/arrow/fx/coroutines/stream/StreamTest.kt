@@ -737,9 +737,9 @@ class StreamTest : StreamSpec(spec = {
     "interrupted effect is cancelled" {
       val latch = Promise<Unit>()
 
-      timeOutOrNull(5.milliseconds) {
+      timeOutOrNull(500.milliseconds) {
         Stream.effect { guarantee(latch::get) { latch.complete(Unit) } }
-          .interruptAfter(200.milliseconds)
+          .interruptAfter(50.milliseconds)
           .compile()
           .drain()
 
@@ -805,21 +805,17 @@ class StreamTest : StreamSpec(spec = {
       latch.get()
       fiber.cancel()
 
-      timeOutOrNull(50.milliseconds) {
-        stop.get()
-      } shouldBe ExitCase.Cancelled
+      stop.get() shouldBe ExitCase.Cancelled
     }
   }
 
   "parJoin" - {
     "no concurrency" {
       checkAll(Arb.stream(Arb.int())) { s ->
-        timeOutOrNull(50.milliseconds) {
-          s.map { Stream.just(it) }
-            .parJoin(1)
-            .compile()
-            .toList()
-        } shouldBe s.compile().toList()
+        s.map { Stream.just(it) }
+          .parJoin(1)
+          .compile()
+          .toList() shouldBe s.compile().toList()
       }
     }
   }
