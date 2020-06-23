@@ -10,6 +10,9 @@ package arrow.fx.coroutines.stream
   suspend fun toList(): List<O> =
     compiler(mutableListOf()) { acc, ch -> acc.apply { addAll(ch.toList()) } }
 
+  suspend fun toSet(): Set<O> =
+    compiler(mutableSetOf()) { acc, ch -> acc.apply { addAll(ch.toList()) } }
+
   suspend fun drain(): Unit =
     foldChunks(Unit) { _, _ -> Unit }
 
