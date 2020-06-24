@@ -14,6 +14,7 @@ import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.Semaphore
+import arrow.fx.coroutines.SideEffect
 import arrow.fx.coroutines.StreamSpec
 import arrow.fx.coroutines.assertThrowable
 import arrow.fx.coroutines.charRange
@@ -460,12 +461,15 @@ class StreamTest : StreamSpec(spec = {
       }
     }
 
-    "handleErrorWith" {
-      checkAll(Arb.throwable(), Arb.int()) { e, i ->
+    "handleErrorWith is not run for happy path" {
+      checkAll(Arb.int()) { i ->
+        val effect = SideEffect()
         Stream.just(i)
-          .handleErrorWith { Stream.empty() }
+          .handleErrorWith { Stream.effect { effect.increment() } }
           .compile()
           .toList() shouldBe listOf(i)
+
+        effect.counter shouldBe 0
       }
     }
   }
