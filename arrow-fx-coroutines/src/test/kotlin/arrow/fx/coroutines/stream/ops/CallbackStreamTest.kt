@@ -85,8 +85,7 @@ class CallbackStreamTest : StreamSpec(iterations = 250, spec = {
   "long running emission" {
     Stream.async {
       ForkAndForget {
-        countToCallback(5, { it }) { emit(it) }
-        end()
+        countToCallback(4, { it }, { emit(it) }) { end() }
       }
     }
       .compile()
@@ -158,7 +157,8 @@ class CallbackStreamTest : StreamSpec(iterations = 250, spec = {
 private fun <A> countToCallback(
   iterations: Int,
   map: (Int) -> A,
-  cb: suspend (A) -> Unit
+  cb: suspend (A) -> Unit,
+  onEnd: suspend () -> Unit = { }
 ): Unit = suspend {
   var i = 0
   arrow.fx.coroutines.repeat(Schedule.recurs(iterations)) {
@@ -166,4 +166,5 @@ private fun <A> countToCallback(
     cb(map(i))
     sleep(500.milliseconds)
   }
+  onEnd()
 }.startCoroutine(Continuation(EmptyCoroutineContext) { })
