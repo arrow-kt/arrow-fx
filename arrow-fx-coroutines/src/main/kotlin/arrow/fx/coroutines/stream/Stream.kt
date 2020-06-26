@@ -8,6 +8,8 @@ import arrow.core.Option
 import arrow.core.Some
 import arrow.core.extensions.list.foldable.foldLeft
 import arrow.core.identity
+import arrow.core.some
+import arrow.fx.coroutines.Atomic
 import arrow.fx.coroutines.ComputationPool
 import arrow.fx.coroutines.Duration
 import arrow.fx.coroutines.ExitCase
@@ -15,6 +17,7 @@ import arrow.fx.coroutines.Fiber
 import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.Resource
+import arrow.fx.coroutines.Semaphore
 import arrow.fx.coroutines.forkAndForget
 import arrow.fx.coroutines.guaranteeCase
 import arrow.fx.coroutines.prependTo
@@ -46,6 +49,45 @@ import kotlin.random.Random
    */
   fun <B> flatMap(f: (O) -> Stream<B>): Stream<B> =
     Stream(asPull.flatMapOutput { o -> f(o).asPull })
+
+  /**
+   * Like [flatMap] but interrupts the inner stream when new elements arrive in the outer stream.
+   *
+   * The implementation will try to preserve chunks like [merge].
+   *
+   * Finalizers of each inner stream are guaranteed to run before the next inner stream starts.
+   *
+   * When the outer stream stops gracefully, the currently running inner stream will continue to run.
+   *
+   * When an inner stream terminates/interrupts, nothing happens until the next element arrives
+   * in the outer stream (i.e the outer stream holds the stream open during this time or else the
+   * stream terminates).
+   *
+   * When either the inner or outer stream fails, the entire stream fails and the finalizer of the
+   * inner stream runs before the outer one.
+   */
+  fun <B> switchMap(f: (O) -> Stream<B>): Stream<B> =
+    force {
+      val guard = Semaphore(1)
+      val haltRef = Atomic<Option<Promise<Unit>>>(None)
+
+      // guard inner to prevent parallel inner streams
+      fun runInner(o: O, halt: Promise<Unit>): Stream<B> =
+        effect { guard.acquire() }
+          .flatMap { f(o).interruptWhen { Right(halt.get()) } }
+          .append { effect { guard.release() }.drain() }
+
+      this.effectMap { o ->
+        val halt = Promise<Unit>()
+        haltRef.getAndSet(halt.some())
+          .fold(ifEmpty = {
+            Unit
+          }, ifSome = {
+            it.complete(Unit)
+          })
+        runInner(o, halt)
+      }.parJoin(2)
+    }
 
   /**
    * Returns a stream of [O] values wrapped in [Either.Right] until the first error, which is emitted wrapped in [Either.Left].
