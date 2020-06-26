@@ -14,7 +14,6 @@ import io.kotest.property.arbitrary.bind
 import io.kotest.property.arbitrary.char
 import io.kotest.property.arbitrary.choice
 import io.kotest.property.arbitrary.constant
-import io.kotest.property.arbitrary.flatMap
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.long
 import io.kotest.property.arbitrary.map
