@@ -10,15 +10,15 @@ import arrow.fx.coroutines.milliseconds
 import arrow.fx.coroutines.parTupledN
 import arrow.fx.coroutines.sleep
 import arrow.fx.coroutines.stream.Stream
-import arrow.fx.coroutines.stream.callbackStream
-import arrow.fx.coroutines.stream.cancellableCallbackStream
+import arrow.fx.coroutines.stream.async
+import arrow.fx.coroutines.stream.asyncCancellable
 import arrow.fx.coroutines.stream.chunk
 import arrow.fx.coroutines.stream.compile
 import arrow.fx.coroutines.throwable
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
-import io.kotest.property.arbitrary.filter
 import io.kotest.property.arbitrary.int
+import io.kotest.property.arbitrary.list
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
@@ -26,68 +26,75 @@ import kotlin.coroutines.startCoroutine
 class CallbackStreamTest : StreamSpec(iterations = 250, spec = {
 
   "callbackStream should be lazy" {
-    var effect = 0
-    Stream.callbackStream<Int> {
-      effect += 1
-    }
+    checkAll(Arb.int()) {
+      var effect = 0
+      Stream.async<Int> {
+        effect += 1
+      }
 
-    effect shouldBe 0
+      effect shouldBe 0
+    }
   }
 
   "emits values" {
-    Stream.callbackStream {
-      emit(1)
-      emit(2)
-      emit(3)
+    checkAll(Arb.list(Arb.int())) { list ->
+      Stream.async {
+        list.forEach { emit(it) }
+        end()
+      }
+        .compile()
+        .toList() shouldBe list
     }
-      .take(3)
-      .compile()
-      .toList() shouldBe listOf(1, 2, 3)
   }
 
   "emits varargs" {
-    Stream.callbackStream {
-      emit(1, 2, 3)
+    checkAll(Arb.list(Arb.int())) { list ->
+      Stream.async {
+        emit(*list.toTypedArray())
+        end()
+      }
+        .compile()
+        .toList() shouldBe list
     }
-      .take(3)
-      .compile()
-      .toList() shouldBe listOf(1, 2, 3)
   }
 
   "emits iterable" {
-    Stream.callbackStream<Int> {
-      emit(listOf(1, 2, 3))
+    checkAll(Arb.list(Arb.int())) { list ->
+      Stream.async<Int> {
+        emit(list)
+        end()
+      }
+        .compile()
+        .toList() shouldBe list
     }
-      .take(3)
-      .compile()
-      .toList() shouldBe listOf(1, 2, 3)
   }
 
   "emits chunks" {
-    checkAll(Arb.chunk(Arb.int()).filter { it.isNotEmpty() }, Arb.chunk(Arb.int()).filter { it.isNotEmpty() }) { ch, ch2 ->
-      Stream.callbackStream<Int> {
+    checkAll(Arb.chunk(Arb.int()), Arb.chunk(Arb.int())) { ch, ch2 ->
+      Stream.async<Int> {
         emit(ch)
         emit(ch2)
         end()
       }
-        .chunks().compile()
+        .chunks()
+        .compile()
         .toList() shouldBe listOf(ch, ch2)
     }
   }
 
   "long running emission" {
-    Stream.callbackStream {
+    Stream.async {
       ForkAndForget {
         countToCallback(5, { it }) { emit(it) }
+        end()
       }
     }
-      .take(5)
       .compile()
       .toList() shouldBe listOf(1, 2, 3, 4, 5)
   }
 
   "emits and completes" {
-    Stream.callbackStream {
+    Stream.async {
       emit(1)
       emit(2)
       emit(3)
@@ -99,7 +106,7 @@ class CallbackStreamTest : StreamSpec(iterations = 250, spec = {
 
   "forwards errors" {
     checkAll(Arb.throwable()) { e ->
-      val s = Stream.callbackStream<Int> {
+      val s = Stream.async<Int> {
         throw e
       }
         .compile()
@@ -115,7 +122,7 @@ class CallbackStreamTest : StreamSpec(iterations = 250, spec = {
       val latch = Promise<Unit>()
       var effect = 0
 
-      val s = Stream.cancellableCallbackStream<Int> {
+      val s = Stream.asyncCancellable<Int> {
         CancelToken { effect += 1 }
       }
 
@@ -137,7 +144,7 @@ class CallbackStreamTest : StreamSpec(iterations = 250, spec = {
   "doesn't run cancel token without cancellation" {
     var effect = 0
 
-    Stream.cancellableCallbackStream<Int> {
+    Stream.asyncCancellable<Int> {
       end()
       CancelToken { effect += 1 }
     }
@@ -146,7 +153,6 @@ class CallbackStreamTest : StreamSpec(iterations = 250, spec = {
 
     effect shouldBe 0
   }
-
 })
 
 private fun <A> countToCallback(
@@ -158,5 +164,6 @@ private fun <A> countToCallback(
   arrow.fx.coroutines.repeat(Schedule.recurs(iterations)) {
     i += 1
     cb(map(i))
+    sleep(500.milliseconds)
   }
 }.startCoroutine(Continuation(EmptyCoroutineContext) { })

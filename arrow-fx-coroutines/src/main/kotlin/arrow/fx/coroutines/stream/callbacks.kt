@@ -11,6 +11,8 @@ import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
 import kotlin.experimental.ExperimentalTypeInference
 
+private object END
+
 interface EmitterSyntax<A> {
   fun emit(a: A): Unit
   fun emit(chunk: Chunk<A>): Unit
@@ -27,7 +29,7 @@ interface EmitterSyntax<A> {
  *
  * //sampleStart
  * suspend fun main(): Unit =
- *   Stream.callbackStream {
+ *   Stream.async {
  *       emit(1)
  *       emit(2, 3, 4)
  *       end()
@@ -41,22 +43,21 @@ interface EmitterSyntax<A> {
  * Note that if neither `end()`, `emit(Chunk.empty())` nor other limit operators such as `take(N)` are called,
  * then the Stream will never end.
  */
-//@OptIn(ExperimentalTypeInference::class) in 1.3.70
+// @OptIn(ExperimentalTypeInference::class) in 1.3.70
 @UseExperimental(ExperimentalTypeInference::class)
-fun <A> Stream.Companion.callbackStream(@BuilderInference f: suspend EmitterSyntax<A>.() -> Unit): Stream<A> =
-  Stream.cancellableCallbackStream(f.andThen { CancelToken.unit })
-
-
+fun <A> Stream.Companion.async(@BuilderInference f: suspend EmitterSyntax<A>.() -> Unit): Stream<A> =
+  Stream.asyncCancellable(f.andThen { CancelToken.unit })
 
 /**
  * Creates a Stream from the given suspended block that will evaluate the passed CancelToken if cancelled.
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.stream.*
+ * import arrow.fx.coroutines.CancelToken
  *
  * //sampleStart
  * suspend fun main(): Unit =
- *   Stream.callbackStream {
+ *   Stream.asyncCancellable {
  *       emit(1)
  *       emit(2, 3, 4)
  *       end()
@@ -71,23 +72,23 @@ fun <A> Stream.Companion.callbackStream(@BuilderInference f: suspend EmitterSynt
  * Note that if neither `end()`, `emit(Chunk.empty())` nor other limit operators such as `take(N)` are called,
  * then the Stream will never end.
  */
-//@OptIn(ExperimentalTypeInference::class) in 1.3.70
+// @OptIn(ExperimentalTypeInference::class) in 1.3.70
 @UseExperimental(ExperimentalTypeInference::class)
-fun <A> Stream.Companion.cancellableCallbackStream(@BuilderInference f: suspend EmitterSyntax<A>.() -> CancelToken): Stream<A> =
+fun <A> Stream.Companion.asyncCancellable(@BuilderInference f: suspend EmitterSyntax<A>.() -> CancelToken): Stream<A> =
   effect {
-    val q = Queue.unbounded<Chunk<A>>()
+    val q = Queue.unbounded<Any?>()
     val error = UnsafePromise<Throwable>()
 
     val cancel = emitterCallback(f) { value ->
       suspend {
         q.enqueue1(value)
-        //TODO shall we consider emitting from different contexts? Might serve as an observeOn in RxJava
-      }.startCoroutine(Continuation(EmptyCoroutineContext) { r -> r.fold({ Unit }, { e -> error.complete(Result.success(e)) })  })
+        // TODO shall we consider emitting from different contexts? Might serve as an observeOn in RxJava
+      }.startCoroutine(Continuation(EmptyCoroutineContext) { r -> r.fold({ Unit }, { e -> error.complete(Result.success(e)) }) })
     }
 
-    q.dequeue()
+    (q.dequeue()
       .interruptWhen { Either.Left(error.join()) }
-      .terminateOn { it == Chunk.empty<A>() }
+      .terminateOn { it === END } as Stream<Chunk<A>>)
       .flatMap(::chunk)
       .onFinalizeCase {
         when (it) {
@@ -98,7 +99,7 @@ fun <A> Stream.Companion.cancellableCallbackStream(@BuilderInference f: suspend 
 
 private suspend fun <A> emitterCallback(
   f: suspend EmitterSyntax<A>.() -> CancelToken,
-  cb: (Chunk<A>) -> Unit
+  cb: (Any?) -> Unit
 ): CancelToken =
   object : EmitterSyntax<A> {
     override fun emit(a: A) {
@@ -118,6 +119,6 @@ private suspend fun <A> emitterCallback(
     }
 
     override fun end() {
-      cb(Chunk.empty())
+      cb(END)
     }
   }.f()
