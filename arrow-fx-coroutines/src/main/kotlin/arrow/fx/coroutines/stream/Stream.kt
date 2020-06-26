@@ -2099,7 +2099,7 @@ fun <O : Any> Stream<O?>.filterNull(): Stream<O> =
  * //sampleEnd
  * ```
  */
-fun <O : Any> Stream<O?>.terminateOnNull(): Stream<O> =
+fun <O> Stream<O>.terminateOnNull(): Stream<O> =
   terminateOn { it == null }
 
 /**

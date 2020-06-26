@@ -19,11 +19,58 @@ interface EmitterSyntax<A> {
   fun end(): Unit
 }
 
+/**
+ * Creates a Stream from the given suspended block.
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.stream.*
+ *
+ * //sampleStart
+ * suspend fun main(): Unit =
+ *   Stream.callbackStream {
+ *       emit(1)
+ *       emit(2, 3, 4)
+ *       end()
+ *     }
+ *     .compile()
+ *     .toList()
+ *     .let(::println) //[1, 2, 3, 4]
+ * //sampleEnd
+ * ```
+ *
+ * Note that if neither `end()`, `emit(Chunk.empty())` nor other limit operators such as `take(N)` are called,
+ * then the Stream will never end.
+ */
 //@OptIn(ExperimentalTypeInference::class) in 1.3.70
 @UseExperimental(ExperimentalTypeInference::class)
 fun <A> Stream.Companion.callbackStream(@BuilderInference f: suspend EmitterSyntax<A>.() -> Unit): Stream<A> =
   Stream.cancellableCallbackStream(f.andThen { CancelToken.unit })
 
+
+
+/**
+ * Creates a Stream from the given suspended block that will evaluate the passed CancelToken if cancelled.
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.stream.*
+ *
+ * //sampleStart
+ * suspend fun main(): Unit =
+ *   Stream.callbackStream {
+ *       emit(1)
+ *       emit(2, 3, 4)
+ *       end()
+ *       CancelToken { /* cancel subscription to callback */ }
+ *     }
+ *     .compile()
+ *     .toList()
+ *     .let(::println) //[1, 2, 3, 4]
+ * //sampleEnd
+ * ```
+ *
+ * Note that if neither `end()`, `emit(Chunk.empty())` nor other limit operators such as `take(N)` are called,
+ * then the Stream will never end.
+ */
 //@OptIn(ExperimentalTypeInference::class) in 1.3.70
 @UseExperimental(ExperimentalTypeInference::class)
 fun <A> Stream.Companion.cancellableCallbackStream(@BuilderInference f: suspend EmitterSyntax<A>.() -> CancelToken): Stream<A> =
