@@ -1027,7 +1027,7 @@ import kotlin.random.Random
   }
 
   /**
-   * Determinsitically zips elements, terminating when the end of either branch is reached naturally.
+   * Deterministically zips elements, terminating when the end of either branch is reached naturally.
    *
    * ```kotlin:ank:playground
    * import arrow.fx.coroutines.stream.*
@@ -1059,7 +1059,7 @@ import kotlin.random.Random
     zipWith(that) { x, _ -> x }
 
   /**
-   * Determinsitically zips elements using the specified function,
+   * Deterministically zips elements using the specified function,
    * terminating when the end of either branch is reached naturally.
    *
    * ```kotlin:ank:playground
@@ -1332,13 +1332,13 @@ import kotlin.random.Random
    * Run the supplied effectful action at the end of this stream, regardless of how the stream terminates.
    */
   fun onFinalize(f: suspend () -> Unit): Stream<O> =
-    bracket({ Unit }, { f.invoke() }).flatMap { this }
+    bracket({ Unit }, { f() }).flatMap { this }
 
   /**
    * Like [onFinalize] but provides the reason for finalization as an `ExitCase`.
    */
   fun onFinalizeCase(f: suspend (ExitCase) -> Unit): Stream<O> =
-    Stream.bracketCase({ Unit }) { _, ec -> f(ec) }.flatMap { this }
+    bracketCase({ Unit }) { _, ec -> f(ec) }.flatMap { this }
 
   /**
    * Interrupts the stream, when `haltOnSignal` finishes its evaluation.
@@ -1360,9 +1360,9 @@ import kotlin.random.Random
   /**
    * Introduces an explicit scope.
    *
-   * Scopes are normally introduced automatically, when using `bracket` or xsimilar
+   * Scopes are normally introduced automatically, when using `bracket` or similar
    * operations that acquire resources and run finalizers. Manual scope introduction
-   * is useful when using [onFinalizeWeak]/[onFinalizeCaseWeak], where no scope
+   * is useful when using [bracketWeak]/[bracketCaseWeak], where no scope
    * is introduced.
    */
   fun scope(): Stream<O> =
@@ -1898,7 +1898,7 @@ import kotlin.random.Random
 }
 
 /**
- * Determinsitically zips elements, terminating when the ends of both branches
+ * Deterministically zips elements, terminating when the ends of both branches
  * are reached naturally, padding the left branch with `pad1` and padding the right branch
  * with `pad2` as necessary.
  *
@@ -1918,7 +1918,7 @@ fun <O, B> Stream<O>.zipAll(that: Stream<B>, pad1: O, pad2: B): Stream<Pair<O, B
   zipAllWith(that, pad1, pad2, ::Pair)
 
 /**
- * Determinsitically zips elements with the specified function, terminating
+ * Deterministically zips elements with the specified function, terminating
  * when the ends of both branches are reached naturally, padding the left
  * branch with `pad1` and padding the right branch with `pad2` as necessary.
  *
@@ -2100,12 +2100,31 @@ fun <O : Any> Stream<O?>.filterNull(): Stream<O> =
  * ```
  */
 fun <O : Any> Stream<O?>.terminateOnNull(): Stream<O> =
+  terminateOn { it == null }
+
+/**
+ * Halts the input stream when the condition is true.
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.stream.*
+ *
+ * //sampleStart
+ * suspend fun main(): Unit =
+ *   Stream(1, 2, 3, 4)
+ *     .terminateOn { it == 3 }
+ *     .compile()
+ *     .toList()
+ *     .let(::println) //[1, 2]
+ * //sampleEnd
+ * ```
+ */
+fun <O> Stream<O>.terminateOn(terminator: (O) -> Boolean): Stream<O> =
   asPull.repeat { pull ->
     pull.unconsOrNull().flatMap { uncons ->
       when (uncons) {
         null -> Pull.just(null)
         else -> {
-          when (val idx = uncons.head.indexOfFirst { it == null }) {
+          when (val idx = uncons.head.indexOfFirst(terminator)) {
             0 -> Pull.just(null)
             null -> Pull.output<O>(uncons.head.map { it!! }).map { uncons.tail }
             else -> Pull.output(uncons.head.take(idx).map { it!! }).map { null }
@@ -2170,6 +2189,10 @@ fun <O> Stream<Option<O>>.terminateOnNone(): Stream<O> =
     }
   }.stream()
 
+/**
+ * Wraps the inner values in Option as Some and adds an None at the end of the Stream to signal completion.
+ * Note that this doesn't actually limit an infinite stream.
+ */
 fun <O> Stream<O>.noneTerminate(): Stream<Option<O>> =
   map { Some(it) }.append { Stream.just(None) }
 
@@ -2185,7 +2208,7 @@ fun <O> emptyStream(): Stream<O> =
   Stream.empty()
 
 /**
- * Determinsitically interleaves elements, starting on the left, terminating when the end of either branch is reached naturally.
+ * Deterministically interleaves elements, starting on the left, terminating when the end of either branch is reached naturally.
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.stream.*
@@ -2204,7 +2227,7 @@ fun <O> Stream<O>.interleave(that: Stream<O>): Stream<O> =
   zip(that).flatMap { (o1, o2) -> Stream(o1, o2) }
 
 /**
- * Determinsitically interleaves elements, starting on the left, terminating when the ends of both branches are reached naturally.
+ * Deterministically interleaves elements, starting on the left, terminating when the ends of both branches are reached naturally.
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.stream.*

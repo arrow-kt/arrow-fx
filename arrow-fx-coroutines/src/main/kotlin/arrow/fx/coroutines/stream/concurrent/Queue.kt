@@ -134,8 +134,8 @@ interface Queue<A> : Enqueue<A>, Dequeue1<A>, Dequeue<A> {
     suspend fun <A> bounded(maxSize: Int): Queue<A> =
       fromStrategy(Strategy.boundedFifo(maxSize))
 
-    /** Creates a FILO queue with the specified size bound. */
-    suspend fun <A> boundedLife(maxSize: Int): Queue<A> =
+    /** Creates a LIFO queue with the specified size bound. */
+    suspend fun <A> boundedLifo(maxSize: Int): Queue<A> =
       fromStrategy(Strategy.boundedLifo(maxSize))
 
     /** Creates a queue which stores the last `maxSize` enqueued elements and which never blocks on enqueue. */

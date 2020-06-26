@@ -1033,6 +1033,27 @@ class StreamTest : StreamSpec(spec = {
       }
     }
   }
+
+  "terminateOn" {
+    Stream(1, 2, 3, 4)
+      .terminateOn { it % 3 == 0 }
+      .compile()
+      .toList() shouldBe listOf(1, 2)
+  }
+
+  "terminateOnNull" {
+    Stream(1, 2, null, 4)
+      .terminateOnNull()
+      .compile()
+      .toList() shouldBe listOf(1, 2)
+  }
+
+  "terminateOnNone" {
+    Stream(Some(1), Some(2), None, Some(4))
+      .terminateOnNone()
+      .compile()
+      .toList() shouldBe listOf(1, 2)
+  }
 })
 
 fun <A> Arb.Companion.`null`(): Arb<A?> =
