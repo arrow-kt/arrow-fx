@@ -69,7 +69,7 @@ import kotlin.random.Random
   fun <B> switchMap(f: (O) -> Stream<B>): Stream<B> =
     force {
       val guard = Semaphore(1)
-      val haltRef = Atomic<Option<Promise<Unit>>>(None)
+      val haltRef = Atomic<Promise<Unit>?>(null)
 
       // guard inner to prevent parallel inner streams
       fun runInner(o: O, halt: Promise<Unit>): Stream<B> =
@@ -79,12 +79,7 @@ import kotlin.random.Random
 
       this.effectMap { o ->
         val halt = Promise<Unit>()
-        haltRef.getAndSet(halt.some())
-          .fold(ifEmpty = {
-            Unit
-          }, ifSome = {
-            it.complete(Unit)
-          })
+        haltRef.getAndSet(halt)?.complete(Unit)
         runInner(o, halt)
       }.parJoin(2)
     }
