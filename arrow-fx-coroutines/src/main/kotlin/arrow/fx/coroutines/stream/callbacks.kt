@@ -2,12 +2,16 @@ package arrow.fx.coroutines.stream
 
 import arrow.core.Either
 import arrow.fx.coroutines.CancelToken
-import arrow.fx.coroutines.ComputationPool
 import arrow.fx.coroutines.ExitCase
+import arrow.fx.coroutines.ForkAndForget
+import arrow.fx.coroutines.ForkConnected
+import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.UnsafePromise
 import arrow.fx.coroutines.andThen
+import arrow.fx.coroutines.guaranteeCase
 import arrow.fx.coroutines.stream.concurrent.Queue
 import kotlin.coroutines.Continuation
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
 import kotlin.experimental.ExperimentalTypeInference
 
@@ -40,7 +44,7 @@ interface EmitterSyntax<A> {
  * //sampleEnd
  * ```
  *
- * Note that if neither `end()`, `emit(Chunk.empty())` nor other limit operators such as `take(N)` are called,
+ * Note that if neither `end()` nor other limit operators such as `take(N)` are called,
  * then the Stream will never end.
  */
 // @OptIn(ExperimentalTypeInference::class) in 1.3.70
@@ -69,21 +73,20 @@ fun <A> Stream.Companion.async(@BuilderInference f: suspend EmitterSyntax<A>.() 
  * //sampleEnd
  * ```
  *
- * Note that if neither `end()`, `emit(Chunk.empty())` nor other limit operators such as `take(N)` are called,
+ * Like [async], if neither `end()` nor other limit operators such as `take(N)` are called,
  * then the Stream will never end.
+ *
+ * Note that if any of the emissions
  */
 // @OptIn(ExperimentalTypeInference::class) in 1.3.70
 @UseExperimental(ExperimentalTypeInference::class)
 fun <A> Stream.Companion.cancellable(@BuilderInference f: suspend EmitterSyntax<A>.() -> CancelToken): Stream<A> =
-  effect {
+  force {
     val q = Queue.unbounded<Any?>()
     val error = UnsafePromise<Throwable>()
+    val cancel = Promise<CancelToken>()
 
-    val cancel = emitterCallback(f) { value ->
-      suspend {
-        q.enqueue1(value)
-      }.startCoroutine(Continuation(ComputationPool) { r -> r.fold({ Unit }, { e -> error.complete(Result.success(e)) }) })
-    }
+    ForkConnected { emitterCallback(f, cancel, error, q) }
 
     (q.dequeue()
       .interruptWhen { Either.Left(error.join()) }
@@ -91,16 +94,26 @@ fun <A> Stream.Companion.cancellable(@BuilderInference f: suspend EmitterSyntax<
       .flatMap(::chunk)
       .onFinalizeCase {
         when (it) {
-          is ExitCase.Cancelled -> cancel.cancel.invoke()
+          is ExitCase.Cancelled -> cancel.get().cancel.invoke()
         }
       }
-  }.flatten()
+  }
 
 private suspend fun <A> emitterCallback(
   f: suspend EmitterSyntax<A>.() -> CancelToken,
-  cb: (Any?) -> Unit
-): CancelToken =
-  object : EmitterSyntax<A> {
+  cancel: Promise<CancelToken>,
+  error: UnsafePromise<Throwable>,
+  q: Queue<Any?>
+): Unit {
+  val cb = { ch: Any? ->
+    suspend {
+      q.enqueue1(ch)
+    }.startCoroutine(Continuation(EmptyCoroutineContext) { r ->
+      r.fold({ Unit }, { e -> error.complete(Result.success(e)) })
+    })
+  }
+
+  val emitter = object : EmitterSyntax<A> {
     override fun emit(a: A) {
       emit(Chunk.just(a))
     }
@@ -120,4 +133,14 @@ private suspend fun <A> emitterCallback(
     override fun end() {
       cb(END)
     }
-  }.f()
+  }
+
+  guaranteeCase({
+    val cancelT = emitter.f()
+    cancel.complete(cancelT)
+  }, { exit ->
+    when (exit) {
+      is ExitCase.Failure -> error.complete(Result.success(exit.failure))
+    }
+  })
+}
