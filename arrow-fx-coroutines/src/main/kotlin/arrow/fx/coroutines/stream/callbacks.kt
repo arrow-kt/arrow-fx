@@ -46,7 +46,7 @@ interface EmitterSyntax<A> {
 // @OptIn(ExperimentalTypeInference::class) in 1.3.70
 @UseExperimental(ExperimentalTypeInference::class)
 fun <A> Stream.Companion.async(@BuilderInference f: suspend EmitterSyntax<A>.() -> Unit): Stream<A> =
-  Stream.asyncCancellable(f.andThen { CancelToken.unit })
+  Stream.cancellable(f.andThen { CancelToken.unit })
 
 /**
  * Creates a Stream from the given suspended block that will evaluate the passed CancelToken if cancelled.
@@ -57,7 +57,7 @@ fun <A> Stream.Companion.async(@BuilderInference f: suspend EmitterSyntax<A>.() 
  *
  * //sampleStart
  * suspend fun main(): Unit =
- *   Stream.asyncCancellable {
+ *   Stream.cancellable {
  *       emit(1)
  *       emit(2, 3, 4)
  *       end()
@@ -74,7 +74,7 @@ fun <A> Stream.Companion.async(@BuilderInference f: suspend EmitterSyntax<A>.() 
  */
 // @OptIn(ExperimentalTypeInference::class) in 1.3.70
 @UseExperimental(ExperimentalTypeInference::class)
-fun <A> Stream.Companion.asyncCancellable(@BuilderInference f: suspend EmitterSyntax<A>.() -> CancelToken): Stream<A> =
+fun <A> Stream.Companion.cancellable(@BuilderInference f: suspend EmitterSyntax<A>.() -> CancelToken): Stream<A> =
   effect {
     val q = Queue.unbounded<Any?>()
     val error = UnsafePromise<Throwable>()

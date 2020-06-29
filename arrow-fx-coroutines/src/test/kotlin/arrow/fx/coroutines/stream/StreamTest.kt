@@ -768,7 +768,7 @@ class StreamTest : StreamSpec(spec = {
             when (uncons1) {
               null -> Pull.output1(acc)
               else -> Pull.output1(uncons1.head)
-                .append { loop(acc + uncons1.head, uncons1.tail) }
+                .flatMap { loop(acc + uncons1.head, uncons1.tail) }
             }
           }
 
@@ -776,7 +776,7 @@ class StreamTest : StreamSpec(spec = {
       }
 
       Stream.iterate(0, Int::inc)
-        .flatMap { Stream(it).delayBy(10.milliseconds) }
+        .flatMap { Stream(it).delayBy(20.milliseconds) }
         .interruptWhen { Right(sleep(150.milliseconds)) }
         .through(p)
         .compile()

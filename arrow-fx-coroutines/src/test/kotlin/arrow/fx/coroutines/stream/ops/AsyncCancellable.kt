@@ -11,7 +11,7 @@ import arrow.fx.coroutines.parTupledN
 import arrow.fx.coroutines.sleep
 import arrow.fx.coroutines.stream.Stream
 import arrow.fx.coroutines.stream.async
-import arrow.fx.coroutines.stream.asyncCancellable
+import arrow.fx.coroutines.stream.cancellable
 import arrow.fx.coroutines.stream.chunk
 import arrow.fx.coroutines.stream.compile
 import arrow.fx.coroutines.throwable
@@ -23,9 +23,9 @@ import kotlin.coroutines.Continuation
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
 
-class CallbackStreamTest : StreamSpec(iterations = 250, spec = {
+class AsyncCancellable : StreamSpec(iterations = 250, spec = {
 
-  "callbackStream should be lazy" {
+  "should be lazy" {
     checkAll(Arb.int()) {
       var effect = 0
       Stream.async<Int> {
@@ -121,7 +121,7 @@ class CallbackStreamTest : StreamSpec(iterations = 250, spec = {
       val latch = Promise<Unit>()
       var effect = 0
 
-      val s = Stream.asyncCancellable<Int> {
+      val s = Stream.cancellable<Int> {
         CancelToken { effect += 1 }
       }
 
@@ -143,7 +143,7 @@ class CallbackStreamTest : StreamSpec(iterations = 250, spec = {
   "doesn't run cancel token without cancellation" {
     var effect = 0
 
-    Stream.asyncCancellable<Int> {
+    Stream.cancellable<Int> {
       end()
       CancelToken { effect += 1 }
     }
