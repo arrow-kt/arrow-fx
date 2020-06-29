@@ -2,12 +2,12 @@ package arrow.fx.coroutines.stream
 
 import arrow.core.Either
 import arrow.fx.coroutines.CancelToken
+import arrow.fx.coroutines.ComputationPool
 import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.UnsafePromise
 import arrow.fx.coroutines.andThen
 import arrow.fx.coroutines.stream.concurrent.Queue
 import kotlin.coroutines.Continuation
-import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
 import kotlin.experimental.ExperimentalTypeInference
 
@@ -82,8 +82,7 @@ fun <A> Stream.Companion.cancellable(@BuilderInference f: suspend EmitterSyntax<
     val cancel = emitterCallback(f) { value ->
       suspend {
         q.enqueue1(value)
-        // TODO shall we consider emitting from different contexts? Might serve as an observeOn in RxJava
-      }.startCoroutine(Continuation(EmptyCoroutineContext) { r -> r.fold({ Unit }, { e -> error.complete(Result.success(e)) }) })
+      }.startCoroutine(Continuation(ComputationPool) { r -> r.fold({ Unit }, { e -> error.complete(Result.success(e)) }) })
     }
 
     (q.dequeue()
