@@ -9,6 +9,7 @@ import arrow.fx.coroutines.assertThrowable
 import arrow.fx.coroutines.milliseconds
 import arrow.fx.coroutines.parTupledN
 import arrow.fx.coroutines.sleep
+import arrow.fx.coroutines.stream.Chunk
 import arrow.fx.coroutines.stream.Stream
 import arrow.fx.coroutines.stream.async
 import arrow.fx.coroutines.stream.cancellable
@@ -19,11 +20,12 @@ import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.list
+import io.kotest.property.arbitrary.map
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
 
-class AsyncCancellable : StreamSpec(iterations = 250, spec = {
+class AsyncCancellableTest : StreamSpec(iterations = 250, spec = {
 
   "should be lazy" {
     checkAll(Arb.int()) {
@@ -48,13 +50,14 @@ class AsyncCancellable : StreamSpec(iterations = 250, spec = {
   }
 
   "emits varargs" {
-    checkAll(Arb.list(Arb.int())) { list ->
+    checkAll(Arb.list(Arb.int()).map { it.toTypedArray() }) { list ->
       Stream.async {
-        emit(*list.toTypedArray())
+        emit(*list)
         end()
       }
+        .chunks()
         .compile()
-        .toList() shouldBe list
+        .toList() shouldBe listOf(Chunk(*list))
     }
   }
 
@@ -64,8 +67,9 @@ class AsyncCancellable : StreamSpec(iterations = 250, spec = {
         emit(list)
         end()
       }
+        .chunks()
         .compile()
-        .toList() shouldBe list
+        .toList() shouldBe listOf(Chunk.iterable(list))
     }
   }
 
