@@ -1,5 +1,6 @@
 package arrow.fx.coroutines.stream.ops
 
+import arrow.fx.coroutines.Atomic
 import arrow.fx.coroutines.CancelToken
 import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.Promise
@@ -8,6 +9,7 @@ import arrow.fx.coroutines.StreamSpec
 import arrow.fx.coroutines.assertThrowable
 import arrow.fx.coroutines.milliseconds
 import arrow.fx.coroutines.parTupledN
+import arrow.fx.coroutines.seconds
 import arrow.fx.coroutines.sleep
 import arrow.fx.coroutines.stream.Chunk
 import arrow.fx.coroutines.stream.Stream
@@ -30,11 +32,14 @@ class AsyncCancellableTest : StreamSpec(iterations = 250, spec = {
   "should be lazy" {
     checkAll(Arb.int()) {
       var effect = 0
-      Stream.async<Int> {
+      val s = Stream.async<Int> {
         effect += 1
+        end()
       }
 
       effect shouldBe 0
+      s.compile().drain()
+      effect shouldBe 1
     }
   }
 
@@ -96,6 +101,24 @@ class AsyncCancellableTest : StreamSpec(iterations = 250, spec = {
       .toList() shouldBe listOf(1, 2, 3, 4, 5)
   }
 
+  "parallel emission/pulling" {
+    val ref = Atomic(false)
+
+    Stream.async {
+      emit(1)
+      sleep(1.seconds)
+      emit(2)
+      ref.set(true)
+      end()
+    }
+      .effectMap {
+        if (it == 1) ref.get() shouldBe false
+        else Unit
+      }
+      .compile()
+      .drain()
+  }
+
   "emits and completes" {
     Stream.async {
       emit(1)
@@ -115,7 +138,20 @@ class AsyncCancellableTest : StreamSpec(iterations = 250, spec = {
         .compile()
 
       assertThrowable {
-        s.toList()
+        s.drain()
+      } shouldBe e
+    }
+  }
+
+  "forwards suspended errors" {
+    checkAll(Arb.throwable()) { e ->
+      val s = Stream.async<Int> {
+        suspend { throw e }
+      }
+        .compile()
+
+      assertThrowable {
+        s.drain()
       } shouldBe e
     }
   }
@@ -136,7 +172,7 @@ class AsyncCancellableTest : StreamSpec(iterations = 250, spec = {
         )
       }
 
-      parTupledN({ latch.get() }, { sleep(50.milliseconds) })
+      parTupledN({ latch.get() }, { sleep(20.milliseconds) })
 
       f.cancel()
 
