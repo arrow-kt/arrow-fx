@@ -159,7 +159,7 @@ class TimerTest : ArrowFxSpec(spec = {
       } shouldBe i
     }
   }
-  
+
   "time-out cancels the token" {
     checkAll(Arb.int()) { i ->
       val promise = Promise<Int>()
