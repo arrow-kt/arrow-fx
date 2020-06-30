@@ -8,7 +8,6 @@ import arrow.core.Option
 import arrow.core.Some
 import arrow.core.extensions.list.foldable.foldLeft
 import arrow.core.identity
-import arrow.core.some
 import arrow.fx.coroutines.Atomic
 import arrow.fx.coroutines.ComputationPool
 import arrow.fx.coroutines.Duration
