@@ -7,9 +7,28 @@ import io.kotest.property.arbitrary.bool
 import io.kotest.property.arbitrary.element
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.string
-import io.kotest.property.checkAll
+import java.util.concurrent.Executors
 
 class ParTupledNTest : ArrowFxSpec(spec = {
+
+  "parTupledN 2 returns to original context" {
+    val mapCtxName = "parTupled2"
+    val mapCtx = fromExecutor { Executors.newFixedThreadPool(2, NamedThreadFactory { mapCtxName }) }
+
+    checkAll {
+      single.zip(mapCtx).use { (single, mapCtx) ->
+        evalOn(single) {
+          threadName() shouldBe singleThreadName
+
+          val (s1, s2) = parTupledN(mapCtx, { threadName() }, { threadName() })
+
+          s1 shouldBe mapCtxName
+          s2 shouldBe mapCtxName
+          threadName() shouldBe singleThreadName
+        }
+      }
+    }
+  }
 
   "ParTupledN 2 runs in parallel" {
     checkAll(Arb.int(), Arb.int()) { a, b ->
@@ -77,6 +96,26 @@ class ParTupledNTest : ArrowFxSpec(spec = {
 
       pa.get() shouldBe Pair(a, ExitCase.Cancelled)
       r shouldBe Either.Left(e)
+    }
+  }
+
+  "parTupledN 3 returns to original context" {
+    val mapCtxName = "parTupled3"
+    val mapCtx = fromExecutor { Executors.newFixedThreadPool(3, NamedThreadFactory { mapCtxName }) }
+
+    checkAll {
+      single.zip(mapCtx).use { (single, mapCtx) ->
+        evalOn(single) {
+          threadName() shouldBe singleThreadName
+
+          val (s1, s2, s3) = parTupledN(mapCtx, { threadName() }, { threadName() }, { threadName() })
+
+          s1 shouldBe mapCtxName
+          s2 shouldBe mapCtxName
+          s3 shouldBe mapCtxName
+          threadName() shouldBe singleThreadName
+        }
+      }
     }
   }
 
