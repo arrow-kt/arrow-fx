@@ -28,11 +28,10 @@ interface EmitterSyntax<A> {
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.stream.*
- * import arrow.fx.coroutines.CancelToken
  *
  * //sampleStart
  * suspend fun main(): Unit =
- *   Stream.cancellable {
+ *   Stream.async {
  *       onCancel { /* cancel something */ }
  *       emit(1)
  *       emit(2, 3, 4)
