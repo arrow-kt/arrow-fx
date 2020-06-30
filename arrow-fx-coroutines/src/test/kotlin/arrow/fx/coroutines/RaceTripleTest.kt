@@ -34,6 +34,32 @@ class RaceTripleTest : ArrowFxSpec(spec = {
     }
   }
 
+  "race triple returns to original context on failure" {
+    val racerName = "raceTriple"
+    val racer = fromExecutor { Executors.newFixedThreadPool(3, NamedThreadFactory { racerName }) }
+
+    checkAll(Arb.int(1..3), Arb.throwable()) { choose, e ->
+      single.zip(racer).use { (single, raceCtx) ->
+        evalOn(single) {
+          threadName() shouldBe singleThreadName
+
+          Either.catch {
+            when (choose) {
+              1 -> raceTriple(raceCtx, { e.suspend() }, { never<Nothing>() }, { never<Nothing>() })
+                .fold({ a, _, _ -> a }, { _, _, _ -> null }, { _, _, _ -> null })
+              2 -> raceTriple(raceCtx, { never<Nothing>() }, { e.suspend() }, { never<Nothing>() })
+                .fold({ _, _, _ -> null }, { _, b, _ -> b }, { _, _, _ -> null })
+              else -> raceTriple(raceCtx, { never<Nothing>() }, { never<Nothing>() }, { e.suspend() })
+                .fold({ _, _, _ -> null }, { _, _, _ -> null }, { _, _, c -> c })
+            } shouldBe Either.Left(e)
+
+            threadName() shouldBe singleThreadName
+          }
+        }
+      }
+    }
+  }
+
   "race triple mirrors left winner" {
     checkAll(Arb.either(Arb.throwable(), Arb.int())) { fa ->
 

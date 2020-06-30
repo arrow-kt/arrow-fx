@@ -34,6 +34,28 @@ class RaceNTest : ArrowFxSpec(spec = {
     }
   }
 
+  "race2 returns to original context on failure" {
+    val racerName = "race2"
+    val racer = fromExecutor { Executors.newFixedThreadPool(2, NamedThreadFactory { racerName }) }
+
+    checkAll(Arb.int(1..2), Arb.throwable()) { choose, e ->
+      single.zip(racer).use { (single, raceCtx) ->
+        evalOn(single) {
+          threadName() shouldBe singleThreadName
+
+          Either.catch {
+            when (choose) {
+              1 -> raceN(raceCtx, { e.suspend() }, { never<Nothing>() }).swap().orNull()
+              else -> raceN(raceCtx, { never<Nothing>() }, { e.suspend() }).orNull()
+            }
+          } shouldBe Either.Left(e)
+
+          threadName() shouldBe singleThreadName
+        }
+      }
+    }
+  }
+
   "race2 can join first" {
     checkAll(Arb.int()) { i ->
       raceN({ i }, { never<Unit>() }) shouldBe Either.Left(i)
@@ -111,6 +133,32 @@ class RaceNTest : ArrowFxSpec(spec = {
           }
 
           racedOn shouldBe racerName
+          threadName() shouldBe singleThreadName
+        }
+      }
+    }
+  }
+
+  "race3 returns to original context on failure" {
+    val racerName = "race3"
+    val racer = fromExecutor { Executors.newFixedThreadPool(3, NamedThreadFactory { racerName }) }
+
+    checkAll(Arb.int(1..3), Arb.throwable()) { choose, e ->
+      single.zip(racer).use { (single, raceCtx) ->
+        evalOn(single) {
+          threadName() shouldBe singleThreadName
+
+          Either.catch {
+            when (choose) {
+              1 -> raceN(raceCtx, { e.suspend() }, { never<Nothing>() }, { never<Nothing>() })
+                .fold(::identity, { null }, { null })
+              2 -> raceN(raceCtx, { never<Nothing>() }, { e.suspend() }, { never<Nothing>() })
+                .fold({ null }, ::identity, { null })
+              else -> raceN(raceCtx, { never<Nothing>() }, { never<Nothing>() }, { e.suspend() })
+                .fold({ null }, { null }, ::identity)
+            }
+          } shouldBe Either.Left(e)
+
           threadName() shouldBe singleThreadName
         }
       }

@@ -30,6 +30,28 @@ class ParTupledNTest : ArrowFxSpec(spec = {
     }
   }
 
+  "parTupledN 2 returns to original context on failure" {
+    val mapCtxName = "parTupled2"
+    val mapCtx = fromExecutor { Executors.newFixedThreadPool(2, NamedThreadFactory { mapCtxName }) }
+
+    checkAll(Arb.int(1..2), Arb.throwable()) { choose, e ->
+      single.zip(mapCtx).use { (single, mapCtx) ->
+        evalOn(single) {
+          threadName() shouldBe singleThreadName
+
+          Either.catch {
+            when (choose) {
+              1 -> parTupledN(mapCtx, { e.suspend() }, { never<Nothing>() })
+              else -> parTupledN(mapCtx, { never<Nothing>() }, { e.suspend() })
+            }
+          } shouldBe Either.Left(e)
+
+          threadName() shouldBe singleThreadName
+        }
+      }
+    }
+  }
+
   "ParTupledN 2 runs in parallel" {
     checkAll(Arb.int(), Arb.int()) { a, b ->
       val r = Atomic("")
@@ -119,6 +141,29 @@ class ParTupledNTest : ArrowFxSpec(spec = {
     }
   }
 
+  "parTupledN 3 returns to original context on failure" {
+    val mapCtxName = "parTupled3"
+    val mapCtx = fromExecutor { Executors.newFixedThreadPool(3, NamedThreadFactory { mapCtxName }) }
+
+    checkAll(Arb.int(1..3), Arb.throwable()) { choose, e ->
+      single.zip(mapCtx).use { (single, mapCtx) ->
+        evalOn(single) {
+          threadName() shouldBe singleThreadName
+
+          Either.catch {
+            when (choose) {
+              1 -> parTupledN(mapCtx, { e.suspend() }, { never<Nothing>() }, { never<Nothing>() })
+              2 -> parTupledN(mapCtx, { never<Nothing>() }, { e.suspend() }, { never<Nothing>() })
+              else -> parTupledN(mapCtx, { never<Nothing>() }, { never<Nothing>() }, { e.suspend() })
+            }
+          } shouldBe Either.Left(e)
+
+          threadName() shouldBe singleThreadName
+        }
+      }
+    }
+  }
+
   "ParTupledN 3 runs in parallel" {
     checkAll(Arb.int(), Arb.int(), Arb.int()) { a, b, c ->
       val r = Atomic("")
@@ -146,9 +191,9 @@ class ParTupledNTest : ArrowFxSpec(spec = {
   }
 
   "ParTupledN 3 finishes on single thread" {
-      single.use { ctx ->
-        parTupledN(ctx, threadName, threadName, threadName)
-      } shouldBe Triple("single", "single", "single")
+    single.use { ctx ->
+      parTupledN(ctx, threadName, threadName, threadName)
+    } shouldBe Triple("single", "single", "single")
   }
 
   "Cancelling ParTupledN 3 cancels all participants" {

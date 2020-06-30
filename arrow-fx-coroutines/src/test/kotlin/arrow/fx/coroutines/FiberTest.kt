@@ -26,6 +26,24 @@ class FiberTest : ArrowFxSpec(spec = {
     }
   }
 
+  "ForkConnected returns on the original context on failure" {
+    val forkCtxName = "forkCtx"
+    val forker = singleThreadContext(forkCtxName)
+    checkAll(Arb.throwable()) { e ->
+      single.zip(forker).use { (single, forker) ->
+        evalOn(single) {
+          threadName() shouldBe singleThreadName
+
+          val f = ForkConnected(forker) { e.suspend() }
+
+          Either.catch { f.join() } shouldBe Either.Left(e)
+
+          threadName() shouldBe singleThreadName
+        }
+      }
+    }
+  }
+
   "ForkConnected get cancelled by its parent" {
     val start = Promise<Unit>()
     val p = Promise<ExitCase>()
