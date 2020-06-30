@@ -5,9 +5,34 @@ import io.kotest.assertions.fail
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
-import io.kotest.property.checkAll
+import java.util.concurrent.Executors
 
 class RaceTripleTest : ArrowFxSpec(spec = {
+
+  "race triple returns to original context" {
+    val racerName = "raceTriple"
+    val racer = fromExecutor { Executors.newFixedThreadPool(3, NamedThreadFactory { racerName }) }
+
+    checkAll(Arb.int(1..3)) { choose ->
+      single.zip(racer).use { (single, raceCtx) ->
+        evalOn(single) {
+          threadName() shouldBe singleThreadName
+
+          val racedOn = when (choose) {
+            1 -> raceTriple(raceCtx, { threadName() }, { never<Nothing>() }, { never<Nothing>() })
+              .fold({ a, _, _ -> a }, { _, _, _ -> null }, { _, _, _ -> null })
+            2 -> raceTriple(raceCtx, { never<Nothing>() }, { threadName() }, { never<Nothing>() })
+              .fold({ _, _, _ -> null }, { _, b, _ -> b }, { _, _, _ -> null })
+            else -> raceTriple(raceCtx, { never<Nothing>() }, { never<Nothing>() }, { threadName() })
+              .fold({ _, _, _ -> null }, { _, _, _ -> null }, { _, _, c -> c })
+          }
+
+          racedOn shouldBe racerName
+          threadName() shouldBe singleThreadName
+        }
+      }
+    }
+  }
 
   "race triple mirrors left winner" {
     checkAll(Arb.either(Arb.throwable(), Arb.int())) { fa ->
