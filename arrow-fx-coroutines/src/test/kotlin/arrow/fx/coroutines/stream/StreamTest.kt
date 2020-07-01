@@ -776,19 +776,21 @@ class StreamTest : StreamSpec(spec = {
           loop(0, it.asPull()).stream()
         }
 
-        val start = System.currentTimeMillis()
+        // val start = System.currentTimeMillis()
 
         Stream.iterate(0, Int::inc)
-          .flatMap { Stream(it).delayBy(10.milliseconds) }
-          .interruptWhen { Right(sleep(150.milliseconds)) }
+          .flatMap { Stream(it).delayBy(5.milliseconds) }
+          .interruptWhen { Right(sleep(200.milliseconds)) }
           .through(p)
           .compile()
-          .foldChunks(mutableListOf<Int>()) { acc, ch ->
-            println("First: $ch after ${System.currentTimeMillis() - start}")
-            acc.addAll(ch.toList())
-            acc
-          }.let { result ->
-            println("Finished: $result after ${System.currentTimeMillis() - start}")
+          // .foldChunks(mutableListOf<Int>()) { acc, ch ->
+          //   println("First: $ch after ${System.currentTimeMillis() - start}")
+          //   acc.addAll(ch.toList())
+          //   acc
+          // }
+          .toList()
+        .let { result ->
+            // println("Finished: $result after ${System.currentTimeMillis() - start}")
             result shouldBe listOfNotNull(result.firstOrNull()) + result.drop(1).filter { it != 0 }
           }
       }
