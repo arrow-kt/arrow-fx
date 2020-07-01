@@ -79,7 +79,7 @@ class ConcurrentlyTest : StreamSpec(spec = {
     }
 
     "run finalizers of background stream and properly handle exception" {
-      checkAll(Arb.stream(Arb.int()), Arb.throwable()) { s, e ->
+      io.kotest.property.checkAll(2000, Arb.stream(Arb.int()), Arb.throwable()) { s, e ->
         val runnerRun = Atomic(false)
         val finRef = Atomic<List<String>>(emptyList())
         val halt = Promise<Unit>()
