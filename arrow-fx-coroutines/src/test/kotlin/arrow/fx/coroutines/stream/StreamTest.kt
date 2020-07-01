@@ -762,28 +762,35 @@ class StreamTest : StreamSpec(spec = {
     }
 
     "if a pipe is interrupted, it will not restart evaluation" {
-      val p: Pipe<Int, Int> = Pipe {
-        fun loop(acc: Int, pull: Pull<Int, Unit>): Pull<Int, Unit> =
-          pull.uncons1OrNull().flatMap { uncons1 ->
-            when (uncons1) {
-              null -> Pull.output1(acc)
-              else -> Pull.output1(uncons1.head)
-                .flatMap { loop(acc + uncons1.head, uncons1.tail) }
+      checkAll(Arb.int(1..100)) { n ->
+        val latch = Promise<Unit>()
+
+        val p: Pipe<Int, Int> = Pipe {
+          fun loop(acc: Int, pull: Pull<Int, Unit>): Pull<Int, Unit> =
+            pull.uncons1OrNull().flatMap { uncons1 ->
+              when (uncons1) {
+                null -> Pull.output1(acc)
+                else -> Pull.output1(uncons1.head).flatMap {
+                  val stop = if (uncons1.head == n) Pull.effect { latch.complete(Unit) } else Pull.done
+                  stop.flatMap { loop(acc + uncons1.head, uncons1.tail) }
+                }
+              }
             }
-          }
 
-        loop(0, it.asPull()).stream()
-      }
-
-      Stream.iterate(0, Int::inc)
-        .flatMap { Stream(it).delayBy(10.milliseconds) }
-        .interruptWhen { Right(sleep(300.milliseconds)) }
-        .through(p)
-        .compile()
-        .toList()
-        .let { result ->
-          result shouldBe listOfNotNull(result.firstOrNull()) + result.drop(1).filter { it != 0 }
+          loop(0, it.asPull()).stream()
         }
+
+        Stream.iterate(0, Int::inc)
+          .flatMap { Stream(it).delayBy(10.milliseconds) }
+          .interruptWhen { Right(latch.get()) }
+          .through(p)
+          .compile()
+          .toList()
+          .let { result ->
+            println("$result")
+            result shouldBe listOfNotNull(result.firstOrNull()) + result.drop(1).filter { it != 0 }
+          }
+      }
     }
 
     "resume on append with pull" {
