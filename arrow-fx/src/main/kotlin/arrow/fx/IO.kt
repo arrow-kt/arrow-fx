@@ -18,6 +18,7 @@ import arrow.fx.OnCancel.Companion.CancellationException
 import arrow.fx.OnCancel.Silent
 import arrow.fx.OnCancel.ThrowCancellationException
 import arrow.fx.extensions.io.async.effectMap
+import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.internal.ForwardCancellable
 import arrow.fx.internal.IOBracket
 import arrow.fx.internal.IOFiber
@@ -1224,3 +1225,12 @@ fun <E : Throwable, A, B> IO<A>.mapEither(f: (A) -> EitherOf<E, B>): IO<B> =
  */
 fun <E : Throwable, A, B> IO<A>.effectMapEither(f: suspend (A) -> EitherOf<E, B>): IO<B> =
   effectMap(f).flattenEither()
+
+fun <A, B> IOOf<A>.repeat(schedule: Schedule<ForIO, A, B>): IO<B> =
+  repeat(IO.concurrent(), schedule).fix()
+
+fun <A, B> IOOf<A>.retry(schedule: Schedule<ForIO, Throwable, B>): IO<A> =
+  retry(IO.concurrent(), schedule).fix()
+
+fun <A> IOOf<A>.void(): IO<Unit> =
+  fix().map(mapUnit)
