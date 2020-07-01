@@ -780,7 +780,7 @@ class StreamTest : StreamSpec(spec = {
 
         Stream.iterate(0, Int::inc)
           .flatMap { Stream(it).delayBy(5.milliseconds) }
-          .interruptWhen { Right(sleep(200.milliseconds)) }
+          .interruptWhen { Right(sleep(300.milliseconds)) }
           .through(p)
           .compile()
           // .foldChunks(mutableListOf<Int>()) { acc, ch ->
