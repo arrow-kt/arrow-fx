@@ -1,6 +1,6 @@
 name: "arrow-fx: build"
 
-on: pull_request
+on: push
 
 jobs:
   arrow-fx_build:
