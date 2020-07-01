@@ -193,13 +193,15 @@ internal fun <A> Either<Throwable, A>.suspended(): suspend () -> A =
  * ```
  * @see Assertions.assertThrows
  */
-inline fun <A> assertThrowable(executable: () -> A): Throwable =
-  try {
-    val a = executable.invoke()
-    fail("Expected an exception but found: $a")
+inline fun <A> assertThrowable(executable: () -> A): Throwable {
+  val a = try {
+    executable.invoke()
   } catch (e: Throwable) {
     e
   }
+
+  return if (a is Throwable) a else fail("Expected an exception but found: $a")
+}
 
 internal suspend fun CoroutineContext.shift(): Unit =
   suspendCoroutineUninterceptedOrReturn { cont ->

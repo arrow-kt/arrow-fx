@@ -18,7 +18,6 @@ import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.forkAndForget
 import arrow.fx.coroutines.guaranteeCase
 import arrow.fx.coroutines.prependTo
-import arrow.fx.coroutines.raceN
 import arrow.fx.coroutines.stream.concurrent.Queue
 import arrow.fx.coroutines.stream.concurrent.Signal
 import arrow.typeclasses.Monoid
@@ -1328,9 +1327,9 @@ import kotlin.random.Random
    * Runs the supplied stream in the background as elements from this stream are pulled.
    *
    * The resulting stream terminates upon termination of this stream. The background stream will
-   * be interrupted at that point. Early termination of `that` does not terminate the resulting stream.
+   * be interrupted at that point. Early termination of [other] does not terminate the resulting stream.
    *
-   * Any errors that occur in either `this` or `that` stream result in the overall stream terminating
+   * Any errors that occur in either `this` or [other] stream result in the overall stream terminating
    * with an error.
    *
    * Upon finalization, the resulting stream will interrupt the background stream and wait for it to be
@@ -1361,10 +1360,7 @@ import kotlin.random.Random
           { ForkAndForget { concrrentlyRunR(other, interrupt, doneR) } },
           {
             interrupt.complete(Unit)
-            doneR.get().fold({
-              println("Hello w/ ${it}")
-              throw it
-            }, ::identity)
+            doneR.get().fold({ throw it }, ::identity)
           }
         ).flatMap { this.interruptWhen { Either.catch { interrupt.get() } } }
       }
@@ -1380,6 +1376,7 @@ import kotlin.random.Random
         .compile()
         .drain()
     }
+
     done.complete(r)
 
     when (r) { // interrupt only if this failed otherwise give change to `this` to finalize

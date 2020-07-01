@@ -2,8 +2,6 @@ package arrow.fx.coroutines.stream
 
 import arrow.fx.coroutines.prependTo
 import io.kotest.property.Arb
-import io.kotest.property.Gen
-import io.kotest.property.Sample
 import io.kotest.property.Shrinker
 import io.kotest.property.arbitrary.arb
 import io.kotest.property.arbitrary.bool
