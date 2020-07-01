@@ -696,11 +696,11 @@ class StreamTest : StreamSpec(spec = {
       checkAll(Arb.stream(Arb.int()), Arb.throwable()) { s, e ->
         Either.catch {
           Stream.effect { Semaphore(0) }.flatMap { semaphore ->
-              Stream(1)
-                .append { s }
-                .interruptWhen { sleep(20.milliseconds); Either.Left(e) }
-                .flatMap { Stream.effect_ { semaphore.acquire() } }
-            }
+            Stream(1)
+              .append { s }
+              .interruptWhen { sleep(20.milliseconds); Either.Left(e) }
+              .flatMap { Stream.effect_ { semaphore.acquire() } }
+          }
             .compile()
             .toList()
         } shouldBe Either.Left(e)
@@ -762,38 +762,28 @@ class StreamTest : StreamSpec(spec = {
     }
 
     "if a pipe is interrupted, it will not restart evaluation" {
-      io.kotest.property.checkAll(1000, Arb.int()) {
-        val p: Pipe<Int, Int> = Pipe {
-          fun loop(acc: Int, pull: Pull<Int, Unit>): Pull<Int, Unit> =
-            pull.uncons1OrNull().flatMap { uncons1 ->
-              when (uncons1) {
-                null -> Pull.output1(acc)
-                else -> Pull.output1(uncons1.head)
-                  .flatMap { loop(acc + uncons1.head, uncons1.tail) }
-              }
+      val p: Pipe<Int, Int> = Pipe {
+        fun loop(acc: Int, pull: Pull<Int, Unit>): Pull<Int, Unit> =
+          pull.uncons1OrNull().flatMap { uncons1 ->
+            when (uncons1) {
+              null -> Pull.output1(acc)
+              else -> Pull.output1(uncons1.head)
+                .flatMap { loop(acc + uncons1.head, uncons1.tail) }
             }
-
-          loop(0, it.asPull()).stream()
-        }
-
-        // val start = System.currentTimeMillis()
-
-        Stream.iterate(0, Int::inc)
-          .flatMap { Stream(it).delayBy(5.milliseconds) }
-          .interruptWhen { Right(sleep(300.milliseconds)) }
-          .through(p)
-          .compile()
-          // .foldChunks(mutableListOf<Int>()) { acc, ch ->
-          //   println("First: $ch after ${System.currentTimeMillis() - start}")
-          //   acc.addAll(ch.toList())
-          //   acc
-          // }
-          .toList()
-        .let { result ->
-            // println("Finished: $result after ${System.currentTimeMillis() - start}")
-            result shouldBe listOfNotNull(result.firstOrNull()) + result.drop(1).filter { it != 0 }
           }
+
+        loop(0, it.asPull()).stream()
       }
+
+      Stream.iterate(0, Int::inc)
+        .flatMap { Stream(it).delayBy(10.milliseconds) }
+        .interruptWhen { Right(sleep(300.milliseconds)) }
+        .through(p)
+        .compile()
+        .toList()
+        .let { result ->
+          result shouldBe listOfNotNull(result.firstOrNull()) + result.drop(1).filter { it != 0 }
+        }
     }
 
     "resume on append with pull" {
