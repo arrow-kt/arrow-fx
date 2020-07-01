@@ -13,6 +13,7 @@ import arrow.core.some
 import arrow.core.test.concurrency.SideEffect
 import arrow.core.test.laws.SemigroupKLaws
 import arrow.fx.IO.Companion.just
+import arrow.fx.extensions.concurrent
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.applicative.applicative
 import arrow.fx.extensions.io.async.async
@@ -272,7 +273,7 @@ class IOTest : ArrowFxSpec() {
     "should flatten Either correctly for exception" {
       val error = RuntimeException("failed")
 
-      val run = just(Either.left(error)).flattenEither().unsafeRunSyncEither()
+      val run = just(Either.left(error)).flattenEither().attempt().unsafeRunSync()
 
       run shouldBe Either.left(error)
     }
@@ -280,16 +281,16 @@ class IOTest : ArrowFxSpec() {
     "should create success IO from effect producing Either" {
       suspend fun hello() = Either.catch { "hello" }
 
-      val run = IO.effectEither { hello() }.unsafeRunSyncEither()
+      val run = IO.effectEither { hello() }.unsafeRunSync()
 
-      run shouldBe Either.right("hello")
+      run shouldBe "hello"
     }
 
     "should create error IO from effect producing Either" {
       val error = Throwable()
       val failFun = suspend { Either.left(error) }
 
-      val run = IO.effectEither { failFun() }.unsafeRunSyncEither()
+      val run = IO.effectEither { failFun() }.attempt().unsafeRunSync()
 
       run shouldBe Either.left(error)
     }
@@ -297,16 +298,16 @@ class IOTest : ArrowFxSpec() {
     "transforms to success Either and flattens to success IO" {
       fun Int.increment(): Either<Throwable, Int> = Either.right(this + 1)
 
-      val run = just(1).mapEither { it.increment() }.unsafeRunSyncEither()
+      val run = just(1).mapEither { it.increment() }.unsafeRunSync()
 
-      run shouldBe Either.right(2)
+      run shouldBe 2
     }
 
     "transforms to failure Either and flattens to failure IO" {
       val error = Throwable()
       fun fail(): Either<Throwable, Int> = Either.left(error)
 
-      val run = just(1).mapEither { fail() }.unsafeRunSyncEither()
+      val run = just(1).mapEither { fail() }.attempt().unsafeRunSync()
 
       run shouldBe Either.left(error)
     }
@@ -314,16 +315,16 @@ class IOTest : ArrowFxSpec() {
     "transforms effect to success Either and flattens to success IO" {
       suspend fun Int.increment() = Either.right(this + 1)
 
-      val run = just(1).effectMapEither { it.increment() }.unsafeRunSyncEither()
+      val run = just(1).effectMapEither { it.increment() }.unsafeRunSync()
 
-      run shouldBe Either.right(2)
+      run shouldBe 2
     }
 
     "transforms effect to failure Either and flattens to failure IO" {
       val error = Throwable()
       val fail = suspend { Either.left(error) }
 
-      val run = just(1).effectMapEither { fail() }.unsafeRunSyncEither()
+      val run = just(1).effectMapEither { fail() }.attempt().unsafeRunSync()
 
       run shouldBe Either.left(error)
     }
@@ -442,8 +443,7 @@ class IOTest : ArrowFxSpec() {
         }
 
       fun makePar(num: Long) =
-        IO.concurrent()
-          .sleep((num * 100).milliseconds)
+        IO.sleep((num * 100).milliseconds)
           .map { num }.order()
 
       val result =
@@ -573,8 +573,8 @@ class IOTest : ArrowFxSpec() {
     }
 
     "IO bracket cancellation should release resource with cancel exit status" {
-      IO.fx<Nothing, ExitCase2<Throwable>> {
-        val p = Promise<ExitCase2<Throwable>>().bind()
+      IO.fx<ExitCase<Throwable>> {
+        val p = Promise<ExitCase<Throwable>>().bind()
         IO.just(0L).bracketCase(
             use = { IO.never },
             release = { _, exitCase -> p.complete(exitCase) }
@@ -589,7 +589,7 @@ class IOTest : ArrowFxSpec() {
     "Cancellable should run CancelToken" {
       IO.fx<Unit> {
         val p = !Promise<Unit>()
-        IO.cancellable<Nothing, Unit> {
+        IO.cancellable<Unit> {
             p.complete(Unit)
           }.unsafeRunAsyncCancellable { }
           .invoke()
