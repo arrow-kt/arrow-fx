@@ -1336,6 +1336,7 @@ import kotlin.random.Random
    * finalized.
    *
    * ```kotlin:ank:playground
+   * import arrow.fx.coroutines.stream.concurrent.SignallingAtomic
    * import arrow.fx.coroutines.stream.*
    *
    * //sampleStart
