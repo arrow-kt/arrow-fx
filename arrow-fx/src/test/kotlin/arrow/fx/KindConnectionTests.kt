@@ -4,7 +4,7 @@ import arrow.fx.test.eq.eq
 import arrow.fx.test.laws.shouldBeEq
 import io.kotlintest.shouldBe
 
-class IOConnectionTests : ArrowFxSpec() {
+class KindConnectionTests : ArrowFxSpec() {
 
   init {
     "cancellation is only executed once" {

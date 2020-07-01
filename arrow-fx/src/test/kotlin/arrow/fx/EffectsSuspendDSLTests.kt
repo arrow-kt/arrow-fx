@@ -6,7 +6,6 @@ import arrow.core.Right
 import arrow.core.Tuple2
 import arrow.core.identity
 import arrow.fx.internal.AtomicIntW
-import arrow.core.test.UnitSpec
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.unsafeRun.runBlocking

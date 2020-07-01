@@ -10,7 +10,6 @@ import arrow.core.Tuple3
 import arrow.core.Tuple4
 import arrow.core.right
 import arrow.core.some
-import arrow.core.test.UnitSpec
 import arrow.core.test.concurrency.SideEffect
 import arrow.core.test.laws.SemigroupKLaws
 import arrow.fx.IO.Companion.just

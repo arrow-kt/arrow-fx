@@ -8,7 +8,6 @@ import arrow.core.Tuple3
 import arrow.core.Tuple4
 import arrow.core.Tuple7
 import arrow.core.extensions.eq
-import arrow.core.test.UnitSpec
 import arrow.core.test.laws.equalUnderTheLaw
 import arrow.core.toT
 import arrow.fx.extensions.fx
