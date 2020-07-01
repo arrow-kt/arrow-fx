@@ -696,11 +696,11 @@ class StreamTest : StreamSpec(spec = {
       checkAll(Arb.stream(Arb.int()), Arb.throwable()) { s, e ->
         Either.catch {
           Stream.effect { Semaphore(0) }.flatMap { semaphore ->
-            Stream(1)
-              .append { s }
-              .interruptWhen { sleep(20.milliseconds); Either.Left(e) }
-              .flatMap { Stream.effect_ { semaphore.acquire() } }
-          }
+              Stream(1)
+                .append { s }
+                .interruptWhen { sleep(20.milliseconds); Either.Left(e) }
+                .flatMap { Stream.effect_ { semaphore.acquire() } }
+            }
             .compile()
             .toList()
         } shouldBe Either.Left(e)
@@ -777,7 +777,7 @@ class StreamTest : StreamSpec(spec = {
         }
 
         Stream.iterate(0, Int::inc)
-          .flatMap { Stream(it).delayBy(1.milliseconds) }
+          .flatMap { Stream(it).delayBy(10.milliseconds) }
           .interruptWhen { Right(sleep(50.milliseconds)) }
           .through(p)
           .compile()
