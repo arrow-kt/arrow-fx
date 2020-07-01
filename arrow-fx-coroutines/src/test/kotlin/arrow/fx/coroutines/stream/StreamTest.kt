@@ -778,7 +778,7 @@ class StreamTest : StreamSpec(spec = {
 
         Stream.iterate(0, Int::inc)
           .flatMap { Stream(it).delayBy(10.milliseconds) }
-          .interruptWhen { Right(sleep(50.milliseconds)) }
+          .interruptWhen { Right(sleep(100.milliseconds)) }
           .through(p)
           .compile()
           .toList().let { result ->
