@@ -762,7 +762,7 @@ class StreamTest : StreamSpec(spec = {
     }
 
     "if a pipe is interrupted, it will not restart evaluation" {
-      checkAll(Arb.int()) {
+      checkAll(1000, Arb.int()) {
         val p: Pipe<Int, Int> = Pipe {
           fun loop(acc: Int, pull: Pull<Int, Unit>): Pull<Int, Unit> =
             pull.uncons1OrNull().flatMap { uncons1 ->
@@ -777,7 +777,7 @@ class StreamTest : StreamSpec(spec = {
         }
 
         Stream.iterate(0, Int::inc)
-          .flatMap { Stream(it).delayBy(1.milliseconds) }
+          .flatMap { Stream(it).delayBy(5.milliseconds) }
           .interruptWhen { Right(sleep(50.milliseconds)) }
           .through(p)
           .compile()
