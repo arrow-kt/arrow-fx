@@ -49,7 +49,7 @@ In the example below, `println(a : Any): Unit` is a side effect because, every t
 
 When we denote side effects as `suspend`, the Kotlin compiler will ensure that we're not applying uncontrolled side effects in the pure environment.
 
-```kotlin:ank:playground
+```kotlin
 //sampleStart
 fun helloWorld(): String =
   "Hello World"

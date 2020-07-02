@@ -12,7 +12,7 @@ import kotlin.coroutines.startCoroutine
  * Therefore it's advised to always run on [ComputationPool] which is the default setting.
  *
  * [Environment] also has an [asyncErrorHandler] which by default redirects to [Throwable.printStackTrace],
- * no user flow errors will every be send here [CancelToken] exceptions might bubble up here when they cannot be redirect to the user.
+ * no user flow errors will ever be send here [CancelToken] exceptions might bubble up here when they cannot be redirect to the user.
  *
  * This [Environment] is meant to be used in Java frameworks, or frameworks that do not expose [suspend] edge-points.
  *
@@ -47,14 +47,15 @@ interface Environment {
     unsafeRunAsync(fa, { throw it }, { /* Finished normally */ })
 
   /**
-   * Runs and forgets the operation.
+   * Execution strategies that will immediately return and perform the program's work without blocking the current thread.
    * This operation runs uncancellable.
    */
   fun <A> unsafeRunAsync(fa: suspend () -> A, e: (Throwable) -> Unit, a: (A) -> Unit): Unit
 
   /**
-   * Runs the operation in a cancelable way
-   * Operation can be cancelled by invoking the returend [Disposable]
+   * Execution strategies that will immediately return and perform the program's work without blocking the current thread.
+   * Runs the operation [fa] in a cancellable way.
+   * Operation can be cancelled by invoking the returned [Disposable].
    */
   fun unsafeRunAsyncCancellable(fa: suspend () -> Unit): Disposable =
     unsafeRunAsyncCancellable(fa, { throw it }, { /* Finished normally */ })
