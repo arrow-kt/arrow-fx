@@ -1366,7 +1366,7 @@ import kotlin.random.Random
         ).flatMap { this.interruptWhen { Either.catch { interrupt.get() } } }
       }
 
-  private suspend fun <O> concrrentlyRunR(
+  private suspend fun <O> concurrentlyRunR(
     other: Stream<O>,
     interrupt: Promise<Unit>,
     done: Promise<Either<Throwable, Unit>>
