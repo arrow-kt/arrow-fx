@@ -112,7 +112,7 @@ class ConcurrentlyTest : StreamSpec(spec = {
         } else {
           // still the outer finalizer shall be run, but there is no failure in `s`
           finalizers shouldBe listOf("Outer")
-          r shouldBe Either.Right(Unit)
+          r shouldBe Either.Right(s.compile().toList())
         }
       }
     }
