@@ -1358,7 +1358,7 @@ import kotlin.random.Random
     effect { Pair(Promise<Unit>(), Promise<Either<Throwable, Unit>>()) }
       .flatMap { (interrupt, doneR) ->
         bracket(
-          { ForkAndForget { concrrentlyRunR(other, interrupt, doneR) } },
+          { ForkAndForget { concurrentlyRunR(other, interrupt, doneR) } },
           {
             interrupt.complete(Unit)
             doneR.get().fold({ throw it }, ::identity)
