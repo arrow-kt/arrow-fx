@@ -1,7 +1,6 @@
 rootProject.name = 'arrow-fx-lib'
 
 include 'arrow-fx'
-include 'arrow-docs'
 include 'arrow-fx-coroutines'
 include 'arrow-streams'
 include 'arrow-fx-reactor'
