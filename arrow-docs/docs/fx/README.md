@@ -119,7 +119,7 @@ suspend fun greet(): Unit {
 }
 
 fun main() { // The edge of our world
-  val env = Enviroment()
+  val env = Environment()
   env.unsafeRunSync { greet() }
 }
 //sampleEnd
