@@ -37,18 +37,18 @@ suspend fun <A> IOOf<A>.suspendCancellable(): A =
 
 /**
  * Unsafely run an [IO] and receive the values in a callback [cb] while participating in structured concurrency.
- * Equivalent of [IO.unsafeRunAsyncCancellableEither] but with its cancellation token wired to [CoroutineScope].
+ * Equivalent of [IO.unsafeRunAsyncCancellable] but with its cancellation token wired to [CoroutineScope].
  *
- * @see [IO.unsafeRunAsyncCancellableEither] for a version that returns the cancellation token instead.
+ * @see [IO.unsafeRunAsyncCancellable] for a version that returns the cancellation token instead.
  */
 fun <A> CoroutineScope.unsafeRunIO(io: IOOf<A>, cb: (Either<Throwable, A>) -> Unit): Unit =
   io.unsafeRunScoped(this, cb)
 
 /**
  * Unsafely run an [IO] and receive the values in a callback [cb] while participating in structured concurrency.
- * Equivalent of [IO.unsafeRunAsyncCancellableEither] but with its cancellation token wired to [CoroutineScope].
+ * Equivalent of [IO.unsafeRunAsyncCancellable] but with its cancellation token wired to [CoroutineScope].
  *
- * @see [IO.unsafeRunAsyncCancellableEither] for a version that returns the cancellation token instead.
+ * @see [IO.unsafeRunAsyncCancellable] for a version that returns the cancellation token instead.
  */
 fun <A> IOOf<A>.unsafeRunScoped(
   scope: CoroutineScope,

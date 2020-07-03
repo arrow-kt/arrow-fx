@@ -7,6 +7,8 @@ import io.kotlintest.shouldBe
 class IOConnectionTests : ArrowFxSpec() {
 
   init {
+    val EQ = IO.eqK().liftEq(Eq.any())
+
     "cancellation is only executed once" {
       var effect = 0
       val initial = IO { effect += 1 }
@@ -89,9 +91,9 @@ class IOConnectionTests : ArrowFxSpec() {
       c.push(initial1)
       c.push(initial2)
       c.push(initial3)
-      c.pop() shouldBe initial3
-      c.pop() shouldBe initial2
-      c.pop() shouldBe initial1
+      c.pop().shouldBeEq(initial3, EQ)
+      c.pop().shouldBeEq(initial2, EQ)
+      c.pop().shouldBeEq(initial1, EQ)
     }
 
     "pushPair" {
