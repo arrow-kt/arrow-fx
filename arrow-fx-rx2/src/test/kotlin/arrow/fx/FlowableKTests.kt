@@ -151,7 +151,7 @@ class FlowableKTests : RxJavaSpec() {
       ec shouldBe ExitCase.Cancelled
     }
 
-    "FlowableK should cancel KindConnection on dispose" {
+    "FlowableK cancellable should cancel CancelToken on dispose" {
       Promise.uncancellable<ForFlowableK, Unit>(FlowableK.async()).flatMap { latch ->
           FlowableK {
             FlowableK.cancellable<Unit>(fa = {

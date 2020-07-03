@@ -19,12 +19,6 @@ internal interface IOFrame<in A, out R> : (A) -> R {
 
   fun recover(e: Throwable): R
 
-  fun fold(value: Either<Throwable, A>): R =
-    when (value) {
-      is Either.Right -> invoke(value.b)
-      is Either.Left -> recover(value.a)
-    }
-
   companion object {
 
     internal class Redeem<A, B>(val fe: (Throwable) -> B, val fb: (A) -> B) : IOFrame<A, IO<B>> {

@@ -5,9 +5,9 @@ import arrow.fx.IO
 import arrow.fx.IOOf
 import arrow.fx.Queue
 import arrow.fx.extensions.io.concurrent.concurrent
-import arrow.fx.extensions.io.functor.unit
 import arrow.fx.extensions.io.monad.flatMap
 import arrow.fx.fix
+import arrow.fx.void
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.CompilerControl
 import org.openjdk.jmh.annotations.Fork
@@ -42,8 +42,8 @@ open class Queue {
     if (n < 1) fix() else flatMap { repeat(n - 1) }
 
   fun loop(q: Queue<ForIO, Int>): Unit =
-    q.offer(0).unit().repeat(size).flatMap {
-      q.take().unit().repeat(size)
+    q.offer(0).void().repeat(size).flatMap {
+      q.take().void().repeat(size)
     }.unsafeRunSync()
 
   @Benchmark

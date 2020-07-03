@@ -171,7 +171,7 @@ class MVarTest : ArrowFxSpec() {
           mvar.put(null).flatMap { mvar.read() }
         }
 
-        task.shouldBeEq(IO.just(null), IO.eq())
+        task.equalUnderTheLaw(IO.just(null), IO.eq())
       }
 
       "$label - take/put test is stack safe" {
@@ -183,7 +183,7 @@ class MVarTest : ArrowFxSpec() {
 
         val count = 10000
         val task = mvar.just(1).flatMap { ch -> loop(count, 0, ch) }
-        task.shouldBeEq(IO.just(count), IO.eq())
+        task.equalUnderTheLaw(IO.just(count), IO.eq())
       }
 
       "$label - stack overflow test" {
@@ -239,7 +239,7 @@ class MVarTest : ArrowFxSpec() {
           val consumerFiber = !consumer(channel, 0L).fork()
           !producerFiber.join()
           !consumerFiber.join()
-        }.shouldBeEq(IO.just(count * (count - 1) / 2), IO.eq(Long.eq()))
+        }.equalUnderTheLaw(IO.just(count * (count - 1) / 2), IO.eq(Long.eq()))
       }
 
       fun testStackSequential(channel: MVar<ForIO, Int>): Tuple3<Int, IO<Int>, IO<Unit>> {
@@ -263,7 +263,7 @@ class MVarTest : ArrowFxSpec() {
           !writes.fork()
           val r = !reads
           !effect { r shouldBe count }
-        }.shouldBeEq(IO.unit, IO.eq())
+        }.equalUnderTheLaw(IO.unit, IO.eq())
       }
 
       "$label - take is stack safe when repeated sequentially" {
@@ -274,7 +274,7 @@ class MVarTest : ArrowFxSpec() {
           !writes
           val r = !fr.join()
           !effect { r shouldBe count }
-        }.shouldBeEq(IO.unit, IO.eq())
+        }.equalUnderTheLaw(IO.unit, IO.eq())
       }
 
       "$label - concurrent take and put" {
@@ -289,7 +289,7 @@ class MVarTest : ArrowFxSpec() {
           !f1.join()
           !f2.join()
           !ref.get()
-        }.shouldBeEq(IO.just(count * 2), IO.eq())
+        }.equalUnderTheLaw(IO.just(count * 2), IO.eq())
       }
     }
 
@@ -308,7 +308,7 @@ class MVarTest : ArrowFxSpec() {
           val r1 = !mVar.take()
           val r3 = !mVar.take()
           setOf(r1, r3)
-        }.shouldBeEq(IO.just(setOf(1, 3)), IO.eq())
+        }.equalUnderTheLaw(IO.just(setOf(1, 3)), IO.eq())
       }
 
       "$label - take is cancellable" {
@@ -324,7 +324,7 @@ class MVarTest : ArrowFxSpec() {
           val r1 = !t1.join()
           val r3 = !t3.join()
           setOf(r1, r3)
-        }.shouldBeEq(IO.just(setOf(1, 3)), IO.eq())
+        }.equalUnderTheLaw(IO.just(setOf(1, 3)), IO.eq())
       }
 
       "$label - read is cancellable" {
@@ -337,13 +337,12 @@ class MVarTest : ArrowFxSpec() {
           !mVar.put(10)
           val fallback = sleep(200.milliseconds).followedBy(IO.just(0))
           val res = !IO.raceN(finished.get(), fallback)
-          !effect { res shouldBe Right(0) }
-        }.shouldBeEq(IO.unit, IO.eq())
+        }.equalUnderTheLaw(IO.just(Right(0)), IO.eq())
       }
     }
 
     tests("UncancellableMVar", MVar.factoryUncancellable(IO.async()))
-    concurrentTests("cancellableMVar", MVar.factoryCancellable(IO.concurrent()))
+    concurrentTests("CancellableMVar", MVar.factoryCancellable(IO.concurrent()))
   }
 }
 

@@ -28,7 +28,7 @@ suspend fun <A> IOOf<A>.suspendCancellable(): A =
   suspendCancellableCoroutine { cont ->
     if (cont.isActive) {
       val disposable = fix().unsafeRunAsyncCancellable { result ->
-        result.fold<Unit>(cont::resumeWithException, cont::resume)
+        result.fold(cont::resumeWithException, cont::resume)
       }
 
       cont.invokeOnCancellation { disposable() }

@@ -1102,7 +1102,7 @@ sealed class IO<out A> : IOOf<A> {
 
     companion object {
       // Internal reusable reference.
-      internal val makeUncancellable: (IOConnection) -> IOConnection = { KindConnection.uncancellable }
+      internal val makeUncancellable: (IOConnection) -> IOConnection = { IOConnection.uncancellable }
 
       internal val disableUncancellable: (Any?, Throwable?, IOConnection, IOConnection) -> IOConnection =
         { _, _, old, _ -> old }

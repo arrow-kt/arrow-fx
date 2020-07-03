@@ -143,7 +143,7 @@ class MaybeKTests : RxJavaSpec() {
       ec shouldBe ExitCase.Cancelled
     }
 
-    "MaybeK should cancel KindConnection on dispose" {
+    "MaybeK cancellable should cancel CancelToken on dispose" {
       Promise.uncancellable<ForMaybeK, Unit>(MaybeK.async()).flatMap { latch ->
         MaybeK {
           MaybeK.cancellable<Unit> {

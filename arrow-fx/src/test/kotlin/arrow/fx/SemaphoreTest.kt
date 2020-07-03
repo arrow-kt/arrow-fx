@@ -135,9 +135,9 @@ class SemaphoreTest : ArrowFxSpec() {
     }
 
     tests("UncancellableSemaphore") { Semaphore.uncancellable(it, IO.async()) }
-    tests("cancellableSemaphore") { Semaphore(it, IO.concurrent()) }
+    tests("CancellableSemaphore") { Semaphore(it, IO.concurrent()) }
 
-    "cancellableSemaphore - supports cancellation of acquire" {
+    "CancellableSemaphore - supports cancellation of acquire" {
       Semaphore(0, IO.concurrent()).flatMap { s ->
           s.acquire()
         }.unsafeRunAsyncCancellable { }

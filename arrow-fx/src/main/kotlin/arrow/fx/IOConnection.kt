@@ -1,46 +1,111 @@
 package arrow.fx
 
-import arrow.core.Either
+import arrow.fx.internal.JavaCancellationException
 import arrow.fx.typeclasses.Disposable
-import arrow.fx.typeclasses.ExitCase
-import arrow.fx.typeclasses.MonadDefer
+import kotlinx.atomicfu.AtomicRef
+import kotlinx.atomicfu.atomic
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
-import arrow.fx.handleErrorWith as handleErrorW
 
-fun IOConnection.toDisposable(): Disposable = { cancel().fix().unsafeRunSync() }
-typealias IOConnection = KindConnection<ForIO>
+enum class OnCancel {
+  ThrowCancellationException, Silent;
+
+  companion object {
+    val CancellationException = ConnectionCancellationException
+  }
+}
+
+object ConnectionCancellationException : JavaCancellationException("User cancellation")
+
+/**
+ * An UnhandledError occurs when `E` is raised during cancellation.
+ * These errors `E` will be thrown as `UnhandledError` upon cancellation.
+ */
+class UnhandledError(val error: Any?) : Throwable(message = "Encountered UnhandledError during cancellation: $error") {
+  override fun fillInStackTrace(): Throwable = this
+}
 
 internal class IOContext(val connection: IOConnection) : AbstractCoroutineContextElement(IOContext) {
   companion object Key : CoroutineContext.Key<IOContext>
 }
 
-@Suppress("UNUSED_PARAMETER", "FunctionName")
-fun IOConnection(dummy: Unit = Unit): IOConnection = KindConnection(MD) { it.fix().unsafeRunAsync { } }
+internal sealed class IOConnection {
 
-private val _uncancellable = KindConnection.uncancellable(MD)
-internal inline val KindConnection.Companion.uncancellable: IOConnection
-  inline get() = _uncancellable
+  abstract fun cancel(): IOOf<Unit>
+  abstract fun isCancelled(): Boolean
+  fun isNotCancelled(): Boolean = !isCancelled()
+  abstract fun push(token: IOOf<Unit>): Unit
+  abstract fun push(vararg token: IOOf<Unit>): Unit
+  fun pushPair(lh: IOConnection, rh: IOConnection): Unit = push(lh.cancel(), rh.cancel())
+  fun pushPair(lh: IOOf<Unit>, rh: IOOf<Unit>): Unit = push(lh, rh)
+  abstract fun pop(): IOOf<Unit>
+  abstract fun tryReactivate(): Boolean
 
-private object MD : MonadDefer<ForIO> {
-  override fun <A> defer(fa: () -> IOOf<A>): IO<A> =
-    IO.defer(fa)
+  fun toDisposable(): Disposable = {
+    cancel().fix().unsafeRunSync()
+  }
 
-  override fun <A> raiseError(e: Throwable): IO<A> =
-    IO.raiseError(e)
-
-  override fun <A> IOOf<A>.handleErrorWith(f: (Throwable) -> IOOf<A>): IO<A> =
-    handleErrorW(f)
-
-  override fun <A> just(a: A): IO<A> =
-    IO.just(a)
-
-  override fun <A, B> IOOf<A>.flatMap(f: (A) -> IOOf<B>): IO<B> =
-    fix().flatMap(f)
-
-  override fun <A, B> tailRecM(a: A, f: (A) -> IOOf<Either<A, B>>): IO<B> =
-    IO.tailRecM(a, f)
-
-  override fun <A, B> IOOf<A>.bracketCase(release: (A, ExitCase<Throwable>) -> IOOf<Unit>, use: (A) -> IOOf<B>): IO<B> =
-    fix().bracketCase(release = { a, e -> release(a, e).fix() }, use = { use(it).fix() })
+  companion object {
+    val uncancellable: IOConnection = Uncancellable
+    operator fun invoke(): IOConnection = DefaultConnection()
+  }
 }
+
+private object Uncancellable : IOConnection() {
+  override fun cancel(): IOOf<Unit> = IO.unit
+  override fun isCancelled(): Boolean = false
+  override fun push(token: IOOf<Unit>): Unit = Unit
+  override fun push(vararg token: IOOf<Unit>): Unit = Unit
+  override fun pop(): IOOf<Unit> = IO.unit
+  override fun tryReactivate(): Boolean = true
+  override fun toString(): String = "UncancellableConnection"
+}
+
+private class DefaultConnection : IOConnection() {
+  private val state: AtomicRef<List<IOOf<Unit>>?> = atomic(emptyList())
+
+  override fun cancel(): IOOf<Unit> = IO.defer {
+    state.getAndSet(null).let { stack ->
+      when {
+        stack == null || stack.isEmpty() -> IO.unit
+        else -> stack.cancelAll()
+      }
+    }
+  }
+
+  override fun isCancelled(): Boolean = state.value == null
+
+  override tailrec fun push(token: IOOf<Unit>): Unit = when (val list = state.value) {
+    // If connection is already cancelled cancel token immediately.
+    null -> token.rethrow.unsafeRunSync()
+    else ->
+      if (state.compareAndSet(list, listOf(token.rethrow) + list)) Unit
+      else push(token)
+  }
+
+  override fun push(vararg token: IOOf<Unit>): Unit =
+    push(token.toList().cancelAll())
+
+  override tailrec fun pop(): IOOf<Unit> {
+    val state = state.value
+    return when {
+      state == null || state.isEmpty() -> IO.unit
+      else ->
+        if (this.state.compareAndSet(state, state.drop(1))) state.first()
+        else pop()
+    }
+  }
+
+  override fun tryReactivate(): Boolean =
+    state.compareAndSet(null, emptyList())
+
+  private fun List<IOOf<Unit>>.cancelAll(): IOOf<Unit> = IO.defer {
+    // TODO this blocks forever if any `CancelToken<F>` doesn't terminate. Requires `fork`/`start` to avoid.
+    fold(IO.unit) { acc, f -> f.fix().flatMap { acc } }
+  }
+
+  override fun toString(): String = "IOConnection(state = ${state.value})"
+}
+
+internal val <A> IOOf<A>.rethrow: IO<A>
+  get() = handleErrorWith { t -> IO.raiseError<Nothing>(t) }

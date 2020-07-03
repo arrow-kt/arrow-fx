@@ -132,7 +132,7 @@ class SingleKTests : RxJavaSpec() {
       ec shouldBe ExitCase.Cancelled
     }
 
-    "SingleK should cancel KindConnection on dispose" {
+    "SingleK cancellable should cancel CancelToken on dispose" {
       Promise.uncancellable<ForSingleK, Unit>(SingleK.async()).flatMap { latch ->
         SingleK {
           SingleK.cancellable<Unit> {

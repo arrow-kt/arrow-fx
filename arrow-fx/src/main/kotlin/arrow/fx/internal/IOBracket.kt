@@ -126,8 +126,11 @@ internal object IOBracket {
     // Unregistering cancel token, otherwise we can have a memory leak;
     // N.B. conn.pop() happens after the evaluation of `release`, because
     // otherwise we might have a conflict with the auto-cancellation logic
-    override fun recover(e: Throwable): IO<B> = IO.ContextSwitch(applyRelease(ExitCase.Error(e)), IO.ContextSwitch.makeUncancellable, disableUncancellableAndPop)
-      .flatMap(ReleaseRecover(e))
+    override fun recover(e: Throwable): IO<B> =
+      IO.Bind(
+        IO.ContextSwitch(applyRelease(ExitCase.Error(e)), IO.ContextSwitch.makeUncancellable, disableUncancellableAndPop),
+        ReleaseRecover(e)
+      )
 
     override operator fun invoke(a: B): IO<B> =
     // Unregistering cancel token, otherwise we can have a memory leak
