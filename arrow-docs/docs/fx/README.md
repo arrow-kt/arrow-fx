@@ -101,7 +101,7 @@ Since both blocking and non-blocking execution scenarios perform side effects, w
 
 Arrow restricts the ability to run programs to extensions of the `Enviroment` type class.
 
-Usage of `unsafe` is reserved for the end of the world and may be the only impure execution of a well-typed functional program.
+Usage of unsafe runner functions (like `unsafeRunSync` in this case) is reserved for the end of the world and may be the only impure execution of a well-typed functional program.
 
 ```kotlin:ank:playground
 import arrow.fx.coroutines.*
