@@ -1,7 +1,9 @@
 package arrow.fx
 
 import arrow.fx.test.eq.eq
+import arrow.fx.test.eq.eqK
 import arrow.fx.test.laws.shouldBeEq
+import arrow.typeclasses.Eq
 import io.kotlintest.shouldBe
 
 class IOConnectionTests : ArrowFxSpec() {
