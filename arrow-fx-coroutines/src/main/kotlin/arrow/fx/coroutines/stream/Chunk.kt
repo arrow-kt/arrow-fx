@@ -143,7 +143,7 @@ abstract class Chunk<out O> {
   open fun take(n: Int): Chunk<O> =
     when {
       n <= 0 -> empty()
-      n == 1 -> just(get(0))
+      n == 1 -> fromNullable(firstOrNull())
       n >= size() -> this
       else -> array(Array<Any?>(n) { i ->
         get(i)
@@ -154,7 +154,7 @@ abstract class Chunk<out O> {
   fun takeLast(n: Int): Chunk<O> =
     when {
       n <= 0 -> empty()
-      n == 1 -> just(get(size() - 1))
+      n == 1 -> fromNullable(lastOrNull())
       else -> {
         val size = size()
         if (n >= size) this
