@@ -96,7 +96,6 @@ suspend fun greet(): Unit {
 
 The `greet` program is ready to run as soon as the user is ready to commit to an execution strategy that is either `blocking` or `non-blocking`.
 `blocking` execution strategies will block the current thread that's waiting for the program to yield a value, whereas `non-blocking` strategies will immediately return and perform the program's work without blocking the current thread.
-
 Since both blocking and non-blocking execution scenarios perform side effects, we consider running effects as an `unsafe` operation.
 
 Arrow offers an `Enviroment` type class to run a suspended program.
