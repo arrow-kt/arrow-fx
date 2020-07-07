@@ -99,8 +99,7 @@ The `greet` program is ready to run as soon as the user is ready to commit to an
 
 Since both blocking and non-blocking execution scenarios perform side effects, we consider running effects as an `unsafe` operation.
 
-Arrow restricts the ability to run programs to extensions of the `Enviroment` type class.
-
+Arrow offers an `Enviroment` type class to run a suspended program.
 Usage of unsafe runner functions (like `unsafeRunSync` in this case) is reserved for the end of the world and may be the only impure execution of a well-typed functional program.
 
 ```kotlin:ank:playground
