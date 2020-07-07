@@ -957,7 +957,7 @@ class StreamTest : StreamSpec(spec = {
         // this introduces delay and failure based on bias of the test
         suspend fun finalizer(idx: Int): Unit =
           if (idx == biasIdx) {
-            sleep(100.milliseconds)
+            sleep(50.milliseconds)
             finalizerRef.update { it + "Inner $idx" }
             throw err
           } else finalizerRef.update { it + "Inner $idx" }
