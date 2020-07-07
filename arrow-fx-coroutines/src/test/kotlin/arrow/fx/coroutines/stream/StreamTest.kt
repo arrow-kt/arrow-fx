@@ -837,18 +837,16 @@ class StreamTest : StreamSpec(spec = {
       checkAll(Arb.stream(Arb.int())) { s ->
         val expected = s.compile().toList()
 
-        Stream.effect { Semaphore(0) }.flatMap { semaphore ->
-          s.interruptWhen { Right(sleep(20.milliseconds)) }
-            .map { None }
-            .append { s.map { Option(it) } }
-            .interruptWhen { Right(never()) }
-            .flatMap {
-              when (it) {
-                is None -> Stream.effect { semaphore.acquire(); None }
-                is Some -> Stream(Some(it.t))
-              }
-            }.filterOption()
-        }
+        s.interruptWhen { Right(sleep(50.milliseconds)) }
+          .map { None }
+          .append { s.map { Option(it) } }
+          .interruptWhen { Right(never()) }
+          .flatMap {
+            when (it) {
+              is None -> Stream.effect { never<Nothing>(); None }
+              is Some -> Stream(Some(it.t))
+            }
+          }.filterOption()
           .compile()
           .toList() shouldBe expected
       }
