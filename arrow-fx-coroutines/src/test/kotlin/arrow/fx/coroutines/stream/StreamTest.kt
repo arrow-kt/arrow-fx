@@ -740,18 +740,18 @@ class StreamTest : StreamSpec(spec = {
       }
     }
 
-    "interruption works when flatMap is followed by collect" {
+    "interruption works when flatMap is followed by filterOption" {
       checkAll(Arb.stream(Arb.int())) { s ->
         val expected = s.compile().toList()
 
         s.append { Stream(1) }
-          .interruptWhen { Right(sleep(20.milliseconds)) }
+          .interruptWhen { Right(sleep(50.milliseconds)) }
           .map { None }
           .append { s.map { Some(it) } }
           .flatMap {
             when (it) {
               None -> Stream.never<Option<Int>>()
-              is Some -> Stream(Some(it.t))
+              is Some -> Stream(it)
             }
           }
           .filterOption()
