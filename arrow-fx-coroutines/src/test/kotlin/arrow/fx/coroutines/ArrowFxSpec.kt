@@ -3,9 +3,7 @@ package arrow.fx.coroutines
 import arrow.fx.coroutines.stream.Pull
 import arrow.fx.coroutines.stream.Stream
 import arrow.fx.coroutines.stream.map
-import io.kotest.core.config.Project
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.core.test.TestCaseConfig
 import io.kotest.property.Arb
 import io.kotest.property.PropertyContext
 import io.kotest.property.Shrinker
@@ -17,8 +15,6 @@ import io.kotest.property.arbitrary.list
 import io.kotest.property.arbitrary.map
 import io.kotest.property.checkAll
 import kotlin.math.abs
-import kotlin.time.ExperimentalTime
-import kotlin.time.seconds
 
 /**
  * A Spec that allows you to specify depth for all `Arb` used inside the spec.
