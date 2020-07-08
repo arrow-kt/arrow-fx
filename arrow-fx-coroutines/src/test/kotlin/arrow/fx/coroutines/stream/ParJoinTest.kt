@@ -1,7 +1,14 @@
 package arrow.fx.coroutines.stream
 
 import arrow.core.Either
-import arrow.fx.coroutines.*
+import arrow.fx.coroutines.Atomic
+import arrow.fx.coroutines.StreamSpec
+import arrow.fx.coroutines.Promise
+import arrow.fx.coroutines.assertThrowable
+import arrow.fx.coroutines.milliseconds
+import arrow.fx.coroutines.sleep
+import arrow.fx.coroutines.never
+import arrow.fx.coroutines.throwable
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
