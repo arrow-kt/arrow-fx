@@ -26,7 +26,7 @@ import kotlin.math.abs
  */
 abstract class StreamSpec(
   iterations: Int = 1000,
-  val depth: IntRange = 0..200,
+  val depth: IntRange = 0..100,
   spec: StreamSpec.() -> Unit = {}
 ) : ArrowFxSpec(iterations) {
 
