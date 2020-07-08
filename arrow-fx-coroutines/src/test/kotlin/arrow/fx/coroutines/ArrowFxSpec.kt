@@ -34,11 +34,6 @@ abstract class StreamSpec(
   spec: StreamSpec.() -> Unit = {}
 ) : ArrowFxSpec(iterations) {
 
-  @ExperimentalTime
-  override fun defaultConfig(): TestCaseConfig =
-    (defaultTestConfig ?: defaultTestCaseConfig() ?: Project.testCaseConfig())
-      .copy(timeout = 1000.seconds)
-
   inline fun <reified O, R> Arb.Companion.pull(
     arbO: Arb<O>,
     arbR: Arb<R>,

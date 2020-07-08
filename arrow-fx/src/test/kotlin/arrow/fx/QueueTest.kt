@@ -23,6 +23,7 @@ import io.kotlintest.fail
 import io.kotlintest.matchers.types.shouldBeInstanceOf
 import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll
+import io.kotlintest.shouldBe
 import kotlin.coroutines.CoroutineContext
 
 class QueueTest : ArrowFxSpec() {
@@ -134,9 +135,13 @@ class QueueTest : ArrowFxSpec() {
             val start = !effect { System.currentTimeMillis() }
             val received = !wontComplete.map { Some(it) }
               .waitFor(100.milliseconds, default = just(None))
-            val elapsed = !effect { System.currentTimeMillis() - start }
-            Tuple2(received, (elapsed >= 100))
-          }.equalUnderTheLaw(IO.just(Tuple2(None, true)))
+            val end = !effect { System.currentTimeMillis() }
+            val elapsed = end - start
+            received shouldBe None
+            require(elapsed >= 100) {
+              "Should've timeout'ed after 100 milliseconds, but took $elapsed ms. (start=$start, end=$end)"
+            }
+          }.equalUnderTheLaw(IO.unit)
         }
       }
 
@@ -176,9 +181,13 @@ class QueueTest : ArrowFxSpec() {
             val start = !effect { System.currentTimeMillis() }
             val received = !wontComplete.map { Some(it) }
               .waitFor(100.milliseconds, default = just(None))
-            val elapsed = !effect { System.currentTimeMillis() - start }
-            Tuple2(received, (elapsed >= 100))
-          }.equalUnderTheLaw(IO.just(Tuple2(None, true)))
+            val end = !effect { System.currentTimeMillis() }
+            val elapsed = end - start
+            received shouldBe None
+            require(elapsed >= 100) {
+              "Should've timeout'ed after 100 milliseconds, but took $elapsed ms. (start=$start, end=$end)"
+            }
+          }.equalUnderTheLaw(IO.unit)
         }
       }
 
@@ -386,9 +395,13 @@ class QueueTest : ArrowFxSpec() {
             val wontComplete = q.offer(2)
             val received = !wontComplete.map { Some(it) }
               .waitFor(100.milliseconds, default = just(None))
-            val elapsed = !effect { System.currentTimeMillis() - start }
-            Tuple2(received, (elapsed >= 100))
-          }.equalUnderTheLaw(IO.just(Tuple2(None, true)))
+            val end = !effect { System.currentTimeMillis() }
+            val elapsed = end - start
+            received shouldBe None
+            require(elapsed >= 100) {
+              "Should've timeout'ed after 100 milliseconds, but took $elapsed ms. (start=$start, end=$end)"
+            }
+          }.equalUnderTheLaw(IO.unit)
         }
       }
 
@@ -400,9 +413,13 @@ class QueueTest : ArrowFxSpec() {
             val wontComplete = q.offerAll(1, 2, 3, 4)
             val received = !wontComplete.map { Some(it) }
               .waitFor(100.milliseconds, default = just(None))
-            val elapsed = !effect { System.currentTimeMillis() - start }
-            Tuple2(received, (elapsed >= 100))
-          }.equalUnderTheLaw(IO.just(Tuple2(None, true)))
+            val end = !effect { System.currentTimeMillis() }
+            val elapsed = end - start
+            received shouldBe None
+            require(elapsed >= 100) {
+              "Should've timeout'ed after 100 milliseconds, but took $elapsed ms. (start=$start, end=$end)"
+            }
+          }.equalUnderTheLaw(IO.unit)
         }
       }
 
