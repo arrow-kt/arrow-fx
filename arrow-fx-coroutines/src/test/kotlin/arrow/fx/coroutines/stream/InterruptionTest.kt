@@ -9,6 +9,7 @@ import arrow.fx.coroutines.StreamSpec
 import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.guaranteeCase
+import arrow.fx.coroutines.guarantee
 import arrow.fx.coroutines.timeOutOrNull
 import arrow.fx.coroutines.Semaphore
 import arrow.fx.coroutines.ExitCase
