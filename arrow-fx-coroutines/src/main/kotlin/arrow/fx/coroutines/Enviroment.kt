@@ -42,6 +42,8 @@ interface Environment {
   /**
    * Execution strategies that will immediately return and perform the program's work without blocking the current thread.
    * This operation runs uncancellable.
+   *
+   * Allows you to run suspend programs that returns [Unit], when an exception occurs it will be rethrown.
    */
   fun unsafeRunAsync(fa: suspend () -> Unit): Unit =
     unsafeRunAsync(fa, { throw it }, { /* Finished normally */ })
@@ -49,6 +51,9 @@ interface Environment {
   /**
    * Execution strategies that will immediately return and perform the program's work without blocking the current thread.
    * This operation runs uncancellable.
+   *
+   * Allows you to run suspend programs that returns [A],
+   *  the result will be passed to [a] in case of success, or to [e] in case of an exception.
    */
   fun <A> unsafeRunAsync(fa: suspend () -> A, e: (Throwable) -> Unit, a: (A) -> Unit): Unit
 
@@ -56,10 +61,20 @@ interface Environment {
    * Execution strategies that will immediately return and perform the program's work without blocking the current thread.
    * Runs the operation [fa] in a cancellable way.
    * Operation can be cancelled by invoking the returned [Disposable].
+   *
+   * Allows you to run suspend programs that returns [Unit], when an exception occurs it will be rethrown.
    */
   fun unsafeRunAsyncCancellable(fa: suspend () -> Unit): Disposable =
     unsafeRunAsyncCancellable(fa, { throw it }, { /* Finished normally */ })
 
+  /**
+   * Execution strategies that will immediately return and perform the program's work without blocking the current thread.
+   * Runs the operation [fa] in a cancellable way.
+   * Operation can be cancelled by invoking the returned [Disposable].
+   *
+   * Allows you to run suspend programs that returns [A],
+   *  the result will be passed to [a] in case of success, or to [e] in case of an exception.
+   */
   fun <A> unsafeRunAsyncCancellable(fa: suspend () -> A, e: (Throwable) -> Unit, a: (A) -> Unit): Disposable
 
   companion object {
