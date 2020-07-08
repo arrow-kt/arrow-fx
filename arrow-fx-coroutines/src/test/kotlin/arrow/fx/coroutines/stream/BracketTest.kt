@@ -255,7 +255,7 @@ class BracketTest : StreamSpec(spec = {
             exit.complete(ex)
             throw e
           }).flatMap { Stream.never<Unit>() }
-            .interruptWhen { Right(sleep(10.milliseconds)) }
+            .interruptWhen { Right(sleep(50.milliseconds)) }
             .compile()
             .drain()
         } shouldBe e
