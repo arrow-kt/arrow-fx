@@ -1,7 +1,21 @@
 package arrow.fx.coroutines.stream
 
-import arrow.core.*
-import arrow.fx.coroutines.*
+import arrow.core.Either
+import arrow.core.None
+import arrow.core.Option
+import arrow.core.Some
+import arrow.core.Right
+import arrow.fx.coroutines.StreamSpec
+import arrow.fx.coroutines.Promise
+import arrow.fx.coroutines.ForkAndForget
+import arrow.fx.coroutines.guaranteeCase
+import arrow.fx.coroutines.timeOutOrNull
+import arrow.fx.coroutines.Semaphore
+import arrow.fx.coroutines.ExitCase
+import arrow.fx.coroutines.milliseconds
+import arrow.fx.coroutines.sleep
+import arrow.fx.coroutines.never
+import arrow.fx.coroutines.throwable
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb

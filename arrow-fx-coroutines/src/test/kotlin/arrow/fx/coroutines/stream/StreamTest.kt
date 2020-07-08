@@ -1,13 +1,9 @@
 package arrow.fx.coroutines.stream
 
-import arrow.core.Either
-import arrow.core.Right
 import arrow.core.extensions.list.foldable.combineAll
 import arrow.core.extensions.list.foldable.foldMap
 import arrow.core.extensions.monoid
 import arrow.core.extensions.semigroup
-import arrow.fx.coroutines.Atomic
-import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.SideEffect
 import arrow.fx.coroutines.StreamSpec
 import arrow.fx.coroutines.assertThrowable
@@ -16,13 +12,10 @@ import arrow.fx.coroutines.intRange
 import arrow.fx.coroutines.longRange
 import arrow.fx.coroutines.milliseconds
 import arrow.fx.coroutines.never
-import arrow.fx.coroutines.sleep
 import arrow.fx.coroutines.throwable
 import arrow.fx.coroutines.timeOutOrNull
-import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
-import io.kotest.property.arbitrary.bool
 import io.kotest.property.arbitrary.constant
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.list
@@ -30,7 +23,6 @@ import io.kotest.property.arbitrary.map
 import io.kotest.property.arbitrary.orNull
 import io.kotest.property.arbitrary.positiveInts
 import io.kotest.property.arbitrary.set
-import java.lang.RuntimeException
 import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.random.Random
