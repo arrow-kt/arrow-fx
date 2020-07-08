@@ -834,7 +834,7 @@ class StreamTest : StreamSpec(spec = {
     }
 
     "nested-interrupt" {
-      checkAll(500, Arb.stream(Arb.int())) { s ->
+      io.kotest.property.checkAll(500, Arb.stream(Arb.int())) { s ->
         val expected = s.compile().toList()
 
         s.interruptWhen { Right(sleep(50.milliseconds)) }
