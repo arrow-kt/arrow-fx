@@ -25,7 +25,7 @@ import io.kotlintest.properties.forAll
 import io.kotlintest.shouldBe
 import kotlin.coroutines.CoroutineContext
 
-class QueueTest : ArrowFxSpec(iterations = 200) {
+class QueueTest : ArrowFxSpec() {
 
   init {
 
