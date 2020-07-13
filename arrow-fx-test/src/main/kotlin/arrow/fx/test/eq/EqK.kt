@@ -65,7 +65,7 @@ fun Schedule.Decision.Companion.eqK(): EqK<DecisionPartialOf<Any?>> = object : E
     }
 }
 
-fun <A> runEq(EQA: Eq<A> = Eq.any(), fa: () -> A, fb: () -> A): Boolean {
+fun <A> unsafeRunEq(fa: () -> A, fb: () -> A, EQA: Eq<A> = Eq.any()): Boolean {
   val aa = try {
     fa()
   } catch (err: Throwable) {

@@ -6,6 +6,7 @@ import arrow.core.test.laws.MonadFilterLaws
 import arrow.core.test.laws.TraverseLaws
 import arrow.fx.rx2.FlowableK
 import arrow.fx.rx2.FlowableKOf
+import arrow.fx.test.eq.unsafeRunEq
 import arrow.fx.rx2.ForFlowableK
 import arrow.fx.rx2.extensions.asyncDrop
 import arrow.fx.rx2.extensions.asyncError
@@ -40,7 +41,7 @@ class FlowableKTests : RxJavaSpec() {
 
   fun <T> EQ(): Eq<FlowableKOf<T>> = object : Eq<FlowableKOf<T>> {
     override fun FlowableKOf<T>.eqv(b: FlowableKOf<T>): Boolean =
-      runEq({
+      unsafeRunEq({
         this.value().timeout(5, TimeUnit.SECONDS).blockingFirst()
       }, {
         b.value().timeout(5, TimeUnit.SECONDS).blockingFirst()

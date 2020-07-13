@@ -5,6 +5,7 @@ import arrow.core.left
 import arrow.fx.rx2.ForSingleK
 import arrow.fx.rx2.SingleK
 import arrow.fx.rx2.SingleKOf
+import arrow.fx.test.eq.unsafeRunEq
 import arrow.fx.rx2.extensions.concurrent
 import arrow.fx.rx2.extensions.fx
 import arrow.fx.rx2.extensions.singlek.applicative.applicative
@@ -197,7 +198,7 @@ private fun SingleK.Companion.genK() = object : GenK<ForSingleK> {
 
 private fun <T> SingleK.Companion.eq(): Eq<SingleKOf<T>> = object : Eq<SingleKOf<T>> {
   override fun SingleKOf<T>.eqv(b: SingleKOf<T>): Boolean =
-    runEq({
+    unsafeRunEq({
       this.value().timeout(5, TimeUnit.SECONDS).blockingGet()
     }, {
       b.value().timeout(5, TimeUnit.SECONDS).blockingGet()

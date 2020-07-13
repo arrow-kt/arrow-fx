@@ -4,6 +4,7 @@ import arrow.Kind
 import arrow.fx.rx2.ForObservableK
 import arrow.fx.rx2.ObservableK
 import arrow.fx.rx2.ObservableKOf
+import arrow.fx.test.eq.unsafeRunEq
 import arrow.fx.rx2.extensions.concurrent
 import arrow.fx.rx2.extensions.fx
 import arrow.fx.rx2.extensions.observablek.applicative.applicative
@@ -122,7 +123,7 @@ class ObservableKTests : RxJavaSpec() {
 
 private fun <T> ObservableK.Companion.eq(): Eq<ObservableKOf<T>> = object : Eq<ObservableKOf<T>> {
   override fun ObservableKOf<T>.eqv(b: ObservableKOf<T>): Boolean =
-    runEq({
+    unsafeRunEq({
       this.value().timeout(5, TimeUnit.SECONDS).blockingFirst()
     }, {
       b.value().timeout(5, TimeUnit.SECONDS).blockingFirst()

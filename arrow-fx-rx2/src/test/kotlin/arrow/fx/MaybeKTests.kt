@@ -20,6 +20,7 @@ import arrow.fx.rx2.value
 import arrow.fx.typeclasses.ExitCase
 import arrow.core.test.generators.GenK
 import arrow.core.test.generators.throwable
+import arrow.fx.test.eq.unsafeRunEq
 import arrow.fx.test.laws.ConcurrentLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
@@ -201,7 +202,7 @@ class MaybeKTests : RxJavaSpec() {
 
 private fun <T> MaybeK.Companion.eq(): Eq<MaybeKOf<T>> = object : Eq<MaybeKOf<T>> {
   override fun MaybeKOf<T>.eqv(b: MaybeKOf<T>): Boolean =
-    runEq({
+    unsafeRunEq({
       this.value().timeout(5, TimeUnit.SECONDS).blockingGet()
     }, {
       b.value().timeout(5, TimeUnit.SECONDS).blockingGet()

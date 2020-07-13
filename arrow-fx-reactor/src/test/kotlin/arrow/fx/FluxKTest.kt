@@ -7,6 +7,7 @@ import arrow.core.test.generators.throwable
 import arrow.fx.reactor.FluxK
 import arrow.fx.reactor.FluxKOf
 import arrow.fx.reactor.ForFluxK
+import arrow.fx.test.eq.unsafeRunEq
 import arrow.fx.reactor.extensions.fluxk.applicative.applicative
 import arrow.fx.reactor.extensions.fluxk.async.async
 import arrow.fx.reactor.extensions.fluxk.functor.functor
@@ -171,7 +172,7 @@ class FluxKTest : UnitSpec() {
 
 private fun <T> FluxK.Companion.eq(): Eq<FluxKOf<T>> = object : Eq<FluxKOf<T>> {
   override fun FluxKOf<T>.eqv(b: FluxKOf<T>): Boolean =
-    runEq({
+    unsafeRunEq({
       this.value().blockFirst()
     }, {
       b.value().blockFirst()
