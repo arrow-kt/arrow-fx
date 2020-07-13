@@ -31,7 +31,6 @@ import io.reactivex.observers.TestObserver
 import io.reactivex.schedulers.Schedulers
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 
 class MaybeKTests : RxJavaSpec() {
 
@@ -201,21 +200,12 @@ class MaybeKTests : RxJavaSpec() {
 }
 
 private fun <T> MaybeK.Companion.eq(): Eq<MaybeKOf<T>> = object : Eq<MaybeKOf<T>> {
-  override fun MaybeKOf<T>.eqv(b: MaybeKOf<T>): Boolean {
-    val res1 = arrow.core.Try { value().timeout(5, TimeUnit.SECONDS).blockingGet() }
-    val res2 = arrow.core.Try { b.value().timeout(5, TimeUnit.SECONDS).blockingGet() }
-    return res1.fold({ t1 ->
-      res2.fold({ t2 ->
-        if (t1::class.java == TimeoutException::class.java) throw t1
-        if (t2::class.java == TimeoutException::class.java) throw t2
-        (t1::class.java == t2::class.java)
-      }, { false })
-    }, { v1 ->
-      res2.fold({ false }, {
-        v1 == it
-      })
+  override fun MaybeKOf<T>.eqv(b: MaybeKOf<T>): Boolean =
+    runEq({
+      this.value().timeout(5, TimeUnit.SECONDS).blockingFirst()
+    }, {
+      b.value().timeout(5, TimeUnit.SECONDS).blockingFirst()
     })
-  }
 }
 
 private fun MaybeK.Companion.eqK() = object : EqK<ForMaybeK> {

@@ -32,7 +32,6 @@ import io.reactivex.observers.TestObserver
 import io.reactivex.schedulers.Schedulers
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 
 class SingleKTests : RxJavaSpec() {
 
@@ -197,21 +196,12 @@ private fun SingleK.Companion.genK() = object : GenK<ForSingleK> {
 }
 
 private fun <T> SingleK.Companion.eq(): Eq<SingleKOf<T>> = object : Eq<SingleKOf<T>> {
-  override fun SingleKOf<T>.eqv(b: SingleKOf<T>): Boolean {
-    val res1 = attempt().value().timeout(5, TimeUnit.SECONDS).blockingGet()
-    val res2 = b.attempt().value().timeout(5, TimeUnit.SECONDS).blockingGet()
-    return res1.fold({ t1 ->
-      res2.fold({ t2 ->
-        if (t1::class.java == TimeoutException::class.java) throw t1
-        if (t2::class.java == TimeoutException::class.java) throw t2
-        (t1::class.java == t2::class.java)
-      }, { false })
-    }, { v1 ->
-      res2.fold({ false }, {
-        v1 == it
-      })
+  override fun SingleKOf<T>.eqv(b: SingleKOf<T>): Boolean =
+    runEq({
+      this.value().timeout(5, TimeUnit.SECONDS).blockingFirst()
+    }, {
+      b.value().timeout(5, TimeUnit.SECONDS).blockingFirst()
     })
-  }
 }
 
 private fun SingleK.Companion.eqK() = object : EqK<ForSingleK> {

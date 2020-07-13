@@ -41,26 +41,10 @@ class MonoKTest : UnitSpec() {
     mono.doOnNext { Thread.currentThread().name shouldNot startWith(name) }
 
   fun <T> EQ(): Eq<MonoKOf<T>> = object : Eq<MonoKOf<T>> {
-    override fun MonoKOf<T>.eqv(b: MonoKOf<T>): Boolean =
-      try {
-        this.value().block() == b.value().block()
-      } catch (throwable: Throwable) {
-        val errA = try {
-          this.value().block()
-          throw IllegalArgumentException()
-        } catch (err: Throwable) {
-          err
-        }
-
-        val errB = try {
-          b.value().block()
-          throw IllegalStateException()
-        } catch (err: Throwable) {
-          err
-        }
-
-        errA == errB
-      }
+    override fun MonoKOf<T>.eqv(b: MonoKOf<T>): Boolean {
+      return runEq({
+        this.value().block() }, { b.value().block() })
+    }
   }
 
   fun EQK() = object : EqK<ForMonoK> {

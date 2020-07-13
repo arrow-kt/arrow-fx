@@ -171,25 +171,11 @@ class FluxKTest : UnitSpec() {
 
 private fun <T> FluxK.Companion.eq(): Eq<FluxKOf<T>> = object : Eq<FluxKOf<T>> {
   override fun FluxKOf<T>.eqv(b: FluxKOf<T>): Boolean =
-    try {
-      this.value().blockFirst() == b.value().blockFirst()
-    } catch (throwable: Throwable) {
-      val errA = try {
-        this.value().blockFirst()
-        throw IllegalArgumentException()
-      } catch (err: Throwable) {
-        err
-      }
-
-      val errB = try {
-        b.value().blockFirst()
-        throw IllegalStateException()
-      } catch (err: Throwable) {
-        err
-      }
-
-      errA == errB
-    }
+    runEq({
+      this.value().timeout(5, TimeUnit.SECONDS).blockingFirst()
+    }, {
+      b.value().timeout(5, TimeUnit.SECONDS).blockingFirst()
+    })
 }
 
 private fun FluxK.Companion.genk() = object : GenK<ForFluxK> {
