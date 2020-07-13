@@ -172,9 +172,9 @@ class FluxKTest : UnitSpec() {
 private fun <T> FluxK.Companion.eq(): Eq<FluxKOf<T>> = object : Eq<FluxKOf<T>> {
   override fun FluxKOf<T>.eqv(b: FluxKOf<T>): Boolean =
     runEq({
-      this.value().timeout(5, TimeUnit.SECONDS).blockingFirst()
+      this.value().blockFirst()
     }, {
-      b.value().timeout(5, TimeUnit.SECONDS).blockingFirst()
+      b.value().blockFirst()
     })
 }
 

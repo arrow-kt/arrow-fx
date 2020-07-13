@@ -80,6 +80,7 @@ fun <A> runEq(EQA: Eq<A> = Eq.any(), fa: () -> A, fb: () -> A): Boolean {
     aa is TimeoutException -> throw aa
     bb is TimeoutException -> throw bb
     aa is Exception && bb is Exception -> throwableEq().run { aa.eqv(bb) }
-    else -> aa == bb
+    aa is Exception || bb is Exception -> false
+    else -> EQA.run { (aa as A).eqv(bb as A) }
   }
 }

@@ -198,9 +198,9 @@ private fun SingleK.Companion.genK() = object : GenK<ForSingleK> {
 private fun <T> SingleK.Companion.eq(): Eq<SingleKOf<T>> = object : Eq<SingleKOf<T>> {
   override fun SingleKOf<T>.eqv(b: SingleKOf<T>): Boolean =
     runEq({
-      this.value().timeout(5, TimeUnit.SECONDS).blockingFirst()
+      this.value().timeout(5, TimeUnit.SECONDS).blockingGet()
     }, {
-      b.value().timeout(5, TimeUnit.SECONDS).blockingFirst()
+      b.value().timeout(5, TimeUnit.SECONDS).blockingGet()
     })
 }
 
