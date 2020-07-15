@@ -41,9 +41,9 @@ import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import arrow.typeclasses.EqK2
 import arrow.typeclasses.Monad
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
-import io.kotlintest.shouldBe
+import io.kotest.properties.Gen
+import io.kotest.properties.forAll
+import io.kotest.shouldBe
 import kotlin.math.max
 import kotlin.math.pow
 

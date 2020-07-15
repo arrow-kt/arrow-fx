@@ -14,7 +14,7 @@ import arrow.fx.typeclasses.FiberPartialOf
 import arrow.fx.typeclasses.nanoseconds
 import arrow.typeclasses.Applicative
 import arrow.typeclasses.ApplicativeError
-import io.kotlintest.properties.Gen
+import io.kotest.properties.Gen
 import java.util.concurrent.TimeUnit
 
 fun <F, A, E> Gen<E>.raiseError(AP: ApplicativeError<F, E>): Gen<Kind<F, A>> =

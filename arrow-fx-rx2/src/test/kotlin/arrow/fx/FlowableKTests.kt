@@ -30,8 +30,8 @@ import arrow.fx.test.laws.AsyncLaws
 import arrow.fx.test.laws.ConcurrentLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.properties.Gen
-import io.kotlintest.shouldBe
+import io.kotest.properties.Gen
+import io.kotest.shouldBe
 import io.reactivex.Flowable
 import io.reactivex.subscribers.TestSubscriber
 import java.util.concurrent.CountDownLatch

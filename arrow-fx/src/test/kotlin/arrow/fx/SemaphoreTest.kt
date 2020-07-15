@@ -13,8 +13,8 @@ import arrow.fx.extensions.io.functor.unit
 import arrow.fx.extensions.io.monad.flatMap
 import arrow.fx.extensions.io.monad.map
 import arrow.fx.test.eq.eq
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
+import io.kotest.properties.Gen
+import io.kotest.properties.forAll
 import kotlinx.coroutines.Dispatchers
 
 class SemaphoreTest : ArrowFxSpec() {

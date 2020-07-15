@@ -20,10 +20,10 @@ import arrow.fx.onCancel
 import arrow.fx.test.eq.eqK
 import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
-import io.kotlintest.fail
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
-import io.kotlintest.shouldBe
+import io.kotest.fail
+import io.kotest.properties.Gen
+import io.kotest.properties.forAll
+import io.kotest.shouldBe
 import kotlinx.coroutines.newSingleThreadContext
 
 class ExtensionsKtTest : UnitSpec() {

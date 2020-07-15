@@ -10,7 +10,7 @@ import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.properties.Gen
+import io.kotest.properties.Gen
 
 object TimerLaws {
 

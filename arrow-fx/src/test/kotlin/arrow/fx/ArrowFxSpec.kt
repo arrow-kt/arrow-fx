@@ -1,9 +1,9 @@
 package arrow.fx
 
 import arrow.core.test.UnitSpec
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.PropertyContext
-import io.kotlintest.properties.forAll
+import io.kotest.properties.Gen
+import io.kotest.properties.PropertyContext
+import io.kotest.properties.forAll
 
 abstract class ArrowFxSpec(
   private val iterations: Int = 100,

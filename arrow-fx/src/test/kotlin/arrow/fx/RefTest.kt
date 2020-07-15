@@ -11,9 +11,9 @@ import arrow.fx.typeclasses.MonadDefer
 import arrow.fx.test.eq.eqK
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
-import io.kotlintest.shouldBe
+import io.kotest.properties.Gen
+import io.kotest.properties.forAll
+import io.kotest.shouldBe
 
 class RefTest : ArrowFxSpec() {
 

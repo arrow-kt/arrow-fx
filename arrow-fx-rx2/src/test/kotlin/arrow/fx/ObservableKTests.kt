@@ -22,8 +22,8 @@ import arrow.core.test.generators.throwable
 import arrow.fx.test.laws.ConcurrentLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.properties.Gen
-import io.kotlintest.shouldBe
+import io.kotest.properties.Gen
+import io.kotest.shouldBe
 import io.reactivex.Observable
 import io.reactivex.observers.TestObserver
 import java.util.concurrent.CountDownLatch

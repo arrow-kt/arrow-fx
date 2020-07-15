@@ -26,8 +26,8 @@ import arrow.fx.test.laws.ConcurrentLaws
 import arrow.fx.test.laws.forFew
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.properties.Gen
-import io.kotlintest.shouldBe
+import io.kotest.properties.Gen
+import io.kotest.shouldBe
 import io.reactivex.Single
 import io.reactivex.observers.TestObserver
 import io.reactivex.schedulers.Schedulers

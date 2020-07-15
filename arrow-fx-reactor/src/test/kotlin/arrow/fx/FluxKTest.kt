@@ -23,11 +23,11 @@ import arrow.fx.test.laws.AsyncLaws
 import arrow.fx.test.laws.TimerLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.matchers.startWith
-import io.kotlintest.properties.Gen
-import io.kotlintest.shouldBe
-import io.kotlintest.shouldNot
-import io.kotlintest.shouldNotBe
+import io.kotest.matchers.startWith
+import io.kotest.properties.Gen
+import io.kotest.shouldBe
+import io.kotest.shouldNot
+import io.kotest.shouldNotBe
 import reactor.core.publisher.Flux
 import reactor.core.scheduler.Schedulers
 import reactor.test.test

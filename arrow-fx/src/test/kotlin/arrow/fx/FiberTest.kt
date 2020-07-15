@@ -12,7 +12,7 @@ import arrow.fx.typeclasses.Fiber
 import arrow.fx.test.eq.eq
 import arrow.fx.test.eq.eqK
 import arrow.fx.test.generators.genK
-import io.kotlintest.properties.Gen
+import io.kotest.properties.Gen
 
 class FiberTest : ArrowFxSpec() {
 

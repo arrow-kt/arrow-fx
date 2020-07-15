@@ -19,9 +19,9 @@ import arrow.fx.extensions.io.monad.followedBy
 import arrow.fx.typeclasses.milliseconds
 import arrow.fx.test.eq.eq
 import arrow.fx.test.laws.shouldBeEq
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
-import io.kotlintest.shouldBe
+import io.kotest.properties.Gen
+import io.kotest.properties.forAll
+import io.kotest.shouldBe
 
 class MVarTest : ArrowFxSpec() {
 

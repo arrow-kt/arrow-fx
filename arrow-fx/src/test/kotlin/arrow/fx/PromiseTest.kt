@@ -12,9 +12,9 @@ import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.functor.tupleLeft
 import arrow.fx.extensions.io.monad.flatMap
 import arrow.fx.extensions.io.monadDefer.monadDefer
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
-import io.kotlintest.shouldBe
+import io.kotest.properties.Gen
+import io.kotest.properties.forAll
+import io.kotest.shouldBe
 import kotlinx.coroutines.Dispatchers
 import kotlin.coroutines.CoroutineContext
 

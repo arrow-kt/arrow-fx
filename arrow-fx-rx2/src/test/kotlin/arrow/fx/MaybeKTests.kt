@@ -24,9 +24,9 @@ import arrow.fx.test.eq.unsafeRunEq
 import arrow.fx.test.laws.ConcurrentLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.properties.Gen
-import io.kotlintest.shouldBe
-import io.kotlintest.shouldNotBe
+import io.kotest.properties.Gen
+import io.kotest.shouldBe
+import io.kotest.shouldNotBe
 import io.reactivex.Maybe
 import io.reactivex.observers.TestObserver
 import io.reactivex.schedulers.Schedulers

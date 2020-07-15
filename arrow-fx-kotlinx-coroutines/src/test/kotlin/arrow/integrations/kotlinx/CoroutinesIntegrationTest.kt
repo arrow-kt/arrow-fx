@@ -26,10 +26,10 @@ import arrow.fx.typeclasses.seconds
 import arrow.fx.test.laws.shouldBeEq
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.fail
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
-import io.kotlintest.shouldBe
+import io.kotest.fail
+import io.kotest.properties.Gen
+import io.kotest.properties.forAll
+import io.kotest.shouldBe
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ObsoleteCoroutinesApi

@@ -13,8 +13,8 @@ import arrow.fx.extensions.io.unsafeRun.unsafeRun
 import arrow.fx.typeclasses.Concurrent
 import arrow.fx.typeclasses.UnsafeRun
 import arrow.unsafe
-import io.kotlintest.shouldBe
-import io.kotlintest.shouldThrow
+import io.kotest.shouldBe
+import io.kotest.shouldThrow
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.newSingleThreadContext
 

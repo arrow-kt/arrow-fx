@@ -13,11 +13,11 @@ import arrow.core.test.generators.tuple3
 import arrow.core.test.generators.tuple4
 import arrow.core.test.generators.tuple5
 import arrow.typeclasses.Eq
-import io.kotlintest.Matcher
-import io.kotlintest.Result
-import io.kotlintest.properties.Gen
-import io.kotlintest.should
-import io.kotlintest.shouldNot
+import io.kotest.Matcher
+import io.kotest.Result
+import io.kotest.properties.Gen
+import io.kotest.should
+import io.kotest.shouldNot
 
 fun <A> A.equalUnderTheLaw(b: A, eq: Eq<A>): Boolean =
   shouldBeEq(b, eq).let { true }

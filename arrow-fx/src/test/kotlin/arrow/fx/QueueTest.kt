@@ -19,10 +19,10 @@ import arrow.fx.extensions.io.dispatchers.dispatchers
 import arrow.fx.test.laws.equalUnderTheLaw
 import arrow.fx.test.laws.forFew
 import arrow.fx.typeclasses.milliseconds
-import io.kotlintest.fail
-import io.kotlintest.matchers.types.shouldBeInstanceOf
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
+import io.kotest.fail
+import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.properties.Gen
+import io.kotest.properties.forAll
 import kotlin.coroutines.CoroutineContext
 
 class QueueTest : ArrowFxSpec() {

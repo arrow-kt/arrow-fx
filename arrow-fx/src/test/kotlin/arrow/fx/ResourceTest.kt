@@ -19,7 +19,7 @@ import arrow.fx.test.laws.forFew
 import arrow.fx.typeclasses.seconds
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.properties.Gen
+import io.kotest.properties.Gen
 
 class ResourceTest : ArrowFxSpec() {
   init {

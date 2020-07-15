@@ -33,10 +33,10 @@ import arrow.fx.typeclasses.seconds
 import arrow.fx.test.eq.eqK
 import arrow.fx.test.generators.genK
 import arrow.fx.test.laws.ConcurrentLaws
-import io.kotlintest.fail
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
-import io.kotlintest.shouldBe
+import io.kotest.fail
+import io.kotest.properties.Gen
+import io.kotest.properties.forAll
+import io.kotest.shouldBe
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.newSingleThreadContext
 import kotlin.coroutines.AbstractCoroutineContextElement
