@@ -1,14 +1,13 @@
-name: "arrow-fx: build documentation"
+name: "Check Previous Build Integration"
 
 on: pull_request
 
 jobs:
-  arrow-fx_build_documentation:
+  check-previous_build-integration:
 
     env:
       BASEDIR: ${{github.workspace}}/..
       JAVA_OPTS: -Xms512m -Xmx1024m
-      ARROW_LIB: arrow-fx
 
     runs-on: macos-latest
 
@@ -18,11 +17,9 @@ jobs:
       run: |
         cd $BASEDIR
         git clone https://github.com/arrow-kt/arrow.git --depth 1 --no-single-branch
-    - name: Install
+    - name: Check Build Integration
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         BRANCH_NAME=${{ github.event.pull_request.head.ref }}
-        $BASEDIR/arrow/scripts/action-install.sh $ARROW_LIB $BRANCH_NAME
-    - name: Generate API doc and validate
-      run: ./gradlew buildArrowDoc
+        $BASEDIR/arrow/scripts/check-build-integration.sh $BRANCH_NAME

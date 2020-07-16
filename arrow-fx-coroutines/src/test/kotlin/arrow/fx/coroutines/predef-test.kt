@@ -18,11 +18,14 @@ import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.long
 import io.kotest.property.arbitrary.map
 import io.kotest.property.arbitrary.string
+import kotlinx.atomicfu.atomic
 import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 import java.io.PrintStream
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.ThreadFactory
 import kotlin.coroutines.Continuation
+import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlin.coroutines.intrinsics.intercepted
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
@@ -38,10 +41,18 @@ data class SideEffect(var counter: Int = 0) {
   }
 }
 
-val single = singleThreadContext("single")
+val singleThreadName = "single"
+val single = singleThreadContext(singleThreadName)
 
 val threadName: suspend () -> String =
   { Thread.currentThread().name }
+
+class NamedThreadFactory(private val mkName: (Int) -> String) : ThreadFactory {
+  private val count = atomic(0)
+  override fun newThread(r: Runnable): Thread =
+    Thread(r, mkName(count.value))
+      .apply { isDaemon = true }
+}
 
 fun unsafeEquals(other: CancelToken): Matcher<CancelToken> = object : Matcher<CancelToken> {
   override fun test(value: CancelToken): MatcherResult {
@@ -198,4 +209,13 @@ inline fun <A> assertThrowable(executable: () -> A): Throwable =
     fail("Expected an exception but found: $a")
   } catch (e: Throwable) {
     e
+  }
+
+internal suspend fun CoroutineContext.shift(): Unit =
+  suspendCoroutineUninterceptedOrReturn { cont ->
+    suspend { this }.startCoroutine(Continuation(this) {
+      cont.resume(Unit)
+    })
+
+    COROUTINE_SUSPENDED
   }

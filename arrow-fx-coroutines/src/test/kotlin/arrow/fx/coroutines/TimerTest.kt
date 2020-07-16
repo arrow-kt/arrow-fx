@@ -1,5 +1,6 @@
 package arrow.fx.coroutines
 
+import arrow.core.Either
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
@@ -13,6 +14,100 @@ class TimerTest : ArrowFxSpec(spec = {
 
   suspend fun timeMilis(): Long =
     System.currentTimeMillis()
+
+  "sleep returns on the original context" {
+    single.use { ctx ->
+      checkAll(Arb.int()) {
+        evalOn(ctx) {
+          val n0 = threadName.invoke()
+          sleep(10.milliseconds)
+          val n = threadName.invoke()
+
+          n0 shouldBe n
+        }
+      }
+    }
+  }
+
+  "timeOutOrNull" - {
+    "returns to original context without timing out" {
+      singleThreadContext("1").zip(single).use { (one, single) ->
+        checkAll {
+          evalOn(single) {
+            val n0 = threadName.invoke()
+
+            timeOutOrNull(1.minutes) {
+              one.shift()
+              threadName.invoke() shouldBe "1"
+              Unit.suspend()
+            }
+
+            n0 shouldBe threadName.invoke()
+          }
+        }
+      }
+    }
+
+    "returns to original context when timing out" {
+      singleThreadContext("1").zip(single).use { (one, single) ->
+        checkAll {
+          evalOn(single) {
+            val n0 = threadName.invoke()
+
+            timeOutOrNull(50.milliseconds) {
+              one.shift()
+              threadName.invoke() shouldBe "1"
+              never<Unit>()
+            } shouldBe null
+
+            n0 shouldBe threadName.invoke()
+          }
+        }
+      }
+    }
+
+    "returns to original context on failure" {
+      singleThreadContext("1").zip(single).use { (one, single) ->
+        checkAll(Arb.throwable()) { e ->
+          evalOn(single) {
+            val n0 = threadName.invoke()
+
+            Either.catch {
+              timeOutOrNull(50.milliseconds) {
+                one.shift()
+                threadName.invoke() shouldBe "1"
+                e.suspend()
+              }
+            } shouldBe Either.Left(e)
+
+            n0 shouldBe threadName.invoke()
+          }
+        }
+      }
+    }
+
+    "returns to original context on CancelToken failure" {
+      singleThreadContext("1").zip(single).use { (one, single) ->
+        checkAll(Arb.throwable()) { e ->
+          evalOn(single) {
+            val n0 = threadName.invoke()
+
+            Either.catch {
+              timeOutOrNull(50.milliseconds) {
+                cancellableF<Nothing> {
+                  one.shift()
+                  threadName.invoke() shouldBe "1"
+                  CancelToken { e.suspend() }
+                }
+              }
+            } shouldBe Either.Left(e)
+
+            n0 shouldBe threadName.invoke()
+          }
+        }
+      }
+    }
+  }
 
   "sleep should last specified time" {
     checkAll(Arb.positiveInts(max = 50)) { i ->
@@ -59,9 +154,22 @@ class TimerTest : ArrowFxSpec(spec = {
   "timeout wins suspend" {
     checkAll(Arb.int()) { i ->
       timeOutOrNull(100.milliseconds) {
-        sleep(1.milliseconds)
-        i
+        i.suspend()
       } shouldBe i
+    }
+  }
+
+  "time-out cancels the token" {
+    checkAll(Arb.int()) { i ->
+      val promise = Promise<Int>()
+
+      timeOutOrNull(50.milliseconds) {
+        cancellable<Nothing> {
+          CancelToken { promise.complete(i) }
+        }
+      } shouldBe null
+
+      promise.get() shouldBe i
     }
   }
 })

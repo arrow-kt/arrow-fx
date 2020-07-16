@@ -31,13 +31,12 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb
-import io.kotest.property.Sample
-import io.kotest.property.arbitrary.arb
 import io.kotest.property.arbitrary.bool
 import io.kotest.property.arbitrary.constant
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.list
 import io.kotest.property.arbitrary.map
+import io.kotest.property.arbitrary.orNull
 import io.kotest.property.arbitrary.positiveInts
 import io.kotest.property.arbitrary.set
 import java.lang.RuntimeException
@@ -194,18 +193,18 @@ class StreamTest : StreamSpec(spec = {
 
     "unfold" {
       Stream.unfold(Pair(0, 1)) { (f1, f2) ->
-          if (f1 <= 13) Pair(Pair(f1, f2), Pair(f2, f1 + f2))
-          else null
-        }.map { it.first }
+        if (f1 <= 13) Pair(Pair(f1, f2), Pair(f2, f1 + f2))
+        else null
+      }.map { it.first }
         .compile()
         .toList() shouldBe listOf(0, 1, 1, 2, 3, 5, 8, 13)
     }
 
     "unfoldChunk" {
       Stream.unfoldChunk(4L) { s ->
-          if (s > 0) Pair(Chunk.longs(longArrayOf(s, s)), s - 1)
-          else null
-        }.compile()
+        if (s > 0) Pair(Chunk.longs(longArrayOf(s, s)), s - 1)
+        else null
+      }.compile()
         .toList() shouldBe listOf(4L, 4, 3, 3, 2, 2, 1, 1)
     }
 
@@ -217,9 +216,9 @@ class StreamTest : StreamSpec(spec = {
 
     "unfoldChunkEffect" {
       Stream.unfoldChunkEffect(true) { s ->
-          if (s) Pair(Chunk.booleans(booleanArrayOf(s)), false)
-          else null
-        }
+        if (s) Pair(Chunk.booleans(booleanArrayOf(s)), false)
+        else null
+      }
         .compile()
         .toList() shouldBe listOf(true)
     }
@@ -315,7 +314,7 @@ class StreamTest : StreamSpec(spec = {
 
   "drop" - {
     "identity" {
-      checkAll(Arb.stream(Arb.int().nullable()), Arb.int()) { s, n ->
+      checkAll(Arb.stream(Arb.int().orNull()), Arb.int()) { s, n ->
         s
           .drop(n)
           .compile()
@@ -668,13 +667,13 @@ class StreamTest : StreamSpec(spec = {
         val enableInterrupt = Semaphore(0)
         val interrupt = Stream.effect { enableInterrupt.acquire() }.flatMap { Stream(false) }
         s.effectMap { i ->
-            // enable interruption and hang when hitting a value divisible by 7
-            if (i % 7 == 0) {
-              enableInterrupt.release()
-              barrier.acquire()
-              i
-            } else i
-          }.interruptWhen(interrupt)
+          // enable interruption and hang when hitting a value divisible by 7
+          if (i % 7 == 0) {
+            enableInterrupt.release()
+            barrier.acquire()
+            i
+          } else i
+        }.interruptWhen(interrupt)
           .compile()
           // as soon as we hit a value divisible by 7, we enable interruption then hang before emitting it,
           // so there should be no elements in the output that are divisible by 7
@@ -696,11 +695,11 @@ class StreamTest : StreamSpec(spec = {
       checkAll(Arb.stream(Arb.int()), Arb.throwable()) { s, e ->
         Either.catch {
           Stream.effect { Semaphore(0) }.flatMap { semaphore ->
-              Stream(1)
-                .append { s }
-                .interruptWhen { sleep(20.milliseconds); Either.Left(e) }
-                .flatMap { Stream.effect_ { semaphore.acquire() } }
-            }
+            Stream(1)
+              .append { s }
+              .interruptWhen { sleep(20.milliseconds); Either.Left(e) }
+              .flatMap { Stream.effect_ { semaphore.acquire() } }
+          }
             .compile()
             .toList()
         } shouldBe Either.Left(e)
@@ -762,27 +761,34 @@ class StreamTest : StreamSpec(spec = {
     }
 
     "if a pipe is interrupted, it will not restart evaluation" {
-      val p: Pipe<Int, Int> = Pipe {
-        fun loop(acc: Int, pull: Pull<Int, Unit>): Pull<Int, Unit> =
-          pull.uncons1OrNull().flatMap { uncons1 ->
-            when (uncons1) {
-              null -> Pull.output1(acc)
-              else -> Pull.output1(uncons1.head)
-                .flatMap { loop(acc + uncons1.head, uncons1.tail) }
+      checkAll(Arb.int(1..100)) { n ->
+        val latch = Promise<Unit>()
+
+        val p: Pipe<Int, Int> = Pipe {
+          fun loop(acc: Int, pull: Pull<Int, Unit>): Pull<Int, Unit> =
+            pull.uncons1OrNull().flatMap { uncons1 ->
+              when (uncons1) {
+                null -> Pull.output1(acc)
+                else -> Pull.output1(uncons1.head).flatMap {
+                  val stop = if (uncons1.head == n) Pull.effect { latch.complete(Unit) } else Pull.done
+                  stop.flatMap { loop(acc + uncons1.head, uncons1.tail) }
+                }
+              }
             }
-          }
 
-        loop(0, it.asPull()).stream()
-      }
-
-      Stream.iterate(0, Int::inc)
-        .flatMap { Stream(it).delayBy(20.milliseconds) }
-        .interruptWhen { Right(sleep(150.milliseconds)) }
-        .through(p)
-        .compile()
-        .toList().let { result ->
-          result shouldBe listOfNotNull(result.firstOrNull()) + result.drop(1).filter { it != 0 }
+          loop(0, it.asPull()).stream()
         }
+
+        Stream.iterate(0, Int::inc)
+          .flatMap { Stream(it) }
+          .interruptWhen { Right(latch.get()) }
+          .through(p)
+          .compile()
+          .toList()
+          .let { result ->
+            result shouldBe listOfNotNull(result.firstOrNull()) + result.drop(1).filter { it != 0 }
+          }
+      }
     }
 
     "resume on append with pull" {
@@ -832,17 +838,17 @@ class StreamTest : StreamSpec(spec = {
         val expected = s.compile().toList()
 
         Stream.effect { Semaphore(0) }.flatMap { semaphore ->
-            s.interruptWhen { Right(sleep(20.milliseconds)) }
-              .map { None }
-              .append { s.map { Option(it) } }
-              .interruptWhen { Right(never()) }
-              .flatMap {
-                when (it) {
-                  is None -> Stream.effect { semaphore.acquire(); None }
-                  is Some -> Stream(Some(it.t))
-                }
-              }.filterOption()
-          }
+          s.interruptWhen { Right(sleep(20.milliseconds)) }
+            .map { None }
+            .append { s.map { Option(it) } }
+            .interruptWhen { Right(never()) }
+            .flatMap {
+              when (it) {
+                is None -> Stream.effect { semaphore.acquire(); None }
+                is Some -> Stream(Some(it.t))
+              }
+            }.filterOption()
+        }
           .compile()
           .toList() shouldBe expected
       }
@@ -1034,26 +1040,3 @@ class StreamTest : StreamSpec(spec = {
     }
   }
 })
-
-fun <A> Arb.Companion.`null`(): Arb<A?> =
-  Arb.constant(null)
-
-fun <A> Arb<A>.nullable(): Arb<A?> {
-  val arbs = listOf(this.map { it as A? }, Arb.`null`())
-  return arb(arbs.flatMap(Arb<A?>::edgecases)) { rs ->
-    val iters = arbs.map { it.values(rs).iterator() }
-    fun next(): Sample<A?>? {
-      val iter = iters.shuffled(rs.random).first()
-      return if (iter.hasNext()) iter.next() else null
-    }
-
-    sequence {
-      while (true) {
-        var next: Sample<A?>? = null
-        while (next == null)
-          next = next()
-        yield(next.value)
-      }
-    }
-  }
-}
