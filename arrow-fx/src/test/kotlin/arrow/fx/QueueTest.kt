@@ -24,6 +24,7 @@ import io.kotlintest.properties.Gen
 import io.kotlintest.properties.forAll
 import io.kotlintest.shouldBe
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
 class QueueTest : ArrowFxSpec() {
 
@@ -60,8 +61,9 @@ class QueueTest : ArrowFxSpec() {
         forAll(Gen.nonEmptyList(Gen.int())) { l ->
           IO.fx {
             val q = !queue(l.size)
-            val (join, _) = !q.take().fork()
-            !IO.sleep(50.milliseconds) // Registered first, should receive first element of `tryOfferAll`
+            val latch = !Promise<Unit>()
+            val (join, _) = !IO.parTupledN(q.take(), latch.complete(Unit)).fork(EmptyCoroutineContext)
+            !latch.get() // Registered first, should receive first element of `tryOfferAll`
 
             val succeed = !q.tryOfferAll(listOf(500) + l.toList())
             val res = !q.takeAll()
@@ -131,15 +133,9 @@ class QueueTest : ArrowFxSpec() {
         forAll(Gen.int()) {
           IO.fx {
             val wontComplete = queue(10).flatMap(Queue<ForIO, Int>::take)
-            val start = !effect { System.currentTimeMillis() }
             val received = !wontComplete.map { Some(it) }
               .waitFor(100.milliseconds, default = just(None))
-            val end = !effect { System.currentTimeMillis() }
-            val elapsed = end - start
             received shouldBe None
-            require(elapsed >= 100) {
-              "Should've timeout'ed after 100 milliseconds, but took $elapsed ms. (start=$start, end=$end)"
-            }
           }.equalUnderTheLaw(IO.unit)
         }
       }
@@ -177,15 +173,9 @@ class QueueTest : ArrowFxSpec() {
         forAll(Gen.int()) {
           IO.fx {
             val wontComplete = queue(10).flatMap(Queue<ForIO, Int>::peek)
-            val start = !effect { System.currentTimeMillis() }
             val received = !wontComplete.map { Some(it) }
               .waitFor(100.milliseconds, default = just(None))
-            val end = !effect { System.currentTimeMillis() }
-            val elapsed = end - start
             received shouldBe None
-            require(elapsed >= 100) {
-              "Should've timeout'ed after 100 milliseconds, but took $elapsed ms. (start=$start, end=$end)"
-            }
           }.equalUnderTheLaw(IO.unit)
         }
       }
@@ -366,7 +356,6 @@ class QueueTest : ArrowFxSpec() {
           IO.fx {
             val q = !queue(1)
             val (join, _) = !q.take().fork()
-            !IO.sleep(50.milliseconds)
             val succeed = !q.tryOfferAll(1, 2)
             val a = !q.take()
             val b = !join
@@ -389,16 +378,10 @@ class QueueTest : ArrowFxSpec() {
           IO.fx {
             val q = !queue(1)
             !q.offer(1)
-            val start = !effect { System.currentTimeMillis() }
             val wontComplete = q.offer(2)
             val received = !wontComplete.map { Some(it) }
               .waitFor(100.milliseconds, default = just(None))
-            val end = !effect { System.currentTimeMillis() }
-            val elapsed = end - start
             received shouldBe None
-            require(elapsed >= 100) {
-              "Should've timeout'ed after 100 milliseconds, but took $elapsed ms. (start=$start, end=$end)"
-            }
           }.equalUnderTheLaw(IO.unit)
         }
       }
@@ -407,16 +390,10 @@ class QueueTest : ArrowFxSpec() {
         forAll(Gen.int()) {
           IO.fx {
             val q = !queue(3)
-            val start = !effect { System.currentTimeMillis() }
             val wontComplete = q.offerAll(1, 2, 3, 4)
             val received = !wontComplete.map { Some(it) }
               .waitFor(100.milliseconds, default = just(None))
-            val end = !effect { System.currentTimeMillis() }
-            val elapsed = end - start
             received shouldBe None
-            require(elapsed >= 100) {
-              "Should've timeout'ed after 100 milliseconds, but took $elapsed ms. (start=$start, end=$end)"
-            }
           }.equalUnderTheLaw(IO.unit)
         }
       }
