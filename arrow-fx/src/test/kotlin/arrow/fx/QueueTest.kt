@@ -61,13 +61,12 @@ class QueueTest : ArrowFxSpec() {
         forAll(Gen.nonEmptyList(Gen.int())) { l ->
           IO.fx {
             val q = !queue(l.size)
-            val latch = !Promise<Unit>()
-            val (join, _) = !IO.parTupledN(q.take(), latch.complete(Unit)).fork(EmptyCoroutineContext)
-            !latch.get() // Registered first, should receive first element of `tryOfferAll`
+            val (join, _) = !q.take().fork()
+            !IO.sleep(50.milliseconds) // Registered first, should receive first element of `tryOfferAll`
 
             val succeed = !q.tryOfferAll(listOf(500) + l.toList())
             val res = !q.takeAll()
-            val head = !join.map(Tuple2<Int, Unit>::a)
+            val head = !join
             Tuple3(succeed, res, head)
           }.equalUnderTheLaw(IO.just(Tuple3(true, l.toList(), 500)))
         }
@@ -355,12 +354,10 @@ class QueueTest : ArrowFxSpec() {
         forAll(Gen.int()) {
           IO.fx {
             val q = !queue(1)
-            val latch = !Promise<Unit>()
-            val (join, _) = !IO.parTupledN(q.take(), latch.complete(Unit)).fork(EmptyCoroutineContext)
-            !latch.get()
+            val (join, _) = !q.take().fork()
             val succeed = !q.tryOfferAll(1, 2)
             val a = !q.take()
-            val b = !join.map(Tuple2<Int, Unit>::a)
+            val b = !join
             Tuple2(succeed, setOf(a, b))
           }.equalUnderTheLaw(IO.just(Tuple2(true, setOf(1, 2))))
         }
