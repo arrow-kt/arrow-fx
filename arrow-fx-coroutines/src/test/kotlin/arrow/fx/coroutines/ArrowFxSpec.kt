@@ -36,7 +36,7 @@ abstract class StreamSpec(
     range: IntRange = depth
   ): Arb<Pull<O, R>> =
     Arb.choice<Pull<O, R>>(
-      Arb.bind(Arb.stream(arbO), arbR) { s, r ->
+      Arb.bind(Arb.stream(arbO, range), arbR) { s, r ->
         s.asPull().map { r }
       },
       arbR.map { Pull.just(it) } as Arb<Pull<O, R>>,
