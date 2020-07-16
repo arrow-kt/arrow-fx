@@ -275,7 +275,7 @@ class QueueTest : ArrowFxSpec() {
             !sleep(50.milliseconds) // Give read callback a chance to register
             !fiber.cancel()
             !q.offer(10)
-            val fallback = sleep(200.milliseconds).followedBy(IO.just(0))
+            val fallback = sleep(50.milliseconds).followedBy(IO.just(0))
             !IO.raceN(finished.get(), fallback)
           }.equalUnderTheLaw(IO.just(Right(0)))
         }
