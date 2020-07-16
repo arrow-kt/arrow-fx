@@ -7,6 +7,7 @@ import arrow.core.getOrElse
 import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.Platform
 import arrow.fx.coroutines.Token
+import arrow.fx.coroutines.cancelBoundary
 import arrow.fx.coroutines.stream.R.Done
 import arrow.fx.coroutines.stream.R.Out
 import arrow.fx.coroutines.stream.Pull.Result
@@ -118,7 +119,7 @@ internal fun <O> interruptBoundary(
   }
 
 internal suspend inline fun interruptGuard(scope: Scope): Result<Any?>? =
-  when (val isInterrupted = scope.isInterrupted()) {
+  when (val isInterrupted = scope.isInterrupted().also { cancelBoundary() }) {
     None -> null
     is Some -> when (val eith = isInterrupted.t) {
       is Either.Left -> Result.Fail(eith.a)
@@ -209,7 +210,9 @@ internal tailrec suspend fun go(
           when (val r = interruptGuard(scope)) {
             null -> {
               val release = res.release as suspend (Any?, ExitCase) -> Unit
+//              println("Going to acquire.")
               val r = scope.acquireResource(res.resource, release)
+//              println("Acquired and registered: $r - ${scope.resources()}")
               go(scope, extendLastTopLevelScope, extendedTopLevelScope, view.next(Result.fromEither(r)))
             }
             else -> go(scope, extendLastTopLevelScope, extendedTopLevelScope, view.next(r))

@@ -293,7 +293,10 @@ internal suspend fun <O, B> Pull<O, Unit>.compiler(init: B, foldChunk: (B, Chunk
   arrow.fx.coroutines.bracketCase(
     { Scope.newRoot() },
     { scope -> compile(this, scope, false, init, foldChunk) },
-    { scope, ec -> scope.close(ec).fold({ throw it }, { Unit }) }
+    { scope, ec ->
+//      println("$ec close ${scope.allResources()}")
+      scope.close(ec).fold({ throw it }, { Unit })
+    }
   )
 
 fun <O, R> Pull<O, Pull<O, R>>.flatten(): Pull<O, R> =
