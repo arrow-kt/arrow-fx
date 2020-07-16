@@ -6,7 +6,7 @@ import io.kotlintest.properties.PropertyContext
 import io.kotlintest.properties.forAll
 
 abstract class ArrowFxSpec(
-  private val iterations: Int = 500,
+  private val iterations: Int = 250,
   spec: ArrowFxSpec.() -> Unit = {}
 ) : UnitSpec() {
 

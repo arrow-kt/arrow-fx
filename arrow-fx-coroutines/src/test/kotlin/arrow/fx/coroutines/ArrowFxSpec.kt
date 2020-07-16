@@ -25,7 +25,7 @@ import kotlin.math.abs
  * So for `0..10` it will generate at most a `Stream` with `10` `Chunk`s of `10` elements.
  */
 abstract class StreamSpec(
-  iterations: Int = 1000,
+  iterations: Int = 250,
   val depth: IntRange = 0..100,
   spec: StreamSpec.() -> Unit = {}
 ) : ArrowFxSpec(iterations) {
@@ -69,7 +69,7 @@ abstract class StreamSpec(
  * Simple overwritten Kotest FreeSpec to reduce stress on tests.
  */
 abstract class ArrowFxSpec(
-  private val iterations: Int = 1000,
+  private val iterations: Int = 250,
   spec: ArrowFxSpec.() -> Unit = {}
 ) : FreeSpec() {
 
