@@ -349,7 +349,7 @@ class QueueTest : ArrowFxSpec() {
         }
       }
 
-      "$label - can take and offer at capacity".config(enabled= false) {
+      "$label - can take and offer at capacity".config(enabled = false) {
         forAll(Gen.int()) {
           IO.fx {
             val q = !queue(1)
