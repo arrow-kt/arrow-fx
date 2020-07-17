@@ -14,7 +14,7 @@ apply from: "$PUBLISH_CONF"
 
 dependencies {
     api project(':arrow-fx')
-    api "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$KOTLIN_VERSION"
+    api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$KOTLIN_VERSION"
     api "org.jetbrains.kotlinx:kotlinx-coroutines-core:$KOTLINX_COROUTINES_VERSION"
 
     testCompile project(":arrow-fx-test")

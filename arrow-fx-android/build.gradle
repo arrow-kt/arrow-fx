@@ -25,7 +25,7 @@ apply from: "$ANDROID_CONF"
 
 dependencies {
     implementation project(':arrow-fx')
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$KOTLIN_VERSION"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$KOTLIN_VERSION"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:$ANDROID_LIFECYCLE_VERSION"
 
     testImplementation project(":arrow-fx-test")
