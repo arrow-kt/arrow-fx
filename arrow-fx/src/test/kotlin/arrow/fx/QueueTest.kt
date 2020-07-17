@@ -19,10 +19,14 @@ import arrow.fx.extensions.io.dispatchers.dispatchers
 import arrow.fx.test.laws.equalUnderTheLaw
 import arrow.fx.typeclasses.milliseconds
 import io.kotest.assertions.fail
-import io.kotlintest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.forAll
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.property.arbitrary.filter
+import io.kotest.property.arbitrary.int
+import io.kotest.property.arbitrary.list
+import io.kotest.property.arbitrary.positiveInts
 import kotlin.coroutines.CoroutineContext
 
 class QueueTest : ArrowFxSpec() {
@@ -110,7 +114,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - empty queue takeAll is empty" {
-        forAll(Arb.positiveIntegers()) { capacity ->
+        forAll(Arb.positiveInts()) { capacity ->
           IO.fx {
             val q = !queue(capacity)
             !q.takeAll()
@@ -119,7 +123,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - empty queue peekAll is empty" {
-        forAll(Arb.positiveIntegers()) { capacity ->
+        forAll(Arb.positiveInts()) { capacity ->
           IO.fx {
             val q = !queue(capacity)
             !q.peekAll()
@@ -298,7 +302,7 @@ class QueueTest : ArrowFxSpec() {
       "$label - offerAll offers all values with waiting suspended takers, and within capacity".config(enabled = false) {
         forAll(
           Arb.nonEmptyList(Arb.int()).filter { it.size in 1..50 },
-          Arb.choose(52, 100)
+          Arb.int(52, 100)
         ) { l, capacity ->
           IO.fx {
             val q = !queue(capacity)
@@ -455,7 +459,7 @@ class QueueTest : ArrowFxSpec() {
       "$label - takeAll takes all values, including outstanding offers" {
         forAll(50,
           Arb.nonEmptyList(Arb.int()).filter { it.size in 51..100 },
-          Arb.choose(1, 50)
+          Arb.int(1, 50)
         ) { l, capacity ->
           IO.fx {
             val q = !queue(capacity)
@@ -473,7 +477,7 @@ class QueueTest : ArrowFxSpec() {
       "$label - peekAll reads all values, including outstanding offers" {
         forAll(50,
           Arb.nonEmptyList(Arb.int()).filter { it.size in 51..100 },
-          Arb.choose(1, 50)
+          Arb.int(1, 50)
         ) { l, capacity ->
           IO.fx {
             val q = !queue(capacity)
@@ -599,7 +603,7 @@ class QueueTest : ArrowFxSpec() {
 
       "$label - slides elements offered to queue at capacity" {
         forAll(
-          Arb.choose(1, 50),
+          Arb.int(1, 50),
           Arb.nonEmptyList(Arb.int()).filter { it.size > 50 }
         ) { capacity, xs ->
           IO.fx {
@@ -642,7 +646,7 @@ class QueueTest : ArrowFxSpec() {
 
       "$label - drops elements offered to queue at capacity" {
         forAll(
-          Arb.choose(1, 50),
+          Arb.int(1, 50),
           Arb.nonEmptyList(Arb.int()).filter { it.size > 50 }
         ) { capacity, xs ->
           IO.fx {

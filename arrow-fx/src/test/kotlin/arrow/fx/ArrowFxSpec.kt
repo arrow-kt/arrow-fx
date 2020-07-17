@@ -2,7 +2,7 @@ package arrow.fx
 
 import arrow.core.test.UnitSpec
 import io.kotest.property.Arb
-import io.kotlintest.properties.PropertyContext
+import io.kotest.property.PropertyContext
 import io.kotest.property.forAll
 
 abstract class ArrowFxSpec(
@@ -14,21 +14,21 @@ abstract class ArrowFxSpec(
     spec()
   }
 
-  fun <A> forAll(
+  suspend fun <A> forAll(
     genA: Arb<A>,
     property: PropertyContext.(A) -> Boolean
-  ): Unit =
+  ) =
     forAll(
       iterations,
       genA,
       property
     )
 
-  fun <A, B> forAll(
+  suspend fun <A, B> forAll(
     genA: Arb<A>,
     genB: Arb<B>,
     property: PropertyContext.(A, B) -> Boolean
-  ): Unit =
+  ) =
     forAll(
       iterations,
       genA,
@@ -36,7 +36,7 @@ abstract class ArrowFxSpec(
       property
     )
 
-  fun <A, B, C> forAll(
+  suspend fun <A, B, C> forAll(
     genA: Arb<A>,
     genB: Arb<B>,
     genC: Arb<C>,
@@ -50,7 +50,7 @@ abstract class ArrowFxSpec(
       property
     )
 
-  fun <A, B, C, D> forAll(
+  suspend fun <A, B, C, D> forAll(
     genA: Arb<A>,
     genB: Arb<B>,
     genC: Arb<C>,
@@ -66,7 +66,7 @@ abstract class ArrowFxSpec(
       property
     )
 
-  fun <A, B, C, D, E> forAll(
+  suspend fun <A, B, C, D, E> forAll(
     genA: Arb<A>,
     genB: Arb<B>,
     genC: Arb<C>,
@@ -84,7 +84,7 @@ abstract class ArrowFxSpec(
       property
     )
 
-  fun <A, B, C, D, E, F> forAll(
+  suspend fun <A, B, C, D, E, F> forAll(
     genA: Arb<A>,
     genB: Arb<B>,
     genC: Arb<C>,

@@ -104,7 +104,7 @@ class SemaphoreTest : ArrowFxSpec() {
       }
 
       "$label - withPermit" {
-        forAll(Arb.positiveIntegers().map(Int::toLong)) { i ->
+        forAll(Arb.positiveInts().map(Int::toLong)) { i ->
           semaphore(i).flatMap { s ->
             s.available().flatMap { current ->
               s.withPermit(IO.defer {

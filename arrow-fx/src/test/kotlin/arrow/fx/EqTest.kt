@@ -6,7 +6,7 @@ import arrow.fx.typeclasses.milliseconds
 import arrow.fx.test.eq.eq
 import arrow.fx.test.laws.shouldBeEq
 import arrow.fx.test.laws.shouldNotBeEq
-import io.kotlintest.shouldThrow
+import io.kotest.assertions.throwables.shouldThrow
 
 class EqTest : ArrowFxSpec() {
 
