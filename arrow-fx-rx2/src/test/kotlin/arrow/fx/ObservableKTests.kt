@@ -22,8 +22,12 @@ import arrow.core.test.generators.throwable
 import arrow.fx.test.laws.ConcurrentLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.properties.Gen
-import io.kotlintest.shouldBe
+import io.kotest.property.Arb
+import io.kotest.matchers.shouldBe
+import io.kotest.property.arbitrary.choice
+import io.kotest.property.arbitrary.constant
+import io.kotest.property.arbitrary.list
+import io.kotest.property.arbitrary.map
 import io.reactivex.Observable
 import io.reactivex.observers.TestObserver
 import java.util.concurrent.CountDownLatch
@@ -139,14 +143,14 @@ private fun ObservableK.Companion.eqK() = object : EqK<ForObservableK> {
     }
 }
 
-private fun <A> Gen.Companion.observableK(gen: Gen<A>) =
-  Gen.oneOf(
-    Gen.constant(Observable.empty<A>()),
-    Gen.throwable().map { Observable.error<A>(it) },
-    Gen.list(gen).map { Observable.fromIterable(it) }
+private fun <A> Arb.Companion.observableK(gen: Arb<A>) =
+  Arb.choice(
+    Arb.constant(Observable.empty<A>()),
+    Arb.throwable().map { Observable.error<A>(it) },
+    Arb.list(gen).map { Observable.fromIterable(it) }
   ).map { it.k() }
 
 private fun ObservableK.Companion.genk() = object : GenK<ForObservableK> {
-  override fun <A> genK(gen: Gen<A>): Gen<Kind<ForObservableK, A>> =
-    Gen.observableK(gen) as Gen<Kind<ForObservableK, A>>
+  override fun <A> genK(gen: Arb<A>): Arb<Kind<ForObservableK, A>> =
+    Arb.observableK(gen) as Arb<Kind<ForObservableK, A>>
 }

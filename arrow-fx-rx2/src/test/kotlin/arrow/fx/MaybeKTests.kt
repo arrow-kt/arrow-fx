@@ -24,9 +24,12 @@ import arrow.fx.test.eq.unsafeRunEq
 import arrow.fx.test.laws.ConcurrentLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.properties.Gen
-import io.kotlintest.shouldBe
-import io.kotlintest.shouldNotBe
+import io.kotest.property.Arb
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.property.arbitrary.choice
+import io.kotest.property.arbitrary.constant
+import io.kotest.property.arbitrary.map
 import io.reactivex.Maybe
 import io.reactivex.observers.TestObserver
 import io.reactivex.schedulers.Schedulers
@@ -219,15 +222,15 @@ private fun MaybeK.Companion.eqK() = object : EqK<ForMaybeK> {
 }
 
 private fun MaybeK.Companion.genk() = object : GenK<ForMaybeK> {
-  override fun <A> genK(gen: Gen<A>): Gen<Kind<ForMaybeK, A>> =
-    Gen.oneOf(
-      Gen.constant(Maybe.empty<A>()),
+  override fun <A> genK(gen: Arb<A>): Arb<Kind<ForMaybeK, A>> =
+    Arb.choice(
+      Arb.constant(Maybe.empty<A>()),
 
       gen.map {
         Maybe.just(it)
       },
 
-      Gen.throwable().map {
+      Arb.throwable().map {
         Maybe.error<A>(it)
       }
     ).map {

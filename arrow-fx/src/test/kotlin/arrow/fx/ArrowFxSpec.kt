@@ -1,9 +1,9 @@
 package arrow.fx
 
 import arrow.core.test.UnitSpec
-import io.kotlintest.properties.Gen
+import io.kotest.property.Arb
 import io.kotlintest.properties.PropertyContext
-import io.kotlintest.properties.forAll
+import io.kotest.property.forAll
 
 abstract class ArrowFxSpec(
   private val iterations: Int = 350,
@@ -15,7 +15,7 @@ abstract class ArrowFxSpec(
   }
 
   fun <A> forAll(
-    genA: Gen<A>,
+    genA: Arb<A>,
     property: PropertyContext.(A) -> Boolean
   ): Unit =
     forAll(
@@ -25,8 +25,8 @@ abstract class ArrowFxSpec(
     )
 
   fun <A, B> forAll(
-    genA: Gen<A>,
-    genB: Gen<B>,
+    genA: Arb<A>,
+    genB: Arb<B>,
     property: PropertyContext.(A, B) -> Boolean
   ): Unit =
     forAll(
@@ -37,9 +37,9 @@ abstract class ArrowFxSpec(
     )
 
   fun <A, B, C> forAll(
-    genA: Gen<A>,
-    genB: Gen<B>,
-    genC: Gen<C>,
+    genA: Arb<A>,
+    genB: Arb<B>,
+    genC: Arb<C>,
     property: PropertyContext.(A, B, C) -> Boolean
   ): Unit =
     forAll(
@@ -51,10 +51,10 @@ abstract class ArrowFxSpec(
     )
 
   fun <A, B, C, D> forAll(
-    genA: Gen<A>,
-    genB: Gen<B>,
-    genC: Gen<C>,
-    genD: Gen<D>,
+    genA: Arb<A>,
+    genB: Arb<B>,
+    genC: Arb<C>,
+    genD: Arb<D>,
     property: PropertyContext.(A, B, C, D) -> Boolean
   ): Unit =
     forAll(
@@ -67,11 +67,11 @@ abstract class ArrowFxSpec(
     )
 
   fun <A, B, C, D, E> forAll(
-    genA: Gen<A>,
-    genB: Gen<B>,
-    genC: Gen<C>,
-    genD: Gen<D>,
-    genE: Gen<E>,
+    genA: Arb<A>,
+    genB: Arb<B>,
+    genC: Arb<C>,
+    genD: Arb<D>,
+    genE: Arb<E>,
     property: PropertyContext.(A, B, C, D, E) -> Boolean
   ): Unit =
     forAll(
@@ -85,12 +85,12 @@ abstract class ArrowFxSpec(
     )
 
   fun <A, B, C, D, E, F> forAll(
-    genA: Gen<A>,
-    genB: Gen<B>,
-    genC: Gen<C>,
-    genD: Gen<D>,
-    genE: Gen<E>,
-    genF: Gen<F>,
+    genA: Arb<A>,
+    genB: Arb<B>,
+    genC: Arb<C>,
+    genD: Arb<D>,
+    genE: Arb<E>,
+    genF: Arb<F>,
     property: PropertyContext.(A, B, C, D, E, F) -> Boolean
   ): Unit =
     forAll(

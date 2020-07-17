@@ -19,9 +19,9 @@ import arrow.fx.extensions.io.monad.followedBy
 import arrow.fx.typeclasses.milliseconds
 import arrow.fx.test.eq.eq
 import arrow.fx.test.laws.shouldBeEq
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
-import io.kotlintest.shouldBe
+import io.kotest.property.Arb
+import io.kotest.property.forAll
+import io.kotest.matchers.shouldBe
 
 class MVarTest : ArrowFxSpec() {
 
@@ -29,7 +29,7 @@ class MVarTest : ArrowFxSpec() {
 
     fun tests(label: String, mvar: MVarFactory<ForIO>) {
       "$label - empty; put; isNotEmpty; take; put; take" {
-        forAll(Gen.int(), Gen.int()) { a, b ->
+        forAll(Arb.int(), Arb.int()) { a, b ->
           IO.fx {
             val av = mvar.empty<Int>().bind()
             val isEmpty = av.isEmpty().bind()
@@ -44,7 +44,7 @@ class MVarTest : ArrowFxSpec() {
       }
 
       "$label - empty; tryPut; tryPut; isNotEmpty; tryTake; tryTake; put; take" {
-        forAll(Gen.int(), Gen.int(), Gen.int()) { a, b, c ->
+        forAll(Arb.int(), Arb.int(), Arb.int()) { a, b, c ->
           IO.fx {
             val av = mvar.empty<Int>().bind()
             val isEmpty = av.isEmpty().bind()
@@ -118,7 +118,7 @@ class MVarTest : ArrowFxSpec() {
       }
 
       "$label - initial; isNotEmpty; take; put; take" {
-        forAll(Gen.int(), Gen.int()) { a, b ->
+        forAll(Arb.int(), Arb.int()) { a, b ->
           IO.fx {
             val av = mvar.just(a).bind()
             val isNotEmpty = av.isNotEmpty().bind()
@@ -132,7 +132,7 @@ class MVarTest : ArrowFxSpec() {
       }
 
       "$label - initial; take; put; take" {
-        forAll(Gen.int(), Gen.int()) { a, b ->
+        forAll(Arb.int(), Arb.int()) { a, b ->
           IO.fx {
             val av = !mvar.just(a)
             val isEmpty = !av.isEmpty()
@@ -145,7 +145,7 @@ class MVarTest : ArrowFxSpec() {
       }
 
       "$label - initial; read; take" {
-        forAll(Gen.int()) { i ->
+        forAll(Arb.int()) { i ->
           IO.fx {
             val av = mvar.just(i).bind()
             val read = av.read().bind()
@@ -156,7 +156,7 @@ class MVarTest : ArrowFxSpec() {
       }
 
       "$label - empty; read; put" {
-        forAll(Gen.int()) { a ->
+        forAll(Arb.int()) { a ->
           IO.fx {
             val av = !mvar.empty<Int>()
             val read = !av.read().fork()

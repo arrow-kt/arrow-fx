@@ -11,9 +11,9 @@ import arrow.fx.typeclasses.MonadDefer
 import arrow.fx.test.eq.eqK
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
-import io.kotlintest.shouldBe
+import io.kotest.property.Arb
+import io.kotest.property.forAll
+import io.kotest.matchers.shouldBe
 
 class RefTest : ArrowFxSpec() {
 
@@ -24,7 +24,7 @@ class RefTest : ArrowFxSpec() {
       fun Kind<F, Unit>.unsafeRunSync(): Boolean = test()
 
       "set get - successful" {
-        forAll(Gen.int(), Gen.int()) { a, b ->
+        forAll(Arb.int(), Arb.int()) { a, b ->
           RF.just(a).flatMap { ref ->
             ref.set(b).flatMap {
               ref.get().map { it shouldBe b }
@@ -34,7 +34,7 @@ class RefTest : ArrowFxSpec() {
       }
 
       "getAndSet - successful" {
-        forAll(Gen.int(), Gen.int()) { a, b ->
+        forAll(Arb.int(), Arb.int()) { a, b ->
           fx.monad {
             val ref = !RF.just(a)
             val old = !ref.getAndSet(b)
@@ -46,7 +46,7 @@ class RefTest : ArrowFxSpec() {
       }
 
       "access - successful" {
-        forAll(Gen.int(), Gen.int()) { a, b ->
+        forAll(Arb.int(), Arb.int()) { a, b ->
           fx.monad {
             val ref = !RF.just(a)
             val (_, setter) = !ref.access()
@@ -59,7 +59,7 @@ class RefTest : ArrowFxSpec() {
       }
 
       "access - setter should fail if value is modified before setter is called" {
-        forAll(Gen.int(), Gen.int(), Gen.int()) { a, b, c ->
+        forAll(Arb.int(), Arb.int(), Arb.int()) { a, b, c ->
           fx.monad {
             val ref = !RF.just(a)
             val (_, setter) = !ref.access()
@@ -73,7 +73,7 @@ class RefTest : ArrowFxSpec() {
       }
 
       "access - setter should fail if called twice" {
-        forAll(Gen.int(), Gen.int(), Gen.int(), Gen.int()) { a, b, c, d ->
+        forAll(Arb.int(), Arb.int(), Arb.int(), Arb.int()) { a, b, c, d ->
           fx.monad {
             val ref = RF.just(a).bind()
             val (_, setter) = ref.access().bind()
@@ -89,7 +89,7 @@ class RefTest : ArrowFxSpec() {
       }
 
       "tryUpdate - modification occurs successfully" {
-        forAll(Gen.int(), Gen.functionAToB<Int, Int>(Gen.int())) { a, f ->
+        forAll(Arb.int(), Arb.functionAToB<Int, Int>(Arb.int())) { a, f ->
           fx.monad {
             val ref = !RF.just(a)
             !ref.tryUpdate(f)
@@ -100,7 +100,7 @@ class RefTest : ArrowFxSpec() {
       }
 
       "tryUpdate - should fail to update if modification has occurred" {
-        forAll(Gen.int(), Gen.functionAToB<Int, Int>(Gen.int())) { a, f ->
+        forAll(Arb.int(), Arb.functionAToB<Int, Int>(Arb.int())) { a, f ->
           RF.just(a).flatMap { ref ->
               ref.tryUpdate {
                 ref.update(Int::inc).unsafeRunSync()
@@ -113,7 +113,7 @@ class RefTest : ArrowFxSpec() {
       }
 
       "consistent set update" {
-        forAll(Gen.int(), Gen.int()) { a, b ->
+        forAll(Arb.int(), Arb.int()) { a, b ->
           val set = RF.just(a).flatMap { ref -> ref.set(b).flatMap { ref.get() } }
           val update = RF.just(a).flatMap { ref -> ref.update { b }.flatMap { ref.get() } }
 
@@ -126,7 +126,7 @@ class RefTest : ArrowFxSpec() {
       }
 
       "access id" {
-        forAll(Gen.int()) { a ->
+        forAll(Arb.int()) { a ->
           RF.just(a).flatMap { ref ->
             ref.access().map { (a, _) -> a }.flatMap {
               ref.get().map { it shouldBe a }
@@ -136,7 +136,7 @@ class RefTest : ArrowFxSpec() {
       }
 
       "consistent access tryUpdate" {
-        forAll(Gen.int(), Gen.functionAToB<Int, Int>(Gen.int())) { a, f ->
+        forAll(Arb.int(), Arb.functionAToB<Int, Int>(Arb.int())) { a, f ->
           val accessMap = RF.just(a).flatMap { ref -> ref.access().map { (a, setter) -> setter(f(a)) } }.flatten()
           val tryUpdate = RF.just(a).flatMap { ref -> ref.tryUpdate(f) }
 

@@ -18,11 +18,11 @@ import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.dispatchers.dispatchers
 import arrow.fx.test.laws.equalUnderTheLaw
 import arrow.fx.typeclasses.milliseconds
-import io.kotlintest.fail
+import io.kotest.assertions.fail
 import io.kotlintest.matchers.types.shouldBeInstanceOf
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
-import io.kotlintest.shouldBe
+import io.kotest.property.Arb
+import io.kotest.property.forAll
+import io.kotest.matchers.shouldBe
 import kotlin.coroutines.CoroutineContext
 
 class QueueTest : ArrowFxSpec() {
@@ -36,7 +36,7 @@ class QueueTest : ArrowFxSpec() {
     ) {
 
       "$label - make a queue the add values then retrieve in the same order" {
-        forAll(Gen.nonEmptyList(Gen.int())) { l ->
+        forAll(Arb.nonEmptyList(Arb.int())) { l ->
           IO.fx {
             val q = !queue(l.size)
             !l.traverse(IO.applicative(), q::offer)
@@ -46,7 +46,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - queue can be filled at once with enough capacity" {
-        forAll(Gen.nonEmptyList(Gen.int())) { l ->
+        forAll(Arb.nonEmptyList(Arb.int())) { l ->
           IO.fx {
             val q = !queue(l.size)
             val succeed = !q.tryOfferAll(l.toList())
@@ -57,7 +57,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - queue can be filled at once over capacity with takers" {
-        forAll(Gen.nonEmptyList(Gen.int())) { l ->
+        forAll(Arb.nonEmptyList(Arb.int())) { l ->
           IO.fx {
             val q = !queue(l.size)
             val (join, _) = !q.take().fork()
@@ -73,8 +73,8 @@ class QueueTest : ArrowFxSpec() {
 
       "$label - tryOfferAll under capacity" {
         forAll(
-          Gen.list(Gen.int()).filter { it.size <= 100 },
-          Gen.int().filter { it > 100 }
+          Arb.list(Arb.int()).filter { it.size <= 100 },
+          Arb.int().filter { it > 100 }
         ) { l, capacity ->
           IO.fx {
             val q = !queue(capacity)
@@ -86,7 +86,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - takeAll takes all values from a Queue" {
-        forAll(Gen.nonEmptyList(Gen.int())) { l ->
+        forAll(Arb.nonEmptyList(Arb.int())) { l ->
           IO.fx {
             val q = !queue(l.size)
             !l.traverse(IO.applicative(), q::offer)
@@ -98,7 +98,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - peekAll reads all values from a Queue without removing them" {
-        forAll(Gen.nonEmptyList(Gen.int())) { l ->
+        forAll(Arb.nonEmptyList(Arb.int())) { l ->
           IO.fx {
             val q = !queue(l.size)
             !l.traverse(IO.applicative(), q::offer)
@@ -110,7 +110,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - empty queue takeAll is empty" {
-        forAll(Gen.positiveIntegers()) { capacity ->
+        forAll(Arb.positiveIntegers()) { capacity ->
           IO.fx {
             val q = !queue(capacity)
             !q.takeAll()
@@ -119,7 +119,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - empty queue peekAll is empty" {
-        forAll(Gen.positiveIntegers()) { capacity ->
+        forAll(Arb.positiveIntegers()) { capacity ->
           IO.fx {
             val q = !queue(capacity)
             !q.peekAll()
@@ -128,7 +128,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - time out taking from an empty queue" {
-        forAll(Gen.int()) {
+        forAll(Arb.int()) {
           IO.fx {
             val wontComplete = queue(10).flatMap(Queue<ForIO, Int>::take)
             val received = !wontComplete.map { Some(it) }
@@ -139,7 +139,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - suspended take calls on an empty queue complete when offer calls made to queue" {
-        forAll(Gen.int()) { i ->
+        forAll(Arb.int()) { i ->
           IO.fx {
             val q = !queue(3)
             val first = !q.take().fork(ctx)
@@ -150,7 +150,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - multiple take calls on an empty queue complete when until as many offer calls made to queue" {
-        forAll(Gen.tuple3(Gen.int(), Gen.int(), Gen.int())) { t ->
+        forAll(Arb.tuple3(Arb.int(), Arb.int(), Arb.int())) { t ->
           IO.fx {
             val q = !queue(3)
             val first = !q.take().fork(ctx)
@@ -168,7 +168,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - time out peeking from an empty queue" {
-        forAll(Gen.int()) {
+        forAll(Arb.int()) {
           IO.fx {
             val wontComplete = queue(10).flatMap(Queue<ForIO, Int>::peek)
             val received = !wontComplete.map { Some(it) }
@@ -179,7 +179,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - suspended peek calls on an empty queue complete when offer calls made to queue" {
-        forAll(Gen.int()) { i ->
+        forAll(Arb.int()) { i ->
           IO.fx {
             val q = !queue(3)
             val first = !q.peek().fork(ctx)
@@ -190,7 +190,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - multiple peek calls offerAll is cancelable an empty queue all complete with the first value is received" {
-        forAll(Gen.int()) { i ->
+        forAll(Arb.int()) { i ->
           IO.fx {
             val q = !queue(1)
             val first = !q.peek().fork(ctx)
@@ -206,7 +206,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - peek does not remove value from Queue" {
-        forAll(Gen.int()) { i ->
+        forAll(Arb.int()) { i ->
           IO.fx {
             val q = !queue(10)
             !q.offer(i)
@@ -218,7 +218,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - tryTake on an empty Queue returns None" {
-        forAll(Gen.int()) {
+        forAll(Arb.int()) {
           IO.fx {
             val q = !queue(10)
             !q.tryTake()
@@ -227,7 +227,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - tryPeek on an empty Queue returns None" {
-        forAll(Gen.int()) {
+        forAll(Arb.int()) {
           IO.fx {
             val q = !queue(10)
             !q.tryPeek()
@@ -236,7 +236,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - take is cancelable" {
-        forAll(Gen.int()) {
+        forAll(Arb.int()) {
           IO.fx {
             val q = !queue(1)
             val t1 = !q.take().fork()
@@ -255,7 +255,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - peek is cancelable" {
-        forAll(Gen.int()) {
+        forAll(Arb.int()) {
           IO.fx {
             val q = !queue(1)
             val finished = !Promise<Int>()
@@ -270,7 +270,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - takeAll returns emptyList with waiting suspended takers" {
-        forAll(Gen.int()) {
+        forAll(Arb.int()) {
           IO.fx {
             val q = !queue(1)
             val (_, cancel) = !q.take().fork()
@@ -283,7 +283,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - peekAll returns emptyList with waiting suspended takers" {
-        forAll(Gen.int()) {
+        forAll(Arb.int()) {
           IO.fx {
             val q = !queue(1)
             val (_, cancel) = !q.take().fork()
@@ -297,8 +297,8 @@ class QueueTest : ArrowFxSpec() {
 
       "$label - offerAll offers all values with waiting suspended takers, and within capacity".config(enabled = false) {
         forAll(
-          Gen.nonEmptyList(Gen.int()).filter { it.size in 1..50 },
-          Gen.choose(52, 100)
+          Arb.nonEmptyList(Arb.int()).filter { it.size in 1..50 },
+          Arb.choose(52, 100)
         ) { l, capacity ->
           IO.fx {
             val q = !queue(capacity)
@@ -313,7 +313,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - offerAll can offer empty" {
-        forAll(Gen.int()) {
+        forAll(Arb.int()) {
           IO.fx {
             val q = !queue(1)
             !q.offer(1)
@@ -329,7 +329,7 @@ class QueueTest : ArrowFxSpec() {
       queue: (Int) -> IO<Queue<ForIO, Int>>
     ) {
       "$label - tryOffer returns false over capacity" {
-        forAll(Gen.int()) {
+        forAll(Arb.int()) {
           IO.fx {
             val q = !queue(1)
             !q.offer(1)
@@ -339,7 +339,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - tryOfferAll over capacity" {
-        forAll(Gen.list(Gen.int()).filter { it.size > 1 }) { l ->
+        forAll(Arb.list(Arb.int()).filter { it.size > 1 }) { l ->
           IO.fx {
             val q = !queue(1)
             val succeed = !q.tryOfferAll(l)
@@ -350,7 +350,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - can take and offer at capacity".config(enabled = false) {
-        forAll(Gen.int()) {
+        forAll(Arb.int()) {
           IO.fx {
             val q = !queue(1)
             val (join, _) = !q.take().fork()
@@ -372,7 +372,7 @@ class QueueTest : ArrowFxSpec() {
       strategyAtCapacityTests(label, queue)
 
       "$label - time out offering to a queue at capacity" {
-        forAll(Gen.int()) {
+        forAll(Arb.int()) {
           IO.fx {
             val q = !queue(1)
             !q.offer(1)
@@ -385,7 +385,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - time out offering multiple values to a queue at capacity" {
-        forAll(Gen.int()) {
+        forAll(Arb.int()) {
           IO.fx {
             val q = !queue(3)
             val wontComplete = q.offerAll(1, 2, 3, 4)
@@ -397,7 +397,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - queue cannot be filled at once without enough capacity" {
-        forAll(Gen.nonEmptyList(Gen.int())) { l ->
+        forAll(Arb.nonEmptyList(Arb.int())) { l ->
           IO.fx {
             val q = !queue(l.size)
             val succeed = !q.tryOfferAll(l.toList() + 1)
@@ -408,7 +408,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - can offerAll at capacity with take" {
-        forAll(Gen.int()) {
+        forAll(Arb.int()) {
           IO.fx {
             val q = !queue(1)
             val (join, _) = !q.take().fork()
@@ -422,7 +422,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - can tryOfferAll at capacity with take" {
-        forAll(Gen.int()) {
+        forAll(Arb.int()) {
           IO.fx {
             val q = !queue(1)
             val (join, _) = !q.take().fork()
@@ -437,7 +437,7 @@ class QueueTest : ArrowFxSpec() {
 
       // offerAll(fa).fork() + offerAll(fb).fork() <==> queue(fa + fb) OR queue(fb + fa)
       "$label - offerAll is atomic" {
-        forAll(Gen.nonEmptyList(Gen.int()), Gen.nonEmptyList(Gen.int())) { fa, fb ->
+        forAll(Arb.nonEmptyList(Arb.int()), Arb.nonEmptyList(Arb.int())) { fa, fb ->
           IO.fx {
             val q = !queue(fa.size + fb.size)
             !q.offerAll(fa.toList()).fork()
@@ -454,8 +454,8 @@ class QueueTest : ArrowFxSpec() {
       // To test outstanding offers, we need to `offer` more elements to the queue than we have capacity
       "$label - takeAll takes all values, including outstanding offers" {
         forAll(50,
-          Gen.nonEmptyList(Gen.int()).filter { it.size in 51..100 },
-          Gen.choose(1, 50)
+          Arb.nonEmptyList(Arb.int()).filter { it.size in 51..100 },
+          Arb.choose(1, 50)
         ) { l, capacity ->
           IO.fx {
             val q = !queue(capacity)
@@ -472,8 +472,8 @@ class QueueTest : ArrowFxSpec() {
       // To test outstanding offers, we need to `offer` more elements to the queue than we have capacity
       "$label - peekAll reads all values, including outstanding offers" {
         forAll(50,
-          Gen.nonEmptyList(Gen.int()).filter { it.size in 51..100 },
-          Gen.choose(1, 50)
+          Arb.nonEmptyList(Arb.int()).filter { it.size in 51..100 },
+          Arb.choose(1, 50)
         ) { l, capacity ->
           IO.fx {
             val q = !queue(capacity)
@@ -489,7 +489,7 @@ class QueueTest : ArrowFxSpec() {
 
       // Offer only gets scheduled for Bounded Queues, others apply strategy.
       "$label - offer is cancelable" {
-        forAll(Gen.int()) {
+        forAll(Arb.int()) {
           IO.fx {
             val q = !queue(1)
             !q.offer(0)
@@ -512,7 +512,7 @@ class QueueTest : ArrowFxSpec() {
 
       // OfferAll only gets scheduled for Bounded Queues, others apply strategy.
       "$label - offerAll is cancelable" {
-        forAll(Gen.int()) {
+        forAll(Arb.int()) {
           IO.fx {
             val q = !queue(1)
             !q.offer(0)
@@ -534,7 +534,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - tryOffer returns false at capacity" {
-        forAll(Gen.int()) {
+        forAll(Arb.int()) {
           IO.fx {
             val q = !queue(1)
             !q.offer(1)
@@ -551,7 +551,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - suspended offers called on a full queue complete when take calls made to queue" {
-        forAll(Gen.tuple2(Gen.int(), Gen.int())) { t ->
+        forAll(Arb.tuple2(Arb.int(), Arb.int())) { t ->
           IO.fx {
             val q = !queue(1)
             !q.offer(t.a)
@@ -565,7 +565,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - multiple offer calls on an full queue complete when as many take calls are made to queue" {
-        forAll(Gen.tuple3(Gen.int(), Gen.int(), Gen.int())) { t ->
+        forAll(Arb.tuple3(Arb.int(), Arb.int(), Arb.int())) { t ->
           IO.fx {
             val q = !queue(1)
             !q.offer(t.a)
@@ -599,8 +599,8 @@ class QueueTest : ArrowFxSpec() {
 
       "$label - slides elements offered to queue at capacity" {
         forAll(
-          Gen.choose(1, 50),
-          Gen.nonEmptyList(Gen.int()).filter { it.size > 50 }
+          Arb.choose(1, 50),
+          Arb.nonEmptyList(Arb.int()).filter { it.size > 50 }
         ) { capacity, xs ->
           IO.fx {
             val q = !queue(capacity)
@@ -627,7 +627,7 @@ class QueueTest : ArrowFxSpec() {
       }
 
       "$label - drops elements offered to a queue at capacity" {
-        forAll(Gen.int(), Gen.int(), Gen.nonEmptyList(Gen.int())) { x, x2, xs ->
+        forAll(Arb.int(), Arb.int(), Arb.nonEmptyList(Arb.int())) { x, x2, xs ->
           IO.fx {
             val q = !queue(xs.size)
             !xs.traverse(IO.applicative(), q::offer)
@@ -642,8 +642,8 @@ class QueueTest : ArrowFxSpec() {
 
       "$label - drops elements offered to queue at capacity" {
         forAll(
-          Gen.choose(1, 50),
-          Gen.nonEmptyList(Gen.int()).filter { it.size > 50 }
+          Arb.choose(1, 50),
+          Arb.nonEmptyList(Arb.int()).filter { it.size > 50 }
         ) { capacity, xs ->
           IO.fx {
             val q = !queue(capacity)

@@ -17,8 +17,11 @@ import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import arrow.typeclasses.Functor
 import arrow.typeclasses.Selective
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
+import io.kotest.property.Arb
+import io.kotest.property.arbitrary.create
+import io.kotest.property.arbitrary.int
+import io.kotest.property.arbitrary.string
+import io.kotest.property.forAll
 
 object BracketLaws {
 
@@ -76,104 +79,107 @@ object BracketLaws {
     MonadErrorLaws.laws(BF, FF, AP, SL, GENK, EQK) +
       bracketLaws(BF, EQK, testStackSafety, iterations)
 
-  fun <F> Bracket<F, Throwable>.bracketCaseWithJustUnitEqvMap(EQ: Eq<Kind<F, Int>>): Unit =
-    forAll(Gen.int().applicativeError(this), Gen.functionAToB<Int, Int>(Gen.int())
+  private suspend fun <F> Bracket<F, Throwable>.bracketCaseWithJustUnitEqvMap(EQ: Eq<Kind<F, Int>>) =
+    forAll(Arb.int().applicativeError(this), Arb.functionAToB<Int, Int>(Arb.int())
     ) { fa: Kind<F, Int>, f: (Int) -> Int ->
       fa.bracketCase(release = { _, _ -> just<Unit>(Unit) }, use = { a -> just(f(a)) }).equalUnderTheLaw(fa.map(f), EQ)
     }
 
-  fun <F> Bracket<F, Throwable>.bracketCaseWithJustUnitIsUncancellable(
+  private suspend fun <F> Bracket<F, Throwable>.bracketCaseWithJustUnitIsUncancellable(
     EQ: Eq<Kind<F, Int>>
-  ): Unit =
-    forAll(Gen.int().applicativeError(this)) { fa: Kind<F, Int> ->
+  ) =
+    forAll(Arb.int().applicativeError(this)) { fa: Kind<F, Int> ->
       fa.bracketCase(release = { _, _ -> just<Unit>(Unit) }, use = { just(it) }).equalUnderTheLaw(fa.uncancellable().flatMap { just(it) }, EQ)
     }
 
-  fun <F> Bracket<F, Throwable>.bracketCaseFailureInAcquisitionRemainsFailure(
+  private suspend fun <F> Bracket<F, Throwable>.bracketCaseFailureInAcquisitionRemainsFailure(
     EQ: Eq<Kind<F, Int>>
-  ): Unit =
-    forAll(Gen.throwable()) { e ->
+  ) =
+    forAll(Arb.throwable()) { e ->
       raiseError<Int>(e).bracketCase(release = { _, _ -> just<Unit>(Unit) }, use = { just(it) }).equalUnderTheLaw(raiseError(e), EQ)
     }
 
-  fun <F> Bracket<F, Throwable>.bracketIsDerivedFromBracketCase(
+  private suspend fun <F> Bracket<F, Throwable>.bracketIsDerivedFromBracketCase(
     EQ: Eq<Kind<F, Int>>
-  ): Unit =
-    forAll(Gen.int().applicativeError(this)) { fa: Kind<F, Int> ->
+  ) =
+    forAll(Arb.int().applicativeError(this)) { fa: Kind<F, Int> ->
       fa.bracket(release = { just<Unit>(Unit) }, use = { just(it) }).equalUnderTheLaw(fa.bracketCase(release = { _, _ -> just<Unit>(Unit) }, use = { just(it) }), EQ)
     }
 
-  fun <F> Bracket<F, Throwable>.uncancellablePreventsCancelledCase(
+  private suspend fun <F> Bracket<F, Throwable>.uncancellablePreventsCancelledCase(
     onCancel: Kind<F, Unit>,
     onFinish: Kind<F, Unit>,
     EQ: Eq<Kind<F, Int>>
-  ): Unit =
-    forAll(Gen.int().applicativeError(this)) { fa: Kind<F, Int> ->
+  ) =
+    forAll(Arb.int().applicativeError(this)) { fa: Kind<F, Int> ->
       just(Unit).bracketCase(use = { fa }, release = { _, b ->
         if (b == ExitCase.Cancelled) onCancel else onFinish
       }).uncancellable().equalUnderTheLaw(fa.guarantee(onFinish), EQ)
     }
 
-  fun <F> Bracket<F, Throwable>.acquireAndReleaseAreUncancellable(
+  private suspend fun <F> Bracket<F, Throwable>.acquireAndReleaseAreUncancellable(
     release: (Int) -> Kind<F, Unit>,
     EQ: Eq<Kind<F, Int>>
-  ): Unit =
-    forAll(Gen.int().applicativeError(this)) { fa: Kind<F, Int> ->
+  ) =
+    forAll(Arb.int().applicativeError(this)) { fa: Kind<F, Int> ->
       fa.uncancellable().bracket({ a -> release(a).uncancellable() }) { just(it) }.equalUnderTheLaw(fa.bracket(release) { just(it) }, EQ)
     }
 
-  fun <F> Bracket<F, Throwable>.guaranteeIsDerivedFromBracket(
+  private suspend fun <F> Bracket<F, Throwable>.guaranteeIsDerivedFromBracket(
     finalizer: Kind<F, Unit>,
     EQ: Eq<Kind<F, Int>>
-  ): Unit =
-    forAll(Gen.int().applicativeError(this)) { fa: Kind<F, Int> ->
+  ) =
+    forAll(Arb.int().applicativeError(this)) { fa: Kind<F, Int> ->
       fa.guarantee(finalizer).equalUnderTheLaw(just(Unit).bracket({ finalizer }, use = { fa }), EQ)
     }
 
-  fun <F> Bracket<F, Throwable>.guaranteeCaseIsDerivedFromBracketCase(
+  private suspend fun <F> Bracket<F, Throwable>.guaranteeCaseIsDerivedFromBracketCase(
     finalizer: (ExitCase<Throwable>) -> Kind<F, Unit>,
     EQ: Eq<Kind<F, Int>>
-  ): Unit =
-    forAll(Gen.int().applicativeError(this)) { fa: Kind<F, Int> ->
+  ) =
+    forAll(Arb.int().applicativeError(this)) { fa: Kind<F, Int> ->
       fa.guaranteeCase(finalizer).equalUnderTheLaw(just(Unit).bracketCase({ _, e -> finalizer(e) }) { fa }, EQ)
     }
 
-  fun <F> Bracket<F, Throwable>.bracketPropagatesTransformerEffects(EQ: Eq<Kind<F, Int>>): Unit =
-    forAll(Gen.string().applicativeError(this),
-      Gen.functionAToB<String, Kind<F, Int>>(Gen.int().applicativeError(this)),
-      Gen.functionAToB<String, Kind<F, Unit>>(Gen.create { just(Unit) })) { acquire, use, release ->
+  private suspend fun <F> Bracket<F, Throwable>.bracketPropagatesTransformerEffects(EQ: Eq<Kind<F, Int>>): Unit {
+    forAll(Arb.string().applicativeError(this),
+      Arb.functionAToB<String, Kind<F, Int>>(Arb.int().applicativeError(this)),
+      Arb.functionAToB<String, Kind<F, Unit>>(Arb.create { just(Unit) })) { acquire, use, release ->
       acquire.bracket(use = use, release = release).equalUnderTheLaw(
         acquire.flatMap { a -> use(a).flatMap { b -> release(a).map { b } } }, EQ)
     }
+  }
 
-  fun <F> Bracket<F, Throwable>.bracketMustRunReleaseTaskOnUseError(EQ: Eq<Kind<F, Int>>): Unit =
-    forAll(Gen.int()) { i ->
+  private suspend fun <F> Bracket<F, Throwable>.bracketMustRunReleaseTaskOnUseError(EQ: Eq<Kind<F, Int>>): Unit {
+    forAll(Arb.int()) { i ->
       val msg = AtomicIntW(0)
       just(i).bracket<Int, Int>(
-          release = { ii -> unit().map { msg.value = ii } },
-          use = { throw Throwable("Expected failure!") }
-        )
+        release = { ii -> unit().map { msg.value = ii } },
+        use = { throw Throwable("Expected failure!") }
+      )
         .attempt()
         .map { msg.value }
         .equalUnderTheLaw(just(i), EQ)
     }
+  }
 
-  fun <F> Bracket<F, Throwable>.bracketMustNotRunReleaseTaskOnAcquireError(EQ: Eq<Kind<F, Int>>): Unit =
-    forAll(Gen.int(), Gen.int()) { expected, other ->
+  private suspend fun <F> Bracket<F, Throwable>.bracketMustNotRunReleaseTaskOnAcquireError(EQ: Eq<Kind<F, Int>>): Unit {
+    forAll(Arb.int(), Arb.int()) { expected, other ->
       val actual = AtomicIntW(expected)
       raiseError<Int>(Throwable("Expected failure!")).bracket(
-          release = { unit().map { actual.value = other } },
-          use = { just(it) }
-        )
+        release = { unit().map { actual.value = other } },
+        use = { just(it) }
+      )
         .attempt()
         .map { actual.value }
         .equalUnderTheLaw(just(expected), EQ)
     }
+  }
 
-  fun <F> Bracket<F, Throwable>.guaranteeCaseMustRunFinalizerOnError(
+  private suspend fun <F> Bracket<F, Throwable>.guaranteeCaseMustRunFinalizerOnError(
     EQ: Eq<Kind<F, Int>>
-  ): Unit =
-    forAll(Gen.int(), Gen.throwable().raiseError<F, Int, Throwable>(this)) { i, fe ->
+  ) =
+    forAll(Arb.int(), Arb.throwable().raiseError<F, Int, Throwable>(this)) { i, fe ->
       val msg = AtomicIntW(0)
       fe
         .guaranteeCase { unit().map { msg.value = i } }
@@ -182,12 +188,12 @@ object BracketLaws {
         .equalUnderTheLaw(just(i), EQ)
     }
 
-  fun <F> Bracket<F, Throwable>.onErrorMustRunFinalizerOnError(
+  private suspend fun <F> Bracket<F, Throwable>.onErrorMustRunFinalizerOnError(
     EQ: Eq<Kind<F, Int>>
-  ): Unit =
+  ) =
     forAll(
-      Gen.throwable().raiseError<F, Int, Throwable>(this),
-      Gen.int()
+      Arb.throwable().raiseError<F, Int, Throwable>(this),
+      Arb.int()
     ) { fe: Kind<F, Int>, i: Int ->
       val msg = AtomicIntW(0)
       fe
@@ -197,7 +203,7 @@ object BracketLaws {
         .equalUnderTheLaw(just(i), EQ)
     }
 
-  fun <F> Bracket<F, Throwable>.bracketShouldBeStackSafe(
+  private suspend fun <F> Bracket<F, Throwable>.bracketShouldBeStackSafe(
     iterations: Int,
     EQ: Eq<Kind<F, Int>>
   ) {
@@ -211,7 +217,7 @@ object BracketLaws {
     unit().flatMap { bracketLoop(0) }.equalUnderTheLaw(just(iterations), EQ)
   }
 
-  fun <F> Bracket<F, Throwable>.guaranteeCaseShouldBeStackSafe(
+  private suspend fun <F> Bracket<F, Throwable>.guaranteeCaseShouldBeStackSafe(
     iterations: Int,
     EQ: Eq<Kind<F, Int>>
   ) {

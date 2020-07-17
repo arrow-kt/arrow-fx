@@ -14,10 +14,10 @@ import arrow.typeclasses.EqK
 import arrow.typeclasses.Functor
 import arrow.typeclasses.MonadThrow
 import arrow.typeclasses.Selective
-import io.kotlintest.fail
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
-import io.kotlintest.shouldThrowAny
+import io.kotest.assertions.fail
+import io.kotest.assertions.throwables.shouldThrowAny
+import io.kotest.property.Arb
+import io.kotest.property.forAll
 
 object MonadThrowLaws {
 
@@ -46,13 +46,13 @@ object MonadThrowLaws {
     MonadErrorLaws.laws(M, FF, AP, SL, GENK, EQK) +
       monadThrowLaws(M, EQK)
 
-  fun <F> MonadThrow<F>.monadRaiseNonFatalRaiseError(EQ: Eq<Kind<F, Int>>): Unit =
-    forAll(Gen.throwable()) { e: Throwable ->
+  private suspend fun <F> MonadThrow<F>.monadRaiseNonFatalRaiseError(EQ: Eq<Kind<F, Int>>) =
+    forAll(Arb.throwable()) { e: Throwable ->
       e.raiseNonFatal<Int>().equalUnderTheLaw(raiseError(e), EQ)
     }
 
-  fun <F> MonadThrow<F>.monadRaiseNonFatalThrowsError(EQ: Eq<Kind<F, Kind<F, Throwable>>>): Unit =
-    forAll(Gen.fatalThrowable()) { fatal: Throwable ->
+  private suspend fun <F> MonadThrow<F>.monadRaiseNonFatalThrowsError(EQ: Eq<Kind<F, Kind<F, Throwable>>>) =
+    forAll(Arb.fatalThrowable()) { fatal: Throwable ->
       shouldThrowAny {
         fun itShouldNotComeThisFar(): Kind<F, Throwable> {
           fail("MonadThrow should rethrow the fatal Throwable: '$fatal'.")

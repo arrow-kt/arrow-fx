@@ -13,8 +13,8 @@ import arrow.fx.extensions.io.functor.unit
 import arrow.fx.extensions.io.monad.flatMap
 import arrow.fx.extensions.io.monad.map
 import arrow.fx.test.eq.eq
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
+import io.kotest.property.Arb
+import io.kotest.property.forAll
 import kotlinx.coroutines.Dispatchers
 
 class SemaphoreTest : ArrowFxSpec() {
@@ -95,7 +95,7 @@ class SemaphoreTest : ArrowFxSpec() {
       }
 
       "$label - negative number of permits" {
-        forAll(Gen.negativeIntegers().map(Int::toLong)) { i ->
+        forAll(Arb.negativeIntegers().map(Int::toLong)) { i ->
           semaphore(i)
             .map { false }
             .handleError { true }
@@ -104,7 +104,7 @@ class SemaphoreTest : ArrowFxSpec() {
       }
 
       "$label - withPermit" {
-        forAll(Gen.positiveIntegers().map(Int::toLong)) { i ->
+        forAll(Arb.positiveIntegers().map(Int::toLong)) { i ->
           semaphore(i).flatMap { s ->
             s.available().flatMap { current ->
               s.withPermit(IO.defer {

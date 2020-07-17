@@ -1,7 +1,7 @@
 package arrow.fx
 
 import arrow.core.test.UnitSpec
-import io.kotlintest.Spec
+import io.kotest.core.spec.Spec
 import io.reactivex.plugins.RxJavaPlugins
 
 abstract class RxJavaSpec : UnitSpec() {

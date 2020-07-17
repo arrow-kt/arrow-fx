@@ -15,11 +15,15 @@ import arrow.fx.extensions.resource.functor.functor
 import arrow.fx.extensions.resource.monad.monad
 import arrow.fx.extensions.resource.monoid.monoid
 import arrow.fx.extensions.resource.selective.selective
-import arrow.fx.test.laws.forFew
 import arrow.fx.typeclasses.seconds
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.properties.Gen
+import io.kotest.property.Arb
+import io.kotest.property.arbitrary.choice
+import io.kotest.property.arbitrary.int
+import io.kotest.property.arbitrary.list
+import io.kotest.property.arbitrary.map
+import io.kotest.property.arbitrary.string
 
 class ResourceTest : ArrowFxSpec() {
   init {
@@ -35,11 +39,11 @@ class ResourceTest : ArrowFxSpec() {
         Resource.genK(),
         Resource.eqK()
       ),
-      MonoidLaws.laws(Resource.monoid(Int.monoid(), IO.bracket()), Gen.int().map { Resource.just(it, IO.bracket()) }, EQ)
+      MonoidLaws.laws(Resource.monoid(Int.monoid(), IO.bracket()), Arb.int().map { Resource.just(it, IO.bracket()) }, EQ)
     )
 
     "Resource releases resources in reverse order of acquisition" {
-      forFew(5, Gen.list(Gen.string())) { l ->
+      forAll(5, Arb.list(Arb.string())) { l ->
         val released = mutableListOf<String>()
         l.traverse(Resource.applicative(IO.bracket())) {
           Resource({ IO { it } }, { r -> IO { released.add(r); Unit } }, IO.bracket())
@@ -63,10 +67,10 @@ fun Resource.Companion.eqK() = object : EqK<ResourcePartialOf<ForIO, Throwable>>
 }
 
 fun Resource.Companion.genK() = object : GenK<ResourcePartialOf<ForIO, Throwable>> {
-  override fun <A> genK(gen: Gen<A>): Gen<Kind<ResourcePartialOf<ForIO, Throwable>, A>> {
+  override fun <A> genK(gen: Arb<A>): Arb<Kind<ResourcePartialOf<ForIO, Throwable>, A>> {
     val allocate = gen.map { Resource({ IO.just(it) }, { _ -> IO.unit }, IO.bracket()) }
 
-    return Gen.oneOf(
+    return Arb.choice(
       // Allocate
       allocate,
       // Suspend

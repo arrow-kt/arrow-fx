@@ -26,10 +26,10 @@ import arrow.fx.typeclasses.seconds
 import arrow.fx.test.laws.shouldBeEq
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.fail
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
-import io.kotlintest.shouldBe
+import io.kotest.assertions.fail
+import io.kotest.property.Arb
+import io.kotest.property.forAll
+import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ObsoleteCoroutinesApi
@@ -52,7 +52,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
     // --------------- suspendCancellable ---------------
 
     "suspendedCancellable should throw" {
-      forAll(Gen.throwable()) { expected ->
+      forAll(Arb.throwable()) { expected ->
         val ceh = TestCoroutineExceptionHandler()
         val scope = TestCoroutineScope(ceh + TestCoroutineDispatcher())
 
@@ -68,7 +68,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
     }
 
     "suspendedCancellable can handle errors through IO" {
-      forAll(Gen.throwable(), Gen.int()) { e, expected ->
+      forAll(Arb.throwable(), Arb.int()) { e, expected ->
         val ceh = TestCoroutineExceptionHandler()
         val scope = TestCoroutineScope(ceh + TestCoroutineDispatcher())
 
@@ -83,7 +83,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
     }
 
     "suspendedCancellable should resume with right block" {
-      forAll(Gen.int()) { i ->
+      forAll(Arb.int()) { i ->
         val ceh = TestCoroutineExceptionHandler()
         val scope = TestCoroutineScope(ceh + TestCoroutineDispatcher())
         scope.launch {
@@ -99,7 +99,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
     }
 
     "suspendCancellable doesn't start if scope is cancelled" {
-      forAll(Gen.int()) { i ->
+      forAll(Arb.int()) { i ->
         val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
         val ref = AtomicRefW<Int?>(i)
         scope.cancel()
@@ -112,7 +112,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
     }
 
     "scope cancellation should cancel suspendedCancellable IO" {
-      forAll(Gen.int()) { i ->
+      forAll(Arb.int()) { i ->
         IO.fx {
           val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
           val promise = !Promise<Int>()
@@ -143,7 +143,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
     // --------------- unsafeRunScoped ---------------
 
     "should rethrow exceptions within run block with unsafeRunScoped" {
-      forAll(Gen.throwable()) { e ->
+      forAll(Arb.throwable()) { e ->
         try {
           val scope = TestCoroutineScope(TestCoroutineDispatcher())
 
@@ -160,7 +160,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
     }
 
     "unsafeRunScoped should cancel correctly" {
-      forAll(Gen.int()) { i ->
+      forAll(Arb.int()) { i ->
         IO.fx {
           val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
           val promise = !Promise<Int>()
@@ -186,7 +186,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
     }
 
     "should complete when running a pure value with unsafeRunScoped" {
-      forAll(Gen.int()) { i ->
+      forAll(Arb.int()) { i ->
         val scope = TestCoroutineScope(TestCoroutineDispatcher())
         IO.async<Int> { cb ->
           IO.just(i).unsafeRunScoped(scope) { either ->
@@ -197,7 +197,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
     }
 
     "unsafeRunScoped doesn't start if scope is cancelled" {
-      forAll(Gen.int()) { i ->
+      forAll(Arb.int()) { i ->
         val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
         val ref = AtomicRefW<Int?>(i)
         scope.cancel()
@@ -220,7 +220,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
     }
 
     "forkScoped should complete when running a pure value" {
-      forAll(Gen.int()) { i ->
+      forAll(Arb.int()) { i ->
         IO.fx {
           val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
           val (join, _) = !IO.effect { i }.forkScoped(scope)
@@ -249,7 +249,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
     }
 
     "forkScoped doesn't start if scope is cancelled" {
-      forAll(Gen.int()) { i ->
+      forAll(Arb.int()) { i ->
         IO.fx {
           val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
           val ref = AtomicRefW<Int?>(i)

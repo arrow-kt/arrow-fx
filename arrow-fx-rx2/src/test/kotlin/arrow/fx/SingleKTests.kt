@@ -23,11 +23,14 @@ import arrow.fx.typeclasses.ExitCase
 import arrow.core.test.generators.GenK
 import arrow.core.test.generators.throwable
 import arrow.fx.test.laws.ConcurrentLaws
-import arrow.fx.test.laws.forFew
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.properties.Gen
-import io.kotlintest.shouldBe
+import io.kotest.property.Arb
+import io.kotest.matchers.shouldBe
+import io.kotest.property.arbitrary.choice
+import io.kotest.property.arbitrary.int
+import io.kotest.property.arbitrary.map
+import io.kotest.property.forAll
 import io.reactivex.Single
 import io.reactivex.observers.TestObserver
 import io.reactivex.schedulers.Schedulers
@@ -53,7 +56,7 @@ class SingleKTests : RxJavaSpec() {
     )
 
     "Multi-thread Singles finish correctly" {
-      forFew(10, Gen.choose(10L, 50)) { delay ->
+      forAll(10, Arb.int(10, 50).map { it.toLong() }) { delay ->
         SingleK.fx {
             val a = Single.timer(delay, TimeUnit.MILLISECONDS).k().bind()
             a
@@ -69,7 +72,7 @@ class SingleKTests : RxJavaSpec() {
     }
 
     "Multi-thread Singles should run on their required threads" {
-      forFew(10, Gen.choose(10L, 50)) { delay ->
+      forAll(10, Arb.int(10, 50).map { it.toLong() }) { delay ->
         val originalThread: Thread = Thread.currentThread()
         var threadRef: Thread? = null
 
@@ -89,7 +92,7 @@ class SingleKTests : RxJavaSpec() {
     }
 
     "Single dispose forces binding to cancel without completing too" {
-      forFew(5, Gen.choose(10L, 50)) { delay ->
+      forAll(5, Arb.int(10, 50).map { it.toLong() }) { delay ->
         val value: Single<Long> = SingleK.fx {
           val a = Single.timer(delay + awaitDelay, TimeUnit.MILLISECONDS).k().bind()
           a
@@ -183,17 +186,17 @@ class SingleKTests : RxJavaSpec() {
   }
 }
 
-private fun <A> Gen.Companion.singleK(gen: Gen<A>): Gen<SingleK<A>> =
-  Gen.oneOf(
+private fun <A> Arb.Companion.singleK(gen: Arb<A>): Arb<SingleK<A>> =
+  Arb.choice(
     gen.map { Single.just(it) },
-    Gen.throwable().map { Single.error<A>(it) }
+    Arb.throwable().map { Single.error<A>(it) }
   ).map {
     it.k()
   }
 
 private fun SingleK.Companion.genK() = object : GenK<ForSingleK> {
-  override fun <A> genK(gen: Gen<A>): Gen<Kind<ForSingleK, A>> =
-    Gen.singleK(gen) as Gen<Kind<ForSingleK, A>>
+  override fun <A> genK(gen: Arb<A>): Arb<Kind<ForSingleK, A>> =
+    Arb.singleK(gen) as Arb<Kind<ForSingleK, A>>
 }
 
 private fun <T> SingleK.Companion.eq(): Eq<SingleKOf<T>> = object : Eq<SingleKOf<T>> {

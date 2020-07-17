@@ -12,9 +12,9 @@ import arrow.fx.extensions.io.concurrent.concurrent
 import arrow.fx.extensions.io.functor.tupleLeft
 import arrow.fx.extensions.io.monad.flatMap
 import arrow.fx.extensions.io.monadDefer.monadDefer
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
-import io.kotlintest.shouldBe
+import io.kotest.property.Arb
+import io.kotest.property.forAll
+import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.Dispatchers
 import kotlin.coroutines.CoroutineContext
 
@@ -29,7 +29,7 @@ class PromiseTest : ArrowFxSpec() {
     ) {
 
       "$label - complete" {
-        forAll(Gen.int()) { a ->
+        forAll(Arb.int()) { a ->
           promise.flatMap { p ->
             p.complete(a).flatMap {
               p.get()
@@ -39,7 +39,7 @@ class PromiseTest : ArrowFxSpec() {
       }
 
       "$label - complete twice should result in Promise.AlreadyFulfilled" {
-        forAll(Gen.int(), Gen.int()) { a, b ->
+        forAll(Arb.int(), Arb.int()) { a, b ->
           promise.flatMap { p ->
             p.complete(a).flatMap {
               p.complete(b)
@@ -51,7 +51,7 @@ class PromiseTest : ArrowFxSpec() {
       }
 
       "$label - tryComplete" {
-        forAll(Gen.int()) { a ->
+        forAll(Arb.int()) { a ->
           promise.flatMap { p ->
             p.tryComplete(a).flatMap { didComplete ->
               p.get().tupleLeft(didComplete)
@@ -61,7 +61,7 @@ class PromiseTest : ArrowFxSpec() {
       }
 
       "$label - tryComplete twice returns false" {
-        forAll(Gen.int(), Gen.int()) { a, b ->
+        forAll(Arb.int(), Arb.int()) { a, b ->
           promise.flatMap { p ->
             p.tryComplete(a).flatMap {
               p.tryComplete(b).flatMap { didComplete ->
@@ -73,7 +73,7 @@ class PromiseTest : ArrowFxSpec() {
       }
 
       "$label - error" {
-        forAll(Gen.throwable()) { error ->
+        forAll(Arb.throwable()) { error ->
           promise.flatMap { p ->
             p.error(error).flatMap {
               p.get().attempt()
@@ -83,7 +83,7 @@ class PromiseTest : ArrowFxSpec() {
       }
 
       "$label - error twice should result in Promise.AlreadyFulfilled" {
-        forAll(Gen.throwable()) { error ->
+        forAll(Arb.throwable()) { error ->
           promise.flatMap { p ->
             p.error(error).flatMap {
               p.error(RuntimeException("Boom!")).attempt()
@@ -94,7 +94,7 @@ class PromiseTest : ArrowFxSpec() {
       }
 
       "$label - tryError" {
-        forAll(Gen.throwable()) { error ->
+        forAll(Arb.throwable()) { error ->
           promise.flatMap { p ->
             p.tryError(error).flatMap { didError ->
               p.get().attempt()
@@ -105,7 +105,7 @@ class PromiseTest : ArrowFxSpec() {
       }
 
       "$label - tryError twice returns false" {
-        forAll(Gen.throwable()) { error ->
+        forAll(Arb.throwable()) { error ->
           promise.flatMap { p ->
             p.tryError(error).flatMap {
               p.tryError(RuntimeException("Boom!")).flatMap { didComplete ->
@@ -138,7 +138,7 @@ class PromiseTest : ArrowFxSpec() {
       }
 
       "$label - tryGet returns Some for completed promise" {
-        forAll(Gen.int()) { a ->
+        forAll(Arb.int()) { a ->
           promise.flatMap { p ->
             p.complete(a).flatMap {
               p.tryGet()

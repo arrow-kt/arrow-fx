@@ -24,11 +24,14 @@ import arrow.fx.test.laws.AsyncLaws
 import arrow.fx.test.laws.TimerLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.matchers.startWith
-import io.kotlintest.properties.Gen
-import io.kotlintest.shouldBe
-import io.kotlintest.shouldNot
-import io.kotlintest.shouldNotBe
+import io.kotest.property.Arb
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNot
+import io.kotest.property.arbitrary.choice
+import io.kotest.property.arbitrary.constant
+import io.kotest.property.arbitrary.map
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.startWith
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 import reactor.test.test
@@ -187,11 +190,11 @@ class MonoKTest : UnitSpec() {
 }
 
 fun MonoK.Companion.genK() = object : GenK<ForMonoK> {
-  override fun <A> genK(gen: Gen<A>): Gen<Kind<ForMonoK, A>> =
-    Gen.oneOf(
+  override fun <A> genK(gen: Arb<A>): Arb<Kind<ForMonoK, A>> =
+    Arb.choice(
       gen.map {
         Mono.just(it)
       },
-      Gen.constant(Mono.empty())
+      Arb.constant(Mono.empty())
     ).map { it.k() }
 }

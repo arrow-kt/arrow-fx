@@ -10,7 +10,8 @@ import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.properties.Gen
+import io.kotest.property.Arb
+import io.kotest.property.forAll
 
 object TimerLaws {
 
@@ -39,11 +40,11 @@ object TimerLaws {
     )
   }
 
-  fun <F> Async<F>.sleepShouldLastSpecifiedTime(
+  private suspend fun <F> Async<F>.sleepShouldLastSpecifiedTime(
     T: Timer<F>,
     C: Clock<F>,
     EQ: Eq<Kind<F, Boolean>>
-  ) = forFew(25, Gen.intSmall()) {
+  ) = forAll(25, Arb.intSmall()) {
     val length = 100L
     val lhs = fx.async {
       val start = !C.timeNano()
@@ -55,7 +56,7 @@ object TimerLaws {
     lhs.equalUnderTheLaw(just(true), EQ)
   }
 
-  fun <F> Async<F>.negativeSleepShouldBeImmediate(
+  private suspend fun <F> Async<F>.negativeSleepShouldBeImmediate(
     T: Timer<F>,
     EQ: Eq<Kind<F, Boolean>>
   ) {

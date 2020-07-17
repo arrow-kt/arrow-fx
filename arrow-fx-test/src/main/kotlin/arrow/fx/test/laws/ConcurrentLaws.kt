@@ -32,9 +32,14 @@ import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import arrow.typeclasses.Functor
 import arrow.typeclasses.Selective
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
-import io.kotlintest.shouldBe
+import io.kotest.property.Arb
+import io.kotest.property.forAll
+import io.kotest.matchers.shouldBe
+import io.kotest.property.arbitrary.bool
+import io.kotest.property.arbitrary.int
+import io.kotest.property.arbitrary.map
+import io.kotest.property.arbitrary.of
+import io.kotest.property.arbitrary.string
 import kotlinx.coroutines.newSingleThreadContext
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.CoroutineContext
@@ -154,8 +159,8 @@ object ConcurrentLaws {
 
   private val single: CoroutineContext = newSingleThreadContext("single")
 
-  fun <F> Concurrent<F>.cancelOnBracketReleases(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
-    forAll(Gen.int()) { i ->
+  private suspend fun <F> Concurrent<F>.cancelOnBracketReleases(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+    forAll(Arb.int()) { i ->
       fx.concurrent {
         val startLatch = Promise<F, Unit>(this@cancelOnBracketReleases).bind() // A promise that `use` was executed
         val exitLatch = Promise<F, Int>(this@cancelOnBracketReleases).bind() // A promise that `release` was executed
@@ -179,8 +184,8 @@ object ConcurrentLaws {
     }
   }
 
-  fun <F> Concurrent<F>.acquireBracketIsNotCancellable(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int(), Gen.int()) { a, b ->
+  private suspend fun <F> Concurrent<F>.acquireBracketIsNotCancellable(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int(), Arb.int()) { a, b ->
       fx.concurrent {
         val mvar = MVar(a, this@acquireBracketIsNotCancellable).bind()
         mvar.take().bind()
@@ -195,8 +200,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(b), EQ)
     }
 
-  fun <F> Concurrent<F>.releaseBracketIsNotCancellable(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int(), Gen.int()) { a, b ->
+  private suspend fun <F> Concurrent<F>.releaseBracketIsNotCancellable(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int(), Arb.int()) { a, b ->
       fx.concurrent {
         val mvar = MVar(a, this@releaseBracketIsNotCancellable).bind()
         val p = Promise.uncancellable<F, Unit>(this@releaseBracketIsNotCancellable).bind()
@@ -211,8 +216,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(b), EQ)
     }
 
-  fun <F> Concurrent<F>.guaranteeFinalizerOnCancel(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int()) { i ->
+  private suspend fun <F> Concurrent<F>.guaranteeFinalizerOnCancel(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int()) { i ->
       fx.concurrent {
         val startLatch = Promise<F, Unit>(this@guaranteeFinalizerOnCancel).bind() // A promise that `use` was executed
         val exitLatch = Promise<F, Int>(this@guaranteeFinalizerOnCancel).bind() // A promise that `release` was executed
@@ -232,8 +237,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(i), EQ)
     }
 
-  fun <F> Concurrent<F>.onCancelFinalizerOnCancel(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int()) { i ->
+  private suspend fun <F> Concurrent<F>.onCancelFinalizerOnCancel(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int()) { i ->
       fx.concurrent {
         val startLatch = Promise<F, Unit>(this@onCancelFinalizerOnCancel).bind() // A promise that `use` was executed
         val exitLatch = Promise<F, Int>(this@onCancelFinalizerOnCancel).bind() // A promise that `release` was executed
@@ -249,8 +254,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(i), EQ)
     }
 
-  fun <F> Concurrent<F>.guaranteeFinalizerIsNotCancellable(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int(), Gen.int()) { a, b ->
+  private suspend fun <F> Concurrent<F>.guaranteeFinalizerIsNotCancellable(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int(), Arb.int()) { a, b ->
       fx.concurrent {
         val mvar = MVar(a, this@guaranteeFinalizerIsNotCancellable).bind()
         val p = Promise.uncancellable<F, Unit>(this@guaranteeFinalizerIsNotCancellable).bind()
@@ -264,20 +269,20 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(b), EQ)
     }
 
-  fun <F> Concurrent<F>.asyncCancellableCoherence(EQ: Eq<Kind<F, Int>>): Unit =
-    forAll(Gen.either(Gen.throwable(), Gen.int())) { eith ->
+  private suspend fun <F> Concurrent<F>.asyncCancellableCoherence(EQ: Eq<Kind<F, Int>>) =
+    forAll(Arb.either(Arb.throwable(), Arb.int())) { eith ->
       async<Int> { cb -> cb(eith) }
         .equalUnderTheLaw(cancellable { cb -> cb(eith); just<Unit>(Unit) }, EQ)
     }
 
-  fun <F> Concurrent<F>.cancellableCancellableFCoherence(EQ: Eq<Kind<F, Int>>): Unit =
-    forAll(Gen.either(Gen.throwable(), Gen.int())) { eith ->
+  private suspend fun <F> Concurrent<F>.cancellableCancellableFCoherence(EQ: Eq<Kind<F, Int>>) =
+    forAll(Arb.either(Arb.throwable(), Arb.int())) { eith ->
       cancellable<Int> { cb -> cb(eith); just<Unit>(Unit) }
         .equalUnderTheLaw(cancellableF { cb -> later { cb(eith); just<Unit>(Unit) } }, EQ)
     }
 
-  fun <F> Concurrent<F>.cancellableReceivesCancelSignal(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int()) { i ->
+  private suspend fun <F> Concurrent<F>.cancellableReceivesCancelSignal(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int()) { i ->
       fx.concurrent {
         val release = Promise<F, Int>(this@cancellableReceivesCancelSignal).bind()
         val latch = UnsafePromise<Unit>()
@@ -294,8 +299,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(i), EQ)
     }
 
-  fun <F> Concurrent<F>.cancellableFReceivesCancelSignal(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int()) { i ->
+  private suspend fun <F> Concurrent<F>.cancellableFReceivesCancelSignal(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int()) { i ->
       fx.concurrent {
         val release = Promise<F, Int>(this@cancellableFReceivesCancelSignal).bind()
         val latch = Promise<F, Unit>(this@cancellableFReceivesCancelSignal).bind()
@@ -312,8 +317,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(i), EQ)
     }
 
-  fun <F> Concurrent<F>.asyncFRegisterCanBeCancelled(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int()) { i ->
+  private suspend fun <F> Concurrent<F>.asyncFRegisterCanBeCancelled(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int()) { i ->
       fx.concurrent {
         val release = Promise<F, Int>(this@asyncFRegisterCanBeCancelled).bind()
         val acquire = Promise<F, Unit>(this@asyncFRegisterCanBeCancelled).bind()
@@ -327,13 +332,13 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(i), EQ)
     }
 
-  fun <F> Concurrent<F>.startJoinIsIdentity(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext): Unit =
-    forAll(Gen.int().applicativeError(this)) { fa ->
+  private suspend fun <F> Concurrent<F>.startJoinIsIdentity(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int().applicativeError(this)) { fa ->
       fa.fork(ctx).flatMap { it.join() }.equalUnderTheLaw(fa, EQ)
     }
 
-  fun <F> Concurrent<F>.joinIsIdempotent(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int()) { i ->
+  private suspend fun <F> Concurrent<F>.joinIsIdempotent(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int()) { i ->
       Promise<F, Int>(this@joinIsIdempotent).flatMap { p ->
         p.complete(i).fork(ctx)
           .flatMap { (join, _) -> join.followedBy(join) }
@@ -341,33 +346,33 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(i), EQ)
     }
 
-  fun <F> Concurrent<F>.startCancelIsUnit(EQ_UNIT: Eq<Kind<F, Unit>>, ctx: CoroutineContext): Unit =
-    forAll(Gen.int().applicativeError(this)) { fa ->
+  private suspend fun <F> Concurrent<F>.startCancelIsUnit(EQ_UNIT: Eq<Kind<F, Unit>>, ctx: CoroutineContext) =
+    forAll(Arb.int().applicativeError(this)) { fa ->
       fa.fork(ctx).flatMap { (_, cancel) -> cancel }
         .equalUnderTheLaw(just<Unit>(Unit), EQ_UNIT)
     }
 
-  fun <F> Concurrent<F>.uncancellableMirrorsSource(EQ: Eq<Kind<F, Int>>): Unit =
-    forAll(Gen.int()) { i ->
+  private suspend fun <F> Concurrent<F>.uncancellableMirrorsSource(EQ: Eq<Kind<F, Int>>) =
+    forAll(Arb.int()) { i ->
       just(i).uncancellable().equalUnderTheLaw(just(i), EQ)
     }
 
-  fun <F> Concurrent<F>.raceMirrorsLeftWinner(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext): Unit =
-    forAll(Gen.int().applicativeError(this)) { fa ->
+  private suspend fun <F> Concurrent<F>.raceMirrorsLeftWinner(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int().applicativeError(this)) { fa ->
       ctx.raceN(fa, never<Int>()).flatMap { either ->
         either.fold({ just(it) }, { raiseError(IllegalStateException("never() finished race")) })
       }.equalUnderTheLaw(fa, EQ)
     }
 
-  fun <F> Concurrent<F>.raceMirrorsRightWinner(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext): Unit =
-    forAll(Gen.int().applicativeError(this)) { fa ->
+  private suspend fun <F> Concurrent<F>.raceMirrorsRightWinner(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int().applicativeError(this)) { fa ->
       ctx.raceN(never<Int>(), fa).flatMap { either ->
         either.fold({ raiseError<Int>(IllegalStateException("never() finished race")) }, { just(it) })
       }.equalUnderTheLaw(fa, EQ)
     }
 
-  fun <F> Concurrent<F>.raceCancelsLoser(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.either(Gen.throwable(), Gen.string()), Gen.bool(), Gen.int()) { eith, leftWins, i ->
+  private suspend fun <F> Concurrent<F>.raceCancelsLoser(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.either(Arb.throwable(), Arb.string()), Arb.bool(), Arb.int()) { eith, leftWins, i ->
       fx.concurrent {
         val s = Semaphore(0L, this@raceCancelsLoser).bind()
         val promise = Promise.uncancellable<F, Int>(this@raceCancelsLoser).bind()
@@ -381,8 +386,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(i), EQ)
     }
 
-  fun <F> Concurrent<F>.raceCancelCancelsBoth(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int(), Gen.int()) { a, b ->
+  private suspend fun <F> Concurrent<F>.raceCancelCancelsBoth(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int(), Arb.int()) { a, b ->
       fx.concurrent {
         val s = Semaphore(0L, this@raceCancelCancelsBoth).bind()
         val pa = Promise<F, Int>(this@raceCancelCancelsBoth).bind()
@@ -397,8 +402,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(a + b), EQ)
     }
 
-  fun <F> Concurrent<F>.racePairMirrorsLeftWinner(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext): Unit =
-    forAll(Gen.int().applicativeError(this)) { fa ->
+  private suspend fun <F> Concurrent<F>.racePairMirrorsLeftWinner(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int().applicativeError(this)) { fa ->
       val never = never<Int>()
       val received = ctx.racePair(fa, never).flatMap { either ->
         either.fold({ a, fiberB ->
@@ -409,8 +414,8 @@ object ConcurrentLaws {
       received.equalUnderTheLaw(ctx.raceN(fa, never).map { it.fold(::identity, ::identity) }, EQ)
     }
 
-  fun <F> Concurrent<F>.racePairMirrorsRightWinner(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext): Unit =
-    forAll(Gen.int().applicativeError(this)) { fa ->
+  private suspend fun <F> Concurrent<F>.racePairMirrorsRightWinner(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int().applicativeError(this)) { fa ->
       val never = never<Int>()
       val received = ctx.racePair(never, fa).flatMap { either ->
         either.fold({ _, _ ->
@@ -421,8 +426,8 @@ object ConcurrentLaws {
       received.equalUnderTheLaw(ctx.raceN(never, fa).map { it.fold(::identity, ::identity) }, EQ)
     }
 
-  fun <F> Concurrent<F>.racePairCanCancelsLoser(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.either(Gen.throwable(), Gen.string()), Gen.bool(), Gen.int()) { eith, leftWinner, i ->
+  private suspend fun <F> Concurrent<F>.racePairCanCancelsLoser(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.either(Arb.throwable(), Arb.string()), Arb.bool(), Arb.int()) { eith, leftWinner, i ->
       val received = fx.concurrent {
         val s = Semaphore(0L, this@racePairCanCancelsLoser).bind()
         val p = Promise.uncancellable<F, Int>(this@racePairCanCancelsLoser).bind()
@@ -445,8 +450,8 @@ object ConcurrentLaws {
       received.equalUnderTheLaw(just(i), EQ)
     }
 
-  fun <F> Concurrent<F>.racePairCanJoinLeft(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int()) { i ->
+  private suspend fun <F> Concurrent<F>.racePairCanJoinLeft(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int()) { i ->
       Promise<F, Int>(this@racePairCanJoinLeft).flatMap { p ->
         ctx.racePair(p.get(), unit()).flatMap { eith ->
           eith.fold(
@@ -457,8 +462,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(i), EQ)
     }
 
-  fun <F> Concurrent<F>.racePairCanJoinRight(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int()) { i ->
+  private suspend fun <F> Concurrent<F>.racePairCanJoinRight(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int()) { i ->
       Promise<F, Int>(this@racePairCanJoinRight).flatMap { p ->
         ctx.racePair(unit(), p.get()).flatMap { eith ->
           eith.fold(
@@ -469,8 +474,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(i), EQ)
     }
 
-  fun <F> Concurrent<F>.racePairCancelCancelsBoth(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int(), Gen.int()) { a, b ->
+  private suspend fun <F> Concurrent<F>.racePairCancelCancelsBoth(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int(), Arb.int()) { a, b ->
       fx.concurrent {
         val s = Semaphore(0L, this@racePairCancelCancelsBoth).bind()
         val pa = Promise<F, Int>(this@racePairCancelCancelsBoth).bind()
@@ -486,8 +491,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(a + b), EQ)
     }
 
-  fun <F> Concurrent<F>.raceTripleMirrorsLeftWinner(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int().applicativeError(this)) { fa ->
+  private suspend fun <F> Concurrent<F>.raceTripleMirrorsLeftWinner(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int().applicativeError(this)) { fa ->
       val never = never<Int>()
       val received = ctx.raceTriple(fa, never, never).flatMap { either ->
         either.fold(
@@ -499,8 +504,8 @@ object ConcurrentLaws {
       received.equalUnderTheLaw(ctx.raceN(fa, never, never).map { it.fold(::identity, ::identity, ::identity) }, EQ)
     }
 
-  fun <F> Concurrent<F>.raceTripleMirrorsMiddleWinner(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int().applicativeError(this)) { fa ->
+  private suspend fun <F> Concurrent<F>.raceTripleMirrorsMiddleWinner(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int().applicativeError(this)) { fa ->
       val never = never<Int>()
       val received = ctx.raceTriple(never, fa, never).flatMap { either ->
         either.fold(
@@ -512,8 +517,8 @@ object ConcurrentLaws {
       received.equalUnderTheLaw(ctx.raceN(never, fa, never).map { it.fold(::identity, ::identity, ::identity) }, EQ)
     }
 
-  fun <F> Concurrent<F>.raceTripleMirrorsRightWinner(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int().applicativeError(this)) { fa ->
+  private suspend fun <F> Concurrent<F>.raceTripleMirrorsRightWinner(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int().applicativeError(this)) { fa ->
       val never = never<Int>()
       val received = ctx.raceTriple(never, never, fa).flatMap { either ->
         either.fold(
@@ -525,8 +530,8 @@ object ConcurrentLaws {
       received.equalUnderTheLaw(ctx.raceN(never, never, fa).map { it.fold(::identity, ::identity, ::identity) }, EQ)
     }
 
-  fun <F> Concurrent<F>.raceTripleCanCancelsLoser(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.either(Gen.throwable(), Gen.string()), Gen.from(listOf(1, 2, 3)), Gen.int(), Gen.int()) { eith, leftWinner, a, b ->
+  private suspend fun <F> Concurrent<F>.raceTripleCanCancelsLoser(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.either(Arb.throwable(), Arb.string()), Arb.of(listOf(1, 2, 3)), Arb.int(), Arb.int()) { eith, leftWinner, a, b ->
       val received = fx.concurrent {
         val s = Semaphore(0L, this@raceTripleCanCancelsLoser).bind()
         val pa = Promise.uncancellable<F, Int>(this@raceTripleCanCancelsLoser).bind()
@@ -565,8 +570,8 @@ object ConcurrentLaws {
       received.equalUnderTheLaw(just(a + b), EQ)
     }
 
-  fun <F> Concurrent<F>.raceTripleCanJoinLeft(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int()) { i ->
+  private suspend fun <F> Concurrent<F>.raceTripleCanJoinLeft(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int()) { i ->
       Promise<F, Int>(this@raceTripleCanJoinLeft).flatMap { p ->
         ctx.raceTriple(p.get(), unit(), never<Unit>()).flatMap { result ->
           result.fold(
@@ -578,8 +583,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(i), EQ)
     }
 
-  fun <F> Concurrent<F>.raceTripleCanJoinMiddle(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int()) { i ->
+  private suspend fun <F> Concurrent<F>.raceTripleCanJoinMiddle(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int()) { i ->
       Promise<F, Int>(this@raceTripleCanJoinMiddle).flatMap { p ->
         ctx.raceTriple(unit(), p.get(), never<Unit>()).flatMap { result ->
           result.fold(
@@ -591,8 +596,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(i), EQ)
     }
 
-  fun <F> Concurrent<F>.raceTripleCanJoinRight(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int()) { i ->
+  private suspend fun <F> Concurrent<F>.raceTripleCanJoinRight(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int()) { i ->
       Promise<F, Int>(this@raceTripleCanJoinRight).flatMap { p ->
         ctx.raceTriple(unit(), never<Unit>(), p.get()).flatMap { result ->
           result.fold(
@@ -604,8 +609,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(i), EQ)
     }
 
-  fun <F> Concurrent<F>.raceTripleCancelCancelsAll(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int(), Gen.int(), Gen.int()) { a, b, c ->
+  private suspend fun <F> Concurrent<F>.raceTripleCancelCancelsAll(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int(), Arb.int(), Arb.int()) { a, b, c ->
       fx.concurrent {
         val s = Semaphore(0L, this@raceTripleCancelCancelsAll).bind()
         val pa = Promise<F, Int>(this@raceTripleCancelCancelsAll).bind()
@@ -623,7 +628,7 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(a + b + c), EQ)
     }
 
-  fun <F> Concurrent<F>.parMapStartsAllAtSameTime(EQ: Eq<Kind<F, Tuple6<Int, Int, Int, Int, Int, Int>>>) {
+  private suspend fun <F> Concurrent<F>.parMapStartsAllAtSameTime(EQ: Eq<Kind<F, Tuple6<Int, Int, Int, Int, Int, Int>>>) {
     val order = mutableListOf<Int>()
 
     fun makePar(num: Int) = sleep((num * 100).milliseconds).map {
@@ -637,8 +642,8 @@ object ConcurrentLaws {
     order.toList() shouldBe listOf(1, 2, 3, 4, 5, 6)
   }
 
-  fun <F> Concurrent<F>.parMapCancelCancelsBoth(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
-    forAll(Gen.int(), Gen.int()) { a, b ->
+  private suspend fun <F> Concurrent<F>.parMapCancelCancelsBoth(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int(), Arb.int()) { a, b ->
       fx.concurrent {
         val s = Semaphore(0L, this@parMapCancelCancelsBoth).bind()
         val pa = Promise<F, Int>(this@parMapCancelCancelsBoth).bind()
@@ -653,8 +658,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(a + b), EQ)
     }
 
-  fun <F> Concurrent<F>.actionConcurrentWithPureValueIsJustAction(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext): Unit =
-    forAll(Gen.int().map(::just), Gen.int()) { fa, i ->
+  private suspend fun <F> Concurrent<F>.actionConcurrentWithPureValueIsJustAction(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+    forAll(Arb.int().map(::just), Arb.int()) { fa, i ->
       i.just().fork(ctx).flatMap { (join, _) ->
         fa.flatMap {
           join.map { i }
@@ -662,8 +667,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(i), EQ)
     }
 
-  fun <F> Concurrent<F>.parTraverseCanTraverseEffectfullComputations(EQ: Eq<Kind<F, Int>>): Unit =
-    forFew(10, Gen.int()) {
+  private suspend fun <F> Concurrent<F>.parTraverseCanTraverseEffectfullComputations(EQ: Eq<Kind<F, Int>>) =
+    forAll(10, Arb.int()) {
       val finalValue = 100
       fx.concurrent {
         val ref = !Ref(0)
@@ -674,8 +679,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(0), EQ)
     }
 
-  fun <F> Concurrent<F>.parTraverseForksTheEffects(EQ: Eq<Kind<F, Unit>>): Unit =
-    forFew(10, Gen.int()) {
+  private suspend fun <F> Concurrent<F>.parTraverseForksTheEffects(EQ: Eq<Kind<F, Unit>>) =
+    forAll(10, Arb.int()) {
       fx.concurrent {
         val promiseA = !Promise<F, Unit>(this)
         val promiseB = !Promise<F, Unit>(this)
@@ -690,8 +695,8 @@ object ConcurrentLaws {
 
   val TestError = RuntimeException("TestError")
 
-  fun <F> Concurrent<F>.parTraverseResultsInTheCorrectError(EQ: Eq<Kind<F, Unit>>): Unit =
-    forAll(Gen.choose(0, 10)) { killOn ->
+  private suspend fun <F> Concurrent<F>.parTraverseResultsInTheCorrectError(EQ: Eq<Kind<F, Unit>>) =
+    forAll(Arb.int(0, 10)) { killOn ->
       (10 downTo 0).toList().k().parTraverse(ListK.traverse()) { i ->
           if (i == killOn) raiseError(TestError)
           else unit()
@@ -700,8 +705,8 @@ object ConcurrentLaws {
         .equalUnderTheLaw(unit(), EQ)
     }
 
-  fun <F> Concurrent<F>.parSequenceForksTheEffects(EQ: Eq<Kind<F, Unit>>): Unit =
-    forFew(10, Gen.int()) {
+  private suspend fun <F> Concurrent<F>.parSequenceForksTheEffects(EQ: Eq<Kind<F, Unit>>) =
+    forAll(10, Arb.int()) {
       fx.concurrent {
         val promiseA = !Promise<F, Unit>(this)
         val promiseB = !Promise<F, Unit>(this)
@@ -714,8 +719,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(unit(), EQ)
     }
 
-  fun <F> Concurrent<F>.onErrorIsRunWhenErrorIsRaised(EQ: Eq<Kind<F, Unit>>, ctx: CoroutineContext) =
-    forAll(Gen.throwable()) { expected ->
+  private suspend fun <F> Concurrent<F>.onErrorIsRunWhenErrorIsRaised(EQ: Eq<Kind<F, Unit>>, ctx: CoroutineContext) =
+    forAll(Arb.throwable()) { expected ->
       fx.concurrent {
 
         val startLatch = Promise<F, Unit>(this@onErrorIsRunWhenErrorIsRaised).bind()
@@ -732,8 +737,8 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(Unit.just(), EQ)
     }
 
-  fun <F> Concurrent<F>.onErrorIsNotRunByDefault(EQ: Eq<Kind<F, Tuple2<Int, Boolean>>>, ctx: CoroutineContext) =
-    forAll(Gen.int()) { i ->
+  private suspend fun <F> Concurrent<F>.onErrorIsNotRunByDefault(EQ: Eq<Kind<F, Tuple2<Int, Boolean>>>, ctx: CoroutineContext) =
+    forAll(Arb.int()) { i ->
 
       val CF = this@onErrorIsNotRunByDefault
       fx.concurrent {
@@ -751,7 +756,7 @@ object ConcurrentLaws {
       }.equalUnderTheLaw(just(i toT false), EQ)
     }
 
-  fun <F> Concurrent<F>.outerAndInnerOnErrorIsRun(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
+  private suspend fun <F> Concurrent<F>.outerAndInnerOnErrorIsRun(EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) =
     fx.concurrent {
       val CF = this@outerAndInnerOnErrorIsRun
       val latch = Promise<F, Unit>(CF).bind()
@@ -773,75 +778,75 @@ object ConcurrentLaws {
       counter.get()
     }.shouldBeEq(just(2), EQ)
 
-  fun <F> Concurrent<F>.waitForShouldStayOnOriginalContext(EQ: Eq<Kind<F, String>>) {
+  private suspend fun <F> Concurrent<F>.waitForShouldStayOnOriginalContext(EQ: Eq<Kind<F, String>>) {
     single.shift().followedBy(
       effect { Thread.currentThread().name }.waitFor(1.seconds)
     ).shouldBeEq(just("single"), EQ)
   }
 
-  fun <F> Concurrent<F>.waitForTimesOutProgram(EQ: Eq<Kind<F, Int>>) {
-    forFew(100, Gen.int(), Gen.int()) { a, b ->
+  private suspend fun <F> Concurrent<F>.waitForTimesOutProgram(EQ: Eq<Kind<F, Int>>) {
+    forAll(100, Arb.int(), Arb.int()) { a, b ->
       sleep(5.seconds).map { a }.waitFor(10.milliseconds, default = just(b))
         .equalUnderTheLaw(just(b), EQ)
     }
   }
 
-  fun <F> Concurrent<F>.waitForTimesOutProgramWithDefault(EQ: Eq<Kind<F, Int>>) {
-    forFew(100, Gen.int(), Gen.int()) { a, b ->
+  private suspend fun <F> Concurrent<F>.waitForTimesOutProgramWithDefault(EQ: Eq<Kind<F, Int>>) {
+    forAll(100, Arb.int(), Arb.int()) { a, b ->
       sleep(5.seconds).map { a }.waitFor(10.milliseconds, default = just(b))
         .equalUnderTheLaw(just(b), EQ)
     }
   }
 
-  fun <F> Concurrent<F>.parMap2StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+  private suspend fun <F> Concurrent<F>.parMap2StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
     (0 until iterations).map { just(1) }
       .fold(just(0)) { acc, t -> parMapN(ctx, acc, t) { (a, b) -> a + b } }
       .shouldBeEq(just(iterations), EQ)
   }
 
-  fun <F> Concurrent<F>.parMap3StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+  private suspend fun <F> Concurrent<F>.parMap3StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
     (0 until iterations).map { just(1) }
       .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit()) { it.a + it.b } }
       .shouldBeEq(just(iterations), EQ)
   }
 
-  fun <F> Concurrent<F>.parMap4StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+  private suspend fun <F> Concurrent<F>.parMap4StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
     (0 until iterations).map { just(1) }
       .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit(), unit()) { it.a + it.b } }
       .shouldBeEq(just(iterations), EQ)
   }
 
-  fun <F> Concurrent<F>.parMap5StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+  private suspend fun <F> Concurrent<F>.parMap5StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
     (0 until iterations).map { just(1) }
       .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit(), unit(), unit()) { it.a + it.b } }
       .shouldBeEq(just(iterations), EQ)
   }
 
-  fun <F> Concurrent<F>.parMap6StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+  private suspend fun <F> Concurrent<F>.parMap6StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
     (0 until iterations).map { just(1) }
       .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit(), unit(), unit(), unit()) { it.a + it.b } }
       .shouldBeEq(just(iterations), EQ)
   }
 
-  fun <F> Concurrent<F>.parMap7StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+  private suspend fun <F> Concurrent<F>.parMap7StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
     (0 until iterations).map { just(1) }
       .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit(), unit(), unit(), unit(), unit()) { it.a + it.b } }
       .shouldBeEq(just(iterations), EQ)
   }
 
-  fun <F> Concurrent<F>.parMap8StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+  private suspend fun <F> Concurrent<F>.parMap8StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
     (0 until iterations).map { just(1) }
       .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit(), unit(), unit(), unit(), unit(), unit()) { it.a + it.b } }
       .shouldBeEq(just(iterations), EQ)
   }
 
-  fun <F> Concurrent<F>.parMap9StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+  private suspend fun <F> Concurrent<F>.parMap9StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
     (0 until iterations).map { just(1) }
       .fold(just(0)) { acc, t -> parMapN(ctx, acc, t, unit(), unit(), unit(), unit(), unit(), unit(), unit()) { it.a + it.b } }
       .shouldBeEq(just(iterations), EQ)
   }
 
-  fun <F> Concurrent<F>.racePairStackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+  private suspend fun <F> Concurrent<F>.racePairStackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
     (0 until iterations).map { just(1) }.fold(never<Int>()) { acc, t ->
       ctx.racePair(acc, t).map {
         it.fold({ a, _ -> a }, { _, b -> b })
@@ -849,7 +854,7 @@ object ConcurrentLaws {
     }.shouldBeEq(just(1), EQ)
   }
 
-  fun <F> Concurrent<F>.raceTripleStackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+  private suspend fun <F> Concurrent<F>.raceTripleStackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
     (0 until iterations).map { just(1) }.fold(never<Int>()) { acc, t ->
       ctx.raceTriple(acc, t, never<Int>()).map {
         it.fold({ a, _, _ -> a }, { _, b, _ -> b }, { _, _, c -> c })
@@ -857,54 +862,54 @@ object ConcurrentLaws {
     }.shouldBeEq(just(1), EQ)
   }
 
-  fun <F> Concurrent<F>.race2StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+  private suspend fun <F> Concurrent<F>.race2StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
     (0 until iterations).map { just(1) }.fold(never<Int>()) { acc, t ->
       ctx.raceN(acc, t).map { it.fold(::identity, ::identity) }
     }.shouldBeEq(just(1), EQ)
   }
 
-  fun <F> Concurrent<F>.race3StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+  private suspend fun <F> Concurrent<F>.race3StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
     (0 until iterations).map { just(1) }.fold(never<Int>()) { acc, t ->
       ctx.raceN(acc, t, never<Int>()).map { it.fold(::identity, ::identity, ::identity) }
     }.shouldBeEq(just(1), EQ)
   }
 
-  fun <F> Concurrent<F>.race4StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+  private suspend fun <F> Concurrent<F>.race4StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
     (0 until iterations).map { just(1) }.fold(never<Int>()) { acc, t ->
       ctx.raceN(acc, t, never<Int>(), never<Int>())
         .map { it.fold(::identity, ::identity, ::identity, ::identity) }
     }.shouldBeEq(just(1), EQ)
   }
 
-  fun <F> Concurrent<F>.race5StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+  private suspend fun <F> Concurrent<F>.race5StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
     (0 until iterations).map { just(1) }.fold(never<Int>()) { acc, t ->
       ctx.raceN(acc, t, never<Int>(), never<Int>(), never<Int>())
         .map { it.fold(::identity, ::identity, ::identity, ::identity, ::identity) }
     }.shouldBeEq(just(1), EQ)
   }
 
-  fun <F> Concurrent<F>.race6StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+  private suspend fun <F> Concurrent<F>.race6StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
     (0 until iterations).map { just(1) }.fold(never<Int>()) { acc, t ->
       ctx.raceN(acc, t, never<Int>(), never<Int>(), never<Int>(), never<Int>())
         .map { it.fold(::identity, ::identity, ::identity, ::identity, ::identity, ::identity) }
     }.shouldBeEq(just(1), EQ)
   }
 
-  fun <F> Concurrent<F>.race7StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+  private suspend fun <F> Concurrent<F>.race7StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
     (0 until iterations).map { just(1) }.fold(never<Int>()) { acc, t ->
       ctx.raceN(acc, t, never<Int>(), never<Int>(), never<Int>(), never<Int>(), never<Int>())
         .map { it.fold(::identity, ::identity, ::identity, ::identity, ::identity, ::identity, ::identity) }
     }.shouldBeEq(just(1), EQ)
   }
 
-  fun <F> Concurrent<F>.race8StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+  private suspend fun <F> Concurrent<F>.race8StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
     (0 until iterations).map { just(1) }.fold(never<Int>()) { acc, t ->
       ctx.raceN(acc, t, never<Int>(), never<Int>(), never<Int>(), never<Int>(), never<Int>(), never<Int>())
         .map { it.fold(::identity, ::identity, ::identity, ::identity, ::identity, ::identity, ::identity, ::identity) }
     }.shouldBeEq(just(1), EQ)
   }
 
-  fun <F> Concurrent<F>.race9StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
+  private suspend fun <F> Concurrent<F>.race9StackSafe(iterations: Int, EQ: Eq<Kind<F, Int>>, ctx: CoroutineContext) {
     (0 until iterations).map { just(1) }.fold(never<Int>()) { acc, t ->
       ctx.raceN(acc, t, never<Int>(), never<Int>(), never<Int>(), never<Int>(), never<Int>(), never<Int>(), never<Int>())
         .map { it.fold(::identity, ::identity, ::identity, ::identity, ::identity, ::identity, ::identity, ::identity, ::identity) }

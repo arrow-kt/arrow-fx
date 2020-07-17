@@ -33,10 +33,10 @@ import arrow.fx.typeclasses.seconds
 import arrow.fx.test.eq.eqK
 import arrow.fx.test.generators.genK
 import arrow.fx.test.laws.ConcurrentLaws
-import io.kotlintest.fail
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
-import io.kotlintest.shouldBe
+import io.kotest.assertions.fail
+import io.kotest.property.Arb
+import io.kotest.property.forAll
+import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.newSingleThreadContext
 import kotlin.coroutines.AbstractCoroutineContextElement
@@ -544,7 +544,7 @@ class IOTest : ArrowFxSpec() {
         override fun recover(e: Throwable) = just(e.message ?: "")
       }
 
-      forAll(Gen.string()) { message ->
+      forAll(Arb.string()) { message ->
         IO.Bind(IO.raiseError(RuntimeException(message)), ThrowableAsStringFrame as (Int) -> IO<String>)
           .unsafeRunSync() == message
       }

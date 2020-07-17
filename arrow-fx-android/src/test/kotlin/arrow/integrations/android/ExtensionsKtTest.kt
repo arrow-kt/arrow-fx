@@ -20,10 +20,10 @@ import arrow.fx.onCancel
 import arrow.fx.test.eq.eqK
 import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
-import io.kotlintest.fail
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
-import io.kotlintest.shouldBe
+import io.kotest.assertions.fail
+import io.kotest.property.Arb
+import io.kotest.property.forAll
+import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.newSingleThreadContext
 
 class ExtensionsKtTest : UnitSpec() {
@@ -36,7 +36,7 @@ class ExtensionsKtTest : UnitSpec() {
     // --------------- unsafeRunScoped ---------------
 
     "should rethrow exceptions within run block with unsafeRunScoped" {
-      forAll(Gen.throwable()) { e ->
+      forAll(Arb.throwable()) { e ->
         try {
           val scope = TestLifecycleOwner()
 
@@ -53,7 +53,7 @@ class ExtensionsKtTest : UnitSpec() {
     }
 
     "unsafeRunScoped should cancel correctly" {
-      forAll(Gen.int()) { i ->
+      forAll(Arb.int()) { i ->
         IO.fx<Nothing, Int> {
           val scope = TestLifecycleOwner()
           val promise = !Promise<Int>()
@@ -79,7 +79,7 @@ class ExtensionsKtTest : UnitSpec() {
     }
 
     "should complete when running a pure value with unsafeRunScoped" {
-      forAll(Gen.int()) { i ->
+      forAll(Arb.int()) { i ->
         val scope = TestLifecycleOwner()
         IO.async<Nothing, Int> { cb ->
           IO.just(i).unsafeRunScoped(scope) { result ->
@@ -90,7 +90,7 @@ class ExtensionsKtTest : UnitSpec() {
     }
 
     "unsafeRunScoped doesn't start if scope is cancelled" {
-      forAll(Gen.int()) { i ->
+      forAll(Arb.int()) { i ->
         val scope = TestLifecycleOwner()
         val ref = AtomicRefW<Int?>(i)
         scope.cancel()

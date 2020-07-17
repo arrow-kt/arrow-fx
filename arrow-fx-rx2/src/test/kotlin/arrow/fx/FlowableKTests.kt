@@ -30,8 +30,8 @@ import arrow.fx.test.laws.AsyncLaws
 import arrow.fx.test.laws.ConcurrentLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.properties.Gen
-import io.kotlintest.shouldBe
+import io.kotest.property.Arb
+import io.kotest.matchers.shouldBe
 import io.reactivex.Flowable
 import io.reactivex.subscribers.TestSubscriber
 import java.util.concurrent.CountDownLatch
@@ -55,14 +55,14 @@ class FlowableKTests : RxJavaSpec() {
       }
   }
 
-  fun <A> GEN(gen: Gen<A>): Gen<FlowableK<A>> =
-    Gen.list(gen).map {
+  fun <A> GEN(gen: Arb<A>): Arb<FlowableK<A>> =
+    Arb.list(gen).map {
       Flowable.fromIterable(it).k()
     }
 
   fun GENK() = object : GenK<ForFlowableK> {
-    override fun <A> genK(gen: Gen<A>): Gen<Kind<ForFlowableK, A>> =
-      GEN(gen) as Gen<Kind<ForFlowableK, A>>
+    override fun <A> genK(gen: Arb<A>): Arb<Kind<ForFlowableK, A>> =
+      GEN(gen) as Arb<Kind<ForFlowableK, A>>
   }
 
   init {

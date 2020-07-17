@@ -33,7 +33,6 @@ import arrow.fx.extensions.schedule.monoid.monoid
 import arrow.fx.extensions.schedule.profunctor.profunctor
 import arrow.fx.test.eq.eqK
 import arrow.fx.test.generators.genK
-import arrow.fx.test.laws.forFew
 import arrow.fx.typeclasses.Duration
 import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
@@ -41,9 +40,9 @@ import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import arrow.typeclasses.EqK2
 import arrow.typeclasses.Monad
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
-import io.kotlintest.shouldBe
+import io.kotest.property.Arb
+import io.kotest.property.forAll
+import io.kotest.matchers.shouldBe
 import kotlin.math.max
 import kotlin.math.pow
 
@@ -74,12 +73,12 @@ class ScheduleTest : ArrowFxSpec() {
 
   // This is a bad gen. But generating random schedules is weird
   fun <F, I> Schedule.Companion.genK(MF: Monad<F>): GenK<SchedulePartialOf<F, I>> = object : GenK<SchedulePartialOf<F, I>> {
-    override fun <A> genK(gen: Gen<A>): Gen<Kind<SchedulePartialOf<F, I>, A>> =
+    override fun <A> genK(gen: Arb<A>): Arb<Kind<SchedulePartialOf<F, I>, A>> =
       gen.applicative(Schedule.applicative<F, I>(MF))
   }
 
   fun <F> Schedule.Companion.genK2(MF: Monad<F>) = object : GenK2<Kind<ForSchedule, F>> {
-    override fun <A, B> genK(genA: Gen<A>, genB: Gen<B>): Gen<Kind2<Kind<ForSchedule, F>, A, B>> =
+    override fun <A, B> genK(genA: Arb<A>, genB: Arb<B>): Arb<Kind2<Kind<ForSchedule, F>, A, B>> =
       Schedule.genK<F, A>(MF).genK(genB)
   }
 
@@ -113,7 +112,7 @@ class ScheduleTest : ArrowFxSpec() {
       ),
       MonoidLaws.laws(
         Schedule.monoid<ForId, Int, Int>(Int.monoid(), Id.monad()),
-        Schedule.genK<ForId, Int>(Id.monad()).genK(Gen.int()).map { it.fix() },
+        Schedule.genK<ForId, Int>(Id.monad()).genK(Arb.int()).map { it.fix() },
         eqK(Id.eqK(), Id.monad(), 0).liftEq(Int.eq())
       ),
       ProfunctorLaws.laws(
@@ -129,7 +128,7 @@ class ScheduleTest : ArrowFxSpec() {
     )
 
     "Schedule.identity()" {
-      forAll(Gen.int()) { i ->
+      forAll(Arb.int()) { i ->
         val dec = Schedule.identity<ForId, Int>(Id.monad()).runIdSchedule(i)
 
         dec.cont &&
@@ -155,7 +154,7 @@ class ScheduleTest : ArrowFxSpec() {
     }
 
     "Schedule.recurs(n: Int)" {
-      forAll(Gen.intSmall().filter { it < 1000 }) { i ->
+      forAll(Arb.intSmall().filter { it < 1000 }) { i ->
         val res = Schedule.recurs<ForId, Int>(Id.monad(), i).runIdSchedule(0, i + 1)
 
         if (i < 0) res.isEmpty()
@@ -192,7 +191,7 @@ class ScheduleTest : ArrowFxSpec() {
     }
 
     "Schedule.spaced()" {
-      forAll(Gen.intSmall().filter { it > 0 }, Gen.intSmall().filter { it > 0 }.filter { it < 1000 }) { i, n ->
+      forAll(Arb.intSmall().filter { it > 0 }, Arb.intSmall().filter { it > 0 }.filter { it < 1000 }) { i, n ->
         val res = Schedule.spaced<ForId, Any>(Id.monad(), i.seconds).runIdSchedule(0, n)
 
         res.forAll { it.delay.nanoseconds == i.seconds.nanoseconds && it.cont }
@@ -200,7 +199,7 @@ class ScheduleTest : ArrowFxSpec() {
     }
 
     "Schedule.fibonacci()" {
-      forFew(5, Gen.intSmall().filter { it > 0 }.filter { it < 10 }, Gen.intSmall().filter { it > 0 }.filter { it < 10 }) { i, n ->
+      forAll(5, Arb.intSmall().filter { it > 0 }.filter { it < 10 }, Arb.intSmall().filter { it > 0 }.filter { it < 10 }) { i, n ->
         val res = Schedule.fibonacci<ForId, Any?>(Id.monad(), i.seconds).runIdSchedule(0, n)
 
         val sum = res.fold(0L) { acc, v ->
@@ -213,7 +212,7 @@ class ScheduleTest : ArrowFxSpec() {
     }
 
     "Schedule.linear()" {
-      forFew(5, Gen.intSmall().filter { it > 0 }.filter { it < 10 }, Gen.intSmall().filter { it > 0 }.filter { it < 10 }) { i, n ->
+      forAll(5, Arb.intSmall().filter { it > 0 }.filter { it < 10 }, Arb.intSmall().filter { it > 0 }.filter { it < 10 }) { i, n ->
         val res = Schedule.linear<ForId, Any?>(Id.monad(), i.seconds).runIdSchedule(0, n)
 
         val sum = res.fold(0L) { acc, v -> acc + v.delay.amount }
@@ -224,7 +223,7 @@ class ScheduleTest : ArrowFxSpec() {
     }
 
     "Schedule.exponential()" {
-      forFew(5, Gen.intSmall().filter { it > 0 }.filter { it < 10 }, Gen.intSmall().filter { it > 0 }.filter { it < 10 }) { i, n ->
+      forAll(5, Arb.intSmall().filter { it > 0 }.filter { it < 10 }, Arb.intSmall().filter { it > 0 }.filter { it < 10 }) { i, n ->
         val res = Schedule.exponential<ForId, Any?>(Id.monad(), i.seconds).runIdSchedule(0, n)
 
         val sum = res.fold(0L) { acc, v -> acc + v.delay.amount }
@@ -235,7 +234,7 @@ class ScheduleTest : ArrowFxSpec() {
     }
 
     "repeat" {
-      forAll(Schedule.Decision.genK().genK(Gen.int()), Gen.intSmall().filter { it in 0..99 }) { dec, n ->
+      forAll(Schedule.Decision.genK().genK(Arb.int()), Arb.intSmall().filter { it in 0..99 }) { dec, n ->
         val schedule = Schedule(IO.monad(), IO.just(0 as Any?)) { _: Unit, _ -> IO.just(dec.fix()) }
 
         val eff = SideEffect()
@@ -262,7 +261,7 @@ class ScheduleTest : ArrowFxSpec() {
     }
 
     "retry" {
-      forAll(Schedule.Decision.genK().genK(Gen.int()), Gen.intSmall().filter { it < 100 }.filter { it >= 0 }) { dec, n ->
+      forAll(Schedule.Decision.genK().genK(Arb.int()), Arb.intSmall().filter { it < 100 }.filter { it >= 0 }) { dec, n ->
         val schedule = Schedule(IO.monad(), IO.just(0 as Any?)) { _: Throwable, _ -> IO.just(dec.fix()) }
 
         val eff = SideEffect()

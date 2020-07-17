@@ -23,11 +23,15 @@ import arrow.fx.test.laws.AsyncLaws
 import arrow.fx.test.laws.TimerLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
-import io.kotlintest.matchers.startWith
-import io.kotlintest.properties.Gen
-import io.kotlintest.shouldBe
-import io.kotlintest.shouldNot
-import io.kotlintest.shouldNotBe
+import io.kotest.property.Arb
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNot
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.startWith
+import io.kotest.property.arbitrary.choice
+import io.kotest.property.arbitrary.constant
+import io.kotest.property.arbitrary.list
+import io.kotest.property.arbitrary.map
 import reactor.core.publisher.Flux
 import reactor.core.scheduler.Schedulers
 import reactor.test.test
@@ -180,13 +184,13 @@ private fun <T> FluxK.Companion.eq(): Eq<FluxKOf<T>> = object : Eq<FluxKOf<T>> {
 }
 
 private fun FluxK.Companion.genk() = object : GenK<ForFluxK> {
-  override fun <A> genK(gen: Gen<A>): Gen<Kind<ForFluxK, A>> =
-    Gen.oneOf(
-      Gen.constant(Flux.empty<A>()),
+  override fun <A> genK(gen: Arb<A>): Arb<Kind<ForFluxK, A>> =
+    Arb.choice(
+      Arb.constant(Flux.empty<A>()),
 
-      Gen.list(gen).map { Flux.fromIterable(it) },
+      Arb.list(gen).map { Flux.fromIterable(it) },
 
-      Gen.throwable().map { Flux.error<A>(it) }
+      Arb.throwable().map { Flux.error<A>(it) }
     ).map { it.k() }
 }
 
