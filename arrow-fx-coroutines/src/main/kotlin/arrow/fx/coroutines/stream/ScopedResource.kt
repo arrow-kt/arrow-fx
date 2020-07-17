@@ -75,7 +75,8 @@ internal class ScopedResource {
         }
         s.isFinished() -> {
           // state is closed and there are no leases, finalizer has to be invoked right away
-          Pair(s, suspend { Either.catch {
+          Pair(s, suspend {
+            Either.catch {
               finalizer(ExitCase.Completed)
               false
             }
@@ -139,7 +140,4 @@ internal class ScopedResource {
       val initial = State(open = true, finalizer = null, leases = 0)
     }
   }
-
-  override fun toString(): String =
-    state.value.run { "ScopedResource(id=$id, open= $open, leases= $leases)" }
 }
