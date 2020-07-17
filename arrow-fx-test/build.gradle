@@ -17,3 +17,9 @@ dependencies {
     testRuntime "org.junit.vintage:junit-vintage-engine:$JUNIT_VINTAGE_VERSION"
     kapt "io.arrow-kt:arrow-meta:$VERSION_NAME"
 }
+
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = JAVA_VERSION
+    }
+}
