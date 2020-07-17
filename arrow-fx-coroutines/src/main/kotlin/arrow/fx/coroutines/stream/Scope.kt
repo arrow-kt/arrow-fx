@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.None
 import arrow.core.Option
 import arrow.core.Some
+import arrow.core.flatMap
 import arrow.core.left
 import arrow.core.orElse
 import arrow.fx.coroutines.ExitCase
@@ -166,73 +167,16 @@ class Scope private constructor(
     fr: suspend () -> R,
     release: suspend (R, ExitCase) -> Unit
   ): Either<Throwable, R> {
-    val scope = ScopedResource()
-    val resource = Either.catch(fr)
-
-    return when (resource) {
-      is Either.Right -> {
-//        val result = scope.acquired { ex -> release(resource.b, ex) }
-//        if (result.exists(::identity)) {
-//          state.update { it.copy(resources = scope prependTo it.resources) }
-//          Either.Right(resource.b)
-//        } else Either.Left(resource.swap().getOrElse { AcquireAfterScopeClosed })
-
-        acquireAndRegister(scope, resource.b, release)
-      }
-      is Either.Left -> resource
-    }
-  }
-
-  internal suspend fun <R> acquireAndRegister(scope: ScopedResource, resource: R, release: suspend (R, ExitCase) -> Unit): Either<Throwable, R> {
-    val finalizer1: suspend (ExitCase) -> Unit = { ex: ExitCase -> release(resource, ex) }
     val conn = coroutineContext.connection()
-    val f = scope.state.modify { s ->
-//      println("conn.isCancelled: ${conn.isCancelled()}")
-      when {
-        conn.isCancelled() -> {
-          // state is closed and there are no leases, finalizer has to be invoked right away
-          Pair(s, suspend {
-            Either.catch {
-              finalizer1(ExitCase.Cancelled)
-              false
-            }
-          })
-        }
-        s.isFinished() -> {
-          // state is closed and there are no leases, finalizer has to be invoked right away
-          Pair(s, suspend {
-            Either.catch {
-              finalizer1(ExitCase.Completed)
-              false
-            }
-          })
-        }
-        else -> {
-          val attemptFinalizer: suspend (ExitCase) -> Either<Throwable, Unit> =
-            { ec -> Either.catch { finalizer1(ec) } }
-          // either state is open, or leases are present, either release or `Lease#cancel` will run the finalizer
-          Pair(s.copy(finalizer = attemptFinalizer), suspend { Either.Right(true) })
-        }
-      }
-    }
-
-    val acquired = f.invoke()
-
-    return when (acquired) {
-      is Either.Right -> {
-        // TODO there can occur a race condition between the state update of `acquired` and `state.update`.
-
+    val scope = ScopedResource()
+    return Either.catch(fr).flatMap { resource ->
+      scope.acquired { ex: ExitCase -> release(resource, ex) }.map { registered ->
         state.modify {
-//          println("Conn.isCancelled: ${conn.isCancelled()}")
-          if (conn.isCancelled() && acquired.b) Pair(it, suspend { release(resource, ExitCase.Cancelled) })
+          if (conn.isCancelled() && registered) Pair(it, suspend { release(resource, ExitCase.Cancelled) })
           else Pair(it.copy(resources = scope prependTo it.resources), suspend { Unit })
         }.invoke()
-
-        Either.Right(resource)
+        resource
       }
-
-      is Either.Left ->
-        TODO("Either.Left(resource.swap().getOrElse { AcquireAfterScopeClosed })")
     }
   }
 

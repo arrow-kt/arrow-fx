@@ -210,9 +210,7 @@ internal tailrec suspend fun go(
           when (val r = interruptGuard(scope)) {
             null -> {
               val release = res.release as suspend (Any?, ExitCase) -> Unit
-//              println("Going to acquire.")
               val r = scope.acquireResource(res.resource, release)
-//              println("Acquired and registered: $r - ${scope.resources()}")
               go(scope, extendLastTopLevelScope, extendedTopLevelScope, view.next(Result.fromEither(r)))
             }
             else -> go(scope, extendLastTopLevelScope, extendedTopLevelScope, view.next(r))

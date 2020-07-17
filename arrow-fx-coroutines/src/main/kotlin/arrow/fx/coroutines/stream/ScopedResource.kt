@@ -62,8 +62,7 @@ internal class ScopedResource {
 
   suspend fun acquired(finalizer: suspend (ExitCase) -> Unit): Either<Throwable, Boolean> {
     val conn = coroutineContext.connection()
-    val f = state.modify { s ->
-//      println("conn.isCancelled: ${conn.isCancelled()}")
+    return state.modify { s ->
       when {
         conn.isCancelled() -> {
           // state is closed and there are no leases, finalizer has to be invoked right away
@@ -90,9 +89,7 @@ internal class ScopedResource {
           Pair(s.copy(finalizer = attemptFinalizer), suspend { Either.Right(true) })
         }
       }
-    }
-
-    return f.invoke()
+    }.invoke()
   }
 
   suspend fun lease(): Scope.Lease? =

@@ -1,14 +1,17 @@
 package arrow.fx.coroutines.stream
 
+import arrow.fx.coroutines.ArrowFxSpec
+import arrow.fx.coroutines.Atomic
 import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.Promise
-import arrow.fx.coroutines.StreamSpec
 import arrow.fx.coroutines.assertCancellable
+import arrow.fx.coroutines.rethrow
+import io.kotest.assertions.failure
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
 
-class CancellationTest : StreamSpec(iterations = 20_000, depth = 0..200, spec = {
+class CancellationTest : ArrowFxSpec(spec = {
 
   "constant" {
     checkAll(Arb.int()) { i ->
@@ -17,47 +20,36 @@ class CancellationTest : StreamSpec(iterations = 20_000, depth = 0..200, spec = 
   }
 
   "bracketed stream" {
-    var count = 0
-    var cancelCalled = 0
     checkAll(Arb.int()) { i ->
       val exitCase = Promise<ExitCase>()
 
       assertCancellable { latch ->
         Stream.bracketCase(
-          {
-//            println("Acquired")
-            latch.complete(Unit)
-          },
+          { latch.complete(Unit) },
           { _, ex ->
-//            println("Completed($ex)")
-            cancelCalled++
             exitCase.complete(ex)
+              .mapLeft { failure("Bracket finalizer may only be called once") }
+              .rethrow()
           }
         ).flatMap { Stream.constant(i) }
-//          .interruptWhen { never() }
       }
 
-      count++
-//      println("-\n")
       exitCase.get() shouldBe ExitCase.Cancelled
     }
-
-    println("Ran $count times")
-    println("Cancelled got called: $cancelCalled")
   }
 
-//  "bracketed stream" {
-//    var count = 0
-//    checkAll(Arb.int()) { i ->
-//      val exitCase = Promise<ExitCase>()
-//      Stream.bracketCase(
-//        { println("Acquired") },
-//        { _, ex -> exitCase.complete(ex).also { println("Completed($ex)") } }
-//      ).flatMap { Stream.constant(i) }
-//        .assertCancellable()
-//
-//      println("count: ${count++}")
-//      exitCase.get() shouldBe ExitCase.Cancelled
-//    }
-//  }
+  "bracketed stream calls finalizer once" {
+    checkAll(Arb.int()) { i ->
+      val count = Atomic(0)
+
+      assertCancellable { latch ->
+        Stream.bracketCase(
+          { latch.complete(Unit) },
+          { _, ex -> count.update(Int::inc) }
+        ).flatMap { Stream.constant(i) }
+      }
+
+      count.get() shouldBe 0
+    }
+  }
 })
