@@ -36,4 +36,14 @@ class CancellationTest : ArrowFxSpec(spec = {
       exitCase.get() shouldBe ExitCase.Cancelled
     }
   }
+
+  "parJoin" {
+    checkAll(Arb.int()) { i ->
+      val s = Stream.constant(i)
+      assertCancellable { latch ->
+        Stream(s, s, Stream.effect { latch.complete(Unit) })
+          .parJoin(3)
+      }
+    }
+  }
 })
