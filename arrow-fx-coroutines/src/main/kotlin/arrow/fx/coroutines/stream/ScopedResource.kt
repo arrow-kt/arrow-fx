@@ -42,7 +42,7 @@ import kotlin.coroutines.coroutineContext
  */
 internal class ScopedResource {
 
-  internal val state = atomic(State.initial)
+  private val state = atomic(State.initial)
 
   private val id: Token = Token()
 
@@ -75,8 +75,7 @@ internal class ScopedResource {
         }
         s.isFinished() -> {
           // state is closed and there are no leases, finalizer has to be invoked right away
-          Pair(s, suspend {
-            Either.catch {
+          Pair(s, suspend { Either.catch {
               finalizer(ExitCase.Completed)
               false
             }
@@ -127,7 +126,7 @@ internal class ScopedResource {
    *                   invoked when the resource is released.
    * @param leases References (leases) of this resource
    */
-  internal data class State(
+  private data class State(
     val open: Boolean,
     val finalizer: (suspend (ExitCase) -> Either<Throwable, Unit>)?,
     val leases: Int

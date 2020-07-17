@@ -7,6 +7,7 @@ import arrow.core.Some
 import arrow.core.flatMap
 import arrow.core.left
 import arrow.core.orElse
+import arrow.fx.coroutines.Atomic
 import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.ForkConnected
 import arrow.fx.coroutines.Platform
@@ -17,10 +18,7 @@ import arrow.fx.coroutines.deleteFirst
 import arrow.fx.coroutines.guarantee
 import arrow.fx.coroutines.prependTo
 import arrow.fx.coroutines.raceN
-import arrow.fx.coroutines.stream.concurrent.modify
 import arrow.fx.coroutines.uncons
-import kotlinx.atomicfu.atomic
-import kotlinx.atomicfu.update
 import kotlin.coroutines.coroutineContext
 
 /**
@@ -85,7 +83,8 @@ class Scope private constructor(
       Scope(Token(), null, null)
   }
 
-  private val state = atomic(State.initial)
+  private val state: Atomic<State> =
+    Atomic.unsafe(State.initial)
 
   /**
    * Opens a child scope.
@@ -189,14 +188,9 @@ class Scope private constructor(
   private suspend fun releaseChildScope(id: Token): Unit =
     state.update { it.unregisterChild(id) }
 
-  internal suspend fun allResources(): List<ScopedResource> =
-    state.value.run {
-      resources + children.flatMap { it.resources() }
-    }
-
   /** Returns all direct resources of this scope (does not return resources in ancestor scopes or child scopes). **/
   internal suspend fun resources(): List<ScopedResource> =
-    state.value.resources
+    state.get().resources
 
   /**
    * Traverses supplied `Chain` with `f` that may produce a failure, and collects these failures.
@@ -245,7 +239,7 @@ class Scope private constructor(
     when (parent) {
       null -> this
       else -> {
-        val s = parent.state.value
+        val s = parent.state.get()
         if (s.open) parent else parent.openAncestor()
       }
     }
@@ -282,7 +276,7 @@ class Scope private constructor(
         else -> {
           if (uncons.first.id == scopeId) Some(uncons.first)
           else {
-            val s = uncons.first.state.value
+            val s = uncons.first.state.get()
             if (s.children.isEmpty()) go(uncons.second)
             else when (val ss = go(s.children)) {
               None -> go(uncons.second)
@@ -292,7 +286,7 @@ class Scope private constructor(
         }
       }
 
-    return if (id == scopeId) Some(this) else go(state.value.children)
+    return if (id == scopeId) Some(this) else go(state.get().children)
   }
 
   /**
@@ -338,7 +332,7 @@ class Scope private constructor(
    * successfully leased.
    */
   suspend fun lease(): Lease? {
-    val s = state.value
+    val s = state.get()
     return if (!s.open) null
     else {
       val allScopes = s.children + this + ancestors()
@@ -365,17 +359,18 @@ class Scope private constructor(
    * and then, without any error handling the whole stream will fail with supplied throwable.
    *
    */
-  suspend fun interrupt(cause: Either<Throwable, Unit>): Unit =
+  suspend fun interrupt(cause: Either<Throwable, Unit>): Unit {
     when (interruptible) {
       null -> throw IllegalStateException("Scope#interrupt called for Scope that cannot be interrupted")
       else -> {
         // note that we guard interruption here by Attempt to prevent failure on multiple sets.
         val interruptCause = cause.map { interruptible.interruptRoot }
-        guarantee({ interruptible.deferred.complete(interruptCause); Unit }) {
+        guarantee({ interruptible.deferred.complete(interruptCause) }) {
           interruptible.ref.update { it.orElse { Some(interruptCause) } }
         }
       }
     }
+  }
 
   /**
    * Checks if current scope is interrupted.
@@ -386,7 +381,7 @@ class Scope private constructor(
   internal suspend fun isInterrupted(): Option<Either<Throwable, Token>> =
     when (interruptible) {
       null -> None
-      else -> interruptible.ref.value
+      else -> interruptible.ref.get()
     }
 
   /**
@@ -467,12 +462,10 @@ class Scope private constructor(
    */
   internal data class InterruptContext(
     val deferred: Promise<Either<Throwable, Token>>,
-    val refValue: Option<Either<Throwable, Token>>,
+    val ref: Atomic<Option<Either<Throwable, Token>>>,
     val interruptRoot: Token,
     val cancelParent: suspend () -> Unit
   ) {
-
-    val ref = atomic(refValue)
 
     /**
      * Creates an [InterruptContext] for a interruptible child scope
@@ -489,7 +482,7 @@ class Scope private constructor(
 
         val context = InterruptContext(
           deferred = Promise.unsafe(),
-          refValue = None,
+          ref = Atomic.unsafe(None),
           interruptRoot = newScopeId,
           cancelParent = suspend { f.cancel() }
         )
@@ -516,7 +509,7 @@ class Scope private constructor(
       fun unsafeFromInterruptible(newScopeId: Token): InterruptContext =
         InterruptContext(
           deferred = Promise.unsafe(),
-          refValue = None,
+          ref = Atomic.unsafe(None),
           interruptRoot = newScopeId,
           cancelParent = suspend { Unit }
         )
@@ -537,8 +530,4 @@ class Scope private constructor(
      */
     abstract suspend fun cancel(): Either<Throwable, Unit>
   }
-}
-
-internal object AcquireAfterScopeClosed : Throwable(null, null) {
-  override fun fillInStackTrace() = this
 }

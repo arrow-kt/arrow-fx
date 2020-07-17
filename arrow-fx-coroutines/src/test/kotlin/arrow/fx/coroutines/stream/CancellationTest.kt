@@ -1,7 +1,6 @@
 package arrow.fx.coroutines.stream
 
 import arrow.fx.coroutines.ArrowFxSpec
-import arrow.fx.coroutines.Atomic
 import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.assertCancellable
@@ -35,21 +34,6 @@ class CancellationTest : ArrowFxSpec(spec = {
       }
 
       exitCase.get() shouldBe ExitCase.Cancelled
-    }
-  }
-
-  "bracketed stream calls finalizer once" {
-    checkAll(Arb.int()) { i ->
-      val count = Atomic(0)
-
-      assertCancellable { latch ->
-        Stream.bracketCase(
-          { latch.complete(Unit) },
-          { _, ex -> count.update(Int::inc) }
-        ).flatMap { Stream.constant(i) }
-      }
-
-      count.get() shouldBe 0
     }
   }
 })
