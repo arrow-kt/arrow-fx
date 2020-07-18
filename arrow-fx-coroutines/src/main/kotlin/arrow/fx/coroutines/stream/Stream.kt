@@ -18,6 +18,8 @@ import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.forkAndForget
 import arrow.fx.coroutines.guaranteeCase
 import arrow.fx.coroutines.prependTo
+import arrow.fx.coroutines.raceN
+import arrow.fx.coroutines.stream.concurrent.Queue
 import arrow.fx.coroutines.stream.concurrent.Signal
 import arrow.typeclasses.Monoid
 import arrow.typeclasses.Semigroup
@@ -600,6 +602,71 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    */
   fun <B> effectMap(f: suspend (O) -> B): Stream<B> =
     flatMap { o -> effect { f(o) } }
+
+  /**
+   * Like [effectMap], but will evaluate effects in parallel, emitting the results
+   * downstream in the same order as the input stream. The number of concurrent effects
+   * is limited by [maxConcurrent].
+   *
+   * See [parEffectMapUnordered] if there is no requirement to retain the order of the original stream.
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.coroutines.stream.*
+   *
+   * //sampleStart
+   * suspend fun main(): Unit =
+   *   Stream(1, 2, 3, 4)
+   *     .effectMap(2) { print(it) }
+   *     .compile()
+   *     .drain() // 1234
+   * //sampleEnd
+   * ```
+   */
+  fun <O2> parEffectMap(maxConcurrent: Int, f: suspend (O) -> O2): Stream<O2> =
+    effect {
+      Pair(Queue.unbounded<(suspend () -> Either<Throwable, O2>)?>(), Promise<Unit>())
+    }.flatMap { (queue, dequeueDone) ->
+      queue.dequeue()
+        .terminateOnNull()
+        .effectMap { it.invoke().fold({ throw it }, ::identity) }
+        .onFinalize { dequeueDone.complete(Unit) }
+        .concurrently(
+          effectMap { o ->
+            val value = Promise<Either<Throwable, O2>>()
+            val enqueue = suspend {
+              queue.enqueue1(value::get)
+              effect { value.complete(Either.catch { f(o) }); Unit }
+            }
+            when (val winner = raceN({ dequeueDone.get() }, enqueue)) {
+              is Left -> empty()
+              is Right -> winner.b
+            }
+          }
+            .parJoin(maxConcurrent)
+            .onFinalize { raceN({ dequeueDone.get() }, { queue.enqueue1(null) }) }
+        )
+    }
+
+  /**
+   * Like [effectMap], but will evaluate effects in parallel, emitting the results downstream.
+   * The number of concurrent effects is limited by [maxConcurrent].
+   *
+   * See [parEffectMap] if retaining the original order of the stream is required.
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.coroutines.stream.*
+   *
+   * //sampleStart
+   * suspend fun main(): Unit =
+   *   Stream(1, 2, 3, 4)
+   *     .effectMap(2) { print(it) }
+   *     .compile()
+   *     .drain() // 3142
+   * //sampleEnd
+   * ```
+   */
+  fun <O2> parEffectMapUnordered(maxConcurrent: Int, f: suspend (O) -> O2): Stream<O2> =
+    map { o -> effect { f(o) } }.parJoin(maxConcurrent)
 
   /**
    * Alias for `effectMap { o -> f(o); o }`.

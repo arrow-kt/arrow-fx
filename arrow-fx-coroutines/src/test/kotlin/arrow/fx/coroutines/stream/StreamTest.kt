@@ -527,4 +527,25 @@ class StreamTest : StreamSpec(spec = {
         .toList() shouldBe List(n) { i }
     }
   }
+
+  "parEffectMap" - {
+    "no concurrency - identity" {
+      checkAll(Arb.stream(Arb.int())) { s ->
+        s.parEffectMap(1) { it }
+          .compile()
+          .toList() shouldBe s.compile().toList()
+      }
+    }
+
+    "concurrency - identity" {
+      checkAll(Arb.stream(Arb.int()), Arb.positiveInts()) { s, n0 ->
+        val n = (n0 % 20) + 1
+        val expected = s.compile().toList()
+
+        s.parEffectMap(n) { it }
+          .compile()
+          .toList() shouldBe expected
+      }
+    }
+  }
 })
