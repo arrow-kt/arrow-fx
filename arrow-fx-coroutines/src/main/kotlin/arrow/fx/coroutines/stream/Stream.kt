@@ -659,7 +659,7 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * //sampleStart
    * suspend fun main(): Unit =
    *   Stream(1, 2, 3, 4)
-   *     .effectMap(2) { print(it) }
+   *     .parEffectMapUnordered(4) { print(it) }
    *     .compile()
    *     .drain() // 3142 (unordered)
    * //sampleEnd
