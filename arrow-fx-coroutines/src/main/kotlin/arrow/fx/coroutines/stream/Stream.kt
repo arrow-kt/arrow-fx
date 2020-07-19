@@ -616,7 +616,7 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * //sampleStart
    * suspend fun main(): Unit =
    *   Stream(1, 2, 3, 4)
-   *     .effectMap(2) { print(it) }
+   *     .parEffectMap(2) { print(it) }
    *     .compile()
    *     .drain() // 1234
    * //sampleEnd
@@ -661,7 +661,7 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    *   Stream(1, 2, 3, 4)
    *     .effectMap(2) { print(it) }
    *     .compile()
-   *     .drain() // 3142
+   *     .drain() // 3142 (unordered)
    * //sampleEnd
    * ```
    */
