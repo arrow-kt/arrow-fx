@@ -1,7 +1,6 @@
 package arrow.fx.coroutines
 
 import arrow.core.Either
-import arrow.core.extensions.sequence.monoidal.identity
 import arrow.core.identity
 import arrow.core.left
 import arrow.core.right
@@ -32,8 +31,6 @@ import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.startCoroutine
-import kotlin.math.max
-import kotlin.math.min
 
 data class SideEffect(var counter: Int = 0) {
   fun increment() {
@@ -203,13 +200,15 @@ internal fun <A> Either<Throwable, A>.suspended(): suspend () -> A =
  * ```
  * @see Assertions.assertThrows
  */
-inline fun <A> assertThrowable(executable: () -> A): Throwable =
-  try {
-    val a = executable.invoke()
-    fail("Expected an exception but found: $a")
+inline fun <A> assertThrowable(executable: () -> A): Throwable {
+  val a = try {
+    executable.invoke()
   } catch (e: Throwable) {
     e
   }
+
+  return if (a is Throwable) a else fail("Expected an exception but found: $a")
+}
 
 internal suspend fun CoroutineContext.shift(): Unit =
   suspendCoroutineUninterceptedOrReturn { cont ->
