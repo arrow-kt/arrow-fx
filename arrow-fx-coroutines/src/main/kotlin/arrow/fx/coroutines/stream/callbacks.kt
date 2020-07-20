@@ -4,7 +4,9 @@ import arrow.core.Either
 import arrow.fx.coroutines.CancelToken
 import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.ForkConnected
+import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.UnsafePromise
+import arrow.fx.coroutines.andThen
 import arrow.fx.coroutines.guaranteeCase
 import arrow.fx.coroutines.stream.concurrent.Queue
 import kotlin.coroutines.Continuation
@@ -15,7 +17,6 @@ import kotlin.experimental.ExperimentalTypeInference
 private object END
 
 interface EmitterSyntax<A> {
-  fun onCancel(cancelF: suspend () -> Unit): Unit
   fun emit(a: A): Unit
   fun emit(chunk: Chunk<A>): Unit
   fun emit(iterable: Iterable<A>): Unit
@@ -32,7 +33,6 @@ interface EmitterSyntax<A> {
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream.callback {
- *       onCancel { /* cancel something */ }
  *       emit(1)
  *       emit(2, 3, 4)
  *       end()
@@ -45,17 +45,42 @@ interface EmitterSyntax<A> {
  *
  * Note that if neither `end()` nor other limit operators such as `take(N)` are called,
  * then the Stream will never end.
- *
- * Cancellation or errors might happen any time during emission, so it's recommended to call `onCancel` as early as
- * possible, otherwise it's not guaranteed to be called.
  */
 // @OptIn(ExperimentalTypeInference::class) in 1.3.70
 @UseExperimental(ExperimentalTypeInference::class)
 fun <A> Stream.Companion.callback(@BuilderInference f: suspend EmitterSyntax<A>.() -> Unit): Stream<A> =
+  Stream.cancellableCallback(f.andThen { CancelToken.unit })
+
+/**
+ * Creates a Stream from the given suspended block that will evaluate the passed CancelToken if cancelled.
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.stream.*
+ *
+ * //sampleStart
+ * suspend fun main(): Unit =
+ *   Stream.callback {
+ *       emit(1)
+ *       emit(2, 3, 4)
+ *       end()
+ *       CancelToken { /* cancel subscription to callback */ }
+ *     }
+ *     .compile()
+ *     .toList()
+ *     .let(::println) //[1, 2, 3, 4]
+ * //sampleEnd
+ * ```
+ *
+ * If neither `end()` nor other limit operators such as `take(N)` are called,
+ * then the Stream will never end.
+ */
+// @OptIn(ExperimentalTypeInference::class) in 1.3.70
+@UseExperimental(ExperimentalTypeInference::class)
+fun <A> Stream.Companion.cancellableCallback(@BuilderInference f: suspend EmitterSyntax<A>.() -> CancelToken): Stream<A> =
   force {
     val q = Queue.unbounded<Any?>()
     val error = UnsafePromise<Throwable>()
-    val cancel = UnsafePromise<CancelToken>()
+    val cancel = Promise<CancelToken>()
 
     ForkConnected { emitterCallback(f, cancel, error, q) }
 
@@ -65,19 +90,14 @@ fun <A> Stream.Companion.callback(@BuilderInference f: suspend EmitterSyntax<A>.
       .flatMap(::chunk)
       .onFinalizeCase {
         when (it) {
-          is ExitCase.Cancelled -> {
-            when (val r = cancel.tryGet()) {
-              null -> Unit // This means the user didn't set the onCancel or set it too late
-              else -> r.getOrNull()!!.invoke()
-            }
-          }
+          is ExitCase.Cancelled -> cancel.get().cancel.invoke()
         }
       }
   }
 
 private suspend fun <A> emitterCallback(
-  f: suspend EmitterSyntax<A>.() -> Unit,
-  cancel: UnsafePromise<CancelToken>,
+  f: suspend EmitterSyntax<A>.() -> CancelToken,
+  cancel: Promise<CancelToken>,
   error: UnsafePromise<Throwable>,
   q: Queue<Any?>
 ): Unit {
@@ -109,13 +129,12 @@ private suspend fun <A> emitterCallback(
     override fun end() {
       cb(END)
     }
-
-    override fun onCancel(cancelF: suspend () -> Unit) {
-      cancel.complete(Result.success(CancelToken(cancelF)))
-    }
   }
 
-  guaranteeCase({ emitter.f() }, { exit ->
+  guaranteeCase({
+    val cancelT = emitter.f()
+    cancel.complete(cancelT)
+  }, { exit ->
     when (exit) {
       is ExitCase.Failure -> error.complete(Result.success(exit.failure))
     }

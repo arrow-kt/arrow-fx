@@ -1,11 +1,14 @@
 package arrow.fx.coroutines.stream.ops
 
 import arrow.fx.coroutines.Atomic
+import arrow.fx.coroutines.CancelToken
+import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.Schedule
 import arrow.fx.coroutines.StreamSpec
 import arrow.fx.coroutines.assertThrowable
+import arrow.fx.coroutines.guaranteeCase
 import arrow.fx.coroutines.milliseconds
 import arrow.fx.coroutines.never
 import arrow.fx.coroutines.parTupledN
@@ -13,6 +16,7 @@ import arrow.fx.coroutines.seconds
 import arrow.fx.coroutines.sleep
 import arrow.fx.coroutines.stream.Chunk
 import arrow.fx.coroutines.stream.Stream
+import arrow.fx.coroutines.stream.cancellableCallback
 import arrow.fx.coroutines.stream.callback
 import arrow.fx.coroutines.stream.chunk
 import arrow.fx.coroutines.stream.compile
@@ -132,7 +136,7 @@ class CallbackTest : StreamSpec(iterations = 250, spec = {
 
   "forwards errors" {
     checkAll(Arb.throwable()) { e ->
-      val s = Stream.callback<Int> {
+      val s = Stream.cancellableCallback<Int> {
         throw e
       }
         .compile()
@@ -145,7 +149,7 @@ class CallbackTest : StreamSpec(iterations = 250, spec = {
 
   "forwards suspended errors" {
     checkAll(Arb.throwable()) { e ->
-      val s = Stream.callback<Int> {
+      val s = Stream.cancellableCallback<Int> {
         e.suspend()
       }
         .compile()
@@ -161,8 +165,8 @@ class CallbackTest : StreamSpec(iterations = 250, spec = {
       val latch = Promise<Unit>()
       val effect = Atomic(false)
 
-      val s = Stream.callback<Int> {
-        onCancel { effect.set(true) }
+      val s = Stream.cancellableCallback<Int> {
+        CancelToken { effect.set(true) }
       }
 
       val f = ForkAndForget {
@@ -180,36 +184,33 @@ class CallbackTest : StreamSpec(iterations = 250, spec = {
     }
   }
 
-  "can cancel never and run token" {
+  "can cancel never" {
     checkAll(Arb.int()) {
       val latch = Promise<Unit>()
-      val effect = Atomic(false)
-
-      val s = Stream.callback<Int> {
-        onCancel { effect.set(true) }
-        never<Unit>()
-      }
-
+      val exit = Promise<ExitCase>()
       val f = ForkAndForget {
-        parTupledN(
-          { s.compile().drain() },
-          { latch.complete(Unit) }
-        )
+        guaranteeCase({
+          Stream.cancellableCallback<Int> {
+            latch.complete(Unit)
+            never<Unit>()
+            CancelToken.unit
+          }
+            .compile()
+            .toList()
+        }) { ex -> exit.complete(ex) }
       }
-
-      parTupledN({ latch.get() }, { sleep(20.milliseconds) })
-
+      latch.get()
       f.cancel()
-      effect.get() shouldBe true
+      exit.get() shouldBe ExitCase.Cancelled
     }
   }
 
   "doesn't run cancel token without cancellation" {
     val effect = Atomic(false)
 
-    Stream.callback<Int> {
-      onCancel { effect.set(true) }
+    Stream.cancellableCallback<Int> {
       end()
+      CancelToken { effect.set(true) }
     }
       .compile()
       .drain()
