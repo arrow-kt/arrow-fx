@@ -13,7 +13,7 @@ import arrow.fx.coroutines.seconds
 import arrow.fx.coroutines.sleep
 import arrow.fx.coroutines.stream.Chunk
 import arrow.fx.coroutines.stream.Stream
-import arrow.fx.coroutines.stream.async
+import arrow.fx.coroutines.stream.callback
 import arrow.fx.coroutines.stream.chunk
 import arrow.fx.coroutines.stream.compile
 import arrow.fx.coroutines.suspend
@@ -27,12 +27,12 @@ import kotlin.coroutines.Continuation
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
 
-class AsyncCancellableTest : StreamSpec(iterations = 250, spec = {
+class CallbackTest : StreamSpec(iterations = 250, spec = {
 
   "should be lazy" {
     checkAll(Arb.int()) {
       val effect = Atomic(false)
-      val s = Stream.async<Int> {
+      val s = Stream.callback<Int> {
         effect.set(true)
         end()
       }
@@ -45,7 +45,7 @@ class AsyncCancellableTest : StreamSpec(iterations = 250, spec = {
 
   "emits values" {
     checkAll(Arb.list(Arb.int())) { list ->
-      Stream.async {
+      Stream.callback {
         list.forEach { emit(it) }
         end()
       }
@@ -56,7 +56,7 @@ class AsyncCancellableTest : StreamSpec(iterations = 250, spec = {
 
   "emits varargs" {
     checkAll(Arb.list(Arb.int()).map { it.toTypedArray() }) { list ->
-      Stream.async {
+      Stream.callback {
         emit(*list)
         end()
       }
@@ -68,7 +68,7 @@ class AsyncCancellableTest : StreamSpec(iterations = 250, spec = {
 
   "emits iterable" {
     checkAll(Arb.list(Arb.int())) { list ->
-      Stream.async<Int> {
+      Stream.callback<Int> {
         emit(list)
         end()
       }
@@ -80,7 +80,7 @@ class AsyncCancellableTest : StreamSpec(iterations = 250, spec = {
 
   "emits chunks" {
     checkAll(Arb.chunk(Arb.int()), Arb.chunk(Arb.int())) { ch, ch2 ->
-      Stream.async<Int> {
+      Stream.callback<Int> {
         emit(ch)
         emit(ch2)
         end()
@@ -92,7 +92,7 @@ class AsyncCancellableTest : StreamSpec(iterations = 250, spec = {
   }
 
   "long running emission" {
-    Stream.async {
+    Stream.callback {
       ForkAndForget {
         countToCallback(4, { it }, { emit(it) }) { end() }
       }
@@ -104,7 +104,7 @@ class AsyncCancellableTest : StreamSpec(iterations = 250, spec = {
   "parallel emission/pulling" {
     val ref = Atomic(false)
 
-    Stream.async {
+    Stream.callback {
       emit(1)
       sleep(1.seconds)
       emit(2)
@@ -120,7 +120,7 @@ class AsyncCancellableTest : StreamSpec(iterations = 250, spec = {
   }
 
   "emits and completes" {
-    Stream.async {
+    Stream.callback {
       emit(1)
       emit(2)
       emit(3)
@@ -132,7 +132,7 @@ class AsyncCancellableTest : StreamSpec(iterations = 250, spec = {
 
   "forwards errors" {
     checkAll(Arb.throwable()) { e ->
-      val s = Stream.async<Int> {
+      val s = Stream.callback<Int> {
         throw e
       }
         .compile()
@@ -145,7 +145,7 @@ class AsyncCancellableTest : StreamSpec(iterations = 250, spec = {
 
   "forwards suspended errors" {
     checkAll(Arb.throwable()) { e ->
-      val s = Stream.async<Int> {
+      val s = Stream.callback<Int> {
         e.suspend()
       }
         .compile()
@@ -161,7 +161,7 @@ class AsyncCancellableTest : StreamSpec(iterations = 250, spec = {
       val latch = Promise<Unit>()
       val effect = Atomic(false)
 
-      val s = Stream.async<Int> {
+      val s = Stream.callback<Int> {
         onCancel { effect.set(true) }
       }
 
@@ -185,7 +185,7 @@ class AsyncCancellableTest : StreamSpec(iterations = 250, spec = {
       val latch = Promise<Unit>()
       val effect = Atomic(false)
 
-      val s = Stream.async<Int> {
+      val s = Stream.callback<Int> {
         onCancel { effect.set(true) }
         never<Unit>()
       }
@@ -207,7 +207,7 @@ class AsyncCancellableTest : StreamSpec(iterations = 250, spec = {
   "doesn't run cancel token without cancellation" {
     val effect = Atomic(false)
 
-    Stream.async<Int> {
+    Stream.callback<Int> {
       onCancel { effect.set(true) }
       end()
     }

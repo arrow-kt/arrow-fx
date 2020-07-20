@@ -24,14 +24,14 @@ interface EmitterSyntax<A> {
 }
 
 /**
- * Creates a Stream from the given suspended block, allowing to emit, set cancel effects and end the emission.
+ * Creates a Stream from the given suspended block callback, allowing to emit, set cancel effects and end the emission.
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.stream.*
  *
  * //sampleStart
  * suspend fun main(): Unit =
- *   Stream.async {
+ *   Stream.callback {
  *       onCancel { /* cancel something */ }
  *       emit(1)
  *       emit(2, 3, 4)
@@ -51,7 +51,7 @@ interface EmitterSyntax<A> {
  */
 // @OptIn(ExperimentalTypeInference::class) in 1.3.70
 @UseExperimental(ExperimentalTypeInference::class)
-fun <A> Stream.Companion.async(@BuilderInference f: suspend EmitterSyntax<A>.() -> Unit): Stream<A> =
+fun <A> Stream.Companion.callback(@BuilderInference f: suspend EmitterSyntax<A>.() -> Unit): Stream<A> =
   force {
     val q = Queue.unbounded<Any?>()
     val error = UnsafePromise<Throwable>()
