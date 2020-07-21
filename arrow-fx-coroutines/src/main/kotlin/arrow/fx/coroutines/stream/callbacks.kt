@@ -55,6 +55,7 @@ fun <A> Stream.Companion.callback(@BuilderInference f: suspend EmitterSyntax<A>.
  * Creates a Stream from the given suspended block that will evaluate the passed CancelToken if cancelled.
  *
  * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.CancelToken
  * import arrow.fx.coroutines.stream.*
  *
  * //sampleStart
