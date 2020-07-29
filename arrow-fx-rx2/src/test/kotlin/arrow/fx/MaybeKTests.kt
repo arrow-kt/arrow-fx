@@ -5,12 +5,13 @@ import arrow.core.left
 import arrow.fx.rx2.ForMaybeK
 import arrow.fx.rx2.MaybeK
 import arrow.fx.rx2.MaybeKOf
+import arrow.fx.rx2.extensions.concurrent
 import arrow.fx.rx2.extensions.fx
+import arrow.fx.rx2.extensions.maybek.applicative.applicative
 import arrow.fx.rx2.extensions.maybek.async.async
 import arrow.fx.rx2.extensions.maybek.functor.functor
-import arrow.fx.rx2.extensions.maybek.applicative.applicative
-import arrow.fx.rx2.extensions.maybek.monad.monad
 import arrow.fx.rx2.extensions.maybek.monad.flatMap
+import arrow.fx.rx2.extensions.maybek.monad.monad
 import arrow.fx.rx2.extensions.maybek.timer.timer
 import arrow.fx.rx2.fix
 import arrow.fx.rx2.k
@@ -19,7 +20,7 @@ import arrow.fx.rx2.value
 import arrow.fx.typeclasses.ExitCase
 import arrow.core.test.generators.GenK
 import arrow.core.test.generators.throwable
-import arrow.fx.rx2.extensions.concurrent
+import arrow.fx.test.eq.unsafeRunEq
 import arrow.fx.test.laws.ConcurrentLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
@@ -31,7 +32,6 @@ import io.reactivex.observers.TestObserver
 import io.reactivex.schedulers.Schedulers
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 
 class MaybeKTests : RxJavaSpec() {
 
@@ -47,7 +47,6 @@ class MaybeKTests : RxJavaSpec() {
         MaybeK.eqK(),
         testStackSafety = false
       )
-    )
 
       /*
       TODO: MonadFilter instances are not lawsful
@@ -62,7 +61,7 @@ class MaybeKTests : RxJavaSpec() {
         MaybeK.eqK()
       )
        */
-    // )
+    )
 
     "Multi-thread Maybes finish correctly" {
       val value: Maybe<Long> = MaybeK.fx {
@@ -144,7 +143,7 @@ class MaybeKTests : RxJavaSpec() {
       ec shouldBe ExitCase.Cancelled
     }
 
-    "MaybeK.cancellable should cancel CancelToken on dispose" {
+    "MaybeK cancellable should cancel CancelToken on dispose" {
       Promise.uncancellable<ForMaybeK, Unit>(MaybeK.async()).flatMap { latch ->
         MaybeK {
           MaybeK.cancellable<Unit> {
@@ -202,21 +201,12 @@ class MaybeKTests : RxJavaSpec() {
 }
 
 private fun <T> MaybeK.Companion.eq(): Eq<MaybeKOf<T>> = object : Eq<MaybeKOf<T>> {
-  override fun MaybeKOf<T>.eqv(b: MaybeKOf<T>): Boolean {
-    val res1 = arrow.core.Try { value().timeout(5, TimeUnit.SECONDS).blockingGet() }
-    val res2 = arrow.core.Try { b.value().timeout(5, TimeUnit.SECONDS).blockingGet() }
-    return res1.fold({ t1 ->
-      res2.fold({ t2 ->
-        if (t1::class.java == TimeoutException::class.java) throw t1
-        if (t2::class.java == TimeoutException::class.java) throw t2
-        (t1::class.java == t2::class.java)
-      }, { false })
-    }, { v1 ->
-      res2.fold({ false }, {
-        v1 == it
-      })
+  override fun MaybeKOf<T>.eqv(b: MaybeKOf<T>): Boolean =
+    unsafeRunEq({
+      this.value().timeout(5, TimeUnit.SECONDS).blockingGet()
+    }, {
+      b.value().timeout(5, TimeUnit.SECONDS).blockingGet()
     })
-  }
 }
 
 private fun MaybeK.Companion.eqK() = object : EqK<ForMaybeK> {

@@ -7,13 +7,20 @@ import arrow.core.test.generators.throwable
 import arrow.fx.reactor.FluxK
 import arrow.fx.reactor.FluxKOf
 import arrow.fx.reactor.ForFluxK
+import arrow.fx.test.eq.unsafeRunEq
+import arrow.fx.reactor.extensions.fluxk.applicative.applicative
 import arrow.fx.reactor.extensions.fluxk.async.async
+import arrow.fx.reactor.extensions.fluxk.functor.functor
 import arrow.fx.reactor.extensions.fluxk.monad.flatMap
+import arrow.fx.reactor.extensions.fluxk.monad.monad
+import arrow.fx.reactor.extensions.fluxk.timer.timer
 import arrow.fx.reactor.extensions.fx
 import arrow.fx.reactor.fix
 import arrow.fx.reactor.k
 import arrow.fx.reactor.value
 import arrow.fx.typeclasses.ExitCase
+import arrow.fx.test.laws.AsyncLaws
+import arrow.fx.test.laws.TimerLaws
 import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import io.kotlintest.matchers.startWith
@@ -35,16 +42,16 @@ class FluxKTest : UnitSpec() {
 
   init {
     testLaws(
-      // TimerLaws.laws(FluxK.async(), FluxK.timer(), FluxK.eqK()),
-      // AsyncLaws.laws(
-      //   FluxK.async(),
-      //   FluxK.functor(),
-      //   FluxK.applicative(),
-      //   FluxK.monad(),
-      //   FluxK.genk(),
-      //   FluxK.eqK(),
-      //   testStackSafety = false
-      // )
+      TimerLaws.laws(FluxK.async(), FluxK.timer(), FluxK.eqK()),
+      AsyncLaws.laws(
+        FluxK.async(),
+        FluxK.functor(),
+        FluxK.applicative(),
+        FluxK.monad(),
+        FluxK.genk(),
+        FluxK.eqK(),
+        testStackSafety = false
+      )
       /*
        TODO: Traverse/Foldable instances are not lawful
        https://github.com/arrow-kt/arrow/issues/1882
@@ -165,25 +172,11 @@ class FluxKTest : UnitSpec() {
 
 private fun <T> FluxK.Companion.eq(): Eq<FluxKOf<T>> = object : Eq<FluxKOf<T>> {
   override fun FluxKOf<T>.eqv(b: FluxKOf<T>): Boolean =
-    try {
-      this.value().blockFirst() == b.value().blockFirst()
-    } catch (throwable: Throwable) {
-      val errA = try {
-        this.value().blockFirst()
-        throw IllegalArgumentException()
-      } catch (err: Throwable) {
-        err
-      }
-
-      val errB = try {
-        b.value().blockFirst()
-        throw IllegalStateException()
-      } catch (err: Throwable) {
-        err
-      }
-
-      errA == errB
-    }
+    unsafeRunEq({
+      this.value().blockFirst()
+    }, {
+      b.value().blockFirst()
+    })
 }
 
 private fun FluxK.Companion.genk() = object : GenK<ForFluxK> {

@@ -5,14 +5,16 @@ import arrow.core.left
 import arrow.fx.rx2.ForSingleK
 import arrow.fx.rx2.SingleK
 import arrow.fx.rx2.SingleKOf
+import arrow.fx.test.eq.unsafeRunEq
+import arrow.fx.rx2.extensions.concurrent
 import arrow.fx.rx2.extensions.fx
+import arrow.fx.rx2.extensions.singlek.applicative.applicative
 import arrow.fx.rx2.extensions.singlek.applicativeError.attempt
 import arrow.fx.rx2.extensions.singlek.async.async
-import arrow.fx.rx2.extensions.singlek.monad.flatMap
-import arrow.fx.rx2.extensions.singlek.timer.timer
 import arrow.fx.rx2.extensions.singlek.functor.functor
-import arrow.fx.rx2.extensions.singlek.applicative.applicative
+import arrow.fx.rx2.extensions.singlek.monad.flatMap
 import arrow.fx.rx2.extensions.singlek.monad.monad
+import arrow.fx.rx2.extensions.singlek.timer.timer
 import arrow.fx.rx2.fix
 import arrow.fx.rx2.k
 import arrow.fx.rx2.unsafeRunSync
@@ -20,7 +22,6 @@ import arrow.fx.rx2.value
 import arrow.fx.typeclasses.ExitCase
 import arrow.core.test.generators.GenK
 import arrow.core.test.generators.throwable
-import arrow.fx.rx2.extensions.concurrent
 import arrow.fx.test.laws.ConcurrentLaws
 import arrow.fx.test.laws.forFew
 import arrow.typeclasses.Eq
@@ -32,7 +33,6 @@ import io.reactivex.observers.TestObserver
 import io.reactivex.schedulers.Schedulers
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 
 class SingleKTests : RxJavaSpec() {
 
@@ -132,7 +132,7 @@ class SingleKTests : RxJavaSpec() {
       ec shouldBe ExitCase.Cancelled
     }
 
-    "SingleK.cancellable should cancel CancelToken on dispose" {
+    "SingleK cancellable should cancel CancelToken on dispose" {
       Promise.uncancellable<ForSingleK, Unit>(SingleK.async()).flatMap { latch ->
         SingleK {
           SingleK.cancellable<Unit> {
@@ -197,21 +197,12 @@ private fun SingleK.Companion.genK() = object : GenK<ForSingleK> {
 }
 
 private fun <T> SingleK.Companion.eq(): Eq<SingleKOf<T>> = object : Eq<SingleKOf<T>> {
-  override fun SingleKOf<T>.eqv(b: SingleKOf<T>): Boolean {
-    val res1 = attempt().value().timeout(5, TimeUnit.SECONDS).blockingGet()
-    val res2 = b.attempt().value().timeout(5, TimeUnit.SECONDS).blockingGet()
-    return res1.fold({ t1 ->
-      res2.fold({ t2 ->
-        if (t1::class.java == TimeoutException::class.java) throw t1
-        if (t2::class.java == TimeoutException::class.java) throw t2
-        (t1::class.java == t2::class.java)
-      }, { false })
-    }, { v1 ->
-      res2.fold({ false }, {
-        v1 == it
-      })
+  override fun SingleKOf<T>.eqv(b: SingleKOf<T>): Boolean =
+    unsafeRunEq({
+      this.value().timeout(5, TimeUnit.SECONDS).blockingGet()
+    }, {
+      b.value().timeout(5, TimeUnit.SECONDS).blockingGet()
     })
-  }
 }
 
 private fun SingleK.Companion.eqK() = object : EqK<ForSingleK> {

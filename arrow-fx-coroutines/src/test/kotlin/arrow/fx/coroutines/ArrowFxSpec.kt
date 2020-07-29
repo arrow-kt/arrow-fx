@@ -2,7 +2,6 @@ package arrow.fx.coroutines
 
 import arrow.fx.coroutines.stream.Pull
 import arrow.fx.coroutines.stream.Stream
-import arrow.fx.coroutines.stream.frequency
 import arrow.fx.coroutines.stream.map
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.property.Arb
@@ -11,6 +10,7 @@ import io.kotest.property.Shrinker
 import io.kotest.property.arbitrary.arb
 import io.kotest.property.arbitrary.bind
 import io.kotest.property.arbitrary.choice
+import io.kotest.property.arbitrary.choose
 import io.kotest.property.arbitrary.list
 import io.kotest.property.arbitrary.map
 import io.kotest.property.checkAll
@@ -25,7 +25,7 @@ import kotlin.math.abs
  * So for `0..10` it will generate at most a `Stream` with `10` `Chunk`s of `10` elements.
  */
 abstract class StreamSpec(
-  iterations: Int = 100,
+  iterations: Int = 350,
   val depth: IntRange = 0..100,
   spec: StreamSpec.() -> Unit = {}
 ) : ArrowFxSpec(iterations) {
@@ -36,7 +36,7 @@ abstract class StreamSpec(
     range: IntRange = depth
   ): Arb<Pull<O, R>> =
     Arb.choice<Pull<O, R>>(
-      Arb.bind(Arb.stream(arbO), arbR) { s, r ->
+      Arb.bind(Arb.stream(arbO, range), arbR) { s, r ->
         s.asPull().map { r }
       },
       arbR.map { Pull.just(it) } as Arb<Pull<O, R>>,
@@ -47,7 +47,7 @@ abstract class StreamSpec(
     arb: Arb<O>,
     range: IntRange = depth
   ): Arb<Stream<O>> =
-    Arb.frequency(
+    Arb.choose(
       10 to Arb.list(arb, range).map { os ->
         Stream.iterable(os)
       },
@@ -69,7 +69,7 @@ abstract class StreamSpec(
  * Simple overwritten Kotest FreeSpec to reduce stress on tests.
  */
 abstract class ArrowFxSpec(
-  private val iterations: Int = 100,
+  private val iterations: Int = 350,
   spec: ArrowFxSpec.() -> Unit = {}
 ) : FreeSpec() {
 
