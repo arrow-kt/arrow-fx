@@ -143,13 +143,6 @@ interface Queue<A> : Enqueue<A>, Dequeue1<A>, Dequeue<A> {
     fun <A> unsafeBounded(maxSize: Int): Queue<A> =
       fromStrategy(Strategy.boundedFifo(maxSize))
 
-    /** Creates a FILO queue with the specified size bound. */
-    suspend fun <A> boundedLifo(maxSize: Int): Queue<A> =
-      fromStrategy(Strategy.boundedLifo(maxSize))
-
-    fun <A> unsafeBoundedLifo(maxSize: Int): Queue<A> =
-      fromStrategy(Strategy.boundedLifo(maxSize))
-
     /** Creates a queue which stores the last `maxSize` enqueued elements and which never blocks on enqueue. */
     suspend fun <A> circularBuffer(maxSize: Int): Queue<A> =
       fromStrategy(Strategy.circularBuffer(maxSize))
