@@ -32,6 +32,8 @@ import arrow.typeclasses.Eq
 import arrow.typeclasses.EqK
 import io.kotest.property.Arb
 import io.kotest.matchers.shouldBe
+import io.kotest.property.arbitrary.list
+import io.kotest.property.arbitrary.map
 import io.reactivex.Flowable
 import io.reactivex.subscribers.TestSubscriber
 import java.util.concurrent.CountDownLatch

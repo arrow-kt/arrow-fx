@@ -14,6 +14,9 @@ import arrow.fx.extensions.io.monad.flatMap
 import arrow.fx.extensions.io.monad.map
 import arrow.fx.test.eq.eq
 import io.kotest.property.Arb
+import io.kotest.property.arbitrary.map
+import io.kotest.property.arbitrary.negativeInts
+import io.kotest.property.arbitrary.positiveInts
 import io.kotest.property.forAll
 import kotlinx.coroutines.Dispatchers
 
@@ -95,7 +98,7 @@ class SemaphoreTest : ArrowFxSpec() {
       }
 
       "$label - negative number of permits" {
-        forAll(Arb.negativeIntegers().map(Int::toLong)) { i ->
+        forAll(Arb.negativeInts().map(Int::toLong)) { i ->
           semaphore(i)
             .map { false }
             .handleError { true }

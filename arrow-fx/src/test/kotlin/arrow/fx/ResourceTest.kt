@@ -24,6 +24,7 @@ import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.list
 import io.kotest.property.arbitrary.map
 import io.kotest.property.arbitrary.string
+import io.kotest.property.forAll
 
 class ResourceTest : ArrowFxSpec() {
   init {

@@ -17,3 +17,9 @@ dependencies {
 
     testCompile project(":arrow-fx-test")
 }
+
+compileTestKotlin {
+    kotlinOptions {
+        jvmTarget = JAVA_VERSION
+    }
+}

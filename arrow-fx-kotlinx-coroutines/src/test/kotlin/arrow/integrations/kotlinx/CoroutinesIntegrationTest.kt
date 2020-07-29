@@ -30,6 +30,7 @@ import io.kotest.assertions.fail
 import io.kotest.property.Arb
 import io.kotest.property.forAll
 import io.kotest.matchers.shouldBe
+import io.kotest.property.arbitrary.int
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ObsoleteCoroutinesApi

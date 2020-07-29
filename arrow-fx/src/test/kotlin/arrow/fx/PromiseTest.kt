@@ -15,6 +15,7 @@ import arrow.fx.extensions.io.monadDefer.monadDefer
 import io.kotest.property.Arb
 import io.kotest.property.forAll
 import io.kotest.matchers.shouldBe
+import io.kotest.property.arbitrary.int
 import kotlinx.coroutines.Dispatchers
 import kotlin.coroutines.CoroutineContext
 

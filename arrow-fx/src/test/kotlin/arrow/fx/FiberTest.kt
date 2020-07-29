@@ -13,6 +13,7 @@ import arrow.fx.test.eq.eq
 import arrow.fx.test.eq.eqK
 import arrow.fx.test.generators.genK
 import io.kotest.property.Arb
+import io.kotest.property.arbitrary.int
 
 class FiberTest : ArrowFxSpec() {
 

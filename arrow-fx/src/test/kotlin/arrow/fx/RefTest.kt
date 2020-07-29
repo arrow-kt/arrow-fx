@@ -14,6 +14,7 @@ import arrow.typeclasses.EqK
 import io.kotest.property.Arb
 import io.kotest.property.forAll
 import io.kotest.matchers.shouldBe
+import io.kotest.property.arbitrary.int
 
 class RefTest : ArrowFxSpec() {
 

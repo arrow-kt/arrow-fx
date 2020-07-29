@@ -22,6 +22,7 @@ import arrow.fx.test.laws.shouldBeEq
 import io.kotest.property.Arb
 import io.kotest.property.forAll
 import io.kotest.matchers.shouldBe
+import io.kotest.property.arbitrary.int
 
 class MVarTest : ArrowFxSpec() {
 

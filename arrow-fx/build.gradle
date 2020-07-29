@@ -22,3 +22,9 @@ dependencies {
     testCompile project(":arrow-fx-test")
     testRuntime "org.junit.vintage:junit-vintage-engine:$JUNIT_VINTAGE_VERSION"
 }
+
+compileTestKotlin {
+    kotlinOptions {
+        jvmTarget = JAVA_VERSION
+    }
+}
