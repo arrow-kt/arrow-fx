@@ -258,7 +258,7 @@ class QueueTest : ArrowFxSpec() {
         }
       }
 
-      "$label - peek is cancelable" {
+      "$label - peek is cancelable".config(enabled = false) {
         forAll(Arb.int()) {
           IO.fx {
             val q = !queue(1)
