@@ -115,7 +115,7 @@ suspend fun <A> cancellable(cb: ((Result<A>) -> Unit) -> CancelToken): A =
  *     cancellableF { cb: (Result<List<String>>) -> Unit ->
  *       val id = GithubService.getUsernames { names, throwable ->
  *         when {
- *           names != null -> cb(Result.succes(names))
+ *           names != null -> cb(Result.success(names))
  *           throwable != null -> cb(Result.failure(throwable))
  *           else -> cb(Result.failure(RuntimeException("Null result and no exception")))
  *         }
