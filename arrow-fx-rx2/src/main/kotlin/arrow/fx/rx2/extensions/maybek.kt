@@ -234,17 +234,31 @@ interface MaybeKConcurrent : Concurrent<ForMaybeK>, MaybeKAsync {
         val dda = fa.value().subscribe(sa::onNext, sa::onError, sa::onComplete)
         val ddb = fb.value().subscribe(sb::onNext, sb::onError, sb::onComplete)
         val ddc = fc.value().subscribe(sc::onNext, sc::onError, sc::onComplete)
-        emitter.setCancellable { dda.dispose(); ddb.dispose(); ddc.dispose() }
+        val shouldDisposeSa = AtomicBooleanW(true)
+        val shouldDisposeSb = AtomicBooleanW(true)
+        val shouldDisposeSc = AtomicBooleanW(true)
+
+        emitter.setCancellable {
+          if (shouldDisposeSa.value) dda.dispose()
+          if (shouldDisposeSb.value) ddb.dispose()
+          if (shouldDisposeSc.value) ddc.dispose()
+        }
         val ffa = Fiber(sa.firstElement().k(), MaybeK { dda.dispose() })
         val ffb = Fiber(sb.firstElement().k(), MaybeK { ddb.dispose() })
         val ffc = Fiber(sc.firstElement().k(), MaybeK { ddc.dispose() })
         sa.subscribe({
+          shouldDisposeSb.value = false
+          shouldDisposeSc.value = false
           emitter.onSuccess(RaceTriple.First(it, ffb, ffc))
         }, { e -> emitter.tryOnError(e) }, emitter::onComplete)
         sb.subscribe({
+          shouldDisposeSa.value = false
+          shouldDisposeSc.value = false
           emitter.onSuccess(RaceTriple.Second(ffa, it, ffc))
         }, { e -> emitter.tryOnError(e) }, emitter::onComplete)
         sc.subscribe({
+          shouldDisposeSa.value = false
+          shouldDisposeSb.value = false
           emitter.onSuccess(RaceTriple.Third(ffa, ffb, it))
         }, { e -> emitter.tryOnError(e) }, emitter::onComplete)
       }.subscribeOn(scheduler).observeOn(Schedulers.trampoline()).k()

@@ -212,17 +212,30 @@ interface SingleKConcurrent : Concurrent<ForSingleK>, SingleKAsync {
         val dda = fa.value().subscribe(sa::onNext, sa::onError)
         val ddb = fb.value().subscribe(sb::onNext, sb::onError)
         val ddc = fc.value().subscribe(sc::onNext, sc::onError)
-        emitter.setCancellable { dda.dispose(); ddb.dispose(); ddc.dispose() }
+        val shouldDisposeSa = AtomicBooleanW(true)
+        val shouldDisposeSb = AtomicBooleanW(true)
+        val shouldDisposeSc = AtomicBooleanW(true)
+        emitter.setCancellable {
+          if (shouldDisposeSa.value) dda.dispose()
+          if (shouldDisposeSb.value) ddb.dispose()
+          if (shouldDisposeSc.value) ddc.dispose()
+        }
         val ffa = Fiber(sa.firstOrError().k(), SingleK { dda.dispose() })
         val ffb = Fiber(sb.firstOrError().k(), SingleK { ddb.dispose() })
         val ffc = Fiber(sc.firstOrError().k(), SingleK { ddc.dispose() })
         sa.subscribe({
+          shouldDisposeSb.value = false
+          shouldDisposeSc.value = false
           emitter.onSuccess(RaceTriple.First(it, ffb, ffc))
         }, { e -> emitter.tryOnError(e) })
         sb.subscribe({
+          shouldDisposeSa.value = false
+          shouldDisposeSc.value = false
           emitter.onSuccess(RaceTriple.Second(ffa, it, ffc))
         }, { e -> emitter.tryOnError(e) })
         sc.subscribe({
+          shouldDisposeSa.value = false
+          shouldDisposeSb.value = false
           emitter.onSuccess(RaceTriple.Third(ffa, ffb, it))
         }, { e -> emitter.tryOnError(e) })
       }.subscribeOn(scheduler).observeOn(Schedulers.trampoline()).k()
