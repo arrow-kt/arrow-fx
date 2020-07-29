@@ -14,8 +14,6 @@ import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
 import kotlin.experimental.ExperimentalTypeInference
 
-private object END
-
 interface EmitterSyntax<A> {
   fun emit(a: A): Unit
   fun emit(chunk: Chunk<A>): Unit
@@ -114,11 +112,10 @@ fun <A> Stream.Companion.callback(@BuilderInference f: suspend EmitterSyntax<A>.
  * If neither `end()` nor other limit operators such as `take(N)` are called,
  * then the Stream will never end.
  */
-// @OptIn(ExperimentalTypeInference::class) in 1.3.70
 @UseExperimental(ExperimentalTypeInference::class)
 fun <A> Stream.Companion.cancellable(@BuilderInference f: suspend EmitterSyntax<A>.() -> CancelToken): Stream<A> =
   force {
-    val q = Queue.unbounded<Any?>()
+    val q = Queue.unbounded<Chunk<A>>()
     val error = UnsafePromise<Throwable>()
     val cancel = Promise<CancelToken>()
 
@@ -131,9 +128,9 @@ fun <A> Stream.Companion.cancellable(@BuilderInference f: suspend EmitterSyntax<
       }
       f.cancel()
     }).flatMap {
-      (q.dequeue()
+      q.dequeue()
         .interruptWhen { Either.Left(error.join()) }
-        .terminateOn { it === END } as Stream<Chunk<A>>)
+        .terminateOn { it === END }
         .flatMap(::chunk)
     }
   }
@@ -142,9 +139,9 @@ private suspend fun <A> emitterCallback(
   f: suspend EmitterSyntax<A>.() -> CancelToken,
   cancel: Promise<CancelToken>,
   error: UnsafePromise<Throwable>,
-  q: Queue<Any?>
+  q: Queue<Chunk<A>>
 ): Unit {
-  val cb = { ch: Any? ->
+  val cb = { ch: Chunk<A> ->
     suspend {
       q.enqueue1(ch)
     }.startCoroutine(Continuation(EmptyCoroutineContext) { r ->
@@ -183,4 +180,14 @@ private suspend fun <A> emitterCallback(
       else -> Unit
     }
   })
+}
+
+private object END : Chunk<Nothing>() {
+  override fun size(): Int = 0
+  override fun get(i: Int): Nothing =
+    throw throw RuntimeException("NULL_CHUNK[$i]")
+
+  override fun copyToArray_(xs: Array<Any?>, start: Int) {}
+  override fun splitAtChunk_(n: Int): Pair<Chunk<Nothing>, Chunk<Nothing>> =
+    Pair(empty(), empty())
 }
