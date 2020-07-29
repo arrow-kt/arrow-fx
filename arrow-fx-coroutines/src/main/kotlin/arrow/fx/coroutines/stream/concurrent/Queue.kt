@@ -39,7 +39,7 @@ interface Enqueue<A> {
    *
    * @param a `A` to enqueue
    */
-  suspend fun offer1(a: A): Boolean
+  fun tryOffer1(a: A): Boolean
 }
 
 /** Provides the ability to dequeue individual elements from a `Queue`. */
@@ -97,7 +97,7 @@ interface Queue<A> : Enqueue<A>, Dequeue1<A>, Dequeue<A> {
   fun <B> imap(f: (A) -> B, g: (B) -> A): Queue<B> =
     object : Queue<B> {
       override suspend fun enqueue1(a: B) = enqueue1(g(a))
-      override suspend fun offer1(a: B): Boolean = offer1(g(a))
+      override fun tryOffer1(a: B): Boolean = tryOffer1(g(a))
       override suspend fun dequeue1(): B = f(this@Queue.dequeue1())
       override suspend fun tryDequeue1(): Option<B> = this@Queue.tryDequeue1().map(f)
       override suspend fun dequeueChunk1(maxSize: Int): Chunk<B> = this@Queue.dequeueChunk1(maxSize).map(f)
@@ -303,7 +303,7 @@ internal class DefaultQueue<A>(private val pubSub: PubSub<A, Chunk<A>, Int>) : Q
   override suspend fun enqueue1(a: A) =
     pubSub.publish(a)
 
-  override suspend fun offer1(a: A): Boolean =
+  override fun tryOffer1(a: A): Boolean =
     pubSub.tryPublish(a)
 
   override suspend fun dequeue1(): A =
@@ -336,7 +336,7 @@ internal class DefaultNoneTerminatedQueue<A>(
   override suspend fun enqueue1(a: Option<A>) =
     pubSub.publish(a)
 
-  override suspend fun offer1(a: Option<A>): Boolean =
+  override fun tryOffer1(a: Option<A>): Boolean =
     pubSub.tryPublish(a)
 
   override suspend fun dequeue1(): Option<A> =
