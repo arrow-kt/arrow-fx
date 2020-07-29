@@ -3,7 +3,7 @@ package arrow.fx.coroutines.stream
 import arrow.core.Either
 import arrow.fx.coroutines.CancelToken
 import arrow.fx.coroutines.ExitCase
-import arrow.fx.coroutines.ForkConnected
+import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.UnsafePromise
 import arrow.fx.coroutines.andThen
@@ -46,30 +46,69 @@ interface EmitterSyntax<A> {
  * Note that if neither `end()` nor other limit operators such as `take(N)` are called,
  * then the Stream will never end.
  */
-// @OptIn(ExperimentalTypeInference::class) in 1.3.70
 @UseExperimental(ExperimentalTypeInference::class)
 fun <A> Stream.Companion.callback(@BuilderInference f: suspend EmitterSyntax<A>.() -> Unit): Stream<A> =
-  Stream.cancellableCallback(f.andThen { CancelToken.unit })
+  Stream.cancellable(f.andThen { CancelToken.unit })
 
 /**
- * Creates a Stream from the given suspended block that will evaluate the passed CancelToken if cancelled.
+ * Creates a cancellable Stream from the given suspended block that will evaluate the passed [CancelToken] if cancelled.
+ *
+ * The suspending [f] runs in an uncancellable manner, acquiring [CancelToken] as a resource.
+ * If cancellation signal is received while [cb] is running, then the [CancelToken] will be triggered as soon as it's returned.
  *
  * ```kotlin:ank:playground
- * import arrow.fx.coroutines.CancelToken
- * import arrow.fx.coroutines.stream.*
+ * import arrow.fx.coroutines.*
+ * import java.lang.RuntimeException
+ * import java.util.concurrent.Executors
+ * import java.util.concurrent.ScheduledFuture
+ * import java.util.concurrent.TimeUnit
  *
- * //sampleStart
- * suspend fun main(): Unit =
- *   Stream.callback {
- *       emit(1)
- *       emit(2, 3, 4)
- *       end()
- *       CancelToken { /* cancel subscription to callback */ }
+ * typealias Callback = (List<String>?, Throwable?) -> Unit
+ *
+ * class GithubId
+ * object GithubService {
+ *   private val listeners: MutableMap<GithubId, ScheduledFuture<*>> = mutableMapOf()
+ *   fun getUsernames(callback: Callback): GithubId {
+ *     val id = GithubId()
+ *     val future = Executors.newScheduledThreadPool(1).run {
+ *       var count = 0
+ *       scheduleAtFixedRate({
+ *         callback(listOf("Arrow - ${count++}"), null)
+ *       }, 0, 500, TimeUnit.MILLISECONDS)
  *     }
+ *     listeners[id] = future
+ *     return id
+ *   }
+ *
+ *   fun unregisterCallback(id: GithubId): Unit {
+ *     listeners[id]?.cancel(false)
+ *     listeners.remove(id)
+ *   }
+ * }
+ *
+ * suspend fun main(): Unit {
+ *   //sampleStart
+ *   fun getUsernames(): Stream<String> =
+ *     Stream.cancellable {
+ *       val id = GithubService.getUsernames { names, throwable ->
+ *         when {
+ *           names != null -> emit(names)
+ *           throwable != null -> throw throwable
+ *           else -> throw RuntimeException("Null result and no exception")
+ *         }
+ *       }
+ *
+ *       CancelToken { GithubService.unregisterCallback(id) }
+ *     }
+ *
+ *   val result = getUsernames()
+ *     .take(3)
  *     .compile()
  *     .toList()
- *     .let(::println) //[1, 2, 3, 4]
- * //sampleEnd
+ *
+ *   //sampleEnd
+ *   println(result)
+ * }
  * ```
  *
  * If neither `end()` nor other limit operators such as `take(N)` are called,
@@ -77,23 +116,26 @@ fun <A> Stream.Companion.callback(@BuilderInference f: suspend EmitterSyntax<A>.
  */
 // @OptIn(ExperimentalTypeInference::class) in 1.3.70
 @UseExperimental(ExperimentalTypeInference::class)
-fun <A> Stream.Companion.cancellableCallback(@BuilderInference f: suspend EmitterSyntax<A>.() -> CancelToken): Stream<A> =
+fun <A> Stream.Companion.cancellable(@BuilderInference f: suspend EmitterSyntax<A>.() -> CancelToken): Stream<A> =
   force {
     val q = Queue.unbounded<Any?>()
     val error = UnsafePromise<Throwable>()
     val cancel = Promise<CancelToken>()
 
-    ForkConnected { emitterCallback(f, cancel, error, q) }
-
-    (q.dequeue()
-      .interruptWhen { Either.Left(error.join()) }
-      .terminateOn { it === END } as Stream<Chunk<A>>)
-      .flatMap(::chunk)
-      .onFinalizeCase {
-        when (it) {
-          is ExitCase.Cancelled -> cancel.get().cancel.invoke()
-        }
+    Stream.bracketCase({
+      ForkAndForget { emitterCallback(f, cancel, error, q) }
+    }, { f, exit ->
+      when (exit) {
+        is ExitCase.Cancelled -> cancel.get().cancel.invoke()
+        else -> Unit
       }
+      f.cancel()
+    }).flatMap {
+      (q.dequeue()
+        .interruptWhen { Either.Left(error.join()) }
+        .terminateOn { it === END } as Stream<Chunk<A>>)
+        .flatMap(::chunk)
+    }
   }
 
 private suspend fun <A> emitterCallback(
@@ -138,6 +180,7 @@ private suspend fun <A> emitterCallback(
   }, { exit ->
     when (exit) {
       is ExitCase.Failure -> error.complete(Result.success(exit.failure))
+      else -> Unit
     }
   })
 }
