@@ -45,6 +45,7 @@ import io.kotest.property.forAll
 import io.kotest.matchers.shouldBe
 import io.kotest.property.arbitrary.filter
 import io.kotest.property.arbitrary.int
+import io.kotest.property.arbitrary.map
 import kotlin.math.max
 import kotlin.math.pow
 

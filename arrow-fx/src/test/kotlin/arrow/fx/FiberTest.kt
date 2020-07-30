@@ -14,6 +14,7 @@ import arrow.fx.test.eq.eqK
 import arrow.fx.test.generators.genK
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
+import io.kotest.property.arbitrary.map
 
 class FiberTest : ArrowFxSpec() {
 
