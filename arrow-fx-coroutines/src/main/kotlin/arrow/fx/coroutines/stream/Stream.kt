@@ -1363,11 +1363,11 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * //sampleEnd
    * ```
    */
-  fun <O2> concurrently(other: Stream<O2>): Stream<O> =
+  fun <O2> concurrently(ctx: CoroutineContext = ComputationPool, other: Stream<O2>): Stream<O> =
     effect { Pair(Promise<Unit>(), Promise<Either<Throwable, Unit>>()) }
       .flatMap { (interrupt, doneR) ->
         bracket(
-          { ForkAndForget { concurrentlyRunR(other, interrupt, doneR) } },
+          { ForkAndForget(ctx) { concurrentlyRunR(other, interrupt, doneR) } },
           {
             interrupt.complete(Unit)
             doneR.get().fold({ throw it }, ::identity)
@@ -1394,6 +1394,14 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
       else -> Unit
     }
   }
+
+  /**
+   * Merges both Streams into an Stream of A and B represented by Either<A, B>.
+   * This operation is equivalent to a normal merge but for different types.
+   */
+  fun <B> either(ctx: CoroutineContext = ComputationPool, other: Stream<B>): Stream<Either<O, B>> =
+    Stream(this.map { Left(it) }, other.map { Right(it) })
+      .parJoin(ctx, 2)
 
   /**
    * Starts this stream and cancels it as finalization of the returned stream.
