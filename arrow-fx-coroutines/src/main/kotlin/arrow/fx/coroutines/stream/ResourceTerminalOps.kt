@@ -42,6 +42,17 @@ import arrow.fx.coroutines.Resource
     }
 
   /**
+   * Compiles this stream into a value by folding the values inside each of
+   * the chunks together. Starting with the provided `init` and combining
+   * the current value with each value inside of each chunk.
+   *
+   * When this method has returned, the stream has not begun execution -- this method simply
+   * compiles the stream down to the target effect type.
+   */
+  suspend fun <B> fold(init: B, f: (B, O) -> B) : Resource<B> =
+    compiler(init) { acc, ch -> ch.fold(acc, f) }
+
+  /**
    * Compiles this stream in to a value by folding
    * the output chunks together, starting with the provided `init` and combining the
    * current value with each output chunk.
