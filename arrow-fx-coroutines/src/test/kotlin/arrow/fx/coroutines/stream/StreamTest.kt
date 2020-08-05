@@ -550,14 +550,12 @@ class StreamTest : StreamSpec(spec = {
       .toList() shouldBe listOf(1, 2)
   }
 
-  "forEach terminal operation" {
-    val count = atomic(0)
-
-    Stream.range(1..10)
+  "fold items without chunks" {
+    val sum = Stream.range(1..10)
       .compile()
-      .forEach { count.update { it + 1 } }
+      .fold(0) { acc, n -> acc + n }
 
-    count.value shouldBe 10
+    sum shouldBe 55
   }
 
 })

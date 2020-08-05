@@ -14,23 +14,7 @@ package arrow.fx.coroutines.stream
     compiler(mutableSetOf()) { acc, ch -> acc.apply { addAll(ch.toList()) } }
 
   suspend fun drain(): Unit =
-    foldChunks(Unit) { _, _ -> Unit }
-
-  /**
-   * Similar to [drain] but applying an effect on each of the objects emitted.
-   * 
-   * This equivalent to doing:
-   * 
-   * ```
-   * stream.effectTap { **operation** }
-   *   .compile()
-   *   .drain()
-   * ```
-   * 
-   * The main difference, apart from being shorter, is that the operation is applied after we compile the stream into [TerminalOps] 
-   */
-  suspend fun forEach(block: (O) -> Unit): Unit =
-    foldChunks(Unit) { _, ch -> ch.forEach(block) }
+    compiler(Unit) { _, _ -> Unit }
 
   /**
    * Compiles this stream in to a value,
@@ -55,6 +39,17 @@ package arrow.fx.coroutines.stream
     lastOrNull() ?: throw NoSuchElementException()
 
   /**
+   * Compiles this stream into a value by folding the values inside each of 
+   * the chunks together. Starting with the provided `init` and combining 
+   * the current value with each value inside of each chunk.
+   *
+   * When this method has returned, the stream has not begun execution -- this method simply
+   * compiles the stream down to the target effect type.
+   */
+  suspend fun <B> fold(init: B, f: (B, O) -> B) : B =
+    compiler(init) { acc, ch -> ch.fold(acc, f) }
+
+  /**
    * Compiles this stream in to a value by folding
    * the output chunks together, starting with the provided `init` and combining the
    * current value with each output chunk.
@@ -67,9 +62,6 @@ package arrow.fx.coroutines.stream
 
   val resource: ResourceTerminalOps<O> =
     ResourceTerminalOps(s)
-
-  private suspend fun <B> compiler(init: () -> B, foldChunk: (B, Chunk<O>) -> B): B =
-    s.asPull.compiler(init.invoke(), foldChunk)
 
   private suspend fun <B> compiler(init: B, foldChunk: (B, Chunk<O>) -> B): B =
     s.asPull.compiler(init, foldChunk)
