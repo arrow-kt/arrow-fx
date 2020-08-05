@@ -6,7 +6,6 @@ import arrow.core.Option
 import arrow.core.Some
 import arrow.core.extensions.option.monad.flatten
 import arrow.core.orElse
-import arrow.core.orNull
 import arrow.fx.coroutines.ComputationPool
 import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.Platform
@@ -150,11 +149,32 @@ internal suspend fun signalResult(done: SignallingAtomic<Option<Option<Throwable
  * Finalizers on the returned stream are run after the outer stream has finished
  * and all open inner streams have finished.
  *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.IOPool
+ * import arrow.fx.coroutines.milliseconds
+ * import arrow.fx.coroutines.sleep
+ * import arrow.fx.coroutines.stream.*
+ *
+ * //sampleStart
+ * suspend fun main(): Unit =
+ *   Stream.range(100 downTo 1)
+ *     .map { i ->
+ *       Stream.effect_ {
+ *         sleep((i * 10).milliseconds)
+ *         println("Task $i running on ${Thread.currentThread().name}")
+ *       }
+ *     }
+ *     .parJoin(10, IOPool)
+ *     .compile()
+ *     .drain()
+ * //sampleEnd
+ * ```
+ *
  * @param maxOpen Maximum number of open inner streams at any time. Must be > 0.
  */
 fun <O> Stream<Stream<O>>.parJoin(
-  ctx: CoroutineContext = ComputationPool,
-  maxOpen: Int
+  maxOpen: Int,
+  ctx: CoroutineContext = ComputationPool
 ): Stream<O> {
   require(maxOpen > 0) { "maxOpen must be > 0, was: $maxOpen" }
 
@@ -189,4 +209,4 @@ fun <O> Stream<Stream<O>>.parJoin(
 
 /** Like [parJoin] but races all inner streams simultaneously without limit. */
 fun <O> Stream<Stream<O>>.parJoinUnbounded(ctx: CoroutineContext = ComputationPool): Stream<O> =
-  parJoin(ctx, Int.MAX_VALUE)
+  parJoin(Int.MAX_VALUE, ctx)
