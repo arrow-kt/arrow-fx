@@ -13,12 +13,10 @@ import arrow.fx.coroutines.charRange
 import arrow.fx.coroutines.intRange
 import arrow.fx.coroutines.longRange
 import arrow.fx.coroutines.milliseconds
-import arrow.fx.coroutines.never
 import arrow.fx.coroutines.throwable
 import arrow.fx.coroutines.timeOutOrNull
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
-import io.kotest.property.arbitrary.constant
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.list
 import io.kotest.property.arbitrary.orNull
@@ -555,7 +553,9 @@ class StreamTest : StreamSpec(spec = {
   "forEach terminal operation" {
     val count = atomic(0)
 
-    Stream.range(1..10).forEach { count.update { it + 1 } }
+    Stream.range(1..10)
+      .compile()
+      .forEach { count.update { it + 1 } }
 
     count.value shouldBe 10
   }
