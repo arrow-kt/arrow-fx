@@ -21,10 +21,11 @@ import io.kotest.property.Arb
 import io.kotest.property.arbitrary.constant
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.list
-import io.kotest.property.arbitrary.map
 import io.kotest.property.arbitrary.orNull
 import io.kotest.property.arbitrary.positiveInts
 import io.kotest.property.arbitrary.set
+import kotlinx.atomicfu.atomic
+import kotlinx.atomicfu.update
 import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.random.Random
@@ -550,4 +551,13 @@ class StreamTest : StreamSpec(spec = {
       .compile()
       .toList() shouldBe listOf(1, 2)
   }
+
+  "forEach terminal operation" {
+    val count = atomic(0)
+
+    Stream.range(1..10).forEach { count.update { it + 1 } }
+
+    count.value shouldBe 10
+  }
+
 })

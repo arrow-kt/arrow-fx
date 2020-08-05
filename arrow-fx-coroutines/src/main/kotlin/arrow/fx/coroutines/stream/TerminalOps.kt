@@ -17,6 +17,22 @@ package arrow.fx.coroutines.stream
     foldChunks(Unit) { _, _ -> Unit }
 
   /**
+   * Similar to [drain] but applying an effect on each of the objects emitted.
+   * 
+   * This equivalent to doing:
+   * 
+   * ```
+   * stream.effectTap { **operation** }
+   *   .compile()
+   *   .drain()
+   * ```
+   * 
+   * The main difference, apart from being shorter, is that the operation is applied after we compile the stream into [TerminalOps] 
+   */
+  suspend fun forEach(block: (O) -> Unit): Unit =
+    foldChunks(Unit) { _, ch -> ch.forEach(block) }
+
+  /**
    * Compiles this stream in to a value,
    * returning `null` if the stream emitted no values and returning the
    * last value emitted if values were emitted.
