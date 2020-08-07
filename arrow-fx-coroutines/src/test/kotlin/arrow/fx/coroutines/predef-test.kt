@@ -39,7 +39,7 @@ data class SideEffect(var counter: Int = 0) {
 }
 
 val singleThreadName = "single"
-val single = singleThreadContext(singleThreadName)
+val single = Resource.singleThreadContext(singleThreadName)
 
 val threadName: suspend () -> String =
   { Thread.currentThread().name }

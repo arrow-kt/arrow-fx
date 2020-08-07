@@ -8,19 +8,6 @@ import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
-
-fun fromExecutor(f: suspend () -> ExecutorService): Resource<CoroutineContext> =
-  Resource(f) { s -> s.shutdown() }.map(ExecutorService::asCoroutineContext)
-
-fun singleThreadContext(name: String): Resource<CoroutineContext> =
-  fromExecutor {
-    Executors.newSingleThreadExecutor { r ->
-      Thread(r, name).apply {
-        isDaemon = true
-      }
-    }
-  }
-
 val ComputationPool: CoroutineContext = ForkJoinPool().asCoroutineContext()
 
 private object IOCounter {
@@ -35,7 +22,7 @@ val IOPool = Executors.newCachedThreadPool { r ->
   }
 }.asCoroutineContext()
 
-private fun ExecutorService.asCoroutineContext(): CoroutineContext =
+internal fun ExecutorService.asCoroutineContext(): CoroutineContext =
   ExecutorServiceContext(this)
 
 private class ExecutorServiceContext(val pool: ExecutorService) :
