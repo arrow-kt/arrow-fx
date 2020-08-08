@@ -17,7 +17,7 @@ object Map {
     var sum = 0L
     var i = 0
     while (i < iterations) {
-      sum += ZIORTS.unsafeRun(fx)
+      sum += Runtime.default.unsafeRun(fx)
       i += 1
     }
     sum

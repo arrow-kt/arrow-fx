@@ -9,10 +9,10 @@ object AttemptNonRaised {
       IO.effect {
         i + 1
       }.either.flatMap { result =>
-          result.fold[Task[Int]](IO.fail, ioLoopHappy(size, _))
+          result.fold[Task[Int]](e => Task.fail(e), n => ioLoopHappy(size, n))
         }
     } else IO.succeed(1)
 
-  def run(size: Int) = ZIORTS.unsafeRun(ioLoopHappy(size, 0))
+  def run(size: Int) = Runtime.default.unsafeRun(ioLoopHappy(size, 0))
 
 }

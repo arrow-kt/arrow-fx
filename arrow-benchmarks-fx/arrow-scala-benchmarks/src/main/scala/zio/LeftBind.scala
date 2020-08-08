@@ -11,6 +11,6 @@ object LeftBind {
     else IO.effectTotal(i)
 
   def unsafeIOLeftBindLoop(depth: Int, size: Int, i: Int): Int =
-    ZIORTS.unsafeRun(loop(depth, size, i))
+    Runtime.default.unsafeRun(loop(depth, size, i))
 
 }

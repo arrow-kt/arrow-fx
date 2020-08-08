@@ -1,5 +1,6 @@
 package arrow.benchmarks.effects.scala.zio
 
+import zio._
 import zio.Task
 
 object MapStream {
@@ -12,7 +13,7 @@ object MapStream {
       i += 1
     }
 
-    ZIORTS.unsafeRun(sum(0)(stream))
+    Runtime.default.unsafeRun(sum(0)(stream))
   }
 
   final case class Stream(value: Int, next: Task[Option[Stream]])

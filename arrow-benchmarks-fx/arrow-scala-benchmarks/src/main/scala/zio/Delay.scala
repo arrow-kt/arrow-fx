@@ -10,6 +10,6 @@ object Delay {
     }
 
   def unsafeIODelayLoop(size: Int, i: Int): Int =
-    ZIORTS.unsafeRun(ioDelayLoop(size, i))
+    Runtime.default.unsafeRun(ioDelayLoop(size, i))
 
 }

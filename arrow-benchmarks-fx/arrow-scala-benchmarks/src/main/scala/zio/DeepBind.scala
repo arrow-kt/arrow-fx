@@ -11,5 +11,5 @@ object DeepBind {
         loop(n - 2).flatMap(b => ZIO.effect(a + b))
       }
 
-  def fib(depth: Int): BigInt = ZIORTS.unsafeRun(loop(depth))
+  def fib(depth: Int): BigInt = Runtime.default.unsafeRun(loop(depth))
 }

@@ -10,6 +10,6 @@ object Pure {
     }
 
   def unsafeIOPureLoop(size: Int, i: Int): Int =
-    ZIORTS.unsafeRun(ioPureLoop(size, i))
+    Runtime.default.unsafeRun(ioPureLoop(size, i))
 
 }

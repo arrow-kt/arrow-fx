@@ -14,6 +14,6 @@ object Async {
     IO.lock(executor)(if (i > size) IO.succeed(i) else ioAsyncLoop(size, i + 1))
 
   def unsafeIOAsyncLoop(size: Int, i: Int): Int =
-    ZIORTS.unsafeRun(ioAsyncLoop(size, i))
+    Runtime.default.unsafeRun(ioAsyncLoop(size, i))
 
 }

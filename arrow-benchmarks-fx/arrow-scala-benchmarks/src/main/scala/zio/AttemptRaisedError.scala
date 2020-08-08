@@ -17,6 +17,6 @@ object AttemptRaisedError {
       }
     } else IO.succeed(1)
 
-  def run(size: Int) = ZIORTS.unsafeRun(ioLoopNotHappy(size, 0))
+  def run(size: Int) = Runtime.default.unsafeRun(ioLoopNotHappy(size, 0))
 
 }
