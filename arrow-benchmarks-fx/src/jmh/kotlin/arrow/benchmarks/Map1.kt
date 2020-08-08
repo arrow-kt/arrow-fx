@@ -13,6 +13,7 @@ import org.openjdk.jmh.annotations.Scope
 import org.openjdk.jmh.annotations.State
 import org.openjdk.jmh.annotations.Warmup
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.intrinsics.*
 
 @State(Scope.Thread)
 @Fork(1)
@@ -33,7 +34,7 @@ open class Map1 {
   fun legacy(): Long = ioTest(12000, 1)
 
   @Benchmark
-  fun fx(): Long = fxTest(12000, 1)
+  fun fx(): Long = env.unsafeRunSync { fxTest(12000, 1) }
 
   @Benchmark
   fun kio(): Long =
@@ -41,27 +42,37 @@ open class Map1 {
 
 }
 
-inline fun <A, B> (suspend () -> A).map(crossinline f: (A) -> B): suspend () -> B =
-  { f(this@map()) }
-
-fun fxTest(iterations: Int, batch: Int): Long {
-  val f = { x: Int -> x + 1 }
-  var io = suspend { 0 }
-
-  var j = 0
-  while (j < batch) {
-    io = io.map(f)
-    j += 1
+tailrec suspend fun fxTest(
+  iterations: Int,
+  batch: Int,
+  j: Int = 0,
+  i: Int = 0,
+  f: (Int) -> Int = { x: Int -> x + 1 },
+  io: suspend () -> Int = { 0 },
+  sum: Long = 0
+): Long =
+  when {
+    j < batch -> fxTest(
+      iterations = iterations,
+      batch = batch,
+      j = j + 1,
+      i = i,
+      f = f,
+      io = { f(io()) },
+      sum = sum
+    )
+    i < iterations -> fxTest(
+      iterations = iterations,
+      batch = batch,
+      j = j,
+      i = i + 1,
+      f = f,
+      io = io,
+      sum = sum + io()
+    )
+    else -> sum
   }
 
-  var sum = 0L
-  var i = 0
-  while (i < iterations) {
-    sum += env.unsafeRunSync(io)
-    i += 1
-  }
-  return sum
-}
 
 fun ioTest(iterations: Int, batch: Int): Long {
   val f = { x: Int -> x + 1 }

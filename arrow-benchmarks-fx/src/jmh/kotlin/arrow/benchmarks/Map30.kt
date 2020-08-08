@@ -32,5 +32,5 @@ open class Map30 {
     arrow.benchmarks.effects.kio.Map.kioMapTest(12000 / 30, 30)
 
   @Benchmark
-  fun fx(): Long = fxTest(12000 / 30, 30)
+  fun fx(): Long = env.unsafeRunSync { fxTest(12000 / 30, 30) }
 }
