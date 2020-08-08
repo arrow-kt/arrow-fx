@@ -10,7 +10,7 @@ apply from: "$SUBPROJECT_CONF"
 apply from: "$DOC_CONF"
 
 dependencies {
-    compile "it.msec:kio:$MSEC_KIO_VERSION"
+    compile "it.msec:kio:0.7"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$KOTLINX_COROUTINES_VERSION"
 }
