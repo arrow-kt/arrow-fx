@@ -1,6 +1,7 @@
 package arrow.benchmarks
 
 import arrow.fx.IO
+import arrow.fx.coroutines.bracket
 import arrow.unsafe
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.CompilerControl
@@ -15,8 +16,8 @@ import arrow.fx.extensions.io.unsafeRun.runBlocking as ioRunBlocking
 
 @State(Scope.Thread)
 @Fork(2)
-@Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 10)
+@Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 5)
 @CompilerControl(CompilerControl.Mode.DONT_INLINE)
 open class Bracket {
 
@@ -29,11 +30,22 @@ open class Bracket {
     else
       IO.just(i)
 
+  tailrec suspend fun bracketLoop(i: Int): Int =
+    if (i < size) {
+      val next = bracket(acquire = { i }, use = { ii -> ii + 1 }, release = { Unit })
+      bracketLoop(next)
+    } else i
+
   @Benchmark
-  fun io() =
-    unsafe {
-      ioRunBlocking {
-        ioBracketLoop(0)
-      }
+  fun io() = unsafe {
+    ioRunBlocking {
+      ioBracketLoop(0)
     }
+  }
+
+  @Benchmark
+  fun fx() = env.unsafeRunSync {
+    bracketLoop(0)
+  }
+
 }

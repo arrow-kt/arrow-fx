@@ -2,6 +2,7 @@ package arrow.benchmarks
 
 import arrow.fx.IO
 import arrow.fx.IODispatchers
+import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.fix
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.CompilerControl
@@ -15,8 +16,8 @@ import java.util.concurrent.TimeUnit
 
 @State(Scope.Thread)
 @Fork(2)
-@Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 10)
+@Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 5)
 @CompilerControl(CompilerControl.Mode.DONT_INLINE)
 open class ForkFiber {
 
@@ -30,7 +31,18 @@ open class ForkFiber {
       }
     } else IO.just(i)
 
+  tailrec suspend fun startLoop(i: Int): Int =
+    if (i< size) {
+      val f =  ForkAndForget { i + 1 }
+      startLoop(f.join())
+    } else i
+
   @Benchmark
   fun io(): Int =
     ioStartLoop(0).unsafeRunSync()
+
+  @Benchmark
+  fun fx(): Int =
+    env.unsafeRunSync { startLoop(0) }
+
 }

@@ -13,8 +13,8 @@ import java.util.concurrent.TimeUnit
 
 @State(Scope.Thread)
 @Fork(2)
-@Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 10)
+@Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 5)
 @CompilerControl(CompilerControl.Mode.DONT_INLINE)
 open class Pure {
 
@@ -26,9 +26,17 @@ open class Pure {
       if (j > size) IO.just(j) else ioPureLoop(j + 1)
     }
 
+  private tailrec suspend fun pureLoop(i: Int): Int =
+    if (i > size) i
+    else pureLoop(i + 1)
+
   @Benchmark
   fun io(): Int =
     ioPureLoop(0).unsafeRunSync()
+
+  @Benchmark
+  fun fx(): Int =
+    env.unsafeRunSync { pureLoop(0) }
 
   @Benchmark
   fun catsIO(): Int =

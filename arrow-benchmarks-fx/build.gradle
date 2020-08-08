@@ -31,6 +31,7 @@ apply plugin: "com.47deg.hood"
 
 dependencies {
     compile project(":arrow-fx")
+    compile project(":arrow-fx-coroutines")
     compile project(":arrow-fx-rx2")
     compile project(":arrow-fx-reactor")
     compile project(":arrow-benchmarks-fx:arrow-scala-benchmarks")
@@ -42,24 +43,24 @@ dependencies {
 
 jmh {
     include = [
-//            'arrow.benchmarks.Async',
-//            'arrow.benchmarks.AttemptNonRaised',
-//            'arrow.benchmarks.AttemptRaisedError',
-//            'arrow.benchmarks.Bracket',
-//            'arrow.benchmarks.Cancellable',
-//            'arrow.benchmarks.DeepBind',
-//            'arrow.benchmarks.Defer',
-//            'arrow.benchmarks.Delay',
-//            'arrow.benchmarks.ForkFiber',
-//            'arrow.benchmarks.HandleNonRaised',
-//            'arrow.benchmarks.HandleRaisedError',
-//            'arrow.benchmarks.LeftBind',
-//            'arrow.benchmarks.Map',
-//            'arrow.benchmarks.MapStream',
-//            'arrow.benchmarks.ParMap',
-//            'arrow.benchmarks.Pure',
-//            'arrow.benchmarks.RacePair',
-//            'arrow.benchmarks.Uncancellable',
+            'arrow.benchmarks.Async',
+            'arrow.benchmarks.AttemptNonRaised',
+            'arrow.benchmarks.AttemptRaisedError',
+            'arrow.benchmarks.Bracket',
+            'arrow.benchmarks.Cancellable',
+            'arrow.benchmarks.DeepBind',
+            'arrow.benchmarks.Defer',
+            'arrow.benchmarks.Delay',
+            'arrow.benchmarks.ForkFiber',
+            'arrow.benchmarks.HandleNonRaised',
+            'arrow.benchmarks.HandleRaisedError',
+            'arrow.benchmarks.LeftBind',
+            'arrow.benchmarks.Map',
+            'arrow.benchmarks.MapStream',
+            'arrow.benchmarks.ParMap',
+            'arrow.benchmarks.Pure',
+            'arrow.benchmarks.RacePair',
+            'arrow.benchmarks.Uncancellable',
             'arrow.benchmarks.Queue'
     ]
     resultFormat = 'json'

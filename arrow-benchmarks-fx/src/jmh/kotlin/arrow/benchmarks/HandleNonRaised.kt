@@ -14,8 +14,8 @@ import arrow.fx.handleErrorWith as ioHandleErrorWith
 
 @State(Scope.Thread)
 @Fork(2)
-@Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 10)
+@Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 5)
 @CompilerControl(CompilerControl.Mode.DONT_INLINE)
 open class HandleNonRaised {
 
@@ -30,7 +30,21 @@ open class HandleNonRaised {
     else
       IO.just(i)
 
+  tailrec suspend fun happyLoop(i: Int): Int =
+    if (i < size) {
+      val ii = try {
+        i + 1
+      } catch (e: Throwable) {
+        throw e
+      }
+      happyLoop(ii)
+    } else i
+
   @Benchmark
   fun io(): Int =
     ioHappyPathLoop(0).unsafeRunSync()
+
+  @Benchmark
+  fun fx(): Int =
+    env.unsafeRunSync { happyLoop(0) }
 }

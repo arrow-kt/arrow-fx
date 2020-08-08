@@ -13,8 +13,8 @@ import java.util.concurrent.TimeUnit
 
 @State(Scope.Thread)
 @Fork(2)
-@Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 10)
+@Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 5)
 @CompilerControl(CompilerControl.Mode.DONT_INLINE)
 open class LeftBind {
 
@@ -25,13 +25,29 @@ open class LeftBind {
   var depth: Int = 0
 
   fun ioLoop(i: Int): IO<Int> =
-    if (i % depth == 0) IO { i + 1 }.flatMap { ioLoop(it) }
-    else if (i < size) ioLoop(i + 1).flatMap { IO.just(it) }
-    else IO.just(i)
+    when {
+      i % depth == 0 -> IO { i + 1 }.flatMap { ioLoop(it) }
+      i < size -> ioLoop(i + 1).flatMap { IO.just(it) }
+      else -> IO.just(i)
+    }
+
+  tailrec suspend fun loop(i: Int): Int =
+    when {
+      i % depth == 0 -> {
+        val ii = i + 1
+        loop(ii)
+      }
+      i < size -> loop(i + 1)
+      else -> i
+    }
 
   @Benchmark
   fun io(): Int =
     IO.just(0).flatMap { ioLoop(it) }.unsafeRunSync()
+
+  @Benchmark
+  fun fx(): Int =
+    env.unsafeRunSync { loop(0) }
 
   @Benchmark
   fun catsIO(): Int =

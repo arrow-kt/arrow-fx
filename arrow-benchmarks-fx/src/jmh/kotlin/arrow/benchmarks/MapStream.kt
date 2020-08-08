@@ -30,6 +30,18 @@ open class MapStream {
   fun io120(): Long = IOStream.test(100, 120).unsafeRunSync()
 
   @Benchmark
+  fun fxOne(): Long =
+    env.unsafeRunSync { SuspendStream.test(12000, 1) }
+
+  @Benchmark
+  fun fx30(): Long =
+    env.unsafeRunSync { SuspendStream.test(1000, 30) }
+
+  @Benchmark
+  fun fx120(): Long =
+    env.unsafeRunSync { SuspendStream.test(100, 120) }
+
+  @Benchmark
   fun zioOne(): Long =
     arrow.benchmarks.effects.scala.zio.`MapStream$`.`MODULE$`.test(12000, 1)
 
@@ -68,34 +80,63 @@ open class MapStream {
 
 object IOStream {
   class Stream(val value: Int, val next: IO<Option<Stream>>)
-  val addOne: (Int) -> Int = { it + 1 }
+
+  private val addOne: (Int) -> Int = { it + 1 }
 
   fun test(times: Int, batchSize: Int): IO<Long> {
     var stream = range(0, times)
     var i = 0
     while (i < batchSize) {
-      stream = mapStream(addOne)(stream)
+      stream = mapStream(addOne, stream)
       i += 1
     }
 
-    return sum(0)(stream)
+    return sum(0, stream)
   }
 
   private fun range(from: Int, until: Int): Option<Stream> =
     if (from < until) Some(Stream(from, IO { range(from + 1, until) }))
     else None
 
-  private fun mapStream(f: (Int) -> Int): (box: Option<Stream>) -> Option<Stream> = { box ->
+  private fun mapStream(f: (Int) -> Int, box: Option<Stream>): Option<Stream> =
     when (box) {
-      is Some -> box.copy(Stream(f(box.t.value), box.t.next.map(mapStream(f))))
+      is Some -> box.copy(Stream(f(box.t.value), box.t.next.map { mapStream(f, it) }))
       None -> None
     }
-  }
 
-  private fun sum(acc: Long): (Option<Stream>) -> IO<Long> = { box ->
+  private fun sum(acc: Long, box: Option<Stream>): IO<Long> =
     when (box) {
-      is Some -> box.t.next.flatMap(sum(acc + box.t.value))
+      is Some -> box.t.next.flatMap { sum(acc + box.t.value, it) }
       None -> IO.just(acc)
     }
+}
+
+object SuspendStream {
+  class Stream(val value: Int, val next: suspend () -> Stream?)
+
+  private val addOne: (Int) -> Int = { it + 1 }
+
+  suspend fun test(times: Int, batchSize: Int): Long {
+    var stream = range(0, times)
+    var i = 0
+
+    while (i < batchSize) {
+      stream = mapStream(addOne, stream)
+      i += 1
+    }
+
+    return sum(0, stream)
   }
+
+  private fun range(from: Int, until: Int): Stream? =
+    if (from < until) Stream(from, suspend { range(from + 1, until) })
+    else null
+
+  private fun mapStream(f: (Int) -> Int, box: Stream?): Stream? =
+    if (box != null) Stream(f(box.value), suspend { mapStream(f, box.next.invoke()) })
+    else null
+
+  private tailrec suspend fun sum(acc: Long, box: Stream?): Long =
+    if (box != null) sum(acc + box.value, box.next.invoke())
+    else acc
 }

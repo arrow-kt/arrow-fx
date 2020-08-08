@@ -14,8 +14,8 @@ import arrow.fx.extensions.io.applicativeError.handleErrorWith as ioHandleError
 
 @State(Scope.Thread)
 @Fork(2)
-@Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 10)
+@Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 5)
 @CompilerControl(CompilerControl.Mode.DONT_INLINE)
 open class HandleRaisedError {
 
@@ -28,12 +28,25 @@ open class HandleRaisedError {
     if (i < size)
       IO.raiseError<Int>(dummy)
         .flatMap { x -> IO.just(x + 1) }
-        .flatMap { x -> IO.just(x + 1) }
         .ioHandleError { ioErrorRaisedloop(i + 1) }
-    else
-      IO.just(i)
+    else IO.just(i)
+
+  tailrec suspend fun errorRaisedLoop(i: Int): Int =
+    if (i < size) {
+      val ii = try {
+        throw dummy
+        i + 1
+      } catch (e: Throwable) {
+        i + 1
+      }
+      errorRaisedLoop(ii)
+    } else i
 
   @Benchmark
   fun io(): Int =
     ioErrorRaisedloop(0).unsafeRunSync()
+
+  @Benchmark
+  fun fx(): Int =
+    env.unsafeRunSync { errorRaisedLoop(0) }
 }

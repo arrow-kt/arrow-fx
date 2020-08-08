@@ -13,8 +13,8 @@ import java.util.concurrent.TimeUnit
 
 @State(Scope.Thread)
 @Fork(2)
-@Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 10)
+@Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 5)
 @CompilerControl(CompilerControl.Mode.DONT_INLINE)
 open class Delay {
 
@@ -26,9 +26,17 @@ open class Delay {
       if (j > size) IO { j } else ioDelayLoop(j + 1)
     }
 
+  private tailrec suspend fun delayLoop(i: Int): Int =
+    if (i > size) i
+    else delayLoop(i + 1)
+
   @Benchmark
   fun io(): Int =
     ioDelayLoop(0).unsafeRunSync()
+
+  @Benchmark
+  fun fx(): Int =
+    env.unsafeRunSync { delayLoop(0) }
 
   @Benchmark
   fun catsIO(): Int =

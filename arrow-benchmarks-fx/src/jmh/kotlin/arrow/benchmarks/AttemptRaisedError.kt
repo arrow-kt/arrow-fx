@@ -1,5 +1,6 @@
 package arrow.benchmarks
 
+import arrow.core.Either
 import arrow.fx.IO
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.CompilerControl
@@ -18,8 +19,8 @@ val dummy = object : RuntimeException("dummy") {
 
 @State(Scope.Thread)
 @Fork(2)
-@Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 10)
+@Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 5)
 @CompilerControl(CompilerControl.Mode.DONT_INLINE)
 open class AttemptRaisedError {
 
@@ -33,9 +34,27 @@ open class AttemptRaisedError {
       }
     } else IO.just(1)
 
+  tailrec suspend fun loopNotHappy(size: Int, i: Int): Int =
+    if (i < size) {
+      val x = try {
+        Either.Right(throw dummy)
+      } catch (e: Throwable) {
+        Either.Left(e)
+      }
+      when (x) {
+        is Either.Left -> loopNotHappy(size, i + 1)
+        is Either.Right -> x.b
+      }
+    } else 1
+
   @Benchmark
   fun io(): Int =
     ioLoopNotHappy(size, 0).unsafeRunSync()
+
+  @Benchmark
+  fun fx(): Int = env.unsafeRunSync {
+    loopNotHappy(size, 0)
+  }
 
   @Benchmark
   fun cats(): Any =
