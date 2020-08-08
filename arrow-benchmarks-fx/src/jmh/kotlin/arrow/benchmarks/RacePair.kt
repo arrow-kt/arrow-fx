@@ -35,5 +35,5 @@ open class RacePair {
   }
 
   @Benchmark
-  fun io(): Int = racePairHelper().unsafeRunSync()
+  fun legacy(): Int = racePairHelper().unsafeRunSync()
 }

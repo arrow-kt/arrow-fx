@@ -37,7 +37,7 @@ open class Bracket {
     } else i
 
   @Benchmark
-  fun io() = unsafe {
+  fun legacy() = unsafe {
     ioRunBlocking {
       ioBracketLoop(0)
     }

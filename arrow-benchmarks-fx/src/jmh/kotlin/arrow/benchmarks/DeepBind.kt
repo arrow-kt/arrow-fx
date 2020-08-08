@@ -35,7 +35,7 @@ open class DeepBind {
     }
 
   @Benchmark
-  fun io(): Int =
+  fun legacy(): Int =
     ioFibLazy(depth).unsafeRunSync()
 
   @Benchmark

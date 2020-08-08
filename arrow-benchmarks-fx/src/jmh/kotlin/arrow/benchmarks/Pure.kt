@@ -31,7 +31,7 @@ open class Pure {
     else pureLoop(i + 1)
 
   @Benchmark
-  fun io(): Int =
+  fun legacy(): Int =
     ioPureLoop(0).unsafeRunSync()
 
   @Benchmark
@@ -39,11 +39,11 @@ open class Pure {
     env.unsafeRunSync { pureLoop(0) }
 
   @Benchmark
-  fun catsIO(): Int =
+  fun cats(): Int =
     arrow.benchmarks.effects.scala.cats.`Pure$`.`MODULE$`.unsafeIOPureLoop(size, 0)
 
   @Benchmark
-  fun scalazZio(): Int =
+  fun zio(): Int =
     arrow.benchmarks.effects.scala.zio.`Pure$`.`MODULE$`.unsafeIOPureLoop(size, 0)
 
   @Benchmark

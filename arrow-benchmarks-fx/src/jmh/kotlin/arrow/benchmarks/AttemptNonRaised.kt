@@ -45,7 +45,7 @@ open class AttemptNonRaised {
 
 
   @Benchmark
-  fun io(): Int =
+  fun legacy(): Int =
     ioLoopHappy(size, 0).unsafeRunSync()
 
   @Benchmark

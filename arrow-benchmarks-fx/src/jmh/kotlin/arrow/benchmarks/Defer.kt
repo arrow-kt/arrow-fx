@@ -27,6 +27,6 @@ open class Defer {
     }
 
   @Benchmark
-  fun io(): Int =
+  fun legacy(): Int =
     ioDeferLoop(0).unsafeRunSync()
 }

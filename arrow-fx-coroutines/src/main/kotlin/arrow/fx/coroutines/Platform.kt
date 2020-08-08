@@ -3,8 +3,11 @@ package arrow.fx.coroutines
 import arrow.core.Either
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.updateAndGet
+import java.util.concurrent.Executor
 import java.util.concurrent.locks.AbstractQueuedSynchronizer
+import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.Continuation
+import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
@@ -221,6 +224,70 @@ object Platform {
     all.firstOrNull()?.let { first ->
       composeErrors(first, all.drop(1))
     }
+
+  fun trampoline(): CoroutineContext =
+    _trampoline.get().asCoroutineContext()
+
+  inline fun trampoline(crossinline f: () -> Unit): Unit =
+    _trampoline.get().execute { f() }
+
+  private val underlying = Executor { it.run() }
+
+  @PublishedApi
+  internal val _trampoline = object : ThreadLocal<TrampolineExecutor>() {
+    override fun initialValue(): TrampolineExecutor =
+      TrampolineExecutor(underlying)
+  }
+
+  @PublishedApi
+  internal class TrampolineExecutor(val underlying: Executor) : Executor {
+    private var immediateQueue = ArrayStack<Runnable>()
+    @Volatile
+    private var withinLoop = false
+
+    private fun startLoop(runnable: Runnable) {
+      withinLoop = true
+      try {
+        immediateLoop(runnable)
+      } finally {
+        withinLoop = false
+      }
+    }
+
+    override fun execute(runnable: Runnable): Unit =
+      if (!withinLoop) startLoop(runnable)
+      else immediateQueue.push(runnable)
+
+    private fun forkTheRest() {
+      class ResumeRun(val head: Runnable, val rest: ArrayStack<Runnable>) : Runnable {
+        override fun run() {
+          immediateQueue.pushAll(rest)
+          immediateLoop(head)
+        }
+      }
+
+      val head = immediateQueue.pop()
+      if (head != null) {
+        val rest = immediateQueue
+        immediateQueue = ArrayStack()
+        underlying.execute(ResumeRun(head, rest))
+      }
+    }
+
+    @Suppress("SwallowedException") // Should we rewrite with while??
+    private tailrec fun immediateLoop(task: Runnable) {
+      try {
+        task.run()
+      } catch (ex: Throwable) {
+        forkTheRest()
+        // ex.nonFatalOrThrow() //not required???
+      }
+
+      val next = immediateQueue.pop()
+      return if (next != null) immediateLoop(next)
+      else Unit
+    }
+  }
 }
 
 private class OneShotLatch : AbstractQueuedSynchronizer() {
@@ -314,3 +381,24 @@ fun Throwable.nonFatalOrThrow(): Throwable =
     is VirtualMachineError, is ThreadDeath, is InterruptedException, is LinkageError -> throw this
     else -> this
   }
+
+
+internal fun Executor.asCoroutineContext(): CoroutineContext =
+  ExecutorContext(this)
+
+private class ExecutorContext(val pool: Executor) :
+  AbstractCoroutineContextElement(ContinuationInterceptor), ContinuationInterceptor {
+  override fun <T> interceptContinuation(continuation: Continuation<T>): Continuation<T> =
+    ExecutorContinuation(pool, continuation.context.fold(continuation) { cont, element ->
+      if (element != this@ExecutorContext && element is ContinuationInterceptor)
+        element.interceptContinuation(cont) else cont
+    })
+}
+
+private class ExecutorContinuation<T>(val pool: Executor, val cont: Continuation<T>) : Continuation<T> {
+  override val context: CoroutineContext = cont.context
+
+  override fun resumeWith(result: Result<T>) {
+    pool.execute { cont.resumeWith(result) }
+  }
+}

@@ -42,7 +42,7 @@ open class LeftBind {
     }
 
   @Benchmark
-  fun io(): Int =
+  fun legacy(): Int =
     IO.just(0).flatMap { ioLoop(it) }.unsafeRunSync()
 
   @Benchmark
@@ -50,11 +50,11 @@ open class LeftBind {
     env.unsafeRunSync { loop(0) }
 
   @Benchmark
-  fun catsIO(): Int =
+  fun cats(): Int =
     arrow.benchmarks.effects.scala.cats.`LeftBind$`.`MODULE$`.unsafeIOLeftBindLoop(depth, size, 0)
 
   @Benchmark
-  fun scalazZIO(): Int =
+  fun zio(): Int =
     arrow.benchmarks.effects.scala.zio.`LeftBind$`.`MODULE$`.unsafeIOLeftBindLoop(depth, size, 0)
 
   @Benchmark

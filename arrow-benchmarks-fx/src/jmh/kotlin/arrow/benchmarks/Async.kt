@@ -37,7 +37,7 @@ open class Async {
     evalOn(ComputationPool) { loop(i) }
 
   @Benchmark
-  fun io(): Int =
+  fun legacy(): Int =
     ioAsyncLoop(0).unsafeRunSync()
 
   @Benchmark
@@ -48,10 +48,10 @@ open class Async {
   }
 
   @Benchmark
-  fun catsIO(): Int =
+  fun cats(): Int =
     arrow.benchmarks.effects.scala.cats.`Async$`.`MODULE$`.unsafeIOAsyncLoop(size, 0)
 
   @Benchmark
-  fun scalazZIO(): Int =
+  fun zio(): Int =
     arrow.benchmarks.effects.scala.zio.`Async$`.`MODULE$`.unsafeIOAsyncLoop(size, 0)
 }

@@ -35,6 +35,6 @@ open class Cancellable {
     else evalCancellable(i)
 
   @Benchmark
-  fun io(): Int =
+  fun legacy(): Int =
     cancellableLoop(0).unsafeRunSync()
 }

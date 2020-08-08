@@ -48,7 +48,7 @@ open class AttemptRaisedError {
     } else 1
 
   @Benchmark
-  fun io(): Int =
+  fun legacy(): Int =
     ioLoopNotHappy(size, 0).unsafeRunSync()
 
   @Benchmark

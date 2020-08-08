@@ -1,41 +1,37 @@
 package arrow.benchmarks
 
 import arrow.fx.IO
-import arrow.fx.coroutines.uncancellable
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.CompilerControl
 import org.openjdk.jmh.annotations.Fork
 import org.openjdk.jmh.annotations.Measurement
-import org.openjdk.jmh.annotations.Param
 import org.openjdk.jmh.annotations.Scope
 import org.openjdk.jmh.annotations.State
 import org.openjdk.jmh.annotations.Warmup
 import java.util.concurrent.TimeUnit
 
 @State(Scope.Thread)
-@Fork(2)
+@Fork(1)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5)
 @CompilerControl(CompilerControl.Mode.DONT_INLINE)
-open class Uncancellable {
-
-  @Param("100")
-  var size: Int = 0
-
-  fun ioUncancellableLoop(i: Int): IO<Int> =
-    if (i < size) IO { i + 1 }.uncancellable().flatMap { ioUncancellableLoop(it) }
-    else IO.just(i)
-
-  tailrec suspend fun uncancellableLoop(i: Int): Int =
-    if (i < size) {
-      val x = uncancellable { i + 1 }
-      uncancellableLoop(x + 1)
-    } else i
+open class Map120 {
 
   @Benchmark
-  fun legacy(): Int = ioUncancellableLoop(0).unsafeRunSync()
+  fun zio(): Long =
+    arrow.benchmarks.effects.scala.zio.`Map$`.`MODULE$`.zioMapTest(12000 / 120, 120)
+
+  fun cats(): Long =
+    arrow.benchmarks.effects.scala.cats.`Map$`.`MODULE$`.catsIOMapTest(12000 / 120, 120)
 
   @Benchmark
-  fun fx(): Int =
-    env.unsafeRunSync { uncancellableLoop(0) }
+  fun legacy(): Long = ioTest(12000 / 120, 120)
+
+  @Benchmark
+  fun kio(): Long =
+    arrow.benchmarks.effects.kio.Map.kioMapTest(12000 / 120, 120)
+
+  @Benchmark
+  fun fx(): Long = fxTest(12000 / 120, 120)
+
 }

@@ -35,7 +35,7 @@ val IOPool = Executors.newCachedThreadPool { r ->
   }
 }.asCoroutineContext()
 
-private fun ExecutorService.asCoroutineContext(): CoroutineContext =
+fun ExecutorService.asCoroutineContext(): CoroutineContext =
   ExecutorServiceContext(this)
 
 private class ExecutorServiceContext(val pool: ExecutorService) :

@@ -38,7 +38,7 @@ open class ForkFiber {
     } else i
 
   @Benchmark
-  fun io(): Int =
+  fun legacy(): Int =
     ioStartLoop(0).unsafeRunSync()
 
   @Benchmark

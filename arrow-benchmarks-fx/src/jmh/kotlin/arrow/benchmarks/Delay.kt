@@ -31,7 +31,7 @@ open class Delay {
     else delayLoop(i + 1)
 
   @Benchmark
-  fun io(): Int =
+  fun legacy(): Int =
     ioDelayLoop(0).unsafeRunSync()
 
   @Benchmark
@@ -39,11 +39,11 @@ open class Delay {
     env.unsafeRunSync { delayLoop(0) }
 
   @Benchmark
-  fun catsIO(): Int =
+  fun cats(): Int =
     arrow.benchmarks.effects.scala.cats.`Delay$`.`MODULE$`.unsafeIODelayLoop(size, 0)
 
   @Benchmark
-  fun scalaZIO(): Int =
+  fun zio(): Int =
     arrow.benchmarks.effects.scala.zio.`Delay$`.`MODULE$`.unsafeIODelayLoop(size, 0)
 
   @Benchmark

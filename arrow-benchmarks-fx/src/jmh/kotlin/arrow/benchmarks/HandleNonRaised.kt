@@ -41,7 +41,7 @@ open class HandleNonRaised {
     } else i
 
   @Benchmark
-  fun io(): Int =
+  fun legacy(): Int =
     ioHappyPathLoop(0).unsafeRunSync()
 
   @Benchmark

@@ -34,7 +34,7 @@ open class ParMap {
     }.invoke()
 
   @Benchmark
-  fun io(): Int =
+  fun legacy(): Int =
     ioHelper().unsafeRunSync()
 
   @Benchmark

@@ -2,7 +2,7 @@ buildscript {
     repositories {
         maven { url "https://dl.bintray.com/47deg/hood" }
     }
-    
+
     dependencies {
         classpath "com.47deg:hood:0.8.0"
     }
@@ -55,8 +55,12 @@ jmh {
             'arrow.benchmarks.HandleNonRaised',
             'arrow.benchmarks.HandleRaisedError',
             'arrow.benchmarks.LeftBind',
-            'arrow.benchmarks.Map',
-            'arrow.benchmarks.MapStream',
+            'arrow.benchmarks.Map1',
+            'arrow.benchmarks.Map30',
+            'arrow.benchmarks.Map120',
+            'arrow.benchmarks.MapStream1',
+            'arrow.benchmarks.MapStream30',
+            'arrow.benchmarks.MapStream120',
             'arrow.benchmarks.ParMap',
             'arrow.benchmarks.Pure',
             'arrow.benchmarks.RacePair',

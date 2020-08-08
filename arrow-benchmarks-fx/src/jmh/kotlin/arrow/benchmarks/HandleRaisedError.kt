@@ -43,7 +43,7 @@ open class HandleRaisedError {
     } else i
 
   @Benchmark
-  fun io(): Int =
+  fun legacy(): Int =
     ioErrorRaisedloop(0).unsafeRunSync()
 
   @Benchmark
