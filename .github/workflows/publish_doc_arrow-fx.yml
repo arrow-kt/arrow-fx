@@ -31,7 +31,7 @@ jobs:
     - name: Generate API doc and validate
       run: ./gradlew buildArrowDoc
     - name: Generate JMH report
-    - run: |
+      run: |
         ./gradlew :arrow-benchmarks-fx:jmh
         ./gradlew :arrow-benchmarks-fx:jmhReport
         cp -r arrow-benchmarks-fx/build/reports/* arrow-docs/build/site/reports/jmh/
