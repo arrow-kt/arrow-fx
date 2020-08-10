@@ -69,7 +69,7 @@ suspend fun assertCancellable(f: suspend () -> Unit): Unit {
         start.complete(Unit)
         f()
       },
-      release = { ex -> p.complete(ex) }
+      finalizer = { ex -> p.complete(ex) }
     )
   }
 
