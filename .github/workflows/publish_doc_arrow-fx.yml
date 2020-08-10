@@ -30,6 +30,11 @@ jobs:
         $BASEDIR/arrow/scripts/site-run-ank.sh
     - name: Generate API doc and validate
       run: ./gradlew buildArrowDoc
+    - name: Generate JMH report
+    - run: |
+        ./gradlew :arrow-benchmarks-fx:jmh
+        ./gradlew :arrow-benchmarks-fx:jmhReport
+        cp -r arrow-benchmarks-fx/build/reports/* arrow-docs/build/site/reports/jmh/
     - name: Join docs to site
       run: $BASEDIR/arrow/scripts/project-locate-doc.sh $ARROW_LIB
     - name: Build site

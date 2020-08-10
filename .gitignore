@@ -125,8 +125,6 @@ _site
 
 ######################
 
-reports/
-
 # End of https://www.gitignore.io/api/android,intellij
 /.idea/misc.xml
 
