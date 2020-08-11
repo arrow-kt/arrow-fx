@@ -15,7 +15,7 @@ The resulting expressions enjoy the same syntax that most OOP and Java programme
 Performing effects while switching execution contexts a la carte is trivial.
 
 ```kotlin:ank:playground
-import arrow.fx.coroutines
+import arrow.fx.coroutines.*
 
 //sampleStart
 suspend fun printThreadName(): Unit =
@@ -53,7 +53,7 @@ It also wires their respective cancellation. That means that cancelling the resu
 Additionally, the function does not return until both tasks are finished and their results combined by f: (A, B) -> C.
 
 ```kotlin:ank:playground
-import arrow.fx.coroutines
+import arrow.fx.coroutines.*
 
 //sampleStart
 suspend fun threadName(): String =
@@ -66,7 +66,9 @@ data class ThreadInfo(
 
 suspend fun main(): Unit {
   val (threadA: String, threadB: String) =
-    parMapN(::threadName, ::threadName, ::ThreadInfo)
+    parMapN(::threadName, ::threadName) { (a, b) ->
+      ThreadInfo(a, b)
+    }
 
   println(threadA)
   println(threadB)
@@ -80,7 +82,7 @@ suspend fun main(): Unit {
 Cancelling the caller will cancel all running operations inside parTraverse gracefully.
 
 ```kotlin:ank:playground
-import arrow.fx.coroutines
+import arrow.fx.coroutines.*
 
 //sampleStart
 suspend fun threadName(i: Int): String =
@@ -101,7 +103,7 @@ suspend fun main(): Unit {
 Once the function specifies a valid return, we can observe how the returned non-blocking value is bound on the left-hand side.
 
 ```kotlin:ank:playground
-import arrow.fx.coroutines
+import arrow.fx.coroutines.*
 
 //sampleStart
 suspend fun loser(): Unit =
@@ -109,11 +111,11 @@ suspend fun loser(): Unit =
 
 suspend fun winner(): Int {
   sleep(5.milliseconds)
-  5
+  return 5
 }
 
 suspend fun main(): Unit {
-  val res = raceN({ loser() }, { winner() } 
+  val res = raceN({ loser() }, { winner() })
 
   println(res)
 }
@@ -127,7 +129,7 @@ All the operators above can also be build using `Fiber`s, be aware that this is 
 You should *always* prefer out-of-the-box operators, unless you want to launch concurrent processes explicitly.
 
 ```kotlin:ank:playground
-import arrow.fx.coroutines
+import arrow.fx.coroutines.*
 
 //sampleStart
 suspend fun threadName(): String =
@@ -217,11 +219,11 @@ tailrec suspend fun sleeper(): Unit {
 This also means that our new sleep can back-pressure `timeOutOrNull`.
 
 ```kotlin:ank:playground
-import arrow.fx.coroutines
+import arrow.fx.coroutines.*
 
-suspend main(): Unit {
+suspend fun main(): Unit {
   val r = timeOutOrNull(1.seconds) {
-    uncancelable { sleep(2.seconds) }
+    uncancellable { sleep(2.seconds) }
   } // r is null, but took 2 seconds.
 }
 ```
@@ -256,8 +258,8 @@ We want to create a function to safely create and consume a `DatabaseConnection`
 
 ```kotlin:ank
 class DatabaseConnection {
-  suspend fun open(): String = println("Database connection opened")
-  suspend fun close(): String = println("Database connection closed")
+  suspend fun open(): Unit = println("Database connection opened")
+  suspend fun close(): Unit = println("Database connection closed")
 }
 
 suspend fun <A> onDbConnection(f: suspend (DatabaseConnection) -> A): A =
@@ -275,15 +277,15 @@ It also forms a `Monad` so you can use it to safely compose `Resource`s, map the
 import arrow.fx.coroutines.*
 
 class DatabaseConnection {
-  suspend fun open(): String = println("Database connection opened")
-  suspend fun close(): String = println("Database connection closed")
+  suspend fun open(): Unit = println("Database connection opened")
+  suspend fun close(): Unit = println("Database connection closed")
   suspend fun query(id: String): String =
     id.toUpperCase()
 }
 
 val conn: Resource<DatabaseConnection> =
   Resource(
-    { DatabaseConnection().apply { open() },  
+    { DatabaseConnection().apply { open() } },  
     DatabaseConnection::close
   )
 
@@ -294,40 +296,6 @@ suspend fun main(): Unit {
 
   println(res)
 }
-```
-
-A more advanced `Resource` example that reads 3 `File`s in parallel
-
-```kotlin:ank:playground
-import arrow.fx.coroutines.*
-
-//sampleStart
-class File(url: String) {
-  fun open(): File = this
-  suspend fun close(): Unit {}
-  override fun toString(): String = "This file contains some interesting content!"
-}
-
-suspend fun openFile(uri: String): File = File(uri).open()
-
-val resources: List<Resource<File>> =
- listOf(
-   Resource({ openFile("path1") }, File::close),
-   Resource({ openFile("path2") }, File::close),
-   Resource({ openFile("path3") }, File::close)
- )
-
-val resource: Resource<List<File>> =
-  resources.sequence(Resource.applicative())
-
-suspend main(): Unit {
-  resource.use { files ->
-    files.parTraverse(IOPool) { file ->
-       file.toString()
-    }
-  }
-}
-//sampleEnd
 ```
 
 ## Arrow Fx Coroutines, KotlinX Coroutines & Kotlin Standard Library
@@ -342,15 +310,20 @@ Which can be created by using [`kotlin.coroutines.intrinsics.createCoroutineUnin
 
 So let's take a quick look at an example.
 
-```kotlin:ank
+```kotlin:ank:playground
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.intrinsics.createCoroutineUnintercepted
+import kotlin.coroutines.resume
 
 suspend fun one(): Int = 1
 
 val cont: Continuation<Unit> = ::one
-  .createCoroutineUnintercepted(Continuation(EmptyCoroutineContext, ::println))
+  .createCoroutineUnintercepted(Continuation(EmptyCoroutineContext) { println(it) })
 
-cont.resume(Unit)
+fun main() {
+  cont.resume(Unit)
+}
 ```
 
 As you can see here above we create a `Coroutine` using `createCoroutineUnintercepted` which returns us `Continuation<Unit>`.

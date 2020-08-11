@@ -17,6 +17,8 @@ import kotlinx.atomicfu.atomic
  * Awaiting the latch `Promise` will now prevent `main` from finishing early.
  *
  * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.*
+ *
  * suspend fun main(): Unit {
  *   val await = Promise<Unit>()
  *
