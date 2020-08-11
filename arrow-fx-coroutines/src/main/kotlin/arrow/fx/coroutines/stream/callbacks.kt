@@ -55,6 +55,7 @@ fun <A> Stream.Companion.callback(@BuilderInference f: suspend EmitterSyntax<A>.
  * If cancellation signal is received while [cb] is running, then the [CancelToken] will be triggered as soon as it's returned.
  *
  * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.*
  * import arrow.fx.coroutines.stream.*
  * import java.lang.RuntimeException
  * import java.util.concurrent.Executors

@@ -91,7 +91,7 @@ suspend fun <A, B> Iterable<A>.parTraverse(f: suspend (A) -> B): List<B> =
  *
  * suspend fun main(): Unit {
  *   //sampleStart
- *   suspend fun getUserById(id: Int): KindUser =
+ *   suspend fun getUserById(id: Int): User =
  *     User(id)
  *
  *   val res = listOf(1, 2, 3)
