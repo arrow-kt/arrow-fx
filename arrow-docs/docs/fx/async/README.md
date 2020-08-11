@@ -15,6 +15,8 @@ The resulting expressions enjoy the same syntax that most OOP and Java programme
 Performing effects while switching execution contexts a la carte is trivial.
 
 ```kotlin:ank:playground
+import arrow.fx.coroutines
+
 //sampleStart
 suspend fun printThreadName(): Unit =
   println(Thread.currentThread().name)
@@ -51,6 +53,8 @@ It also wires their respective cancellation. That means that cancelling the resu
 Additionally, the function does not return until both tasks are finished and their results combined by f: (A, B) -> C.
 
 ```kotlin:ank:playground
+import arrow.fx.coroutines
+
 //sampleStart
 suspend fun threadName(): String =
   Thread.currentThread().name
@@ -76,6 +80,8 @@ suspend fun main(): Unit {
 Cancelling the caller will cancel all running operations inside parTraverse gracefully.
 
 ```kotlin:ank:playground
+import arrow.fx.coroutines
+
 //sampleStart
 suspend fun threadName(i: Int): String =
   "$i on ${Thread.currentThread().name}"
@@ -95,6 +101,8 @@ suspend fun main(): Unit {
 Once the function specifies a valid return, we can observe how the returned non-blocking value is bound on the left-hand side.
 
 ```kotlin:ank:playground
+import arrow.fx.coroutines
+
 //sampleStart
 suspend fun loser(): Unit =
   never<Unit>() // Never wins
@@ -119,6 +127,8 @@ All the operators above can also be build using `Fiber`s, be aware that this is 
 You should *always* prefer out-of-the-box operators, unless you want to launch concurrent processes explicitly.
 
 ```kotlin:ank:playground
+import arrow.fx.coroutines
+
 //sampleStart
 suspend fun threadName(): String =
   Thread.currentThread().name
@@ -206,7 +216,9 @@ tailrec suspend fun sleeper(): Unit {
 
 This also means that our new sleep can back-pressure `timeOutOrNull`.
 
-```kotlin:ank
+```kotlin:ank:playground
+import arrow.fx.coroutines
+
 suspend main(): Unit {
   val r = timeOutOrNull(1.seconds) {
     uncancelable { sleep(2.seconds) }
@@ -287,9 +299,9 @@ suspend fun main(): Unit {
 A more advanced `Resource` example that reads 3 `File`s in parallel
 
 ```kotlin:ank:playground
-//sampleStart
 import arrow.fx.coroutines.*
 
+//sampleStart
 class File(url: String) {
   fun open(): File = this
   suspend fun close(): Unit {}
