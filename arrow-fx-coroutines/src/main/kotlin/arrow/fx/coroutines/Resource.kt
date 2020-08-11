@@ -45,7 +45,7 @@ import kotlin.coroutines.CoroutineContext
  *   closeDBHandle(handle)
  *   closeConsumer(consumer)
  * }
- * // sampleEnd
+ * //sampleEnd
  * suspend fun main(): Unit = program.invoke()
  * ```
  * Here we are creating and then using a service that has a dependency on two resources: A database handle and a consumer of some sort. All three resources need to be closed in the correct order at the end.
@@ -82,7 +82,7 @@ import kotlin.coroutines.CoroutineContext
  *       Unit
  *     }
  * }
- * // sampleEnd
+ * //sampleEnd
  *
  * suspend fun main(): Unit = resourceProgram.invoke()
  * ```
