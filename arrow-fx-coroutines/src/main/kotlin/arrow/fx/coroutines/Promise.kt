@@ -79,8 +79,11 @@ interface Promise<A> {
   suspend fun complete(a: A): Either<AlreadyFulfilled, Unit>
 
   companion object {
-    fun <A> unsafe(): Promise<A> = DefaultPromise()
-    suspend operator fun <A> invoke(): Promise<A> = unsafe()
+    fun <A> unsafe(): Promise<A> =
+      DefaultPromise()
+
+    suspend operator fun <A> invoke(): Promise<A> =
+      unsafe()
   }
 
   object AlreadyFulfilled {
