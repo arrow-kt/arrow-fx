@@ -1,32 +1,3 @@
-/**
- * Races the participants on the provided [CoroutineContext].
- * The winner of the race cancels the other participants, cancelling the operation cancels all participants.
- *
- * **WARNING** it runs in parallel depending on the capabilities of the provided [CoroutineContext].
- * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
- *
- * ```kotlin:ank:playground
- * import arrow.core.*
- * import arrow.fx.coroutines.*
- *
- * suspend fun main(): Unit {
- *   suspend fun loser(): Int =
- *     cancellable { callback ->
- *        // Wait forever and never complete callback
- *        CancelToken { println("Never got cancelled for losing.") }
- *     }
- *
- *   val winner = raceN(ComputationPool, { loser() }, { 5 })
- *
- *   val res = when(winner) {
- *     is Either.Left -> "Never always loses race"
- *     is Either.Right -> "Race was won with ${winner.b}"
- *   }
- *   //sampleEnd
- *   println(res)
- * }
- * ```
- */
 package arrow.fx.coroutines
 
 import arrow.core.Either
