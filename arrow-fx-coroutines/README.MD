@@ -345,9 +345,10 @@ becomes
         res.update(it::times)
     }
     res.get()
-}```
+}
+```
 
-This code snippet isn’t very useful, except to show how `Ref/Atomic` can be used with concurrent acceses. 
+This code snippet isn’t very useful, except to show how `Ref/Atomic` can be used with concurrent access. 
 
 ### MVar vs ConcurrentVar
 
