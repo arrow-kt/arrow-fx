@@ -150,6 +150,12 @@ interface Queue<A> : Enqueue<A>, Dequeue1<A>, Dequeue<A> {
     fun <A> unsafeSliding(maxSize: Int): Queue<A> =
       fromStrategy(Strategy.sliding(maxSize))
 
+    suspend fun <A> dropping(maxSize: Int): Queue<A> =
+      fromStrategy(Strategy.dropping(maxSize))
+
+    fun <A> unsafeDropping(maxSize: Int): Queue<A> =
+      fromStrategy(Strategy.dropping(maxSize))
+
     /** Created a bounded queue that distributed always at max `fairSize` elements to any subscriber. */
     suspend fun <A> fairBounded(maxSize: Int, fairSize: Int): Queue<A> =
       fromStrategy(Strategy.boundedFifo<A>(maxSize).transformSelector { size, _ -> min(size, fairSize) })
@@ -210,6 +216,12 @@ internal object Strategy {
     unbounded { q: IQueue<A>, a ->
       if (q.size <= maxSize) q.enqueue(a)
       else q.drop(1).enqueue(a)
+    }
+
+  /** Strategy for dropping, which stores the first `maxSize` enqueued elements and never blocks on enqueue. */
+  fun <A> dropping(maxSize: Int): PubSub.Strategy<A, Chunk<A>, IQueue<A>, Int> =
+    unbounded { q: IQueue<A>, a ->
+      if (q.size <= maxSize) q.enqueue(a) else q
     }
 
   /** Unbounded lifo strategy. */

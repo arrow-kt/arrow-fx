@@ -1,6 +1,7 @@
 package arrow.fx.coroutines.stream.concurrent
 
 import arrow.core.Option
+import arrow.core.Right
 import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.StreamSpec
@@ -135,6 +136,41 @@ class QueueTest : StreamSpec(spec = {
           Stream.constant(batchSize)
             .through(q.dequeueBatch())
             .terminateOnNone()
+        }
+        .compile()
+        .toList() shouldBe expected
+    }
+  }
+
+  "Queue.dropping - accepts maxSize elements while dropping over capacity" {
+    checkAll(Arb.stream(Arb.int()), Arb.positiveInts()) { s, maxSize0 ->
+      val maxSize = maxSize0 % 20 + 1
+      val expected = s.compile().toList().take(maxSize)
+
+      val q = Queue.dropping<Int>(maxSize)
+
+      s.effectMap { q.enqueue1(it) }
+        .drain()
+        .append {
+          q.dequeue().take(expected.size)
+        }
+        .compile()
+        .toList() shouldBe expected
+    }
+  }
+
+  "Queue.dropping - dequeueBatch" {
+    checkAll(Arb.stream(Arb.int()), Arb.positiveInts(), Arb.positiveInts()) { s, maxSize0, batchSize0 ->
+      val maxSize = maxSize0 % 20 + 1
+      val batchSize = batchSize0 % 20 + 1
+      val expected = s.compile().toList().take(maxSize)
+      val q = Queue.dropping<Int>(maxSize)
+
+      s.effectMap { q.enqueue1(it) }
+        .drain().append {
+          Stream.constant(batchSize)
+            .through(q.dequeueBatch())
+            .take(expected.size)
         }
         .compile()
         .toList() shouldBe expected
