@@ -356,6 +356,7 @@ This code snippet isn’t very useful, except to show how `Ref/Atomic` can be us
 (i.e. a `ConcurrentVar` is a mutable concurrent safe variable which is either `empty` or contains a typed `single value`).
 
 ```kotlin:ank
+tailrec
 fun sum(state: MVar<ForIO, Int>, list: List<Int>) : IO<Int> =
     IO.fx {
         when {
@@ -370,6 +371,7 @@ fun sum(state: MVar<ForIO, Int>, list: List<Int>) : IO<Int> =
 becomes
  
 ```kotlin:ank
+tailrec
 suspend fun sum(state: ConcurrentVar<Int>, list: List<Int>) {
     when {
         list.isEmpty() -> state.take()
