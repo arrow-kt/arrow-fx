@@ -150,6 +150,7 @@ interface Queue<A> : Enqueue<A>, Dequeue1<A>, Dequeue<A> {
     fun <A> unsafeSliding(maxSize: Int): Queue<A> =
       fromStrategy(Strategy.sliding(maxSize))
 
+    /** Creates a queue which stores the first `maxSize` enqueued elements and which never blocks on enqueue. */
     suspend fun <A> dropping(maxSize: Int): Queue<A> =
       fromStrategy(Strategy.dropping(maxSize))
 
