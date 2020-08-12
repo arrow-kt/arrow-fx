@@ -1,7 +1,6 @@
 package arrow.fx.coroutines.stream.concurrent
 
 import arrow.core.Option
-import arrow.core.Right
 import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.StreamSpec
