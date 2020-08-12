@@ -386,7 +386,6 @@ suspend fun sum(state: ConcurrentVar<Int>, list: List<Int>) {
 
 This code snippet isn’t very useful, except to show how the atomic calls of `MVar/ConcurrentVar` can be used.
 
-
 ## Error Handling
 
 In Kotlin with suspend `try/catch` can safely be used to recover from exceptions.
@@ -515,6 +514,14 @@ suspend fun <A, B> raceN(ctx: CoroutineContext, fa: suspend () -> A, fb: suspend
     }
   )
 ```
+
+## And more…
+
+Arrow Fx Coroutines also provides, for complex/specific use cases, services such as :  
+- an immutable queue (`IQueue` datatype),  
+- a purely functional, effectful stream processing with the new `Stream`API,  
+- The new service `CircuitBreaker`aims to to make our distributed systems more reliable.  
+This list is not exhaustive.
 
 ## Arrow Fx Coroutines, KotlinX Coroutines & Kotlin Standard Library
  
