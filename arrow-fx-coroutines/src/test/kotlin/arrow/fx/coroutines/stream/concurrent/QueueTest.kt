@@ -106,12 +106,12 @@ class QueueTest : StreamSpec(spec = {
     }
   }
 
-  "circularBuffer" {
+  "Queue.sliding - accepts maxSize elements while sliding over capacity" {
     checkAll(Arb.stream(Arb.int()), Arb.positiveInts()) { s, maxSize0 ->
       val maxSize = maxSize0 % 20 + 1
       val expected = s.compile().toList().takeLast(maxSize)
 
-      val q = Queue.circularBuffer<Option<Int>>(maxSize + 1)
+      val q = Queue.sliding<Option<Int>>(maxSize)
 
       s.noneTerminate()
         .effectMap { q.enqueue1(it) }
@@ -122,12 +122,12 @@ class QueueTest : StreamSpec(spec = {
     }
   }
 
-  "dequeueBatch circularBuffer" {
+  "Queue.sliding - dequeueBatch" {
     checkAll(Arb.stream(Arb.int()), Arb.positiveInts(), Arb.positiveInts()) { s, maxSize0, batchSize0 ->
       val maxSize = maxSize0 % 20 + 1
       val batchSize = batchSize0 % 20 + 1
       val expected = s.compile().toList().takeLast(maxSize)
-      val q = Queue.circularBuffer<Option<Int>>(maxSize + 1)
+      val q = Queue.sliding<Option<Int>>(maxSize)
 
       s.noneTerminate()
         .effectMap { q.enqueue1(it) }
