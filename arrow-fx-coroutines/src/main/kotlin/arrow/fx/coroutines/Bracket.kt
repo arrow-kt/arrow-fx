@@ -78,10 +78,13 @@ suspend fun <A> onCancel(
 }
 
 /**
- * Executes the given [finalizer] when the source [fa] is finished, either in success or in error, or if cancelled.
+ * Guarantees execution of a given [finalizer] after [fa] regardless of success, error or cancellation.
  *
  * As best practice, it's not a good idea to release resources via [guarantee].
- * Prefer [Resource] or [bracket] for the acquisition and release of resources.
+ * since [guarantee] doesn't properly model acquiring, using and releasing resources.
+ * It only models scheduling of a finalizer after a given suspending program,
+ * so you should prefer [Resource] or [bracket] which captures acquiring,
+ * using and releasing into 3 separate steps to ensure resource safety.
  *
  * @param fa program that you want to register handler on
  * @param finalizer handler to run after [fa].
@@ -93,11 +96,14 @@ suspend fun <A> guarantee(
 ): A = guaranteeCase(fa) { finalizer.invoke() }
 
 /**
- * Executes the given [finalizer] when the source [fa] is finished, either in success or in error, or if cancelled, allowing
+ * Guarantees execution of a given [finalizer] after [fa] regardless of success, error or cancellation., allowing
  * for differentiating between exit conditions with to the [ExitCase] argument of the finalizer.
  *
  * As best practice, it's not a good idea to release resources via [guaranteeCase].
- * Prefer [Resource] or [bracketCase] for the acquisition and release of resources.
+ * since [guaranteeCase] doesn't properly model acquiring, using and releasing resources.
+ * It only models scheduling of a finalizer after a given suspending program,
+ * so you should prefer [Resource] or [bracketCase] which captures acquiring,
+ * using and releasing into 3 separate steps to ensure resource safety.
  *
  * @param fa program that you want to register handler on
  * @param finalizer handler to run after [fa].
