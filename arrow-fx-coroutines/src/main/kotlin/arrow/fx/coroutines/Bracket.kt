@@ -117,7 +117,7 @@ suspend fun <A> guaranteeCase(
 
 /**
  * Meant for specifying tasks with safe resource acquisition and release in the face of errors and interruption.
- * It would be the the equivalent of `try/catch/finally` statements in mainstream imperative languages for resource
+ * It would be the equivalent of an async capable `try/catch/finally` statements in mainstream imperative languages for resource
  * acquisition and release.
  *
  * @param acquire the action to acquire the resource
