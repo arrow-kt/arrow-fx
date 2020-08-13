@@ -356,7 +356,7 @@ fun <A> schedule(): Schedule<A, List<A>> = Schedule {
 }
 
 suspend fun main(): Unit {
-  var count = Atomic(0)
+  val count = Atomic(0)
 
   val history: List<Int> = repeat(schedule<Int>()) {
     println("Incrementing the ref")

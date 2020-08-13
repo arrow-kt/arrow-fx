@@ -214,6 +214,8 @@ sealed class Resource<out A> {
 
     /**
      * Creates a single threaded [CoroutineContext] as a [Resource].
+     * Upon release an orderly shutdown of the [ExecutorService] takes place in which previously submitted
+     * tasks are executed, but no new tasks will be accepted.
      *
      * ```kotlin:ank:playground
      * import arrow.fx.coroutines.*
@@ -244,6 +246,8 @@ sealed class Resource<out A> {
 
     /**
      * Creates a single threaded [CoroutineContext] as a [Resource].
+     * Upon release an orderly shutdown of the [ExecutorService] takes place in which previously submitted
+     * tasks are executed, but no new tasks will be accepted.
      *
      * ```kotlin:ank:playground
      * import arrow.fx.coroutines.*

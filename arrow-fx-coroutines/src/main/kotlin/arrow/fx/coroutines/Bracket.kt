@@ -21,6 +21,7 @@ sealed class ExitCase {
 
 /**
  * Runs [f] in an uncancellable manner.
+ * If [f] gets cancelled, it will back-pressure the cancelling operation until finished.
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.*
@@ -129,7 +130,7 @@ suspend fun <A> guaranteeCase(
  * of its exit condition.
  *
  * ```kotlin:ank:playground
- * import arrow.fx.IO
+ * import arrow.fx.coroutines.*
  *
  * class File(url: String) {
  *   fun open(): File = this
@@ -143,9 +144,9 @@ suspend fun <A> guaranteeCase(
  *
  * suspend fun main(): Unit {
  *   //sampleStart
- *   val res = bracketCase(
+ *   val res = bracket(
  *     acquire = { openFile("data.json") },
- *     use = { file -> fileToString(file) }),
+ *     use = { file -> fileToString(file) },
  *     release = { file: File -> closeFile(file) }
  *   )
  *   //sampleEnd

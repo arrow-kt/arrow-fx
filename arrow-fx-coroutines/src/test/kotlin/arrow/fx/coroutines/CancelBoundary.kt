@@ -6,7 +6,7 @@ import io.kotest.matchers.shouldBe
 class CancelBoundary : StringSpec({
 
   suspend fun forever(): Unit {
-    while(true) {
+    while (true) {
       println("I am getting dizzy...")
       cancelBoundary() // cancellable computation loop
     }
@@ -26,5 +26,4 @@ class CancelBoundary : StringSpec({
     exit.get() shouldBe ExitCase.Cancelled
     sleep(1.seconds)
   }
-
 })

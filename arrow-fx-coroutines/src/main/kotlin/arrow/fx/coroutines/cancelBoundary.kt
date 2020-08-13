@@ -4,8 +4,9 @@ import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 
 /**
- * Checks for cancellation,
- * when cancellation occurs this coroutine will suspend indefinitely and never continue.
+ * Inserts a cancellable boundary.
+ * It checks for the cancellation status of the suspend program and
+ * does not allow the continuations/program to keep executing in the case cancellation happened.
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.*
