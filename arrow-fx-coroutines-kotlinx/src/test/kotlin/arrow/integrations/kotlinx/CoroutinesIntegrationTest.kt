@@ -1,6 +1,14 @@
 package arrow.integrations.kotlinx
 
-import arrow.fx.coroutines.*
+import arrow.fx.coroutines.AtomicRefW
+import arrow.fx.coroutines.CancelToken
+import arrow.fx.coroutines.ExitCase
+import arrow.fx.coroutines.Promise
+import arrow.fx.coroutines.cancelBoundary
+import arrow.fx.coroutines.cancellable
+import arrow.fx.coroutines.cancellableF
+import arrow.fx.coroutines.guaranteeCase
+import arrow.fx.coroutines.never
 import io.kotest.assertions.fail
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
@@ -13,16 +21,13 @@ import io.kotest.property.checkAll
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.test.TestCoroutineDispatcher
 import kotlinx.coroutines.test.TestCoroutineExceptionHandler
 import kotlinx.coroutines.test.TestCoroutineScope
 
 @ExperimentalCoroutinesApi
-@ObsoleteCoroutinesApi
 @Suppress("IMPLICIT_NOTHING_AS_TYPE_PARAMETER")
 class CoroutinesIntegrationTest : StringSpec({
 
@@ -142,12 +147,12 @@ class CoroutinesIntegrationTest : StringSpec({
       val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
       val promise = Promise<Int>()
 
-      suspend fun cancellable(): Unit =
+      suspend fun task(): Unit =
         cancellable<Unit> { _ ->
           CancelToken { promise.complete(i) }
         }
 
-      scope.unsafeRunScoped({ cancellable() }) { }
+      scope.unsafeRunScoped({ task() }) { }
 
       scope.cancel()
       promise.get()
@@ -250,7 +255,6 @@ class CoroutinesIntegrationTest : StringSpec({
       f.join() shouldBe i
     }
   }
-
 
   "ForkScoped doesn't start if scope is cancelled" {
     checkAll(Arb.int()) { i ->
