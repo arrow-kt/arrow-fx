@@ -1,4 +1,4 @@
-package arrow.integrations.kotlinx
+package arrow.fx.coroutines.kotlinx
 
 import arrow.fx.coroutines.CancelToken
 import arrow.fx.coroutines.CancellableContinuation

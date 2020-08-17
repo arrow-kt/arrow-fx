@@ -1,4 +1,4 @@
-package arrow.integrations.kotlinx
+package arrow.fx.coroutines.kotlinx
 
 import arrow.fx.coroutines.AtomicRefW
 import arrow.fx.coroutines.CancelToken
@@ -19,6 +19,7 @@ import io.kotest.property.arbitrary.map
 import io.kotest.property.arbitrary.string
 import io.kotest.property.checkAll
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
@@ -26,10 +27,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestCoroutineDispatcher
 import kotlinx.coroutines.test.TestCoroutineExceptionHandler
 import kotlinx.coroutines.test.TestCoroutineScope
+import kotlin.coroutines.EmptyCoroutineContext
 
 @ExperimentalCoroutinesApi
 @Suppress("IMPLICIT_NOTHING_AS_TYPE_PARAMETER")
-class CoroutinesIntegrationTest : StringSpec({
+class ExtensionsTest : StringSpec({
 
   fun Arb.Companion.throwable(): Arb<Throwable> =
     Arb.string().map(::RuntimeException)
@@ -198,18 +200,6 @@ class CoroutinesIntegrationTest : StringSpec({
     }
   }
 
-  "unsafeRunScoped rethrows exception from callback" {
-    checkAll(Arb.throwable()) { e ->
-      val scope = TestCoroutineScope(TestCoroutineDispatcher())
-
-      shouldThrow<Throwable> {
-        scope.unsafeRunScoped({ throw e }) {
-          it.fold({ fail("Excepted $e but found $it") }, { throw it })
-        }
-      } shouldBe e
-    }
-  }
-
   // --------------- forkScoped ---------------
 
   "ForkScoped can cancel forever suspending tasks" {
@@ -227,7 +217,7 @@ class CoroutinesIntegrationTest : StringSpec({
 
       latch.get()
       scope.cancel()
-      promise.get() shouldBe i
+      promise.get() shouldBe ExitCase.Cancelled
     }
   }
 
