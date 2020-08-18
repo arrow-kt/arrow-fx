@@ -378,10 +378,10 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    *
    * //sampleStart
    * suspend fun main(): Unit =
-   *   Stream.empty()
+   *   Stream.empty<Int>()
    *     .takeLastOrNull(5)
    *     .toList()
-   *     .let(::println) // []
+   *     .let(::println) // [null]
    * //sampleEnd
    * ```
    */
