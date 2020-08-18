@@ -11,6 +11,7 @@ import arrow.fx.coroutines.stream.compile
 import arrow.fx.coroutines.stream.noneTerminate
 import arrow.fx.coroutines.stream.parJoinUnbounded
 import arrow.fx.coroutines.stream.terminateOnNone
+import arrow.fx.coroutines.stream.toList
 import arrow.fx.coroutines.timeOutOrNull
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.ints.shouldBeLessThan
@@ -26,7 +27,7 @@ class QueueTest : StreamSpec(spec = {
       val q = Queue.unbounded<Int>()
 
       q.tryOffer1(i) shouldBe true
-      q.dequeue().take(1).compile().toList() shouldBe listOf(i)
+      q.dequeue().take(1).toList() shouldBe listOf(i)
     }
   }
 
@@ -49,35 +50,33 @@ class QueueTest : StreamSpec(spec = {
 
   "unbounded producer/consumer" {
     checkAll(Arb.stream(Arb.int())) { s ->
-      val expected = s.compile().toList()
+      val expected = s.toList()
       val n = expected.size
       val q = Queue.unbounded<Int>()
 
       Stream(
         q.dequeue(),
-        s.through(q.enqueue()).drain()
+        s.through(q.enqueue()).void()
       ).parJoinUnbounded()
         .take(n)
-        .compile()
         .toList() shouldBe expected
     }
   }
 
   "dequeueAvailable" {
     checkAll(Arb.stream(Arb.int())) { s ->
-      val expected = s.compile().toList()
+      val expected = s.toList()
 
       val q = Queue.unbounded<Option<Int>>()
 
       val res = s.noneTerminate()
         .through(q.enqueue())
-        .drain()
+        .void()
         .append {
           q.dequeueChunk(Int.MAX_VALUE)
             .terminateOnNone()
             .chunks()
         }
-        .compile()
         .toList()
 
       assertSoftly {
@@ -90,18 +89,17 @@ class QueueTest : StreamSpec(spec = {
   "dequeueBatch unbounded" {
     checkAll(Arb.stream(Arb.int()), Arb.positiveInts()) { s, batchSize0 ->
       val batchSize = batchSize0 % 20 + 1
-      val expected = s.compile().toList()
+      val expected = s.toList()
       val q = Queue.unbounded<Option<Int>>()
 
       s.noneTerminate()
         .effectMap { q.enqueue1(it) }
-        .drain()
+        .void()
         .append {
           Stream.constant(batchSize)
             .through(q.dequeueBatch())
             .terminateOnNone()
         }
-        .compile()
         .toList() shouldBe expected
     }
   }
@@ -109,15 +107,14 @@ class QueueTest : StreamSpec(spec = {
   "Queue.sliding - accepts maxSize elements while sliding over capacity" {
     checkAll(Arb.stream(Arb.int()), Arb.positiveInts()) { s, maxSize0 ->
       val maxSize = maxSize0 % 20 + 1
-      val expected = s.compile().toList().takeLast(maxSize)
+      val expected = s.toList().takeLast(maxSize)
 
       val q = Queue.sliding<Option<Int>>(maxSize)
 
       s.noneTerminate()
         .effectMap { q.enqueue1(it) }
-        .drain()
+        .void()
         .append { q.dequeue().terminateOnNone() }
-        .compile()
         .toList() shouldBe expected
     }
   }
@@ -126,17 +123,16 @@ class QueueTest : StreamSpec(spec = {
     checkAll(Arb.stream(Arb.int()), Arb.positiveInts(), Arb.positiveInts()) { s, maxSize0, batchSize0 ->
       val maxSize = maxSize0 % 20 + 1
       val batchSize = batchSize0 % 20 + 1
-      val expected = s.compile().toList().takeLast(maxSize)
+      val expected = s.toList().takeLast(maxSize)
       val q = Queue.sliding<Option<Int>>(maxSize)
 
       s.noneTerminate()
         .effectMap { q.enqueue1(it) }
-        .drain().append {
+        .void().append {
           Stream.constant(batchSize)
             .through(q.dequeueBatch())
             .terminateOnNone()
         }
-        .compile()
         .toList() shouldBe expected
     }
   }
@@ -144,16 +140,15 @@ class QueueTest : StreamSpec(spec = {
   "Queue.dropping - accepts maxSize elements while dropping over capacity" {
     checkAll(Arb.stream(Arb.int()), Arb.positiveInts()) { s, maxSize0 ->
       val maxSize = maxSize0 % 20 + 1
-      val expected = s.compile().toList().take(maxSize)
+      val expected = s.toList().take(maxSize)
 
       val q = Queue.dropping<Int>(maxSize)
 
       s.effectMap { q.enqueue1(it) }
-        .drain()
+        .void()
         .append {
           q.dequeue().take(expected.size)
         }
-        .compile()
         .toList() shouldBe expected
     }
   }
@@ -162,16 +157,15 @@ class QueueTest : StreamSpec(spec = {
     checkAll(Arb.stream(Arb.int()), Arb.positiveInts(), Arb.positiveInts()) { s, maxSize0, batchSize0 ->
       val maxSize = maxSize0 % 20 + 1
       val batchSize = batchSize0 % 20 + 1
-      val expected = s.compile().toList().take(maxSize)
+      val expected = s.toList().take(maxSize)
       val q = Queue.dropping<Int>(maxSize)
 
       s.effectMap { q.enqueue1(it) }
-        .drain().append {
+        .void().append {
           Stream.constant(batchSize)
             .through(q.dequeueBatch())
             .take(expected.size)
         }
-        .compile()
         .toList() shouldBe expected
     }
   }
@@ -179,7 +173,7 @@ class QueueTest : StreamSpec(spec = {
   "dequeue releases subscriber on " - {
     "interrupt" {
       val q = Queue.unbounded<Int>()
-      q.dequeue().interruptAfter(100.milliseconds).compile().drain()
+      q.dequeue().interruptAfter(100.milliseconds).void()
       q.enqueue1(1)
       q.enqueue1(2)
       q.dequeue1() shouldBe 1

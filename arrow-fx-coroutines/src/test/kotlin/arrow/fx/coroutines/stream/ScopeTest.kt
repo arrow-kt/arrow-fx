@@ -41,7 +41,6 @@ class ScopeTest : ArrowFxSpec(spec = {
       }
     }
       .attempt()
-      .compile()
       .drain()
 
     buffer shouldBe (0..10).toList()
@@ -54,13 +53,11 @@ class ScopeTest : ArrowFxSpec(spec = {
       .flatMap { Stream.raiseError<Unit>(RuntimeException()) }
       .handleErrorWith { Stream.empty() }
       .append { events.recordBracketEvents(2) }
-      .compile()
       .drain()
 
     events.get() shouldBe listOf(Acquired(1), Released(1), Acquired(2), Released(2))
   }
 
-  // TODO Fix scoping
   "last scope extended, not all scopes - 1" {
     val st = Atomic(emptyList<String>())
 
@@ -105,7 +102,6 @@ class ScopeTest : ArrowFxSpec(spec = {
       .scope()
       .repeat()
       .take(4)
-      .compile()
       .drain()
 
     c.get() shouldBe 0
@@ -121,7 +117,6 @@ class ScopeTest : ArrowFxSpec(spec = {
     }
       .scope()
       .append { Stream.effect { counter.count() } }
-      .compile()
       .toList() shouldBe listOf(1, 1, 0)
   }
 
@@ -148,7 +143,6 @@ class ScopeTest : ArrowFxSpec(spec = {
       .foldMap(Stream.monoid(), Stream.Companion::resource)
       .effectTap { st.record("use") }
       .append { Stream.effect_ { st.record("done") } }
-      .compile()
       .drain()
 
     st.get() shouldBe listOf(
@@ -190,7 +184,6 @@ class ScopeTest : ArrowFxSpec(spec = {
       .foldMap(Stream.monoid(), Stream.Companion::resourceWeak)
       .effectTap { st.record("use") }
       .append { Stream.effect_ { st.record("done") } }
-      .compile()
       .drain()
 
     st.get() shouldBe listOf(

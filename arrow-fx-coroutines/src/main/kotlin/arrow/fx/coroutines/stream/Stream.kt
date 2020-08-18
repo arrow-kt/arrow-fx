@@ -382,24 +382,50 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
   fun take(n: Long): Stream<O> =
     asPull.take(n).void().stream()
 
+//  /**
+//   * Emits the first element this stream.
+//   *
+//   * ```kotlin:ank:playground
+//   * import arrow.fx.coroutines.stream.*
+//   *
+//   * //sampleStart
+//   * suspend fun main(): Unit =
+//   *   Stream.range(0..1000)
+//   *     .first()
+//   *     .compile()
+//   *     .toList()
+//   *     .let(::println) // [0]
+//   * //sampleEnd
+//   * ```
+//   */
+//  fun first(): Stream<O> =
+//    take(1)
+
   /**
-   * Emits the first element this stream.
+   * Emits the last `n` elements of the input.
    *
    * ```kotlin:ank:playground
    * import arrow.fx.coroutines.stream.*
    *
    * //sampleStart
    * suspend fun main(): Unit =
-   *   Stream.range(0..1000)
-   *     .first()
+   *   Stream.empty()
+   *     .takeLastOrNull(5)
    *     .compile()
    *     .toList()
-   *     .let(::println) // [0]
+   *     .let(::println) // []
    * //sampleEnd
    * ```
    */
-  fun first(): Stream<O> =
-    take(1)
+  fun takeLastOrNull(n: Int): Stream<O?> =
+    asPull
+      .takeLast(n)
+      .flatMap { chunkQueue ->
+        if (chunkQueue.isEmpty()) Pull.output1(null)
+        else chunkQueue.chunks.fold(Pull.done<O>()) { acc, c ->
+          acc.flatMap { Pull.output(c) }
+        }
+      }.stream()
 
   /**
    * Emits the last `n` elements of the input.
@@ -452,25 +478,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
   /** alias for first **/
   fun find(f: (O) -> Boolean): Stream<O> =
     first(f)
-
-  /**
-   * Returns the last element of this stream, if non-empty.
-   *
-   * ```kotlin:ank:playground
-   * import arrow.fx.coroutines.stream.*
-   *
-   * //sampleStart
-   * suspend fun main(): Unit =
-   *   Stream(1, 2, 3)
-   *     .last()
-   *     .compile()
-   *     .toList()
-   *     .let(::println) // [3]
-   * //sampleEnd
-   * ```
-   */
-  fun last(): Stream<O?> =
-    asPull.lastOrNull().flatMap(Pull.Companion::output1).stream()
 
   /**
    * Emits `true` as soon as a matching element is received, else `false` if no input matches.
@@ -1296,13 +1303,13 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * //sampleStart
    * suspend fun main(): Unit =
    *   Stream(1, 2, 3, 4)
-   *   .drain()
+   *   .void()
    *   .compile()
    *   .toList().let(::println) //[]
    * //sampleEnd
    * ```
    */
-  fun drain(): Stream<Nothing> =
+  fun void(): Stream<Nothing> =
     mapChunks { Chunk.empty<Nothing>() }
 
   /**
@@ -1382,7 +1389,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
     val r = Either.catch {
       other
         .interruptWhen { Either.catch { interrupt.get() } }
-        .compile()
         .drain()
     }
 
@@ -1406,7 +1412,7 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * Starts this stream and cancels it as finalization of the returned stream.
    */
   fun spawn(ctx: CoroutineContext = ComputationPool): Stream<Fiber<Unit>> =
-    supervise(ctx) { compile().drain() }
+    supervise(ctx) { drain() }
 
   /**
    * Run the supplied effectful action at the end of this stream, regardless of how the stream terminates.
@@ -1486,7 +1492,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
       haltWhenTrue
         .takeWhile(Boolean::not)
         .interruptWhen { Right(interruptR.get()) }
-        .compile()
         .drain()
     }, { ex ->
       val r = when (ex) {
@@ -1546,7 +1551,7 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
      * performant version of `sleep(..) >> s`.
      */
     fun sleep_(d: Duration): Stream<Nothing> =
-      sleep(d).drain()
+      sleep(d).void()
 
     /**
      * Creates a single element stream that gets its value by evaluating the supplied effect.
@@ -2075,32 +2080,6 @@ fun <A, B, C> Stream<A>.zipAllWith(
 fun <O> Stream<O>.onComplete(s2: () -> Stream<O>): Stream<O> =
   handleErrorWith { e -> s2.invoke().append { Stream.raiseError(e) } }
     .append(s2)
-
-/**
- * Returns the last element of this stream, if non-empty, otherwise the supplied `fallback` value.
- *
- * ```kotlin:ank:playground
- * import arrow.fx.coroutines.stream.*
- *
- * //sampleStart
- * suspend fun main(): Unit {
- *   Stream(1, 2, 3)
- *     .lastOr { 0 }
- *     .compile()
- *     .toList().let(::println) // [3]
- *
- *   Stream.empty<Int>()
- *     .lastOr { 0 }
- *     .compile()
- *     .toList().let(::println) // [0]
- * }
- * //sampleEnd
- *```
- */
-fun <O> Stream<O>.lastOr(fallback: () -> O): Stream<O> =
-  asPull.lastOrNull().flatMap {
-    it?.let(Pull.Companion::output1) ?: Pull.output1(fallback.invoke())
-  }.stream()
 
 /**
  * Repartitions the input with the function `f`. On each step `f` is applied
