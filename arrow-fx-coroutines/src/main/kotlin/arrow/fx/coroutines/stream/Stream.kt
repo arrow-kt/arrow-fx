@@ -47,7 +47,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream(1, 2, 3)
    *     .flatMap { i -> Stream(i, i, i) }
-   *     .compile()
    *     .toList()
    *     .let(::println) // [1, 1, 1, 2, 2, 2, 3, 3, 3]
    * //sampleEnd
@@ -68,7 +67,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    *     .append { Stream.raiseError(RuntimeException("Boom!")) }
    *     .append { Stream(4, 5, 6) }
    *     .attempt()
-   *     .compile()
    *     .toList()
    *     .let(::println) // [Right(b=1), Right(b=2), Right(b=3), Left(a=java.lang.RuntimeException: Boom!)]
    * //sampleEnd
@@ -109,7 +107,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    *     .buffer(4)
    *     .effectTap { i -> buf.add("<$i") }
    *     .take(10)
-   *     .compile()
    *     .toList()
    *     .let(::println) // [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
    *
@@ -143,7 +140,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    *     .bufferAll()
    *     .effectTap { i -> buf.add("<$i") }
    *     .take(4)
-   *     .compile()
    *     .toList()
    *     .let(::println) // [0, 1, 2, 3]
    *
@@ -170,7 +166,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    *     .effectTap { i -> buf.add(">$i") }
    *     .bufferBy { it % 2 == 0 }
    *     .effectTap { i -> buf.add("<$i") }
-   *     .compile()
    *     .toList()
    *     .let(::println) // [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
    *
@@ -220,7 +215,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream.range(1..10)
    *     .delete { it % 2 == 0 }
-   *     .compile()
    *     .toList()
    *     .let(::println) // [1, 3, 4, 5, 6, 7, 8, 9, 10]
    * //sampleEnd
@@ -249,7 +243,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream.range(0..10)
    *     .drop(5)
-   *     .compile()
    *     .toList()
    *     .let(::println) // [5, 6, 7, 8, 9, 10]
    * //sampleEnd
@@ -268,7 +261,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream.range(0..5)
    *     .tail()
-   *     .compile()
    *     .toList()
    *     .let(::println) // [1, 2, 3, 4, 5]
    * //sampleEnd
@@ -290,7 +282,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream.range(0..10)
    *     .dropLast(5)
-   *     .compile()
    *     .toList()
    *     .let(::println) // [0, 1, 2, 3, 4]
    * //sampleEnd
@@ -328,7 +319,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream.range(0..10)
    *     .dropWhile { it != 4 }
-   *     .compile()
    *     .toList()
    *     .let(::println) // [4, 5, 6, 7, 8, 9, 10]
    * //sampleEnd
@@ -347,7 +337,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream.range(0..10)
    *     .dropThrough { it != 4 }
-   *     .compile()
    *     .toList()
    *     .let(::println) // [5, 6, 7, 8, 9, 10]
    * //sampleEnd
@@ -373,7 +362,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream.range(0..1000)
    *     .take(5)
-   *     .compile()
    *     .toList()
    *     .let(::println) // [0, 1, 2, 3, 4]
    * //sampleEnd
@@ -392,7 +380,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream.empty()
    *     .takeLastOrNull(5)
-   *     .compile()
    *     .toList()
    *     .let(::println) // []
    * //sampleEnd
@@ -418,7 +405,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream.range(0..1000)
    *     .takeLast(5)
-   *     .compile()
    *     .toList()
    *     .let(::println) // [996, 997, 998, 999, 1000]
    * //sampleEnd
@@ -443,7 +429,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream(null, 1, 2, null, 3)
    *     .first { it != null }
-   *     .compile()
    *     .toList()
    *     .let(::println) // [1]
    * //sampleEnd
@@ -469,10 +454,10 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * //sampleStart
    * suspend fun main(): Unit {
    *   Stream.range(0..10).exists { it == 4 }
-   *     .compile().toList().let(::println) //[true]
+   *     .toList().let(::println) //[true]
    *
    *   Stream.range(0..10).exists { it == 11 }
-   *     .compile().toList().let(::println) //[false]
+   *     .toList().let(::println) //[false]
    * }
    * //sampleEnd
    * ```
@@ -500,7 +485,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream.range(0..1000)
    *     .takeWhile { it != 5 }
-   *     .compile()
    *     .toList()
    *     .let(::println) // [0, 1, 2, 3, 4]
    * //sampleEnd
@@ -519,7 +503,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream.range(0..1000)
    *     .takeThrough { it != 5 }
-   *     .compile()
    *     .toList()
    *     .let(::println) // [0, 1, 2, 3, 4, 5]
    * //sampleEnd
@@ -540,7 +523,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    *   Stream(1,2,3)
    *     .repeat()
    *     .take(8)
-   *     .compile()
    *     .toList()
    *     .let(::println) // [1, 2, 3, 1, 2, 3, 1, 2]
    * //sampleEnd
@@ -561,7 +543,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream(1,2,3)
    *     .repeatN(3)
-   *     .compile()
    *     .toList()
    *     .let(::println) // [1, 2, 3, 1, 2, 3, 1, 2, 3]
    * //sampleEnd
@@ -581,7 +562,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream(1, 2, 3)
    *     .effectMap { print(it) }
-   *     .compile()
    *     .drain() // 123
    * //sampleEnd
    * ```
@@ -600,7 +580,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream(1, 2, 3)
    *     .effectTap { print(it) } // 123
-   *     .compile()
    *     .toList()
    *     .let(::println) // [1, 2, 3]
    * //sampleEnd
@@ -623,7 +602,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    *       sleep((i * 10).milliseconds)
    *       Pair(i, acc + i)
    *     }
-   *     .compile()
    *     .toList()
    *     .let(::println) // [(1,1), (2,3), (3,5), (4,7)]
    * //sampleEnd
@@ -655,7 +633,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream("Hello", "World!")
    *     .map(String::length)
-   *     .compile()
    *     .toList().let(::println) // [5, 6]
    * //sampleEnd
    * ```
@@ -673,7 +650,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream(1, 2, 3).append { Stream(4, 5, 6) }
    *     .mapChunks { ch -> ch.map { it + 1 } }
-   *     .compile()
    *     .toList().let(::println) // [2, 3, 4, 5, 6, 7]
    * //sampleEnd
    * ```
@@ -698,7 +674,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream("Hello", "World")
    *   .mapAccumulate(0) { l, s -> Pair(l + s.length, s.first()) }
-   *   .compile()
    *   .toList()
    *   .let(::println) //[(5,H), (10,W)]
    * //sampleEnd
@@ -723,7 +698,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    *   Stream(1,2,3).append { Stream(4,5,6) }
    *   .unchunk()
    *   .chunks()
-   *   .compile()
    *   .toList()
    *   .let(::println) //[Chunk(1), Chunk(2), Chunk(3), Chunk(4), Chunk(5), Chunk(6)]
    * //sampleEnd
@@ -749,7 +723,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream(1).append { Stream(2, 3).append { Stream(4, 5, 6) } }
    *   .chunks()
-   *   .compile()
    *   .toList()
    *   .let(::println) //[Chunk(1), Chunk(2, 3), Chunk(4, 5, 6)]
    * //sampleEnd
@@ -775,7 +748,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream(1).append { Stream(2, 3).append { Stream(4, 5, 6) } }
    *   .chunkLimit(2)
-   *   .compile()
    *   .toList()
    *   .let(::println) //[Chunk(1), Chunk(2, 3), Chunk(4, 5), Chunk(6)]
    * //sampleEnd
@@ -806,7 +778,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream(1, 2).append { Stream(3, 4).append { Stream(5, 6, 7) } }
    *   .chunkMin(3)
-   *   .compile()
    *   .toList()
    *   .let(::println) //[Chunk(1, 2, 3, 4), Chunk(5, 6, 7)]
    * //sampleEnd
@@ -853,7 +824,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    *   .repeat()
    *   .chunkN(2)
    *   .take(6)
-   *   .compile()
    *   .toList()
    *   .let(::println) //[Chunk(1, 2), Chunk(3, 1), Chunk(2, 3), Chunk(1, 2), Chunk(3, 1), Chunk(2)]
    * //sampleEnd
@@ -879,7 +849,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream.range(0..10)
    *     .filter { it % 2 == 0 }
-   *     .compile()
    *     .toList()
    *     .let(::println) //[0, 2, 4, 6, 8]
    * //sampleEnd
@@ -905,7 +874,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream(1, -1, 2, -2, 3, -3, 4, -4)
    *   .filterWithPrevious { previous, current -> previous < current }
-   *   .compile()
    *   .toList()
    *   .let(::println) //[1, 2, 3, 4]
    * //sampleEnd
@@ -953,7 +921,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream(1, 2, 3, 4, 5)
    *   .fold(0) { acc, b -> acc + b }
-   *   .compile()
    *   .toList()
    *   .let(::println) //[15]
    * //sampleEnd
@@ -975,7 +942,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream(1, 1, 1, 1, 1)
    *   .foldMap(Int.monoid()) { it + 1 }
-   *   .compile()
    *   .toList()
    *   .let(::println) //[10]
    * //sampleEnd
@@ -996,7 +962,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream(1,2,3,4)
    *   .effectScan(0) { acc,i -> acc + i }
-   *   .compile()
    *   .toList()
    *   .let(::println) //[0, 1, 3, 6, 10]
    * //sampleEnd
@@ -1032,7 +997,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * //sampleStart
    * suspend fun main(): Unit =
    *   Stream(1, 2, 3).zip(Stream(4, 5, 6, 7))
-   *   .compile()
    *   .toList()
    *   .let(::println) //[(1,4), (2,5), (3,6)]
    * //sampleEnd
@@ -1066,7 +1030,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream(1, 2, 3)
    *   .zipWith(Stream(4, 5, 6, 7)) { acc, b -> acc + b }
-   *   .compile()
    *   .toList()
    *   .let(::println) //[5, 7, 9]
    * //sampleEnd
@@ -1090,7 +1053,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream("The", "quick", "brown", "fox")
    *   .zipWithIndex()
-   *   .compile()
    *   .toList()
    *   .let(::println) //[(The,0), (quick,1), (brown,2), (fox,3)]
    * //sampleEnd
@@ -1119,7 +1081,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream("The", "quick", "brown", "fox")
    *   .zipWithNext()
-   *   .compile()
    *   .toList()
    *   .let(::println) //[(The,quick), (quick,brown), (brown,fox), (fox,null)]
    * //sampleEnd
@@ -1158,7 +1119,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream("The", "quick", "brown", "fox")
    *   .zipWithPrevious()
-   *   .compile()
    *   .toList()
    *   .let(::println) //[(null,The), (The,quick), (quick,brown), (brown,fox)]
    * //sampleEnd
@@ -1181,7 +1141,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream("The", "quick", "brown", "fox")
    *   .zipWithPreviousAndNext()
-   *   .compile()
    *   .toList()
    *   .let(::println) //[(null,The, quick), (The, quick,brown), (quick,brown,fox), (brown,fox,null)]
    * //sampleEnd
@@ -1203,7 +1162,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream("uno", "dos", "tres", "cuatro")
    *   .zipWithScan(0) { acc, b -> acc + b.length }
-   *   .compile()
    *   .toList()
    *   .let(::println) //[(uno,0), (dos,3), (tres,6), (cuatro,10)]
    * //sampleEnd
@@ -1228,7 +1186,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream("uno", "dos", "tres", "cuatro")
    *   .zipWithScan1(0) { acc, b -> acc + b.length }
-   *   .compile()
    *   .toList()
    *   .let(::println) //[(uno,3), (dos,6), (tres,10), (cuatro,16)]
    * //sampleEnd
@@ -1254,7 +1211,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream(1, 2, 3, 4, 5)
    *   .forall { it < 10 }
-   *   .compile()
    *   .toList()
    *   .let(::println) //[true]
    * //sampleEnd
@@ -1285,7 +1241,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream(1, 2, 3, 4)
    *   .void()
-   *   .compile()
    *   .toList().let(::println) //[]
    * //sampleEnd
    * ```
@@ -1303,7 +1258,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream(1,2,3).append { Stream.raiseError<Int>(RuntimeException()).append { Stream(4, 5, 6) } }
    *     .mask()
-   *     .compile()
    *     .toList().let(::println) //[1, 2, 3]
    * //sampleEnd
    * ```
@@ -1343,7 +1297,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    *   signalling.discrete()
    *     .concurrently(data.effectMap { signalling.set(it) })
    *     .takeWhile { it < 9 }
-   *     .compile()
    *     .toList()
    *     .let(::println) //[0, 1, 2, 3, 4, 5, 6, 7, 8]
    * }
@@ -1528,8 +1481,8 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
       effect { arrow.fx.coroutines.sleep(d) }
 
     /**
-     * Alias for `sleep(d).drain`. Often used in conjunction with `++` (i.e., `sleep_(..) ++ s`) as a more
-     * performant version of `sleep(..) >> s`.
+     * Alias for `sleep(d).void`. Often used in conjunction with [append] (i.e., `sleep_(..).append { s }`) as a more
+     * performant version of `sleep(..).flatMap { s }`.
      */
     fun sleep_(d: Duration): Stream<Nothing> =
       sleep(d).void()
@@ -1546,13 +1499,11 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
      * //sampleEnd
      * suspend fun main(): Unit {
      *   Stream.effect { 10 }
-     *     .compile()
      *     .toList()
      *     .let(::println) // [10]
      *
      *   Either.catch {
      *     Stream.effect { throw RuntimeException() }
-     *       .compile()
      *       .toList()
      *   }.let(::println) // Left(java.lang.RuntimeException)
      * }
@@ -1574,7 +1525,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
      * //sampleEnd
      * suspend fun main(): Unit =
      *   Stream.effect_ { println("Ran") }
-     *     .compile()
      *     .toList()
      *     .let(::println) // []
      * //sampleStart
@@ -1599,7 +1549,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
      * suspend fun main(): Unit {
      *   Stream.constant(0)
      *     .take(5)
-     *     .compile()
      *     .toList()
      *     .let(::println) // [0, 0, 0, 0, 0]
      * }
@@ -1618,7 +1567,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
      * //sampleEnd
      * suspend fun main(): Unit =
      *   Stream.force { Stream(1, 2, 3) }
-     *     .compile()
      *     .toList()
      *     .let(::println) // [1, 2, 3]
      * //sampleStart
@@ -1644,7 +1592,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
      * suspend fun main(): Unit =
      *   Stream.iterateEffect(0) { it + 1 }
      *     .take(10)
-     *     .compile()
      *     .toList()
      *     .let(::println) // [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
      * //sampleStart
@@ -1670,7 +1617,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
      * //sampleEnd
      * suspend fun main(): Unit =
      *   Stream.unfold(0) { i -> if (i < 5) Pair(i, i + 1) else null }
-     *     .compile()
      *     .toList()
      *     .let(::println) //[0, 1, 2, 3, 4]
      * //sampleStart
@@ -1710,7 +1656,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
      *     if (i < 5) Pair(Chunk(i) { i }, i + 1)
      *     else null
      *   }
-     *     .compile()
      *     .toList()
      *     .let(::println) //[1, 2, 2, 3, 3, 3, 4, 4, 4, 4]
      * //sampleEnd
@@ -1748,7 +1693,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
      * //sampleStart
      * suspend fun main(): Unit =
      *   Stream.just(1)
-     *     .compile()
      *     .toList()
      *     .let(::println) //[0]
      * //sampleEnd
@@ -1839,7 +1783,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
      * //sampleStart
      * suspend fun main(): Unit =
      *   Stream.range(0..20 step 2)
-     *     .compile()
      *     .toList().let(::println) // [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
      * //sampleEnd
      * ```
@@ -1860,7 +1803,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
      * //sampleStart
      * suspend fun main(): Unit =
      *   Stream.range(0L..15 step 3)
-     *     .compile()
      *     .toList().let(::println) // [0, 3, 6, 9, 12, 15]
      * //sampleEnd
      * ```
@@ -1881,7 +1823,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
      * //sampleStart
      * suspend fun main(): Unit =
      *   Stream.range('a'..'z' step 2)
-     *     .compile()
      *     .toList()
      *     .let(::println) // [a, c, e, g, i, k, m, o, q, s, u, w, y]
      * //sampleEnd
@@ -1910,7 +1851,7 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
      * //sampleStart
      * suspend fun main(): Unit =
      *   timeOutOrNull(1.seconds) {
-     *     Stream.never<Int>().compile().drain()
+     *     Stream.never<Int>().drain()
      *   }.let(::println)
      * //sampleEnd
      * ```
@@ -1927,7 +1868,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
      * //sampleStart
      * suspend fun main(): Unit =
      *   Stream.emits(1, 2, 3)
-     *     .compile()
      *     .toList()
      *     .let(::println) // [1, 2, 3]
      * //sampleEnd
@@ -1975,7 +1915,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
  * suspend fun main(): Unit =
  *   Stream(1,2,3)
  *     .zipAll(Stream(4,5,6,7), 0,0)
- *     .compile()
  *     .toList().let(::println) // [(1,4), (2,5), (3,6), (0,7)]
  * //sampleEnd
  *```
@@ -1995,7 +1934,6 @@ fun <O, B> Stream<O>.zipAll(that: Stream<B>, pad1: O, pad2: B): Stream<Pair<O, B
  * suspend fun main(): Unit =
  *   Stream(1,2,3)
  *     .zipAllWith(Stream(4,5,6,7), 0, 0) { acc, b -> acc + b }
- *     .compile()
  *     .toList().let(::println) // [5, 7, 9, 7]
  * //sampleEnd
  *```
@@ -2053,7 +1991,6 @@ fun <A, B, C> Stream<A>.zipAllWith(
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3).onComplete { Stream(4, 5) }
- *     .compile()
  *     .toList().let(::println) // [1, 2, 3, 4, 5]
  * //sampleEnd
  *```
@@ -2076,7 +2013,6 @@ fun <O> Stream<O>.onComplete(s2: () -> Stream<O>): Stream<O> =
  * suspend fun main(): Unit =
  *   Stream("Hel", "l", "o Wor", "ld")
  *     .repartition(String.semigroup()) { s -> Chunk.iterable(s.split(" ")) }
- *     .compile()
  *     .toList()
  *     .let(::println) //[Hello, World]
  * //sampleEnd
@@ -2114,7 +2050,6 @@ fun <O> Stream<O>.repartition(S: Semigroup<O>, f: (O) -> Chunk<O>): Stream<O> =
  * suspend fun main(): Unit =
  *   Stream(1, 2, null, 3, None)
  *     .filterNull()
- *     .compile()
  *     .toList()
  *     .let(::println) //[1, 2, 3]
  * //sampleEnd
@@ -2133,7 +2068,6 @@ fun <O : Any> Stream<O?>.filterNull(): Stream<O> =
  * suspend fun main(): Unit =
  *   Stream(1, 2, null, 3, null)
  *     .terminateOnNull()
- *     .compile()
  *     .toList()
  *     .let(::println) //[1, 2]
  * //sampleEnd
@@ -2152,7 +2086,6 @@ fun <O> Stream<O>.terminateOnNull(): Stream<O> =
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3, 4)
  *     .terminateOn { it == 3 }
- *     .compile()
  *     .toList()
  *     .let(::println) //[1, 2]
  * //sampleEnd
@@ -2186,7 +2119,6 @@ fun <O> Stream<O>.terminateOn(terminator: (O) -> Boolean): Stream<O> =
  * suspend fun main(): Unit =
  *   Stream(Some(1), Some(2), None, Some(3), None)
  *     .filterOption()
- *     .compile()
  *     .toList()
  *     .let(::println) //[1, 2, 3]
  * //sampleEnd
@@ -2207,7 +2139,6 @@ fun <O> Stream<Option<O>>.filterOption(): Stream<O> =
  * suspend fun main(): Unit =
  *   Stream(Some(1), Some(2), None, Some(3), None)
  *     .terminateOnNone()
- *     .compile()
  *     .toList()
  *     .let(::println) //[1, 2]
  * //sampleEnd
@@ -2251,7 +2182,6 @@ fun <O> emptyStream(): Stream<O> =
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3)
  *     .interleave(Stream(4, 5, 6, 7))
- *     .compile()
  *     .toList()
  *     .let(::println) //[1, 4, 2, 5, 3, 6]
  * //sampleEnd
@@ -2270,7 +2200,6 @@ fun <O> Stream<O>.interleave(that: Stream<O>): Stream<O> =
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3)
  *     .interleaveAll(Stream(4, 5, 6, 7))
- *     .compile()
  *     .toList()
  *     .let(::println) //[1, 4, 2, 5, 3, 6, 7]
  * //sampleEnd
@@ -2293,7 +2222,6 @@ fun <O> Stream<O>.interleaveAll(that: Stream<O>): Stream<O> =
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3, 4, 5)
  *     .intersperse(0)
- *     .compile()
  *     .toList()
  *     .let(::println) //[1, 0, 2, 0, 3, 0, 4, 0, 5]
  * //sampleEnd
@@ -2324,7 +2252,6 @@ fun <O> Stream<O>.intersperse(separator: O): Stream<O> =
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3).append { Stream(4, 5, 6) }
- *     .compile()
  *     .toList().let(::println) // [1, 2, 3, 4, 5, 6]
  * //sampleEnd
  *```
@@ -2341,7 +2268,6 @@ fun <O> Stream<O>.append(s2: () -> Stream<O>): Stream<O> =
  * //sampleStart
  * suspend fun main(): Unit =
  *   (Chunk(-1, 0) prependTo Stream(1, 2, 3))
- *   .compile()
  *   .toList().let(::println) // [-1, 0, 1, 2, 3]
  * //sampleEnd
  * ```
@@ -2358,7 +2284,6 @@ infix fun <O> Chunk<O>.prependTo(s: Stream<O>): Stream<O> =
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3).cons(Chunk(-1, 0))
- *     .compile()
  *     .toList().let(::println) // [-1, 0, 1, 2, 3]
  * //sampleEnd
  * ```
@@ -2375,7 +2300,6 @@ fun <O> Stream<O>.cons(c: Chunk<O>): Stream<O> =
  * //sampleStart
  * suspend fun main(): Unit =
  *   (0 prependTo Stream(1, 2, 3))
- *   .compile()
  *   .toList().let(::println) // [0, 1, 2, 3]
  * //sampleEnd
  * ```
@@ -2392,7 +2316,6 @@ infix fun <O> O.prependTo(s: Stream<O>): Stream<O> =
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3).cons1(0)
- *     .compile()
  *     .toList()
  *   .  let(::println) // [0, 1, 2, 3]
  * //sampleEnd
@@ -2412,7 +2335,6 @@ fun <O> Stream<O>.cons1(o: O): Stream<O> =
  *   Stream(1, 2, 3)
  *     .append { Stream.raiseError(RuntimeException()) }
  *     .handleErrorWith { _: Throwable -> Stream.just(0) }
- *     .compile()
  *     .toList()
  *     .let(::println) // [1, 2, 3, 0]
  * //sampleEnd
@@ -2436,7 +2358,6 @@ fun <O> Stream<Stream<O>>.flatten(): Stream<O> =
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3, 4, 5)
  *     .fold1 { a, b -> a + b }
- *     .compile()
  *     .toList()
  *     .let(::println) // [15]
  * //sampleEnd
@@ -2473,7 +2394,6 @@ fun <O> Stream<O>.reduceSemigroup(S: Semigroup<O>): Stream<O> =
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3, 4, 5)
  *     .foldMonoid(Int.monoid())
- *     .compile()
  *     .toList()
  *     .let(::println) // [15]
  * //sampleEnd
@@ -2494,7 +2414,6 @@ fun <O> Stream<O>.foldMonoid(MO: Monoid<O>): Stream<O> =
  * suspend fun main(): Unit =
  *   Stream(1,2,3,4)
  *   .scan(0) { a, b -> a + b }
- *   .compile()
  *   .toList()
  *   .let(::println) // [0, 1, 3, 6, 10]
  * //sampleEnd
@@ -2520,7 +2439,6 @@ fun <O, O2> Stream<O>.scan(init: O2, f: (O2, O) -> O2): Stream<O2> =
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3, 4)
  *     .scanMonoid(Int.monoid())
- *     .compile()
  *     .toList()
  *     .let(::println) //[0, 1, 3, 6, 10]
  * //sampleEnd
@@ -2540,7 +2458,6 @@ fun <O> Stream<O>.scanMonoid(MO: Monoid<O>): Stream<O> =
  * suspend fun main(): Unit =
  *   Stream("a", "aa", "aaa", "aaaa")
  *     .scanMap(Int.monoid()) { it.length }
- *     .compile()
  *     .toList()
  *     .let(::println) //[0, 1, 3, 6, 10]
  * //sampleEnd
@@ -2570,7 +2487,6 @@ private fun <O, O2> Pull<O, Unit>.scan_(init: O2, f: (O2, O) -> O2): Pull<O2, Un
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3, 4)
  *    .scan1 { a, b -> a + b }
- *    .compile()
  *    .toList()
  *    .let(::println) //[1, 3, 6, 10]
  * //sampleEnd
@@ -2620,7 +2536,6 @@ fun <O, S, O2> Stream<O>.scanChunks(
  *
  * suspend fun main(): Unit =
  *   Stream.range(0..100).take(5)
- *     .compile()
  *     .toList().let(::println) // [0, 1, 2, 3, 4]
  * //sampleEnd
  * ```

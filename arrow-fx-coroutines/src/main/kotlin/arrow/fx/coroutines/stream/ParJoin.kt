@@ -163,7 +163,6 @@ internal suspend fun signalResult(done: SignallingAtomic<Option<Option<Throwable
  *       }
  *     }
  *     .parJoin(10, IOPool)
- *     .compile()
  *     .drain()
  * //sampleEnd
  * ```
