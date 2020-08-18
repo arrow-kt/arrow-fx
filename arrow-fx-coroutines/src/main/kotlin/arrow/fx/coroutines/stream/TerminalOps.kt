@@ -33,6 +33,17 @@ suspend fun <O> Stream<O>.drain(): Unit =
  * Runs the first effect of this [Stream], and returns `null` if the stream emitted a value
  * and returns the value if emitted.
  *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.stream.*
+ *
+ * //sampleStart
+ * suspend fun main(): Unit =
+ *   Stream.range(0..1000)
+ *     .firstOrNull()
+ *     .let(::println) // 0
+ * //sampleEnd
+ * ```
+ *
  * This a terminal operator, meaning this functions `suspend`s until the [Stream] finishes.
  * If any errors are raised while streaming, it's thrown from this `suspend` scope.
  */
@@ -54,6 +65,17 @@ suspend fun <O> Stream<O>.firstOrError(): O? =
 /**
  * Runs all the effects of this [Stream], and returns `null` if the stream emitted no values
  * and returning the last value emitted if values were emitted.
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.stream.*
+ *
+ * //sampleStart
+ * suspend fun main(): Unit =
+ *   Stream(1, 2, 3)
+ *     .lastOrNull()
+ *     .let(::println) // 3
+ * //sampleEnd
+ * ```
  *
  * This a terminal operator, meaning this functions `suspend`s until the [Stream] finishes.
  * If any errors are raised while streaming, it's thrown from this `suspend` scope.
@@ -81,21 +103,6 @@ suspend fun <O> Stream<O>.lastOrError(): O =
  */
 suspend fun <O, B> Stream<O>.foldChunks(init: B, f: (B, Chunk<O>) -> B): B =
   compiler(init, f)
-
-/**
- * DSL boundary to access terminal operators
- *
- * Terminal operators consume the stream
- */ // TODO report inline results in Exception in thread "main" java.lang.VerifyError: Bad type on operand stack
-/* inline */ class TerminalOps<O>(private val s: Stream<O>) {
-
-  val resource: ResourceTerminalOps<O> =
-    ResourceTerminalOps(s)
-
-}
-
-private suspend fun <O, B> Stream<O>.compiler(init: () -> B, foldChunk: (B, Chunk<O>) -> B): B =
-  asPull.compiler(init.invoke(), foldChunk)
 
 private suspend fun <O, B> Stream<O>.compiler(init: B, foldChunk: (B, Chunk<O>) -> B): B =
   asPull.compiler(init, foldChunk)

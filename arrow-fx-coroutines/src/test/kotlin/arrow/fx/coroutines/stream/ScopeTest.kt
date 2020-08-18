@@ -64,8 +64,7 @@ class ScopeTest : ArrowFxSpec(spec = {
     Stream.just("start")
       .onFinalize { st.record("first finalize") }
       .onFinalize { st.record("second finalize") }
-      .compile()
-      .resource
+      .asResource()
       .lastOrError()
       .use { st.record(it) }
 
@@ -80,8 +79,7 @@ class ScopeTest : ArrowFxSpec(spec = {
         Stream.bracket({ "c" }, { st.record("third finalize") })
       }
     }
-      .compile()
-      .resource
+      .asResource()
       .lastOrError()
       .use { st.record(it) }
 

@@ -382,25 +382,6 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
   fun take(n: Long): Stream<O> =
     asPull.take(n).void().stream()
 
-//  /**
-//   * Emits the first element this stream.
-//   *
-//   * ```kotlin:ank:playground
-//   * import arrow.fx.coroutines.stream.*
-//   *
-//   * //sampleStart
-//   * suspend fun main(): Unit =
-//   *   Stream.range(0..1000)
-//   *     .first()
-//   *     .compile()
-//   *     .toList()
-//   *     .let(::println) // [0]
-//   * //sampleEnd
-//   * ```
-//   */
-//  fun first(): Stream<O> =
-//    take(1)
-
   /**
    * Emits the last `n` elements of the input.
    *
@@ -2254,12 +2235,6 @@ fun <O> Stream<Option<O>>.terminateOnNone(): Stream<O> =
  */
 fun <O> Stream<O>.noneTerminate(): Stream<Option<O>> =
   map { Some(it) }.append { Stream.just(None) }
-
-/**
- * Turn [Stream] into [TerminalOps] to consume the stream.
- */
-fun <O> Stream<O>.compile(): TerminalOps<O> =
-  TerminalOps(this)
 
 private val EmptyStream: Stream<Nothing> = Stream(Pull.done)
 

@@ -7,7 +7,6 @@ import arrow.fx.coroutines.StreamSpec
 import arrow.fx.coroutines.milliseconds
 import arrow.fx.coroutines.stream.Stream
 import arrow.fx.coroutines.stream.append
-import arrow.fx.coroutines.stream.compile
 import arrow.fx.coroutines.stream.noneTerminate
 import arrow.fx.coroutines.stream.parJoinUnbounded
 import arrow.fx.coroutines.stream.terminateOnNone

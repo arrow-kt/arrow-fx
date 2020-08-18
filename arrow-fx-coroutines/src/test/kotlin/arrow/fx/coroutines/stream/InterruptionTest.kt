@@ -329,8 +329,7 @@ class InterruptionTest : StreamSpec(spec = {
       guaranteeCase({
         latch.complete(Unit)
         Stream.never<Unit>()
-          .compile()
-          .resource
+          .asResource()
           .drain()
           .use { Unit }
       }, { ex -> stop.complete(ex) })
