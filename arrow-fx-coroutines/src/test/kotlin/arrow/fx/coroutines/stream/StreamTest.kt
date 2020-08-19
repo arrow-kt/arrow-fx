@@ -212,6 +212,14 @@ class StreamTest : StreamSpec(spec = {
     }
   }
 
+  "filterNotNull" {
+    checkAll(Arb.stream(Arb.int().orNull())) { s ->
+      s.filterNotNull()
+        .compile()
+        .toList() shouldBe s.compile().toList().filterNotNull()
+    }
+  }
+
   "append" {
     checkAll(Arb.stream(Arb.int()), Arb.stream(Arb.int())) { s1, s2 ->
       s1.append { s2 }.toList() shouldBe s1.toList() + s2.toList()
