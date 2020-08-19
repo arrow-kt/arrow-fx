@@ -63,7 +63,7 @@ suspend fun <A, B, C> parTupledN(ctx: CoroutineContext, fa: suspend () -> A, fb:
  *   val result = parMapN(
  *     { "First one is on ${Thread.currentThread().name}" },
  *     { "Second one is on ${Thread.currentThread().name}" }
- *   ) { (a, b) ->
+ *   ) { a, b ->
  *       "$a\n$b"
  *     }
  *   //sampleEnd
