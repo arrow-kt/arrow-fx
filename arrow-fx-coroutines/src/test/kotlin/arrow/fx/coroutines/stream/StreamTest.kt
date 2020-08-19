@@ -215,8 +215,7 @@ class StreamTest : StreamSpec(spec = {
   "filterNotNull" {
     checkAll(Arb.stream(Arb.int().orNull())) { s ->
       s.filterNotNull()
-        .compile()
-        .toList() shouldBe s.compile().toList().filterNotNull()
+        .toList() shouldBe s.toList().filterNotNull()
     }
   }
 
