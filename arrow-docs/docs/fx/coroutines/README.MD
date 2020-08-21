@@ -28,7 +28,7 @@ This `typealias Coroutine = Contination<Unit>` will start running every time you
 
 ## Kotlin Standard Library Coroutines
 
-[Kotlin Std Coroutines](img/kotlin-stdlb.png)
+[Kotlin Std Coroutines](img/kotlin-stdlib.png)
 
 The standard library offers a powerful set of primitives to build powerful applications on top of `Continuation`s,
 together with the compiler's ability to rewrite continuation based code to a beautiful `suspend` syntax.
