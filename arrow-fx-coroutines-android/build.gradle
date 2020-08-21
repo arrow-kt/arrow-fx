@@ -1,0 +1,32 @@
+buildscript {
+    repositories {
+        google()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:$ANDROID_TOOLS_BUILD_PLUGIN_VERSION")
+    }
+}
+
+plugins {
+    id "maven-publish"
+    id "base"
+    id "org.jetbrains.dokka"
+    id "org.jlleitschuh.gradle.ktlint"
+    id "ru.vyarus.animalsniffer"
+}
+
+repositories {
+    google()
+    jcenter()
+}
+
+apply from: "$DOC_CONF"
+apply from: "$ANDROID_CONF"
+
+dependencies {
+    implementation project(':arrow-fx-coroutines')
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$KOTLIN_VERSION"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:$ANDROID_LIFECYCLE_VERSION"
+
+    testImplementation project(":arrow-fx-test")
+}

@@ -7,16 +7,13 @@ import androidx.lifecycle.LifecycleRegistry
 import arrow.core.Right
 import arrow.core.Some
 import arrow.core.extensions.eq
-import arrow.core.internal.AtomicRefW
+import arrow.core.right
 import arrow.core.test.UnitSpec
 import arrow.core.test.generators.throwable
 import arrow.core.test.laws.equalUnderTheLaw
 import arrow.fx.IO
-import arrow.fx.IOResult
 import arrow.fx.extensions.fx
-import arrow.fx.extensions.io.async.effectMap
-import arrow.fx.flatMap
-import arrow.fx.onCancel
+import arrow.fx.internal.AtomicRefW
 import arrow.fx.test.eq.eqK
 import arrow.fx.typeclasses.milliseconds
 import arrow.fx.typeclasses.seconds
@@ -29,7 +26,7 @@ import kotlinx.coroutines.newSingleThreadContext
 class ExtensionsKtTest : UnitSpec() {
 
   private val ctx = newSingleThreadContext("all")
-  private val eqK = IO.eqK<Nothing>()
+  private val eqK = IO.eqK()
 
   init {
 
@@ -43,7 +40,7 @@ class ExtensionsKtTest : UnitSpec() {
           val ioa = IO<Int> { throw e }
 
           ioa.unsafeRunScoped(scope) { result ->
-            result.fold({ throw it }, { fail("") }, { fail("") })
+            result.fold({ throw it }, { fail("") })
           }
           fail("Should rethrow the exception")
         } catch (throwable: Throwable) {
@@ -54,20 +51,20 @@ class ExtensionsKtTest : UnitSpec() {
 
     "unsafeRunScoped should cancel correctly" {
       forAll(Gen.int()) { i ->
-        IO.fx<Nothing, Int> {
+        IO.fx {
           val scope = TestLifecycleOwner()
           val promise = !Promise<Int>()
           !IO.effect {
-            IO.cancellable<Nothing, Unit> { promise.complete(i) }.unsafeRunScoped(scope) { }
+            IO.cancellable<Unit> { promise.complete(i) }.unsafeRunScoped(scope) { }
           }
           !IO.effect { scope.cancel() }
           !promise.get()
-        }.equalUnderTheLaw(IO.just(i), IO.eqK<Nothing>(timeout = 500.milliseconds).liftEq(Int.eq()))
+        }.equalUnderTheLaw(IO.just(i), IO.eqK().liftEq(Int.eq()))
       }
     }
 
     "unsafeRunScoped can cancel even for infinite asyncs" {
-      IO.fx<Nothing, Int> {
+      IO.fx {
         val scope = TestLifecycleOwner()
         val promise = !Promise<Int>()
         !IO.effect {
@@ -81,9 +78,9 @@ class ExtensionsKtTest : UnitSpec() {
     "should complete when running a pure value with unsafeRunScoped" {
       forAll(Gen.int()) { i ->
         val scope = TestLifecycleOwner()
-        IO.async<Nothing, Int> { cb ->
+        IO.async<Int> { cb ->
           IO.just(i).unsafeRunScoped(scope) { result ->
-            result.fold({ fail("") }, { fail("") }, { cb(IOResult.Success(it)) })
+            result.fold({ fail("") }, { cb(it.right()) })
           }
         }.equalUnderTheLaw(IO.just(i), eqK.liftEq(Int.eq()))
       }
@@ -114,7 +111,4 @@ private class TestLifecycleOwner : LifecycleOwner {
     registry.currentState = State.DESTROYED
   }
 
-  fun reanimate() {
-    registry.currentState = State.CREATED
-  }
 }
