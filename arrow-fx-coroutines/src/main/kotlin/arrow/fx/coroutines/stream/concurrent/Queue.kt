@@ -140,6 +140,7 @@ interface Queue<A> : Enqueue<A>, Dequeue1<A>, Dequeue<A> {
      * Creates a FIFO queue with the specified size bound.
      *
      * ```kotlin:ank:playground
+     * import arrow.fx.coroutines.*
      * import arrow.fx.coroutines.stream.*
      * import arrow.fx.coroutines.stream.concurrent.*
      *

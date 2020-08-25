@@ -253,7 +253,7 @@ class QueueTest : StreamSpec(spec = {
 
   "Queue.bounded(0) with outstanding taker cannot offer" {
     val q = Queue.bounded<Int>(0)
-    ForkConnected { q.dequeue1() }
+    val taker = ForkConnected { q.dequeue1() }
     sleep(1.seconds)
     q.tryOffer1(1) shouldBe false
   }
