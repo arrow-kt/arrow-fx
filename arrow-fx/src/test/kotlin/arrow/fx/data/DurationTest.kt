@@ -2,12 +2,10 @@ package arrow.fx.data
 
 import arrow.core.test.UnitSpec
 import arrow.core.test.laws.HashLaws
-import arrow.core.test.laws.MonoidLaws
 import arrow.core.test.laws.OrderLaws
 import arrow.core.test.laws.equalUnderTheLaw
 import arrow.fx.extensions.duration.eq.eq
 import arrow.fx.extensions.duration.hash.hash
-import arrow.fx.extensions.duration.monoid.monoid
 import arrow.fx.extensions.duration.order.order
 import arrow.fx.test.generators.duration
 import arrow.fx.typeclasses.Duration
