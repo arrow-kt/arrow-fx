@@ -14,6 +14,7 @@ import io.kotest.property.arbitrary.choose
 import io.kotest.property.arbitrary.list
 import io.kotest.property.arbitrary.map
 import io.kotest.property.checkAll
+import io.kotest.runner.junit.platform.IntelliMarker
 import kotlin.math.abs
 
 /**
@@ -71,7 +72,7 @@ abstract class StreamSpec(
 abstract class ArrowFxSpec(
   private val iterations: Int = 350,
   spec: ArrowFxSpec.() -> Unit = {}
-) : FreeSpec() {
+) : FreeSpec(), IntelliMarker {
 
   fun Arb.Companion.long(range: LongRange = Long.MIN_VALUE..Long.MAX_VALUE): Arb<Long> {
     val edgecases = listOf(0L, 1, -1, Long.MAX_VALUE, Long.MIN_VALUE).filter { it in range }
