@@ -1,6 +1,5 @@
 package arrow.fx.coroutines
 
-import arrow.fx.coroutines.stm.TArray
 import arrow.fx.coroutines.stm.TQueue
 import arrow.fx.coroutines.stm.TVar
 import io.kotest.assertions.throwables.shouldThrow

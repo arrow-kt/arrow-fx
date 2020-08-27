@@ -1,14 +1,12 @@
 package arrow.fx.coroutines.stm
 
 import arrow.fx.coroutines.AtomicRefW
-import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.ForkConnected
 import arrow.fx.coroutines.STMFrame
 import arrow.fx.coroutines.STMTransaction
 import arrow.fx.coroutines.atomically
 import arrow.fx.coroutines.microseconds
 import arrow.fx.coroutines.sleep
-import kotlinx.atomicfu.AtomicInt
 import kotlinx.atomicfu.AtomicLong
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
