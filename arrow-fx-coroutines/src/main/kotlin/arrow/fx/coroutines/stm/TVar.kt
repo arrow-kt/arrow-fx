@@ -24,7 +24,7 @@ suspend fun registerDelay(delay: Int): TVar<Boolean> =
     }
   }
 
-class TVar<A> constructor(a: A) {
+class TVar<A> internal constructor(a: A) {
   /**
    * The ref for a TVar stores either the STMFrame that currently locks the value or the value itself
    * This is used to implement locking. Reading threads have to loop until the value is released by a

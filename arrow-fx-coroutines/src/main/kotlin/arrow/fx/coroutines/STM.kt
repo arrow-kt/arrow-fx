@@ -17,6 +17,23 @@ import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
 import kotlin.coroutines.intrinsics.startCoroutineUninterceptedOrReturn
 import kotlin.coroutines.suspendCoroutine
 
+/**
+ * Software transactional memory, or STM, is an abstraction for concurrent state modification.
+ * With [STM] one can write concurrent abstractions that can easily be composed without
+ *  exposing details of how it ensures safety guarantees.
+ * Programs written with [STM] will neither deadlock nor have race-conditions.
+ *
+ * Such guarantees are usually not possible with other forms of concurrent communication such as locks
+ *  or atomic variables.
+ *
+ * > The api of [STM] is based on the haskell package [stm](https://hackage.haskell.org/package/stm) and
+ *   the implementation is quite different to ensure the same semantics within kotlin.
+ *
+ * -- Examples and docs here --
+ *
+ * Further reading:
+ * - [Composable memory transactions, by Tim Harris, Simon Marlow, Simon Peyton Jones, and Maurice Herlihy, in ACM Conference on Principles and Practice of Parallel Programming 2005.](https://www.microsoft.com/en-us/research/publication/composable-memory-transactions/)
+ */
 @RestrictsSuspension
 interface STM {
   /**
@@ -73,20 +90,28 @@ interface STM {
   // -------- TMVar
   suspend fun <A> TMVar<A>.take(): A =
     v.read().also { v.write(null) } ?: retry()
+
   suspend fun <A> TMVar<A>.put(a: A): Unit =
     v.read()?.let { retry() } ?: v.write(a)
+
   suspend fun <A> TMVar<A>.read(a: A): A =
     v.read() ?: retry()
+
   suspend fun <A> TMVar<A>.tryTake(): A? =
     v.read()?.also { v.write(null) }
+
   suspend fun <A> TMVar<A>.tryPut(a: A): Boolean =
     v.read()?.let { false } ?: v.write(a).let { true }
+
   suspend fun <A> TMVar<A>.tryRead(): A? =
     v.read()
+
   suspend fun <A> TMVar<A>.isEmpty(): Boolean =
     v.read()?.let { false } ?: true
+
   suspend fun <A> TMVar<A>.isNotEmpty(): Boolean =
     isEmpty().not()
+
   suspend fun <A> TMVar<A>.swap(a: A): A =
     v.read()?.also { v.write(a) } ?: retry()
 
@@ -96,6 +121,7 @@ interface STM {
     check(curr > 0)
     v.write(curr - 1)
   }
+
   suspend fun TSem.signal(): Unit = v.write(v.read() + 1)
   suspend fun TSem.signal(n: Int): Unit = when (n) {
     0 -> Unit
@@ -108,6 +134,7 @@ interface STM {
   // TQueue
   suspend fun <A> TQueue<A>.write(a: A): Unit =
     writes.modify { it + a }
+
   suspend fun <A> TQueue<A>.read(): A {
     val xs = reads.read()
     return if (xs.isNotEmpty()) reads.write(xs.drop(1)).let { xs.first() }
@@ -121,36 +148,46 @@ interface STM {
       }
     }
   }
+
   suspend fun <A> TQueue<A>.tryRead(): A? = stm { read() } orElse { null }
   suspend fun <A> TQueue<A>.flush(): List<A> {
     val xs = reads.read().also { if (it.isNotEmpty()) reads.write(emptyList()) }
     val ys = writes.read().also { if (it.isNotEmpty()) writes.write(emptyList()) }
     return xs + ys
   }
+
   suspend fun <A> TQueue<A>.peek(): A =
     read().also { writeFront(it) }
+
   suspend fun <A> TQueue<A>.tryPeek(): A? =
     tryRead()?.also { writeFront(it) }
+
   suspend fun <A> TQueue<A>.writeFront(a: A): Unit =
     reads.read().let { reads.write(listOf(a) + it) }
 
   // -------- TArray
   suspend fun <A> TArray<A>.get(i: Int): A =
     v[i].read()
+
   suspend fun <A> TArray<A>.write(i: Int, a: A): Unit =
     v[i].write(a)
+
   suspend fun <A> TArray<A>.transform(f: (A) -> A): Unit =
     v.forEach { it.modify(f) }
+
   suspend fun <A, B> TArray<A>.fold(init: B, f: (B, A) -> B): B =
     v.fold(init) { acc, v -> f(acc, v.read()) }
 
   // -------- TMap
   suspend fun <K, V> TMap<K, V>.get(k: K): V =
     v.read()[k]?.read() ?: retry()
+
   suspend fun <K, V> TMap<K, V>.getOrNull(k: K): V? =
     v.read()[k]?.read()
+
   suspend fun <K, V> TMap<K, V>.insert(k: K, va: V): Unit =
     alter(k) { va }
+
   suspend fun <K, V> TMap<K, V>.alter(k: K, f: (V?) -> V?): Unit {
     val m = v.read()
     if (m.containsKey(k)) {
@@ -163,26 +200,35 @@ interface STM {
       if (nV != null) newTVar(nV).let { v.write(m + (k to it)) }
     }
   }
+
   suspend fun <K, V> TMap<K, V>.remove(k: K): Unit =
     alter(k) { null }
+
   suspend fun <K, V> TMap<K, V>.update(k: K, f: (V) -> V): Unit =
     alter(k) { it?.let(f) }
+
   suspend fun <K, V> TMap<K, V>.member(k: K): Boolean =
     v.read().containsKey(k)
+
   suspend fun <K, V> TMap<K, V>.toList(): List<Tuple2<K, V>> =
     v.read().toList().map { (k, tv) -> k toT tv.read() }
+
   suspend fun <K, V> TMap<K, V>.size(): Int =
     v.read().size
 
   // -------- TSet
   suspend fun <A> TSet<A>.insert(a: A): Unit =
     newTVar(a).let { v.read() + it }
+
   suspend fun <A> TSet<A>.remove(a: A): Unit =
     v.write(v.read().filter { it.read() != a }.toSet())
+
   suspend fun <A> TSet<A>.size(): Int =
     v.read().size
+
   suspend fun <A> TSet<A>.member(a: A): Boolean =
     v.read().any { it.read() == a }
+
   suspend fun <A> TSet<A>.toList(): List<A> =
     v.read().map { it.read() }
 }
@@ -190,7 +236,7 @@ interface STM {
 /**
  * Helper to create stm blocks that can be run with [orElse]
  */
-fun <A> stm(f: suspend STM.() -> A): suspend STM.() -> A = f
+inline fun <A> stm(noinline f: suspend STM.() -> A): suspend STM.() -> A = f
 
 /**
  * Retry if [b] is false otherwise does nothing.
@@ -264,38 +310,53 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
   }
 
   /**
-   * Utility which locks all read [TVar]'s and passes them to [f].
+   * Utility which locks all read [TVar]'s and passes them to [withLocked].
    *
    * The second argument is the release function which releases all locks, but does not
    *  notify waiters via [TVar.notify].
+   *
+   * The second argument to [withValidAndLockedReadSet] is a fallback to execute when
+   *  a [TVar] was invalid. This releases all locks and returns the result of [onInvalid].
    */
-  internal inline fun <A> withLockedReadSet(
-    f: (List<Triple<TVar<Any?>, Any?, Any?>>, () -> Unit) -> A
+  internal inline fun <A> withValidAndLockedReadSet(
+    withLocked: (List<Triple<TVar<Any?>, Any?, Any?>>, () -> Unit) -> A,
+    onInvalid: () -> A
   ): A {
-    val readsOrdered = readSet.toList().sortedBy { it.first.id }
-      .map { (tv, v) -> Triple(tv as TVar<Any?>, tv.lock(this), v) }
-    return f(readsOrdered) { readsOrdered.forEach { (tv, nV, _) -> (tv).release(this, nV) } }
+    val readsOrdered: MutableList<Triple<TVar<Any?>, Any?, Any?>> = mutableListOf()
+    val release: () -> Unit = { readsOrdered.forEach { (tv, nV, _) -> (tv).release(this, nV) } }
+
+    readSet.toList().sortedBy { it.first.id }
+      .forEach { (tv, v) ->
+        val res = tv.lock(this)
+        readsOrdered.add(Triple(tv as TVar<Any?>, res, v))
+        if (res !== v) {
+          release()
+          return@withValidAndLockedReadSet onInvalid()
+        }
+      }
+    return withLocked(readsOrdered, release)
   }
 
   /**
-   * Helper which automatically releases after [f] is done.
+   * Helper which automatically releases after [withLocked] is done.
    */
-  private inline fun <A> withLockedReadSetAndRelease(f: (List<Triple<TVar<Any?>, Any?, Any?>>) -> A): A =
-    withLockedReadSet { xs, rel -> f(xs).also { rel() } }
+  private inline fun <A> withValidAndLockedReadSetAndRelease(
+    withLocked: (List<Triple<TVar<Any?>, Any?, Any?>>) -> A,
+    onInvalid: () -> A
+  ): A =
+    withValidAndLockedReadSet({ xs, rel -> withLocked(xs).also { rel() } }, onInvalid)
 
   /**
    * Validate and commit changes from this frame.
    *
    * Returns whether or not validation (and thus the commit) was successful.
    */
-  fun validateAndCommit(): Boolean = withLockedReadSetAndRelease {
-    if (it.invalid()) false
-    else {
-      it.forEach { (tv, _, _) ->
-        writeSet[tv]?.let { tv.release(this, it).also { tv.notify() } }
-      }.let { true }
+  fun validateAndCommit(): Boolean = withValidAndLockedReadSetAndRelease({
+    it.forEach { (tv, _, _) ->
+      writeSet[tv]?.let { tv.release(this, it).also { tv.notify() } }
     }
-  }
+    true
+  }) { false }
 
   fun mergeChildReads(c: STMFrame): Unit {
     readSet.putAll(c.readSet)
@@ -305,15 +366,6 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
     writeSet.putAll(c.writeSet)
   }
 }
-
-/**
- * Helper which checks whether or not any variables changed.
- *
- * The second variable from the triple is the current value
- *  and the third is the one we saw back when calling read.
- */
-internal fun List<Triple<TVar<Any?>, Any?, Any?>>.invalid(): Boolean =
-  any { (_, nV, v) -> nV !== v }
 
 /**
  * In some special cases it is possible to detect if a STM transaction blocks indefinitely so we can
@@ -335,30 +387,33 @@ internal class STMTransaction<A>(val f: suspend STM.() -> A) {
    */
   fun getCont(): Continuation<Unit>? = cont.getAndSet(null)
 
+  // TODO Check if validating twice once without locking and once with is worthwhile
+  //  Fine grain locks are all about optimistic running which means they are fastest if there
+  //   are no conflicts thus this may not be great for that case.
+  //  Checking before taking locks sounds like something global lock implementations benefit
+  //   a lot more than fine grained locking ones
+  //  For reference the current implementation fails fast during lock acquisition as soon
+  //   as it sees an invalid value and then releases all already acquired locks.
   suspend fun commit(): A {
-    loop@while (true) {
+    loop@ while (true) {
       val frame = STMFrame()
       f.startCoroutineUninterceptedOrReturn(frame, Continuation(EmptyCoroutineContext) {
         throw IllegalStateException("STM transaction was resumed after aborting. How?!")
       }).let {
         if (it == COROUTINE_SUSPENDED) {
           // blocking retry
-          frame.withLockedReadSet { xs, releaseVars ->
+          frame.withValidAndLockedReadSet({ xs, releaseVars ->
             // quick sanity check. If a transaction has not read anything and retries we are blocked forever
             if (xs.isEmpty()) throw BlockedIndefinitely
 
-            // check if a variable changed, no need to block if that is the case
-            if (xs.invalid()) releaseVars()
-            else {
-              // nothing changed so we need to suspend here
-              xs.forEach { (tv, _, _) -> tv.queue(this) }
-              // it is important to set the continuation before releasing the locks, otherwise
-              //  we may not see changes
-              suspendCoroutine<Unit> { k -> cont.value = k; releaseVars() }
+            // nothing changed so we need to suspend here
+            xs.forEach { (tv, _, _) -> tv.queue(this) }
+            // it is important to set the continuation before releasing the locks, otherwise
+            //  we may not see changes
+            suspendCoroutine<Unit> { k -> cont.value = k; releaseVars() }
 
-              xs.forEach { (tv, _, _) -> tv.removeQueued(this) }
-            }
-          }
+            xs.forEach { (tv, _, _) -> tv.removeQueued(this) }
+          }, {})
         } else {
           // try commit
           if (frame.validateAndCommit().not()) {
