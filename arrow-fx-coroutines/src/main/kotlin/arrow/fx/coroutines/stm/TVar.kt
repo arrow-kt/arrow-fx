@@ -8,6 +8,7 @@ import arrow.fx.coroutines.atomically
 import arrow.fx.coroutines.microseconds
 import arrow.fx.coroutines.sleep
 import kotlinx.atomicfu.AtomicInt
+import kotlinx.atomicfu.AtomicLong
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
 import kotlin.coroutines.resume
@@ -35,7 +36,7 @@ class TVar<A> constructor(a: A) {
    * Each TVar has a unique id which is used to get a total ordering of variables to ensure that locks
    *  are always acquired in the same order on each thread
    */
-  internal val id: Int = globalC.incrementAndGet()
+  internal val id: Long = globalC.incrementAndGet()
 
   /**
    * A list of running transactions waiting for a change on this variable.
@@ -43,7 +44,7 @@ class TVar<A> constructor(a: A) {
    */
   private val waiting = atomic<List<STMTransaction<*>>>(listOf())
 
-  override fun hashCode(): Int = id
+  override fun hashCode(): Int = id.hashCode()
 
   override fun equals(other: Any?): Boolean = this === other
 
@@ -129,12 +130,12 @@ class TVar<A> constructor(a: A) {
 }
 
 /**
- * I just need a unique number here...
+ * A 64bit counter has 2^64 - 1 unique values, even 1 new TVar every nanosecond will take
+ *  ~ 600 years to run out of unique numbers.
+ * > (2^64-1) / 1000 / 1000 / 1000 / 60 / 60 / 24 / 356 ~= 600
  *
- * This gets problematic when we reach the initial value again after 2^32 - 1 increments and there are
- *  still TVars around with low ids
- *
- * Idea: Keep a weak list of all TVars and when this case happens globally lock them and reassign
- *  ids starting from 0 again.
+ * And even if we have a rollover to 1 again there is still the condition that two transactions
+ *  need to access the now colliding [TVar]'s in a different order and then they still need the
+ *  timing to match exactly to create a deadlock. I guess this is unlikely enough to ignore it.
  */
-internal val globalC: AtomicInt = atomic(0)
+internal val globalC: AtomicLong = atomic(0L)
