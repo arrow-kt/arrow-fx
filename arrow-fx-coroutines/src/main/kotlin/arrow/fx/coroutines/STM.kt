@@ -1,5 +1,13 @@
 package arrow.fx.coroutines
 
+import arrow.core.Tuple2
+import arrow.core.toT
+import arrow.fx.coroutines.stm.TArray
+import arrow.fx.coroutines.stm.TMVar
+import arrow.fx.coroutines.stm.TMap
+import arrow.fx.coroutines.stm.TQueue
+import arrow.fx.coroutines.stm.TSem
+import arrow.fx.coroutines.stm.TSet
 import arrow.fx.coroutines.stm.TVar
 import kotlinx.atomicfu.atomic
 import kotlin.coroutines.Continuation
@@ -47,6 +55,136 @@ interface STM {
    * - The above is guaranteed through any nesting of STM blocks (via [orElse] or other combinators)
    */
   suspend fun <A> TVar<A>.write(a: A): Unit
+
+  /**
+   * Modify the value of a [TVar]
+   *
+   * `modify(f) = write(f(read()))`
+   */
+  suspend fun <A> TVar<A>.modify(f: (A) -> A): Unit = write(f(read()))
+
+  /**
+   * Swap the content of the [TVar]
+   *
+   * @return The previous value stored inside the [TVar]
+   */
+  suspend fun <A> TVar<A>.swap(a: A): A = read().also { write(a) }
+
+  // -------- TMVar
+  suspend fun <A> TMVar<A>.take(): A =
+    v.read().also { v.write(null) } ?: retry()
+  suspend fun <A> TMVar<A>.put(a: A): Unit =
+    v.read()?.let { retry() } ?: v.write(a)
+  suspend fun <A> TMVar<A>.read(a: A): A =
+    v.read() ?: retry()
+  suspend fun <A> TMVar<A>.tryTake(): A? =
+    v.read()?.also { v.write(null) }
+  suspend fun <A> TMVar<A>.tryPut(a: A): Boolean =
+    v.read()?.let { false } ?: v.write(a).let { true }
+  suspend fun <A> TMVar<A>.tryRead(): A? =
+    v.read()
+  suspend fun <A> TMVar<A>.isEmpty(): Boolean =
+    v.read()?.let { false } ?: true
+  suspend fun <A> TMVar<A>.isNotEmpty(): Boolean =
+    isEmpty().not()
+  suspend fun <A> TMVar<A>.swap(a: A): A =
+    v.read()?.also { v.write(a) } ?: retry()
+
+  // -------- TSemaphore
+  suspend fun TSem.wait(): Unit {
+    val curr = v.read()
+    check(curr > 0)
+    v.write(curr - 1)
+  }
+  suspend fun TSem.signal(): Unit = v.write(v.read() + 1)
+  suspend fun TSem.signal(n: Int): Unit = when (n) {
+    0 -> Unit
+    1 -> signal()
+    else ->
+      if (n < 0) throw IllegalStateException("Cannot decrease permits using signal(n)")
+      else v.write(v.read() + n)
+  }
+
+  // TQueue
+  suspend fun <A> TQueue<A>.write(a: A): Unit =
+    writes.modify { it + a }
+  suspend fun <A> TQueue<A>.read(): A {
+    val xs = reads.read()
+    return if (xs.isNotEmpty()) reads.write(xs.drop(1)).let { xs.first() }
+    else {
+      val ys = writes.read()
+      if (ys.isEmpty()) retry()
+      else {
+        writes.write(emptyList())
+        reads.write(ys.drop(1))
+        ys.first()
+      }
+    }
+  }
+  suspend fun <A> TQueue<A>.tryRead(): A? = stm { read() } orElse { null }
+  suspend fun <A> TQueue<A>.flush(): List<A> {
+    val xs = reads.read().also { if (it.isNotEmpty()) reads.write(emptyList()) }
+    val ys = writes.read().also { if (it.isNotEmpty()) writes.write(emptyList()) }
+    return xs + ys
+  }
+  suspend fun <A> TQueue<A>.peek(): A =
+    read().also { writeFront(it) }
+  suspend fun <A> TQueue<A>.tryPeek(): A? =
+    tryRead()?.also { writeFront(it) }
+  suspend fun <A> TQueue<A>.writeFront(a: A): Unit =
+    reads.read().let { reads.write(listOf(a) + it) }
+
+  // -------- TArray
+  suspend fun <A> TArray<A>.get(i: Int): A =
+    v[i].read()
+  suspend fun <A> TArray<A>.write(i: Int, a: A): Unit =
+    v[i].write(a)
+  suspend fun <A> TArray<A>.transform(f: (A) -> A): Unit =
+    v.forEach { it.modify(f) }
+  suspend fun <A, B> TArray<A>.fold(init: B, f: (B, A) -> B): B =
+    v.fold(init) { acc, v -> f(acc, v.read()) }
+
+  // -------- TMap
+  suspend fun <K, V> TMap<K, V>.get(k: K): V =
+    v.read()[k]?.read() ?: retry()
+  suspend fun <K, V> TMap<K, V>.getOrNull(k: K): V? =
+    v.read()[k]?.read()
+  suspend fun <K, V> TMap<K, V>.insert(k: K, va: V): Unit =
+    alter(k) { va }
+  suspend fun <K, V> TMap<K, V>.alter(k: K, f: (V?) -> V?): Unit {
+    val m = v.read()
+    if (m.containsKey(k)) {
+      val tv = m.getValue(k)
+      val nV = f(tv.read())
+      if (nV == null) v.write(m.toMutableMap().also { it.remove(k) })
+      else tv.write(nV)
+    } else {
+      val nV = f(null)
+      if (nV != null) newTVar(nV).let { v.write(m + (k to it)) }
+    }
+  }
+  suspend fun <K, V> TMap<K, V>.remove(k: K): Unit =
+    alter(k) { null }
+  suspend fun <K, V> TMap<K, V>.update(k: K, f: (V) -> V): Unit =
+    alter(k) { it?.let(f) }
+  suspend fun <K, V> TMap<K, V>.member(k: K): Boolean =
+    v.read().containsKey(k)
+  suspend fun <K, V> TMap<K, V>.toList(): List<Tuple2<K, V>> =
+    v.read().toList().map { (k, tv) -> k toT tv.read() }
+  suspend fun <K, V> TMap<K, V>.size(): Int =
+    v.read().size
+
+  // -------- TSet
+  suspend fun <A> TSet<A>.insert(a: A): Unit =
+    newTVar(a).let { v.read() + it }
+  suspend fun <A> TSet<A>.remove(a: A): Unit =
+    v.write(v.read().filter { it.read() != a }.toSet())
+  suspend fun <A> TSet<A>.size(): Int =
+    v.read().size
+  suspend fun <A> TSet<A>.member(a: A): Boolean =
+    v.read().any { it.read() == a }
+  suspend fun <A> TSet<A>.toList(): List<A> =
+    v.read().map { it.read() }
 }
 
 /**
@@ -59,12 +197,12 @@ fun <A> stm(f: suspend STM.() -> A): suspend STM.() -> A = f
  *
  * `check(b) = if (b.not()) retry() else Unit`
  */
-suspend fun <A> STM.check(b: Boolean): Unit = if (b.not()) retry() else Unit
+suspend fun STM.check(b: Boolean): Unit = if (b.not()) retry() else Unit
 
 /**
  * Create a new [TVar] inside a transaction, because [TVar.new] is not possible inside [STM] transactions.
  */
-suspend fun <A> STM.newVar(a: A): TVar<A> = TVar(a)
+suspend fun <A> STM.newTVar(a: A): TVar<A> = TVar(a)
 
 /**
  * Run a transaction to completion.

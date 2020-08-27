@@ -1,12 +1,27 @@
 package arrow.fx.coroutines.stm
 
 import arrow.fx.coroutines.AtomicRefW
+import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.STMFrame
 import arrow.fx.coroutines.STMTransaction
+import arrow.fx.coroutines.atomically
+import arrow.fx.coroutines.microseconds
+import arrow.fx.coroutines.sleep
 import kotlinx.atomicfu.AtomicInt
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
 import kotlin.coroutines.resume
+
+/**
+ * Utility to create [TVar] which sets its value to true after [delay] microseconds.
+ */
+suspend fun registerDelay(delay: Int): TVar<Boolean> =
+  TVar.new(false).also { v ->
+    ForkAndForget {
+      sleep(delay.microseconds)
+      atomically { v.write(true) }
+    }
+  }
 
 class TVar<A> constructor(a: A) {
   /**
