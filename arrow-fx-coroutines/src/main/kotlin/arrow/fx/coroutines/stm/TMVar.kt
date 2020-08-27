@@ -1,7 +1,6 @@
 package arrow.fx.coroutines.stm
 
 import arrow.fx.coroutines.STM
-import arrow.fx.coroutines.newTVar
 
 suspend fun <A> STM.newTMVar(a: A): TMVar<A> = TMVar<A>(newTVar(a))
 suspend fun <A> STM.newEmptyTMVar(): TMVar<A> = TMVar<A>(newTVar(null))

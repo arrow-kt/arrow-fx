@@ -1,7 +1,6 @@
 package arrow.fx.coroutines.stm
 
 import arrow.fx.coroutines.STM
-import arrow.fx.coroutines.newTVar
 
 suspend fun STM.newTSem(initial: Int): TSem = TSem(newTVar(initial))
 

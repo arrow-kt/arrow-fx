@@ -1,7 +1,6 @@
 package arrow.fx.coroutines.stm
 
 import arrow.fx.coroutines.STM
-import arrow.fx.coroutines.newTVar
 
 suspend fun <A> STM.newTArray(size: Int, f: (Int) -> A): TArray<A> =
   TArray(Array(size) { i -> TVar(f(i)) })
@@ -15,6 +14,9 @@ suspend fun <A> STM.newTArray(xs: Iterable<A>): TArray<A> =
 data class TArray<A>internal constructor(internal val v: Array<TVar<A>>) {
 
   fun size(): Int = v.size
+
+  override fun equals(other: Any?): Boolean = this === other
+  override fun hashCode(): Int = v.hashCode()
 
   companion object {
     suspend fun <A> new(size: Int, f: (Int) -> A): TArray<A> =

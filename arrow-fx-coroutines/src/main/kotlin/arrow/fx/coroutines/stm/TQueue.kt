@@ -1,7 +1,6 @@
 package arrow.fx.coroutines.stm
 
 import arrow.fx.coroutines.STM
-import arrow.fx.coroutines.newTVar
 
 suspend fun <A> STM.newTQueue(): TQueue<A> = TQueue(newTVar(emptyList()), newTVar(emptyList()))
 
