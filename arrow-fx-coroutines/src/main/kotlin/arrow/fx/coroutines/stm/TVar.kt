@@ -29,7 +29,8 @@ class TVar<A> constructor(a: A) {
   private val waiting = atomic<List<STMTransaction<*>>>(listOf())
 
   override fun hashCode(): Int = id
-  override  fun equals(other: Any?): Boolean = this === other
+
+  override fun equals(other: Any?): Boolean = this === other
 
   /**
    * Read the value of a [TVar]. This has no consistency guarantees for subsequent reads and writes
@@ -86,6 +87,13 @@ class TVar<A> constructor(a: A) {
    */
   internal fun queue(trans: STMTransaction<*>): Unit {
     waiting.update { it + trans }
+  }
+
+  /**
+   * A transaction resumed so remove it from the [TVar]
+   */
+  internal fun removeQueued(trans: STMTransaction<*>): Unit {
+    waiting.update { it.filter { it != trans } }
   }
 
   /**

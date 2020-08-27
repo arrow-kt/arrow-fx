@@ -100,7 +100,7 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
    * This could be modeled with exceptions as well, but that complicates a users exceptions handling
    *  and in general does not seem as nice.
    */
-  override suspend fun retry(): Nothing = suspendCoroutine {  }
+  override suspend fun retry(): Nothing = suspendCoroutine {}
 
   override suspend fun <A> (suspend STM.() -> A).orElse(other: suspend STM.() -> A): A =
     partialTransaction(this@STMFrame, this@orElse)
@@ -178,10 +178,10 @@ internal fun List<Triple<TVar<Any?>, Any?, Any?>>.invalid(): Boolean =
   any { (_, nV, v) -> nV !== v }
 
 /**
- * In some special cases it is possible to detect if a STMException blocks indefinitely so we can
+ * In some special cases it is possible to detect if a STM transaction blocks indefinitely so we can
  *  abort here.
  */
-object BlockedIndefinitely: Throwable("Transaction blocked indefinitely")
+object BlockedIndefinitely : Throwable("Transaction blocked indefinitely")
 
 // --------
 /**
@@ -189,19 +189,11 @@ object BlockedIndefinitely: Throwable("Transaction blocked indefinitely")
  *
  * Keeps the continuation that [TVar]'s use to resume this transaction.
  */
-class STMTransaction<A>(val f: suspend STM.() -> A) {
+internal class STMTransaction<A>(val f: suspend STM.() -> A) {
   private val cont = atomic<Continuation<Unit>?>(null)
 
   /**
-   * Any one resumptions is enough, because we enqueue on all read variables this might be called multiple
-   *  times.
-   *
-   * TODO: This should currently result in some weird behaviour where some variables may retain
-   *  references even after another TVar resumed this transaction so it may lead to some invalid restarts.
-   *  That should be fine because it is deterministic but it is not necessary.
-   *  The more annoying problem is that variables retain references to transaction even if those
-   *   finished already and thus this may leak memory.
-   *   (These references are only removed if that TVar is written to)
+   * Any one resumptions is enough, because we enqueue on all read variables this might be called multiple times.
    */
   fun getCont(): Continuation<Unit>? = cont.getAndSet(null)
 
@@ -225,6 +217,8 @@ class STMTransaction<A>(val f: suspend STM.() -> A) {
               // it is important to set the continuation before releasing the locks, otherwise
               //  we may not see changes
               suspendCoroutine<Unit> { k -> cont.value = k; releaseVars() }
+
+              xs.forEach { (tv, _, _) -> tv.removeQueued(this) }
             }
           }
         } else {
@@ -253,7 +247,7 @@ private fun <A> partialTransaction(parent: STMFrame, f: suspend STM.() -> A): A?
     if (it == COROUTINE_SUSPENDED) {
       parent.mergeChildReads(frame)
       null
-    } else  {
+    } else {
       parent.mergeChildReads(frame)
       parent.mergeChildWrites(frame)
       it as A
