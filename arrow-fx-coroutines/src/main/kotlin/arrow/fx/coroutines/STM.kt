@@ -23,8 +23,8 @@ import kotlin.coroutines.suspendCoroutine
  *  exposing details of how it ensures safety guarantees.
  * Programs written with [STM] will neither deadlock nor have race-conditions.
  *
- * Such guarantees are usually not possible with other forms of concurrent communication such as locks
- *  or atomic variables.
+ * Such guarantees are usually not possible with other forms of concurrent communication such as locks,
+ *  atomic variables or [ConcurrentVar].
  *
  * > The api of [STM] is based on the haskell package [stm](https://hackage.haskell.org/package/stm) and
  *   the implementation is quite different to ensure the same semantics within kotlin.
@@ -271,7 +271,7 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
   /**
    * Helper to search the entire hierarchy for stored previous reads
    */
-  private fun readVar(v: TVar<*>): Any? = readSet[v] ?: parent?.readVar(v)
+  private fun readVar(v: TVar<*>): Any? = writeSet[v] ?: parent?.readVar(v) ?: readSet[v]
 
   /**
    * Helper to check if a [TVar] has already been read inside the transaction

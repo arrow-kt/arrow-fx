@@ -2,6 +2,7 @@ package arrow.fx.coroutines.stm
 
 import arrow.fx.coroutines.AtomicRefW
 import arrow.fx.coroutines.ForkAndForget
+import arrow.fx.coroutines.ForkConnected
 import arrow.fx.coroutines.STMFrame
 import arrow.fx.coroutines.STMTransaction
 import arrow.fx.coroutines.atomically
@@ -18,7 +19,7 @@ import kotlin.coroutines.resume
  */
 suspend fun registerDelay(delay: Int): TVar<Boolean> =
   TVar.new(false).also { v ->
-    ForkAndForget {
+    ForkConnected {
       sleep(delay.microseconds)
       atomically { v.write(true) }
     }
