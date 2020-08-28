@@ -27,6 +27,8 @@ import kotlin.coroutines.suspendCoroutine
  *
  * -- Examples and docs here --
  *
+ * -- Note about using try catch inside stm and how using catch is the only good way of catching exceptions! --
+ *
  * Further reading:
  * - [Composable memory transactions, by Tim Harris, Simon Marlow, Simon Peyton Jones, and Maurice Herlihy, in ACM Conference on Principles and Practice of Parallel Programming 2005.](https://www.microsoft.com/en-us/research/publication/composable-memory-transactions/)
  */
@@ -46,6 +48,8 @@ interface STM {
    *  trigger the fallback right here. Not sure if this is a problem...
    */
   suspend infix fun <A> (suspend STM.() -> A).orElse(other: suspend STM.() -> A): A
+
+  suspend fun <A> catch(f: suspend STM.() -> A, onError: suspend STM.(Throwable) -> A): A
 
   /**
    * Read the value from a [TVar].
@@ -146,20 +150,12 @@ interface STM {
 
   suspend fun <A> TSem.withPermit(f: suspend STM.() -> A): A {
     acquire()
-    return try {
-      f()
-    } finally {
-      release()
-    }
+    return f().also { release() }
   }
 
   suspend fun <A> TSem.withPermit(n: Int, f: suspend STM.() -> A): A {
     acquire(n)
-    return try {
-      f()
-    } finally {
-      release(n)
-    }
+    return f().also { release(n) }
   }
 
   // TQueue
@@ -280,11 +276,22 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
    */
   override suspend fun retry(): Nothing = suspendCoroutine {}
 
-  // This encoding fails to handle nullable A's
   override suspend fun <A> (suspend STM.() -> A).orElse(other: suspend STM.() -> A): A =
     when (val r = partialTransaction(this@STMFrame, this@orElse)) {
       RETRYING -> other()
       else -> r as A
+    }
+
+  override suspend fun <A> catch(f: suspend STM.() -> A, onError: suspend STM.(Throwable) -> A): A =
+    try {
+      // This is important to keep changes local.
+      // With just try catch we'd keep state changes from try even if we throw!
+      when (val r = partialTransaction(this@STMFrame, f)) {
+        RETRYING -> retry()
+        else -> r as A
+      }
+    } catch (e: Throwable) {
+      onError(e)
     }
 
   /**

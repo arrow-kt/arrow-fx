@@ -5,6 +5,7 @@ import arrow.fx.coroutines.stm.TVar
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.ints.shouldBeExactly
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.bool
 import io.kotest.property.arbitrary.int
@@ -176,5 +177,25 @@ class STMTest : ArrowFxSpec(spec = {
   }
   "atomically rethrows exceptions" {
     shouldThrow<IllegalArgumentException> { atomically { throw IllegalArgumentException("Test") } }
+  }
+  "throwing an exceptions should void all state changes" {
+    val tv = TVar.new(10)
+    shouldThrow<IllegalArgumentException> {
+      atomically { tv.write(30); throw IllegalArgumentException("test") }
+    }
+    tv.unsafeRead() shouldBeExactly 10
+  }
+  "catch should work as excepted" {
+    val tv = TVar.new(10)
+    val ex = IllegalArgumentException("test")
+    atomically {
+      catch({
+        tv.write(30)
+        throw ex
+      }) { e ->
+        e shouldBe ex
+      }
+    }
+    tv.unsafeRead() shouldBeExactly 10
   }
 })
