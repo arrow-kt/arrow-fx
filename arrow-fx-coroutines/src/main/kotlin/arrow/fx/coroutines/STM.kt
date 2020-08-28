@@ -324,15 +324,14 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
     accessMap[this as TVar<Any?>]?.update(a) ?: unsafeRead().let { accessMap[this] = Entry(it, a) }
 
   /**
-   * Utility which locks all read [TVar]'s and passes them to [withLocked].
+   * Utility which locks all [TVar]'s that were written to and passes them to [withLocked].
    *
-   * The second argument to [withLocked] is the release function which releases all locks, but does not
+   * The second argument to [withLocked] is the release function which releases all taken locks, but does not
    *  notify waiters via [TVar.notify].
    *
    * The second argument to [withValidAndLockedReadSet] is a fallback to execute when
    *  a [TVar] was invalid. This releases all locks and returns the result of [onInvalid].
    */
-  // TODO This could be improved by validating before taking locks and only locking the writes...
   internal inline fun <A> withValidAndLockedReadSet(
     withLocked: (List<Pair<TVar<Any?>, Entry>>, () -> Unit) -> A,
     onInvalid: () -> A
@@ -343,15 +342,18 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
     /**
      * Why do we not lock reads?
      * To answer this question we need to ask under what conditions a transaction may commit:
-     * - A transaction can commit if all values read are consistent when writing
+     * - A transaction can commit if all values read contain the same value when committing
      *
      * This means that when we hold all write locks we just need to verify that all our reads are consistent, any change after
-     *  that has no effect on this transaction because our write will 100% persist consistently (we hold all locks)
+     *  that has no effect on this transaction because our write will 100% persist consistently (we hold all locks) and
+     *  any other transaction depending on a variable we are about to write to has to wait for us and then verify again
      */
     accessMap.toList()
-      // quick check if any values are already invalid
       .also {
-        if (it.any { (tv, entry) -> tv.readI() !== entry.initialVal }) return@withValidAndLockedReadSet onInvalid()
+        // quick check if any values are already invalid
+        // This is not strictly necessary but helps because it avoids taking locks
+        if (it.any { (tv, entry) -> tv.readI() !== entry.initialVal })
+          return@withValidAndLockedReadSet onInvalid()
       } // acquire locks for writes and recheck if the writes are valid
       .partition { it.second.isWrite() }
       .let { (writes, reads) ->
@@ -439,18 +441,32 @@ internal class STMTransaction<A>(val f: suspend STM.() -> A) {
       }).let {
         if (it == COROUTINE_SUSPENDED) {
           // blocking retry
-          frame.withValidAndLockedReadSet({ _, releaseVars ->
-            // quick sanity check. If a transaction has not read anything and retries we are blocked forever
-            if (frame.accessMap.isEmpty()) throw BlockedIndefinitely
+          if (frame.accessMap.isEmpty()) throw BlockedIndefinitely
 
-            // nothing changed so we need to suspend here
-            frame.accessMap.forEach { (tv, _) -> tv.queue(this) }
-            // it is important to set the continuation before releasing the locks, otherwise
-            //  we may not see changes
-            suspendCoroutine<Unit> { k -> cont.value = k; releaseVars() }
+          // TODO Re-evaluate if we need to take locks here
+          //  The problem is that if we don't lock other threads may update us and we might miss it and thus block
+          //   despite having seen change which is really bad for one off transactions
+          //   that we are polling for with stm like registerDelay and similar
+          val locked = mutableListOf<Pair<TVar<Any?>, Any?>>()
+          frame.accessMap.toList().sortedBy { (tv, _) -> tv.id }
+            .forEach { (tv, entry) ->
+              val curr = tv.lock(frame)
+              if (curr !== entry.initialVal) {
+                locked.forEach { (tv, c) -> tv.release(frame, c) }
+                tv.release(frame, curr)
+                return@let
+              }
+              locked.add(tv to curr)
+            }
 
-            frame.accessMap.forEach { (tv, _) -> tv.removeQueued(this) }
-          }, {})
+          suspendCoroutine<Unit> { k ->
+            cont.value = k
+            locked.forEach { (tv, curr) ->
+              tv.queue(this)
+              tv.release(frame, curr)
+            }
+          }
+          frame.accessMap.forEach { (tv, _) -> tv.removeQueued(this) }
         } else {
           // try commit
           if (frame.validateAndCommit().not()) {

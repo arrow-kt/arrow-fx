@@ -95,8 +95,6 @@ class TVar<A> internal constructor(a: A) {
     return res
   }
 
-  // TODO The queuing of observers and notifying them needs to be reworked!
-  //  It should use mutable lists and should be protected
   /**
    * Queue a transaction to be notified when this [TVar] is changed and [notify] is called.
    * This does not happen implicitly on [release] because release may also write the same value back on
