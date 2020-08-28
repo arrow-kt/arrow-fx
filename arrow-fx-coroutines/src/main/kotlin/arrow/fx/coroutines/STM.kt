@@ -180,7 +180,9 @@ interface STM {
     }
   }
 
-  suspend fun <A> TQueue<A>.tryRead(): A? = stm { read() } orElse { null }
+  suspend fun <A> TQueue<A>.tryRead(): A? =
+    (stm { read() } orElse { null })
+
   suspend fun <A> TQueue<A>.flush(): List<A> {
     val xs = reads.read().also { if (it.isNotEmpty()) reads.write(emptyList()) }
     val ys = writes.read().also { if (it.isNotEmpty()) writes.write(emptyList()) }
@@ -230,6 +232,8 @@ interface STM {
 
 /**
  * Helper to create stm blocks that can be run with [orElse]
+ *
+ * Equal to [suspend] just with an [STM] receiver.
  */
 inline fun <A> stm(noinline f: suspend STM.() -> A): suspend STM.() -> A = f
 
@@ -276,10 +280,12 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
    */
   override suspend fun retry(): Nothing = suspendCoroutine {}
 
+  // This encoding fails to handle nullable A's
   override suspend fun <A> (suspend STM.() -> A).orElse(other: suspend STM.() -> A): A =
-    partialTransaction(this@STMFrame, this@orElse)
-      ?: partialTransaction(this@STMFrame, other)
-      ?: retry()
+    when (val r = partialTransaction(this@STMFrame, this@orElse)) {
+      RETRYING -> other()
+      else -> r as A
+    }
 
   /**
    * First checks if we have already read this variable, if not it reads it and stores the result
@@ -302,7 +308,7 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
   /**
    * Utility which locks all read [TVar]'s and passes them to [withLocked].
    *
-   * The second argument is the release function which releases all locks, but does not
+   * The second argument to [withLocked] is the release function which releases all locks, but does not
    *  notify waiters via [TVar.notify].
    *
    * The second argument to [withValidAndLockedReadSet] is a fallback to execute when
@@ -423,21 +429,23 @@ internal class STMTransaction<A>(val f: suspend STM.() -> A) {
  *
  * This does not do a fully validation, it only checks if we suspend (retry was called).
  */
-private fun <A> partialTransaction(parent: STMFrame, f: suspend STM.() -> A): A? {
+private fun <A> partialTransaction(parent: STMFrame, f: suspend STM.() -> A): Any {
   val frame = STMFrame(parent)
   return f.startCoroutineUninterceptedOrReturn(frame, Continuation(EmptyCoroutineContext) {
     throw IllegalStateException("STM transaction was resumed after aborting. How?!")
   }).let {
     if (it == COROUTINE_SUSPENDED) {
       parent.mergeChildReads(frame)
-      null
+      RETRYING
     } else {
       parent.mergeChildReads(frame)
       parent.mergeChildWrites(frame)
-      it as A
+      it as Any
     }
   }
 }
+
+object RETRYING
 
 /**
  * A few things to consider:
