@@ -12,6 +12,7 @@ import kotlin.coroutines.CoroutineContext
 
 @undocumented
 // FIXME use expected and actual for multiplatform
+@Deprecated("IO is deprecated")
 object IODispatchers {
   // FIXME use ForkJoinPool.commonPool() in Java 8
   val CommonPool: CoroutineContext = ForkJoinPool().asCoroutineContext()

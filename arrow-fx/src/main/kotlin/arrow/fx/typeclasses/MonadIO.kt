@@ -12,6 +12,7 @@ import arrow.typeclasses.Monad
  *  types which is why it is not done here. If one wants to use [Concurrent] methods by only delegating to [IO] simply perform the task in [IO] and lift it.
  *  If that is not enough use the fx-mtl package for better instances of the effect hierarchy.
  **/
+@Deprecated("IO is deprecated")
 interface MonadIO<M> : Monad<M> {
   fun <A> IO<A>.liftIO(): Kind<M, A>
 }
