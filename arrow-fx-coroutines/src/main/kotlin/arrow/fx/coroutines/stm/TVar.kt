@@ -29,7 +29,7 @@ class TVar<A> internal constructor(a: A) {
    * This is used to implement locking. Reading threads have to loop until the value is released by a
    *  transaction.
    */
-  private val ref: AtomicRefW<Any> = AtomicRefW(a as Any)
+  private val ref: AtomicRefW<Any?> = AtomicRefW(a as Any?)
 
   /**
    * Each TVar has a unique id which is used to get a total ordering of variables to ensure that locks
@@ -75,7 +75,7 @@ class TVar<A> internal constructor(a: A) {
    *  tries to unlock) it is ignored (By the semantics of [AtomicRefW.compareAndSet])
    */
   internal fun release(frame: STMFrame, a: A): Unit {
-    ref.compareAndSet(frame, a as Any)
+    ref.compareAndSet(frame, a as Any?)
   }
 
   /**
@@ -91,7 +91,7 @@ class TVar<A> internal constructor(a: A) {
     var res: A
     do {
       res = read()
-    } while (ref.compareAndSet(res as Any, frame).not())
+    } while (ref.compareAndSet(res as Any?, frame).not())
     return res
   }
 

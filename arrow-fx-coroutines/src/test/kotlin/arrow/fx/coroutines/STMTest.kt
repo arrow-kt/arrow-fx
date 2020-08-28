@@ -174,4 +174,7 @@ class STMTest : ArrowFxSpec(spec = {
       atomically { res.flush() } shouldBe (0..100).toList()
     }
   }
+  "atomically rethrows exceptions" {
+    shouldThrow<IllegalArgumentException> { atomically { throw IllegalArgumentException("Test") } }
+  }
 })

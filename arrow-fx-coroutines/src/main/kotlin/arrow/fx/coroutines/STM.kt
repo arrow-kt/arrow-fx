@@ -6,7 +6,6 @@ import arrow.fx.coroutines.stm.TQueue
 import arrow.fx.coroutines.stm.TSem
 import arrow.fx.coroutines.stm.TVar
 import kotlinx.atomicfu.atomic
-import java.lang.Exception
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.RestrictsSuspension
@@ -96,7 +95,7 @@ interface STM {
   suspend fun <A> TMVar<A>.put(a: A): Unit =
     v.read()?.let { retry() } ?: v.write(a)
 
-  suspend fun <A> TMVar<A>.read(a: A): A =
+  suspend fun <A> TMVar<A>.read(): A =
     v.read() ?: retry()
 
   suspend fun <A> TMVar<A>.tryTake(): A? =
@@ -141,7 +140,7 @@ interface STM {
     0 -> Unit
     1 -> release()
     else ->
-      if (n < 0) throw IllegalStateException("Cannot decrease permits using signal(n). n was negative: $n")
+      if (n < 0) throw IllegalArgumentException("Cannot decrease permits using signal(n). n was negative: $n")
       else v.write(v.read() + n)
   }
 
@@ -344,7 +343,8 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
    */
   fun validateAndCommit(): Boolean = withValidAndLockedReadSetAndRelease({
     it.forEach { (tv, _, _) ->
-      writeSet[tv]?.let { tv.release(this, it).also { tv.notify() } }
+      if (writeSet.containsKey(tv))
+        tv.release(this, writeSet[tv]).also { tv.notify() }
     }
     true
   }) { false }
