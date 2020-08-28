@@ -53,7 +53,8 @@ inline fun <A> IOOf<A>.fix(): IO<A> =
 typealias IOProc<A> = ((Either<Throwable, A>) -> Unit) -> Unit
 typealias IOProcF<A> = ((Either<Throwable, A>) -> Unit) -> IOOf<Unit>
 
-@Suppress("StringLiteralDuplication")
+@Deprecated("IO is being replaced by direct usage of coroutines in arrow-fx-coroutines. " +
+  "Please follow the migration guide in the website for more information.")
 sealed class IO<out A> : IOOf<A> {
 
   companion object : IOParMap, IORace {
