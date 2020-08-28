@@ -1,6 +1,7 @@
 package arrow.fx.coroutines
 
 import arrow.core.Either
+import arrow.core.Tuple4
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
@@ -28,6 +29,20 @@ suspend fun <A, B, C> parTupledN(fa: suspend () -> A, fb: suspend () -> B, fc: s
   parTupledN(ComputationPool, fa, fb, fc)
 
 /**
+ * Tuples [fa], [fb], [fc], [fd] in parallel on [ComputationPool].
+ * Cancelling this operation cancels both tasks running in parallel.
+ *
+ * @see parTupledN for the same function that can race on any [CoroutineContext].
+ */
+suspend fun <A, B, C, D> parTupledN(
+  fa: suspend () -> A,
+  fb: suspend () -> B,
+  fc: suspend () -> C,
+  fd: suspend () -> D
+): Tuple4<A, B, C, D> =
+  parTupledN(ComputationPool, fa, fb, fc, fc)
+
+/**
  * Tuples [fa], [fb] on the provided [CoroutineContext].
  * Cancelling this operation cancels both tasks running in parallel.
  *
@@ -50,6 +65,24 @@ suspend fun <A, B> parTupledN(ctx: CoroutineContext, fa: suspend () -> A, fb: su
  */
 suspend fun <A, B, C> parTupledN(ctx: CoroutineContext, fa: suspend () -> A, fb: suspend () -> B, fc: suspend () -> C): Triple<A, B, C> =
   parMapN(ctx, fa, fb, fc, ::Triple)
+
+/**
+ * Tuples [fa], [fb], [fc], & [fd] on the provided [CoroutineContext].
+ * Cancelling this operation cancels both tasks running in parallel.
+ *
+ * **WARNING** it runs in parallel depending on the capabilities of the provided [CoroutineContext].
+ * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
+ *
+ * @see parTupledN for a function that ensures it runs in parallel on the [ComputationPool].
+ */
+suspend fun <A, B, C, D> parTupledN(
+  ctx: CoroutineContext,
+  fa: suspend () -> A,
+  fb: suspend () -> B,
+  fc: suspend () -> C,
+  fd: suspend () -> D
+): Tuple4<A, B, C, D> =
+  parMapN(ctx, fa, fb, fc, fd, ::Tuple4)
 
 /**
  * Parallel maps [fa], [fb] in parallel on [ComputationPool].
