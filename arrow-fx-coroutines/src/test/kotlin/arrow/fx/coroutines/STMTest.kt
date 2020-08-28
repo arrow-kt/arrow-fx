@@ -4,6 +4,7 @@ import arrow.fx.coroutines.stm.TQueue
 import arrow.fx.coroutines.stm.TVar
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.ints.shouldBeExactly
+import io.kotest.matchers.ints.shouldBeInRange
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.bool
@@ -196,5 +197,52 @@ class STMTest : ArrowFxSpec(spec = {
       }
     }
     tv.unsafeRead() shouldBeExactly 10
+  }
+  "concurrent example 1" {
+    checkAll {
+      val acc1 = TVar.new(100)
+      val acc2 = TVar.new(200)
+      parMapN({
+        // transfer acc1 to acc2
+        val amount = 50
+        atomically {
+          val acc1Balance = acc1.read()
+          check(acc1Balance - amount >= 0)
+          acc1.write(acc1Balance - amount)
+          acc2.modify { it + 50 }
+        }
+      }, {
+        atomically { acc1.modify { it - 60 } }
+        sleep(20.milliseconds)
+        atomically { acc1.modify { it + 60 } }
+      }, { _, _ -> Unit })
+      acc1.unsafeRead() shouldBeExactly 50
+      acc2.unsafeRead() shouldBeExactly 250
+    }
+  }
+  "concurrent example 2" {
+    checkAll {
+      val tq = TQueue.new<Int>()
+      parMapN({
+        // producers
+        (0..4).parTraverse {
+          for (i in (it * 20 + 1)..(it * 20 + 20)) {
+            atomically { tq.write(i) }
+          }
+        }
+      }, {
+        val collected = mutableSetOf<Int>()
+        for (i in 1..100) {
+          // consumer
+          atomically {
+            tq.read().also { it shouldBeInRange (1..100) }
+          }.also { collected.add(it) }
+        }
+        // verify that we got 100 unique numbers
+        collected.size shouldBeExactly 100
+      }) { _, _ -> Unit }
+      // the above only finishes if the consumer reads at least 100 values, this here is just to make sure there are no leftovers
+      atomically { tq.flush() } shouldBe emptyList()
+    }
   }
 })
