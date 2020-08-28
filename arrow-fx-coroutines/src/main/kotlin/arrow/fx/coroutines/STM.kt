@@ -15,6 +15,8 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 /**
+ * # Consistent and safe concurrent state updates
+ *
  * Software transactional memory, or STM, is an abstraction for concurrent state modification.
  * With [STM] one can write concurrent abstractions that can easily be composed without
  *  exposing details of how it ensures safety guarantees.
@@ -23,20 +25,166 @@ import kotlin.coroutines.suspendCoroutine
  * Such guarantees are usually not possible with other forms of concurrent communication such as locks,
  *  atomic variables or [ConcurrentVar].
  *
- * > The api of [STM] is based on the haskell package [stm](https://hackage.haskell.org/package/stm) and
- *   the implementation is quite different to ensure the same semantics within kotlin.
+ * > The api of [STM] is based on the haskell package [stm](https://hackage.haskell.org/package/stm).
  *
- * -- Examples and docs here --
+ * The base building blocks of [STM] are [TVar]'s and a few primitives [retry], [orElse] and [catch].
  *
- * -- Note about using try catch inside stm and how using catch is the only good way of catching exceptions! --
+ * ## STM Datastructures
+ *
+ * There are several datastructures built on top of [TVar]'s already provided out of the box:
+ * - [TQueue]: A transactional mutable queue
+ * - [TMVar]: A mutable transactional variable that may be empty
+ * - [TArray]: Array of [TVar]'s
+ * - [TSem]: Transactional semaphore
+ * - [TVar]: A transactional mutable variable
+ *
+ * All of these structures (excluding [TVar]) are built upon [TVar]'s and the [STM] primitives and implementing other
+ *  datastructures with [STM] can be done by composing the existing structures.
+ *
+ * ## Reading and writing to concurrent state:
+ *
+ * In order to modify transactional datastructures we have to be inside the [STM] context. This is achieved either by defining our
+ *  functions with [STM] as the receiver or using [stm] to define functions.
+ *
+ * Running a transaction is then done using [atomically].
+ *
+ * > Note: A transaction that sees an invalid state (a [TVar] that was read has been changed concurrently) it will restart and try again.
+ *   This essentially means we start from scratch, therefore it is recommended to keep transactions small and to never use code that
+ *   has side-effects inside. We use `@RestrictSuspension` to disallow the use of suspension functions but functions that are not suspended
+ *   and execute side-effects can be called. This is bad practice however for multiple reasons:
+ *   - Transactions may be aborted at any time so accessing resources may never trigger finalizers
+ *   - Transactions may rerun an arbitrary amount of times before finishing and thus all effects will rerun.
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.Environment
+ * import arrow.fx.coroutines.atomically
+ * import arrow.fx.coroutines.stm.TVar
+ * import arrow.fx.coroutines.STM
+ *
+ * //sampleStart
+ * suspend fun STM.transfer(from: TVar<Int>, to: TVar<Int>, amount: Int): Unit {
+ *   withdraw(from, amount)
+ *   deposit(to, amount)
+ * }
+ *
+ * suspend fun STM.deposit(acc: TVar<Int>, amount: Int): Unit {
+ *   val current = acc.read()
+ *   acc.write(current + amount)
+ *   // or the shorthand acc.modify { it + amount }
+ * }
+ *
+ * suspend fun STM.withdraw(acc: TVar<Int>, amount: Int): Unit {
+ *   val current = acc.read()
+ *   if (current - amount >= 0) acc.write(current + amount)
+ *   else throw IllegalStateException("Not enough money in the account!")
+ * }
+ * //sampleEnd
+ *
+ * fun main() {
+ *   Environment().unsafeRunSync {
+ *     val acc1 = TVar.new(500)
+ *     val acc2 = TVar.new(300)
+ *     println("Balance account 1: ${acc1.unsafeRead()}")
+ *     println("Balance account 2: ${acc2.unsafeRead()}")
+ *     println("Performing transaction")
+ *     atomically { transfer(acc1, acc2, 50) }
+ *     println("Balance account 1: ${acc1.unsafeRead()}")
+ *     println("Balance account 2: ${acc2.unsafeRead()}")
+ *   }
+ * }
+ * ```
+ * This example shows a banking service moving money from one account to the other with [STM].
+ * Should the first account not have enough money we throw an exception. This code is guaranteed to never deadlock and to never
+ *  produce an invalid state by out of order updates. These guarantees follow from the semantics of [STM] itself and are universal
+ *  to all [STM] programs.
+ *
+ * ## Retrying manually
+ *
+ * It is sometimes beneficial to manually abort a transaction until a variable changes. This can be for a variety of reasons such as
+ *  seeing an invalid state or having no value to read.
+ *
+ * Inside a transaction we can always call [retry] to trigger an immediate abort. The transaction will suspend and be resumed as soon
+ *  as one of the variables that has been accessed by this transaction changes.
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.Environment
+ * import arrow.fx.coroutines.atomically
+ * import arrow.fx.coroutines.stm.TVar
+ * import arrow.fx.coroutines.ForkConnected
+ * import arrow.fx.coroutines.seconds
+ * import arrow.fx.coroutines.sleep
+ * import arrow.fx.coroutines.STM
+ *
+ * //sampleStart
+ * suspend fun STM.transfer(from: TVar<Int>, to: TVar<Int>, amount: Int): Unit {
+ *   withdraw(from, amount)
+ *   deposit(to, amount)
+ * }
+ *
+ * suspend fun STM.deposit(acc: TVar<Int>, amount: Int): Unit {
+ *   val current = acc.read()
+ *   acc.write(current + amount)
+ *   // or the shorthand acc.modify { it + amount }
+ * }
+ *
+ * suspend fun STM.withdraw(acc: TVar<Int>, amount: Int): Unit {
+ *   val current = acc.read()
+ *   if (current - amount >= 0) acc.write(current + amount)
+ *   else retry() // we now retry if there is not enough money in the account
+ *   // this can also be achieved by using `check(current - amount >= 0); acc.write(it + amount)`
+ * }
+ * //sampleEnd
+ *
+ * fun main() {
+ *   Environment().unsafeRunSync {
+ *     val acc1 = TVar.new(0)
+ *     val acc2 = TVar.new(300)
+ *     println("Balance account 1: ${acc1.unsafeRead()}")
+ *     println("Balance account 2: ${acc2.unsafeRead()}")
+ *     ForkConnected {
+ *       println("Sending money - Searching")
+ *       sleep(2.seconds)
+ *       println("Sending money - Found some")
+ *       atomically { acc1.write(100_000_000) }
+ *     }
+ *     println("Performing transaction")
+ *     atomically {
+ *       println("Trying to transfer")
+ *       transfer(acc1, acc2, 50)
+ *     }
+ *     println("Balance account 1: ${acc1.unsafeRead()}")
+ *     println("Balance account 2: ${acc2.unsafeRead()}")
+ *   }
+ * }
+ * ```
+ *
+ * Here in this (silly) example we changed `withdraw` to retry and thus wait until enough money is in the account, which after
+ *  a few seconds just happens to be the case.
+ *
+ * [retry] can be used to implement a lot of complex transactions and many datastructures like [TMVar] or [TQueue] use to to great effect.
+ *
+ * > Note: [retry] will suspend a transaction until a variable updates. It will not block, but if no variable is updated it will wait forever!
+ *
+ * ## Branching with [orElse]
+ *
+ * [orElse] is another important primitive which allows a user to detect if a branch called [retry] and then use a fallback instead.
+ * If both branches [retry] the entire transaction will [retry].
+ *
+ * ## Exceptions
+ *
+ * Throwing inside [STM] will let the exception bubble up to either a [catch] handler or to [atomically] which will rethrow it.
+ *
+ * > Note: Using `try {...} catch (e: Exception) {...}` is not encouraged because any state change inside `try` will not be undone when
+ *   an exception occurs! The recommended way of catching exceptions is to use [catch] which properly discards those changes.
  *
  * Further reading:
  * - [Composable memory transactions, by Tim Harris, Simon Marlow, Simon Peyton Jones, and Maurice Herlihy, in ACM Conference on Principles and Practice of Parallel Programming 2005.](https://www.microsoft.com/en-us/research/publication/composable-memory-transactions/)
  */
+// TODO Explore this https://dl.acm.org/doi/pdf/10.1145/2976002.2976020 when benchmarks are set up
 @RestrictsSuspension
 interface STM {
   /**
-   * Abort the current transaction.
+   * Rerun the current transaction.
    *
    * This semantically-blocks until any of the accessed [TVar]'s changed.
    */
@@ -44,9 +192,6 @@ interface STM {
 
   /**
    * Run the given transaction and fallback to the other one if the first one calls [retry].
-   *
-   * TODO: For simplicity this does not validate reads it only looks for [retry] so failing reads will not
-   *  trigger the fallback right here. Not sure if this is a problem...
    */
   suspend infix fun <A> (suspend STM.() -> A).orElse(other: suspend STM.() -> A): A
 
@@ -349,7 +494,12 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
      *  that has no effect on this transaction because our write will 100% persist consistently (we hold all locks) and
      *  any other transaction depending on a variable we are about to write to has to wait for us and then verify again
      */
+    // TODO I would not need a lock order if I retry when encountering a locked TVar which essentially removes the need for ids and sorting
+    //  at the cost of two potentially deadlocking transactions now having two retry rather than wait
+    //  I am pretty sure that is an optimization, but I'd love benchmarks for this.
     accessMap.toList()
+      // TODO this check could be done while acquiring write locks, right now this checks writes twice, once here and once during
+      //  locking. I'll wait for benchmarks on this one.
       .also {
         // quick check if any values are already invalid
         // This is not strictly necessary but helps because it avoids taking locks
@@ -484,7 +634,10 @@ internal class STMTransaction<A>(val f: suspend STM.() -> A) {
  * Partially run a transaction.
  *
  * This does not do a fully validation, it only checks if we suspend (retry was called).
+ *
  */
+// TODO it might make sense to validate here without locking and merge/execute each branch only if it is valid atm
+//  this allows yet another concurrent early exit and a cheap retry!
 private fun <A> partialTransaction(parent: STMFrame, f: suspend STM.() -> A): Any {
   val frame = STMFrame(parent)
   return f.startCoroutineUninterceptedOrReturn(frame, Continuation(EmptyCoroutineContext) {
