@@ -11,6 +11,7 @@ import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.RestrictsSuspension
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
 import kotlin.coroutines.intrinsics.startCoroutineUninterceptedOrReturn
+import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 /**
@@ -443,30 +444,28 @@ internal class STMTransaction<A>(val f: suspend STM.() -> A) {
           // blocking retry
           if (frame.accessMap.isEmpty()) throw BlockedIndefinitely
 
-          // TODO Re-evaluate if we need to take locks here
-          //  The problem is that if we don't lock other threads may update us and we might miss it and thus block
-          //   despite having seen change which is really bad for one off transactions
-          //   that we are polling for with stm like registerDelay and similar
-          val locked = mutableListOf<Pair<TVar<Any?>, Any?>>()
-          frame.accessMap.toList().sortedBy { (tv, _) -> tv.id }
-            .forEach { (tv, entry) ->
-              val curr = tv.lock(frame)
-              if (curr !== entry.initialVal) {
-                locked.forEach { (tv, c) -> tv.release(frame, c) }
-                tv.release(frame, curr)
-                return@let
-              }
-              locked.add(tv to curr)
-            }
-
-          suspendCoroutine<Unit> { k ->
+          val registered = mutableListOf<TVar<Any?>>()
+          suspendCoroutine<Unit> susp@{ k ->
             cont.value = k
-            locked.forEach { (tv, curr) ->
-              tv.queue(this)
-              tv.release(frame, curr)
-            }
+
+            // TODO Re-evaluate if we need to take locks here
+            //  The problem is that if we don't lock other threads may update us and we might miss it and thus block
+            //   despite having seen change which is really bad for one off transactions
+            //   that we are polling for with stm like registerDelay and similar
+            frame.accessMap.toList().sortedBy { (tv, _) -> tv.id }
+              .forEach { (tv, entry) ->
+                val curr = tv.lock(frame)
+                if (curr !== entry.initialVal) {
+                  tv.release(frame, curr)
+                  cont.getAndSet(null)?.resume(Unit)
+                  return@susp
+                }
+                tv.queue(this)
+                registered.add(tv)
+                tv.release(frame, curr)
+              }
           }
-          frame.accessMap.forEach { (tv, _) -> tv.removeQueued(this) }
+          registered.forEach { it.removeQueued(this) }
         } else {
           // try commit
           if (frame.validateAndCommit().not()) {
