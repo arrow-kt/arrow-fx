@@ -54,16 +54,16 @@ class TVar<A> internal constructor(a: A) {
    * Much faster than `atomically { v.read() }` because it avoids creating a transaction, it just reads
    *  the value.
    */
-  suspend fun unsafeRead(): A = read()
+  suspend fun unsafeRead(): A = this.readI()
 
   /**
    * Internal unsafe (non-suspend) version of read. Used by various other internals and [unsafeRead] to
    *  read the current value respecting its state.
    */
-  private fun read(): A {
+  internal fun readI(): A {
     while (true) {
       ref.value.let {
-        if (it !is STMFrame) return@read it as A
+        if (it !is STMFrame) return@readI it as A
       }
     }
   }
@@ -83,18 +83,20 @@ class TVar<A> internal constructor(a: A) {
    *
    * This forces all further reads to wait until [frame] is done with the value.
    *
-   * This works by continuously calling [read] and then trying to compare and set the frame.
+   * This works by continuously calling [readI] and then trying to compare and set the frame.
    * If the value has been modified after reading it tries again, if the value inside is locked
-   *  it will loop inside [read] until it is unlocked.
+   *  it will loop inside [readI] until it is unlocked.
    */
   internal fun lock(frame: STMFrame): A {
     var res: A
     do {
-      res = read()
+      res = this.readI()
     } while (ref.compareAndSet(res as Any?, frame).not())
     return res
   }
 
+  // TODO The queuing of observers and notifying them needs to be reworked!
+  //  It should use mutable lists and should be protected
   /**
    * Queue a transaction to be notified when this [TVar] is changed and [notify] is called.
    * This does not happen implicitly on [release] because release may also write the same value back on

@@ -255,18 +255,30 @@ suspend fun <A> atomically(f: suspend STM.() -> A): A = STMTransaction(f).commit
  * It may have a parent which is only used for read lookups.
  */
 internal class STMFrame(val parent: STMFrame? = null) : STM {
-  private val readSet = mutableMapOf<TVar<*>, Any?>()
-  private val writeSet = mutableMapOf<TVar<*>, Any?>()
+
+  class Entry(var initialVal: Any?, var newVal: Any?) {
+    object NO_CHANGE
+    object NOT_PRESENT
+
+    fun isWrite(): Boolean =
+      newVal !== NO_CHANGE
+
+    fun update(v: Any?): Unit {
+      newVal = if (initialVal === v) NO_CHANGE else v
+    }
+
+    fun getValue(): Any? = if (isWrite()) newVal else initialVal
+  }
+
+  object RETRYING
+
+  internal val accessMap = mutableMapOf<TVar<Any?>, Entry>()
 
   /**
    * Helper to search the entire hierarchy for stored previous reads
    */
-  private fun readVar(v: TVar<*>): Any? = writeSet[v] ?: parent?.readVar(v) ?: readSet[v]
-
-  /**
-   * Helper to check if a [TVar] has already been read inside the transaction
-   */
-  private fun hasVar(v: TVar<*>): Boolean = readSet.containsKey(v) || parent?.hasVar(v) == true
+  private fun readVar(v: TVar<Any?>): Any? =
+    accessMap[v]?.getValue() ?: parent?.readVar(v) ?: Entry.NOT_PRESENT
 
   /**
    * Retry yields to the runloop and never resumes.
@@ -297,20 +309,19 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
   /**
    * First checks if we have already read this variable, if not it reads it and stores the result
    */
-  override suspend fun <A> TVar<A>.read(): A {
-    val v = readVar(this) ?: unsafeRead().also { readSet[this] = it }
-    return v as A
-  }
+  override suspend fun <A> TVar<A>.read(): A =
+    when (val r = readVar(this as TVar<Any?>)) {
+      Entry.NOT_PRESENT -> unsafeRead().also { accessMap[this] = Entry(it, Entry.NO_CHANGE) }
+      else -> r as A
+    }
 
   /**
    * Add a write to the write set.
    *
    * If we have not seen this variable before we add a read which stores it in the read set as well.
    */
-  override suspend fun <A> TVar<A>.write(a: A) {
-    if (hasVar(this).not()) read()
-    writeSet[this] = a
-  }
+  override suspend fun <A> TVar<A>.write(a: A): Unit =
+    accessMap[this as TVar<Any?>]?.update(a) ?: unsafeRead().let { accessMap[this] = Entry(it, a) }
 
   /**
    * Utility which locks all read [TVar]'s and passes them to [withLocked].
@@ -321,30 +332,55 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
    * The second argument to [withValidAndLockedReadSet] is a fallback to execute when
    *  a [TVar] was invalid. This releases all locks and returns the result of [onInvalid].
    */
+  // TODO This could be improved by validating before taking locks and only locking the writes...
   internal inline fun <A> withValidAndLockedReadSet(
-    withLocked: (List<Triple<TVar<Any?>, Any?, Any?>>, () -> Unit) -> A,
+    withLocked: (List<Pair<TVar<Any?>, Entry>>, () -> Unit) -> A,
     onInvalid: () -> A
   ): A {
-    val readsOrdered: MutableList<Triple<TVar<Any?>, Any?, Any?>> = mutableListOf()
-    val release: () -> Unit = { readsOrdered.forEach { (tv, nV, _) -> (tv).release(this, nV) } }
+    val writesOrdered: MutableList<Pair<TVar<Any?>, Entry>> = mutableListOf()
+    val release: () -> Unit = { writesOrdered.forEach { (tv, entry) -> (tv).release(this, entry.initialVal) } }
 
-    readSet.toList().sortedBy { it.first.id }
-      .forEach { (tv, v) ->
-        val res = tv.lock(this)
-        readsOrdered.add(Triple(tv as TVar<Any?>, res, v))
-        if (res !== v) {
+    /**
+     * Why do we not lock reads?
+     * To answer this question we need to ask under what conditions a transaction may commit:
+     * - A transaction can commit if all values read are consistent when writing
+     *
+     * This means that when we hold all write locks we just need to verify that all our reads are consistent, any change after
+     *  that has no effect on this transaction because our write will 100% persist consistently (we hold all locks)
+     */
+    accessMap.toList()
+      // quick check if any values are already invalid
+      .also {
+        if (it.any { (tv, entry) -> tv.readI() !== entry.initialVal }) return@withValidAndLockedReadSet onInvalid()
+      } // acquire locks for writes and recheck if the writes are valid
+      .partition { it.second.isWrite() }
+      .let { (writes, reads) ->
+        // acquire locks for writes and short circuit if those became invalid
+        writes.sortedBy { it.first.id }
+          .forEach { (tv, entry) ->
+            val curr = tv.lock(this)
+            if (curr !== entry.initialVal) {
+              tv.release(this, curr)
+              release()
+              return@withValidAndLockedReadSet onInvalid()
+            } else {
+              writesOrdered.add(tv to entry)
+            }
+          }
+        // recheck that none of our reads became invalid
+        if (reads.any { (tv, entry) -> tv.readI() !== entry.initialVal }) {
           release()
           return@withValidAndLockedReadSet onInvalid()
         }
       }
-    return withLocked(readsOrdered, release)
+    return withLocked(writesOrdered, release)
   }
 
   /**
    * Helper which automatically releases after [withLocked] is done.
    */
   private inline fun <A> withValidAndLockedReadSetAndRelease(
-    withLocked: (List<Triple<TVar<Any?>, Any?, Any?>>) -> A,
+    withLocked: (List<Pair<TVar<Any?>, Entry>>) -> A,
     onInvalid: () -> A
   ): A =
     withValidAndLockedReadSet({ xs, rel -> withLocked(xs).also { rel() } }, onInvalid)
@@ -355,21 +391,23 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
    * Returns whether or not validation (and thus the commit) was successful.
    */
   fun validateAndCommit(): Boolean = withValidAndLockedReadSetAndRelease({
-    it.forEach { (tv, _, _) ->
-      if (writeSet.containsKey(tv))
-        tv.release(this, writeSet[tv])
+    it.forEach { (tv, entry) ->
+      tv.release(this, entry.newVal)
     }
     true
   }) { false }
 
-  fun notifyChanges(): Unit = writeSet.keys.forEach { tv -> tv.notify() }
+  fun notifyChanges(): Unit =
+    accessMap.asSequence()
+      .filter { (_, e) -> e.isWrite() }
+      .forEach { (tv, _) -> tv.notify() }
 
-  fun mergeChildReads(c: STMFrame): Unit {
-    readSet.putAll(c.readSet)
+  fun mergeReads(other: STMFrame): Unit {
+    accessMap.putAll(other.accessMap.filter { (_, e) -> e.isWrite().not() })
   }
 
-  fun mergeChildWrites(c: STMFrame): Unit {
-    writeSet.putAll(c.writeSet)
+  fun merge(other: STMFrame): Unit {
+    accessMap.putAll(other.accessMap)
   }
 }
 
@@ -393,13 +431,6 @@ internal class STMTransaction<A>(val f: suspend STM.() -> A) {
    */
   fun getCont(): Continuation<Unit>? = cont.getAndSet(null)
 
-  // TODO Check if validating twice once without locking and once with is worthwhile
-  //  Fine grain locks are all about optimistic running which means they are fastest if there
-  //   are no conflicts thus this may not be great for that case.
-  //  Checking before taking locks sounds like something global lock implementations benefit
-  //   a lot more than fine grained locking ones
-  //  For reference the current implementation fails fast during lock acquisition as soon
-  //   as it sees an invalid value and then releases all already acquired locks.
   suspend fun commit(): A {
     loop@ while (true) {
       val frame = STMFrame()
@@ -408,17 +439,17 @@ internal class STMTransaction<A>(val f: suspend STM.() -> A) {
       }).let {
         if (it == COROUTINE_SUSPENDED) {
           // blocking retry
-          frame.withValidAndLockedReadSet({ xs, releaseVars ->
+          frame.withValidAndLockedReadSet({ _, releaseVars ->
             // quick sanity check. If a transaction has not read anything and retries we are blocked forever
-            if (xs.isEmpty()) throw BlockedIndefinitely
+            if (frame.accessMap.isEmpty()) throw BlockedIndefinitely
 
             // nothing changed so we need to suspend here
-            xs.forEach { (tv, _, _) -> tv.queue(this) }
+            frame.accessMap.forEach { (tv, _) -> tv.queue(this) }
             // it is important to set the continuation before releasing the locks, otherwise
             //  we may not see changes
             suspendCoroutine<Unit> { k -> cont.value = k; releaseVars() }
 
-            xs.forEach { (tv, _, _) -> tv.removeQueued(this) }
+            frame.accessMap.forEach { (tv, _) -> tv.removeQueued(this) }
           }, {})
         } else {
           // try commit
@@ -445,40 +476,11 @@ private fun <A> partialTransaction(parent: STMFrame, f: suspend STM.() -> A): An
     throw IllegalStateException("STM transaction was resumed after aborting. How?!")
   }).let {
     if (it == COROUTINE_SUSPENDED) {
-      parent.mergeChildReads(frame)
-      RETRYING
+      parent.mergeReads(frame)
+      STMFrame.RETRYING
     } else {
-      parent.mergeChildReads(frame)
-      parent.mergeChildWrites(frame)
+      parent.merge(frame)
       it as Any
     }
   }
 }
-
-object RETRYING
-
-/**
- * A few things to consider:
- * We can remove the need for merging nested reads by always saving them in parents because we end
- *  up merging them anyways...
- * This implements fine-grained locking where we lock each TVar accessed. STM can also be implemented
- *  with more coarse locks, although I kind of think that is a waste as it usually leads to linearity
- *  even for unrelated transactions...
- * Locking right now actually blocks a thread by means of looping over variables. This is usually
- *  fine because the only time those variables are locked is when a transaction commits
- *  which is assumed to be infrequent. For high congestion variables using traditional locks is better.
- *  We could also do this over suspend by suspending until the lock is released but I don't think that's
- *  beneficial at all.
- * GHC sometimes kills transactions pre-emptively when it knows it will fail, ignoring why it can do that I don't
- *  see a good way to implement this here because we never yield in the run-loop (except when aborting).
- *  Is there a good way to interrupt a running transaction?
- * The issue with transactions leaking because the are saved to TVars can be solved in a few different ways,
- *  for which the easiest may be removing a transaction from all variables in the read set when
- *  the transaction either aborts or finishes.
- * OrElse currently only checks for calls to retry and does not validate reads/writes. I have no idea
- *  if this is consistent with ghc because the docs are a bit unclear in that regard.
- *  This right now is the easiest implementation though and reads and writes are validated at the end
- *  anyway. But the inner Frame is gone by that time and orElse is not running.
- *  I can probably get this to work in a way which validates the transaction and keeps this in mind but
- *  that will make the implementation a bit more complex.
- */
