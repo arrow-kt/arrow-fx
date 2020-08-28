@@ -1,7 +1,6 @@
 package arrow.fx.coroutines.stm
 
 import arrow.fx.coroutines.ArrowFxSpec
-import arrow.fx.coroutines.SideEffect
 import arrow.fx.coroutines.atomically
 import arrow.fx.coroutines.stm
 import io.kotest.assertions.throwables.shouldThrow

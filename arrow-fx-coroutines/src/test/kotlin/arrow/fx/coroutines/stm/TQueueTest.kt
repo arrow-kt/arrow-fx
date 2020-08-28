@@ -55,7 +55,7 @@ class TQueueTest : ArrowFxSpec(spec = {
   }
   "peek should leave the queue unchanged" {
     val tq = TQueue.new<Int>()
-    atomically { tq.write(20); tq.write(30); tq.write(40)  }
+    atomically { tq.write(20); tq.write(30); tq.write(40) }
     atomically { tq.peek() } shouldBeExactly 20
     atomically { tq.flush() } shouldBe listOf(20, 30, 40)
   }
@@ -67,7 +67,7 @@ class TQueueTest : ArrowFxSpec(spec = {
   }
   "tryPeek should behave like peek if there are elements" {
     val tq = TQueue.new<Int>()
-    atomically { tq.write(20); tq.write(30); tq.write(40)  }
+    atomically { tq.write(20); tq.write(30); tq.write(40) }
     atomically { tq.peek() } shouldBeExactly
       atomically { tq.tryPeek()!! }
     atomically { tq.flush() } shouldBe listOf(20, 30, 40)

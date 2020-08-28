@@ -1,11 +1,11 @@
 package arrow.fx.coroutines.stm
 
 import arrow.fx.coroutines.AtomicRefW
+import arrow.fx.coroutines.Duration
 import arrow.fx.coroutines.ForkConnected
 import arrow.fx.coroutines.STMFrame
 import arrow.fx.coroutines.STMTransaction
 import arrow.fx.coroutines.atomically
-import arrow.fx.coroutines.microseconds
 import arrow.fx.coroutines.sleep
 import kotlinx.atomicfu.AtomicLong
 import kotlinx.atomicfu.atomic
@@ -13,12 +13,12 @@ import kotlinx.atomicfu.update
 import kotlin.coroutines.resume
 
 /**
- * Utility to create [TVar] which sets its value to true after [delay] microseconds.
+ * Utility to create [TVar] which sets its value to true after a [delay]
  */
-suspend fun registerDelay(delay: Int): TVar<Boolean> =
+suspend fun registerDelay(delay: Duration): TVar<Boolean> =
   TVar.new(false).also { v ->
     ForkConnected {
-      sleep(delay.microseconds)
+      sleep(delay)
       atomically { v.write(true) }
     }
   }

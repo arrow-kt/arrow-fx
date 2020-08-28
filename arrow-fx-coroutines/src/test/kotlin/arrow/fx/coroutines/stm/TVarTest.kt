@@ -2,14 +2,17 @@ package arrow.fx.coroutines.stm
 
 import arrow.fx.coroutines.ArrowFxSpec
 import arrow.fx.coroutines.STMFrame
-import arrow.fx.coroutines.STMTransaction
 import arrow.fx.coroutines.atomically
+import arrow.fx.coroutines.check
 import arrow.fx.coroutines.milliseconds
 import arrow.fx.coroutines.raceN
 import arrow.fx.coroutines.sleep
-import arrow.fx.coroutines.timeOutOrNull
 import io.kotest.matchers.ints.shouldBeExactly
+import io.kotest.matchers.longs.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.shouldBe
+import io.kotest.property.Arb
+import io.kotest.property.arbitrary.int
+import kotlin.system.measureTimeMillis
 
 class TVarTest : ArrowFxSpec(spec = {
   "unsafeRead is consistent with atomically { read }" {
@@ -49,5 +52,13 @@ class TVarTest : ArrowFxSpec(spec = {
     // release again should be a no-op
     tv.release(frame, 20)
     tv.unsafeRead() shouldBeExactly 10
+  }
+  "registerDelay should function as expected" {
+    checkAll(Arb.int(0..100)) { d ->
+      measureTimeMillis {
+        val tq = registerDelay(d.milliseconds)
+        atomically { check(tq.read()) }
+      } shouldBeGreaterThanOrEqual d.toLong()
+    }
   }
 })
