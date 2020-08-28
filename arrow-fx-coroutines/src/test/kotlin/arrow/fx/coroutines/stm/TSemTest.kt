@@ -99,22 +99,22 @@ class TSemTest : ArrowFxSpec(spec = {
   "withPermit should release permits even if the function throws" {
     val ts = TSem.new(20)
     atomically {
-      try {
+      catch({
         ts.withPermit {
           throw IllegalArgumentException("Test")
         }
-      } catch (e: IllegalArgumentException) {}
+      }) { Unit }
     }
     atomically { ts.available() } shouldBeExactly 20
   }
   "withPermit(n) should release permits even if the function throws" {
     val ts = TSem.new(20)
     atomically {
-      try {
+      catch({
         ts.withPermit(3) {
           throw IllegalArgumentException("Test")
         }
-      } catch (e: IllegalArgumentException) {}
+      }) { Unit }
     }
     atomically { ts.available() } shouldBeExactly 20
   }

@@ -357,10 +357,12 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
   fun validateAndCommit(): Boolean = withValidAndLockedReadSetAndRelease({
     it.forEach { (tv, _, _) ->
       if (writeSet.containsKey(tv))
-        tv.release(this, writeSet[tv]).also { tv.notify() }
+        tv.release(this, writeSet[tv])
     }
     true
   }) { false }
+
+  fun notifyChanges(): Unit = writeSet.keys.forEach { tv -> tv.notify() }
 
   fun mergeChildReads(c: STMFrame): Unit {
     readSet.putAll(c.readSet)
@@ -423,6 +425,7 @@ internal class STMTransaction<A>(val f: suspend STM.() -> A) {
           if (frame.validateAndCommit().not()) {
             // retry
           } else {
+            frame.notifyChanges()
             return@commit it as A
           }
         }
