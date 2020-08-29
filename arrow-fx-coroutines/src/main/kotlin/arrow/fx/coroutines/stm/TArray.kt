@@ -11,6 +11,9 @@ suspend fun <A> STM.newTArray(vararg arr: A): TArray<A> =
 suspend fun <A> STM.newTArray(xs: Iterable<A>): TArray<A> =
   TArray(xs.map { newTVar(it) }.toTypedArray())
 
+/**
+ * A [TArray] is an array of transactional variables.
+ */
 data class TArray<A>internal constructor(internal val v: Array<TVar<A>>) {
 
   fun size(): Int = v.size

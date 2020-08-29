@@ -170,6 +170,41 @@ import kotlin.coroutines.suspendCoroutine
  * [orElse] is another important primitive which allows a user to detect if a branch called [retry] and then use a fallback instead.
  * If both branches [retry] the entire transaction will [retry].
  *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.Environment
+ * import arrow.fx.coroutines.atomically
+ * import arrow.fx.coroutines.stm.TVar
+ * import arrow.fx.coroutines.STM
+ *
+ * //sampleStart
+ * suspend fun STM.transaction(v: TVar<Int>, ): Int? {
+ *   stm {
+ *     val result = v.read()
+ *     check(result in 0..10)
+ *     result
+ *   } orElse { null }
+ * }
+ * //sampleEnd
+ *
+ * fun main() {
+ *   Environment().unsafeRunSync {
+ *     val v = TVar.new(100)
+ *     println("Value is ${v.unsafeRead()}")
+ *     atomically(transaction())
+ *       .also { println("Transaction returned $it") }
+ *     println("Set value to 5")
+ *     println("Value is ${v.unsafeRead()}")
+ *     atomically { tv.write(5) }
+ *     atomically(transaction())
+ *       .also { println("Transaction returned $it") }
+ *   }
+ * }
+ * ```
+ *
+ * This uses [stm] which is a helper like the stdlib [suspend] to ease access to [orElse].
+ * When the value inside the variable is not in the correct range the transaction retries (due to [check] calling [retry]).
+ * If it is in the correct range it simply returns the value. [orElse] here intercepts a [retry] and executes the alternative should that happen.
+ *
  * ## Exceptions
  *
  * Throwing inside [STM] will let the exception bubble up to either a [catch] handler or to [atomically] which will rethrow it.
@@ -195,6 +230,9 @@ interface STM {
    */
   suspend infix fun <A> (suspend STM.() -> A).orElse(other: suspend STM.() -> A): A
 
+  /**
+   * Run [f] and handle any exception thrown with [onError].
+   */
   suspend fun <A> catch(f: suspend STM.() -> A, onError: suspend STM.(Throwable) -> A): A
 
   /**
@@ -239,53 +277,148 @@ interface STM {
   suspend fun <A> newTVar(a: A): TVar<A> = TVar(a)
 
   // -------- TMVar
+  /**
+   * Read the value from a [TMVar] and empty it.
+   *
+   * This retries if the [TMVar] is empty and leaves the [TMVar] empty if it succeeded.
+   *
+   * @see TMVar.tryTake for a version that does not retry.
+   * @see TMVar.read for a version that does not remove the value after reading.
+   */
   suspend fun <A> TMVar<A>.take(): A =
     v.read().also { v.write(null) } ?: retry()
 
+  /**
+   * Put a value into an empty [TMVar].
+   *
+   * This retries if the [TMVar] is not empty.
+   *
+   * For a version of [TMVar.put] that does not retry see [TMVar.tryPut]
+   */
   suspend fun <A> TMVar<A>.put(a: A): Unit =
     v.read()?.let { retry() } ?: v.write(a)
 
+  /**
+   * Read a value from a [TMVar] without removing it.
+   *
+   * This retries if the [TMVar] is empty but does not take the value out if it succeeds.
+   *
+   * @see TMVar.tryRead for a version that does not retry.
+   * @see TMVar.take for a version that leaves the [TMVar] empty after reading.
+   */
   suspend fun <A> TMVar<A>.read(): A =
     v.read() ?: retry()
 
+  /**
+   * Same as [TMVar.take] except it returns null if the [TMVar] is empty and thus never retries.
+   */
   suspend fun <A> TMVar<A>.tryTake(): A? =
     v.read()?.also { v.write(null) }
 
+  /**
+   * Same as [TMVar.put] except that it returns true or false if was successful or it retried.
+   *
+   * This function never retries.
+   *
+   * @see TMVar.put for a function that retries if the [TMVar] is not empty.
+   */
   suspend fun <A> TMVar<A>.tryPut(a: A): Boolean =
     v.read()?.let { false } ?: v.write(a).let { true }
 
+  /**
+   * Same as [TMVar.read] except that it returns null if the [TMVar] is empty and thus never retries.
+   *
+   * @see TMVar.read for a function that retries if the [TMVar] is empty.
+   * @see TMVar.tryTake for a function that leaves the [TMVar] empty after reading.
+   */
   suspend fun <A> TMVar<A>.tryRead(): A? =
     v.read()
 
+  /**
+   * Check if a [TMVar] is empty. This function never retries.
+   */
   suspend fun <A> TMVar<A>.isEmpty(): Boolean =
     v.read()?.let { false } ?: true
 
+  /**
+   * Check if a [TMVar] is not empty. This function never retries.
+   */
   suspend fun <A> TMVar<A>.isNotEmpty(): Boolean =
     isEmpty().not()
 
+  /**
+   * Swap the content of a [TMVar] or retry if it is empty.
+   */
   suspend fun <A> TMVar<A>.swap(a: A): A =
     v.read()?.also { v.write(a) } ?: retry()
 
   // -------- TSemaphore
+  /**
+   * Returns the currently available number of permits in a [TSem].
+   *
+   * This function never retries.
+   */
   suspend fun TSem.available(): Int =
     v.read()
 
+  /**
+   * Acquire 1 permit from a [TSem].
+   *
+   * This function will retry if there are no permits available.
+   *
+   * @see TSem.tryAcquire for a version that does not retry.
+   */
   suspend fun TSem.acquire(): Unit =
     acquire(1)
 
+  /**
+   * Acquire [n] permit from a [TSem].
+   *
+   * This function will retry if there are less than [n] permits available.
+   *
+   * @see TSem.tryAcquire for a version that does not retry.
+   */
   suspend fun TSem.acquire(n: Int): Unit {
     val curr = v.read()
     check(curr - n >= 0)
     v.write(curr - n)
   }
 
+  /**
+   * Like [TSem.acquire] except that it returns whether or not acquisition was successful.
+   *
+   * This function never retries.
+   *
+   * @see TSem.acquire for a version that retries if there are not enough permits.
+   */
   suspend fun TSem.tryAcquire(): Boolean =
     tryAcquire(1)
 
+  /**
+   * Like [TSem.acquire] except that it returns whether or not acquisition was successful.
+   *
+   * This function never retries.
+   *
+   * @see TSem.acquire for a version that retries if there are not enough permits.
+   */
   suspend fun TSem.tryAcquire(n: Int): Boolean =
     stm { acquire(n); true } orElse { false }
 
-  suspend fun TSem.release(): Unit = v.write(v.read() + 1)
+  /**
+   * Release a permit back to the [TSem].
+   *
+   * This function never retries.
+   */
+  suspend fun TSem.release(): Unit =
+    v.write(v.read() + 1)
+
+  /**
+   * Release [n] permits back to the [TSem].
+   *
+   * [n] must be non-negative.
+   *
+   * This function never retries.
+   */
   suspend fun TSem.release(n: Int): Unit = when (n) {
     0 -> Unit
     1 -> release()
@@ -294,20 +427,21 @@ interface STM {
       else v.write(v.read() + n)
   }
 
-  suspend fun <A> TSem.withPermit(f: suspend STM.() -> A): A {
-    acquire()
-    return f().also { release() }
-  }
-
-  suspend fun <A> TSem.withPermit(n: Int, f: suspend STM.() -> A): A {
-    acquire(n)
-    return f().also { release(n) }
-  }
-
   // TQueue
+  /**
+   * Append an element to the [TQueue].
+   *
+   * This function never retries.
+   */
   suspend fun <A> TQueue<A>.write(a: A): Unit =
     writes.modify { it + a }
 
+  /**
+   * Remove the front element from the [TQueue] or retry if the [TQueue] is empty.
+   *
+   * @see TQueue.tryRead for a version that does not retry.
+   * @see TQueue.peek for a version that does not remove the element.
+   */
   suspend fun <A> TQueue<A>.read(): A {
     val xs = reads.read()
     return if (xs.isNotEmpty()) reads.write(xs.drop(1)).let { xs.first() }
@@ -322,52 +456,135 @@ interface STM {
     }
   }
 
+  /**
+   * Same as [TQueue.read] except it returns null if the [TQueue] is empty.
+   *
+   * This function never retries.
+   */
   suspend fun <A> TQueue<A>.tryRead(): A? =
     (stm { read() } orElse { null })
 
+  /**
+   * Drains all entries of a [TQueue] into a single list.
+   *
+   * This function never retries.
+   */
   suspend fun <A> TQueue<A>.flush(): List<A> {
     val xs = reads.read().also { if (it.isNotEmpty()) reads.write(emptyList()) }
     val ys = writes.read().also { if (it.isNotEmpty()) writes.write(emptyList()) }
     return xs + ys
   }
 
+  /**
+   * Read the front element of a [TQueue] without removing it.
+   *
+   * This function retries if the [TQueue] is empty.
+   *
+   * @see TQueue.read for a version that removes the front element.
+   * @see TQueue.tryPeek for a version that does not retry.
+   */
   suspend fun <A> TQueue<A>.peek(): A =
     read().also { writeFront(it) }
 
+  /**
+   * Same as [TQueue.peek] except it returns null if the [TQueue] is empty.
+   *
+   * This function never retries.
+   *
+   * @see TQueue.tryRead for a version that removes the front element
+   * @see TQueue.peek for a version that retries if the [TQueue] is empty.
+   */
   suspend fun <A> TQueue<A>.tryPeek(): A? =
     tryRead()?.also { writeFront(it) }
 
+  /**
+   * Prepend an element to the [TQueue].
+   *
+   * Mainly used to implement [TQueue.peek] and since this writes to the read variable of a [TQueue] excessive use
+   *  can lead to contention on consumers. Prefer appending to a [TQueue] if possible.
+   *
+   * This function never retries.
+   */
   suspend fun <A> TQueue<A>.writeFront(a: A): Unit =
     reads.read().let { reads.write(listOf(a) + it) }
 
+  /**
+   * Check if a [TQueue] is empty.
+   *
+   * This function never retries.
+   */
   suspend fun <A> TQueue<A>.isEmpty(): Boolean =
     reads.read().isEmpty() && writes.read().isEmpty()
 
+  /**
+   * Check if a [TQueue] is not empty.
+   *
+   * This function never retries.
+   */
   suspend fun <A> TQueue<A>.isNotEmpty(): Boolean =
     reads.read().isNotEmpty() || writes.read().isNotEmpty()
 
+  /**
+   * Filter a [TQueue], removing all elements for which [pred] returns false.
+   *
+   * This function never retries.
+   */
   suspend fun <A> TQueue<A>.filter(pred: (A) -> Boolean): Unit {
     reads.modify { it.filter(pred) }
     writes.modify { it.filter(pred) }
   }
 
+  /**
+   * Filter a [TQueue], removing all elements for which [pred] returns true.
+   *
+   * This function never retries.
+   */
   suspend fun <A> TQueue<A>.filterNot(pred: (A) -> Boolean): Unit {
     reads.modify { it.filterNot(pred) }
     writes.modify { it.filterNot(pred) }
   }
 
+  /**
+   * Return the current number of elements in a [TQueue]
+   *
+   * This function never retries.
+   */
   suspend fun <A> TQueue<A>.size(): Int = reads.read().size + writes.read().size
 
   // -------- TArray
+  /**
+   * Read a variable from the [TArray].
+   *
+   * Throws if [i] is out of bounds.
+   *
+   * This function never retries.
+   */
   suspend fun <A> TArray<A>.get(i: Int): A =
     v[i].read()
 
+  /**
+   * Write a variable to the [TArray].
+   *
+   * Throws if [i] is out of bounds.
+   *
+   * This function never retries.
+   */
   suspend fun <A> TArray<A>.write(i: Int, a: A): Unit =
     v[i].write(a)
 
+  /**
+   * Modify each element in a [TArray] by applying [f].
+   *
+   * This function never retries.
+   */
   suspend fun <A> TArray<A>.transform(f: (A) -> A): Unit =
     v.forEach { it.modify(f) }
 
+  /**
+   * Fold a [TArray] to a single value.
+   *
+   * This function never retries.
+   */
   suspend fun <A, B> TArray<A>.fold(init: B, f: (B, A) -> B): B =
     v.fold(init) { acc, v -> f(acc, v.read()) }
 }
@@ -389,9 +606,26 @@ suspend fun STM.check(b: Boolean): Unit = if (b.not()) retry() else Unit
 /**
  * Run a transaction to completion.
  *
- * This may suspend if [retry] is called and no [TVar] changed (It resumes automatically on changes)
+ * This comes with the guarantee that at the time of committing the transaction all read variables have to have a consistent state
+ *  (they have not changed after initially reading). Otherwise the transaction will be aborted and run again.
  *
- * This also rethrows all exceptions thrown inside [f].
+ * Note that only reads and writes inside a single transaction have this guarantee.
+ * Code that calls [atomically] as follows will again be subject to race conditions:
+ * `atomically { v.read() }.let { atomically { v.write(it + 1) } }`. Because those are separate transactions the value inside `v` might change
+ *  between transactions! The only safe way is to do it in one go: `atomically { v.write(v.read() + 1) }`
+ *
+ * Transactions that only read or access completely disjoint set of [TVar]'s will be able to commit concurrently as [STM] in arrow
+ *  does not use a global lock to commit. Only calls to [STM.write] need to be synchronized, however the performance of [STM] is still
+ *  heavily linked to the amount of [TVar]'s accessed so it is good practice to keep transactions short.
+ *
+ * Keeping transactions short has another benefit which comes from another drawback of [STM]:
+ * There is no notion of fairness when it comes to transactions. The fastest transaction always wins.
+ * This can be problematic if a large number of small transactions starves out a larger transaction by forcing it to retry a lot.
+ * In practice this rarely happens, however to avoid such a scenario it is recommended to keep transactions small.
+ *
+ * This may suspend if [STM.retry] is called and no [TVar] changed (It resumes automatically on changes).
+ *
+ * This also rethrows all exceptions not caught by [STM.catch] inside [f].
  */
 suspend fun <A> atomically(f: suspend STM.() -> A): A = STMTransaction(f).commit()
 
@@ -444,6 +678,7 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
     try {
       // This is important to keep changes local.
       // With just try catch we'd keep state changes from try even if we throw!
+      // TODO we might need to merge reads here if the error is caught and the transaction retries!
       when (val r = partialTransaction(this@STMFrame, f)) {
         RETRYING -> retry()
         else -> r as A
@@ -584,6 +819,13 @@ internal class STMTransaction<A>(val f: suspend STM.() -> A) {
    */
   fun getCont(): Continuation<Unit>? = cont.getAndSet(null)
 
+  // TODO should we abort after retrying x times to help a user notice "live-locked" transactions?
+  //  This could be implemented by checking two values when retrying:
+  //  - the number of prior retries
+  //  - the time since we started trying to commit this transaction
+  //  If they both pass a threshold we should probably kill the transaction and throw
+  //  "live-locked" transactions are those that are continuously retry due to accessing variables with high contention and
+  //   taking longer than the transactions updating those variables.
   suspend fun commit(): A {
     loop@ while (true) {
       val frame = STMFrame()

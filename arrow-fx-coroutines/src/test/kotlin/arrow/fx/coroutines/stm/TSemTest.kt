@@ -78,44 +78,4 @@ class TSemTest : ArrowFxSpec(spec = {
     val ts = TSem.new(3)
     atomically { ts.release(6); ts.available() } shouldBe 9
   }
-  "withPermit should acquire, run the function and release" {
-    val ts = TSem.new(10)
-    atomically {
-      ts.withPermit {
-        ts.available()
-      }
-    } shouldBeExactly 9
-    atomically { ts.available() } shouldBeExactly 10
-  }
-  "withPermit(n) should acquire, run the function and release" {
-    val ts = TSem.new(10)
-    atomically {
-      ts.withPermit(5) {
-        ts.available()
-      }
-    } shouldBeExactly 5
-    atomically { ts.available() } shouldBeExactly 10
-  }
-  "withPermit should release permits even if the function throws" {
-    val ts = TSem.new(20)
-    atomically {
-      catch({
-        ts.withPermit {
-          throw IllegalArgumentException("Test")
-        }
-      }) { Unit }
-    }
-    atomically { ts.available() } shouldBeExactly 20
-  }
-  "withPermit(n) should release permits even if the function throws" {
-    val ts = TSem.new(20)
-    atomically {
-      catch({
-        ts.withPermit(3) {
-          throw IllegalArgumentException("Test")
-        }
-      }) { Unit }
-    }
-    atomically { ts.available() } shouldBeExactly 20
-  }
 })

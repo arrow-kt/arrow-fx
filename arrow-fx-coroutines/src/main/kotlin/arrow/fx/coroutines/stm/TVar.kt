@@ -3,6 +3,7 @@ package arrow.fx.coroutines.stm
 import arrow.fx.coroutines.AtomicRefW
 import arrow.fx.coroutines.Duration
 import arrow.fx.coroutines.ForkConnected
+import arrow.fx.coroutines.STM
 import arrow.fx.coroutines.STMFrame
 import arrow.fx.coroutines.STMTransaction
 import arrow.fx.coroutines.atomically
@@ -13,7 +14,7 @@ import kotlinx.atomicfu.update
 import kotlin.coroutines.resume
 
 /**
- * Utility to create [TVar] which sets its value to true after a [delay]
+ * Utility to create [TVar] which sets its value to true after a [delay].
  */
 suspend fun registerDelay(delay: Duration): TVar<Boolean> =
   TVar.new(false).also { v ->
@@ -23,6 +24,32 @@ suspend fun registerDelay(delay: Duration): TVar<Boolean> =
     }
   }
 
+/**
+ * A [TVar] is a mutable reference that can only be (safely) accessed inside a [STM] transaction.
+ *
+ * ## Creating a [TVar]
+ *
+ * There are two ways of creating [TVar]'s:
+ * - [STM.newTVar] to create a [TVar] inside a transaction
+ * - [TVar.new] to create a top-level [TVar] outside of a transaction
+ *
+ * Strictly speaking [TVar.new] is not necessary as it can be defined as `atomically { newTVar(v) }` however [TVar.new] is much
+ *  faster because it avoids creating a (pointless) transaction.
+ * [STM.newTVar] should be used inside transactions because it is not possible to use [TVar.new] inside [STM] due to `@RestrictSuspension`.
+ *
+ * ## Accessing and modifying a [TVar]
+ *
+ * Retrieving the value of a [TVar] can be done outside of transactions with [TVar.unsafeRead].
+ * This is called unsafe because if the result is then used inside an [atomically] it may end up with an inconsistent state
+ *  and thus a race-condition.
+ * Using it for one-off reads is fine though and is also faster than `atomically { v.read() }` because it avoids creating a transaction.
+ *
+ * Inside a transaction several combinators are present to modify and read a [TVar]:
+ * - [STM.read] Read the value from a [TVar]
+ * - [STM.write] Write a new value to the [TVar]
+ * - [STM.modify] Modify the [TVar] with a function. `modify(f) = write(f(read()))`
+ * - [STM.swap] Swap the content of a [TVar]. `swap(a) = read().also { write(a) }`
+ */
 class TVar<A> internal constructor(a: A) {
   /**
    * The ref for a TVar stores either the STMFrame that currently locks the value or the value itself
@@ -51,8 +78,7 @@ class TVar<A> internal constructor(a: A) {
    * Read the value of a [TVar]. This has no consistency guarantees for subsequent reads and writes
    *  since it is outside of a stm transaction.
    *
-   * Much faster than `atomically { v.read() }` because it avoids creating a transaction, it just reads
-   *  the value.
+   * Much faster than `atomically { v.read() }` because it avoids creating a transaction, it just reads the value.
    */
   suspend fun unsafeRead(): A = this.readI()
 
