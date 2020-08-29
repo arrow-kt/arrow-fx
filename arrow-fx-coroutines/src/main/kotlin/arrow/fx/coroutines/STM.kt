@@ -177,7 +177,7 @@ import kotlin.coroutines.suspendCoroutine
  * import arrow.fx.coroutines.STM
  *
  * //sampleStart
- * suspend fun STM.transaction(v: TVar<Int>, ): Int? {
+ * suspend fun STM.transaction(v: TVar<Int>): Int? {
  *   stm {
  *     val result = v.read()
  *     check(result in 0..10)

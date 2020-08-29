@@ -23,4 +23,4 @@ data class TSem internal constructor(internal val v: TVar<Int>) {
   }
 }
 
-private fun checkNotNegative(n: Int): Int = if (n <= 0) throw IllegalArgumentException("n must be non-negative") else n
+private fun checkNotNegative(n: Int): Int = if (n < 0) throw IllegalArgumentException("n must be non-negative") else n
