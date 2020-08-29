@@ -175,27 +175,27 @@ import kotlin.coroutines.suspendCoroutine
  * import arrow.fx.coroutines.atomically
  * import arrow.fx.coroutines.stm.TVar
  * import arrow.fx.coroutines.STM
+ * import arrow.fx.coroutines.stm
  *
  * //sampleStart
- * suspend fun STM.transaction(v: TVar<Int>): Int? {
+ * suspend fun STM.transaction(v: TVar<Int>): Int? =
  *   stm {
  *     val result = v.read()
  *     check(result in 0..10)
  *     result
  *   } orElse { null }
- * }
  * //sampleEnd
  *
  * fun main() {
  *   Environment().unsafeRunSync {
  *     val v = TVar.new(100)
  *     println("Value is ${v.unsafeRead()}")
- *     atomically(transaction())
+ *     atomically { transaction(v) }
  *       .also { println("Transaction returned $it") }
  *     println("Set value to 5")
  *     println("Value is ${v.unsafeRead()}")
- *     atomically { tv.write(5) }
- *     atomically(transaction())
+ *     atomically { v.write(5) }
+ *     atomically { transaction(v) }
  *       .also { println("Transaction returned $it") }
  *   }
  * }
