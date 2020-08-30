@@ -379,7 +379,7 @@ class ParTupledNTest : ArrowFxSpec(spec = {
           1 -> raceN(winner, loserA, loserB, loserC)
           2 -> raceN(loserA, winner, loserB, loserC)
           3 -> raceN(loserA, loserB, winner, loserC)
-          4 -> raceN(loserA, loserB, loserC, winner)
+          else -> raceN(loserA, loserB, loserC, winner)
         }
       }
 

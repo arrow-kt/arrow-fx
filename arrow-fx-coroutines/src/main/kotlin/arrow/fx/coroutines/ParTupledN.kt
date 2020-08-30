@@ -339,7 +339,14 @@ suspend fun <A, B, C, D, E> parMapN(
 
     // Composite cancellable that cancels all ops.
     // NOTE: conn.pop() called when cb gets called below in complete.
-    conn.push(listOf(connA.cancelToken(), connB.cancelToken(), connC.cancelToken()))
+    conn.push(
+      listOf(
+        connA.cancelToken(),
+        connB.cancelToken(),
+        connC.cancelToken(),
+        connD.cancelToken()
+      )
+    )
 
     fun complete(a: A, b: B, c: C, d: D) {
       conn.pop()
@@ -364,12 +371,39 @@ suspend fun <A, B, C, D, E> parMapN(
       if (active.getAndSet(false)) { // We were already cancelled so don't do anything.
         other.cancelToken().cancel.startCoroutine(Continuation(EmptyCoroutineContext) { r1 ->
           other2.cancelToken().cancel.startCoroutine(Continuation(EmptyCoroutineContext) { r2 ->
-            conn.pop()
-            cb(Result.failure(r1.fold({
-              r2.fold({ e }, { e3 -> Platform.composeErrors(e, e3) })
-            }, { e2 ->
-              r2.fold({ Platform.composeErrors(e, e2) }, { e3 -> Platform.composeErrors(e, e2, e3) })
-            })))
+            other3.cancelToken().cancel.startCoroutine(Continuation(EmptyCoroutineContext) { r3 ->
+              conn.pop()
+              cb(
+                Result.failure(
+                  r1.fold({
+                    r2.fold({
+                      r3.fold(
+                        { e },
+                        { e3 -> Platform.composeErrors(e, e3) })
+                    },
+                    { e2 ->
+                      r3.fold(
+                        { Platform.composeErrors(e, e2) },
+                        { e3 -> Platform.composeErrors(e, e2, e3) }
+                      )
+                    })
+                  },
+                  { e1 ->
+                    r2.fold({
+                      r3.fold(
+                        { Platform.composeErrors(e, e1) },
+                        { e3 -> Platform.composeErrors(e, e1, e3) })
+                    },
+                    { e2 ->
+                      r3.fold(
+                        { Platform.composeErrors(e, e1, e2) },
+                        { e3 -> Platform.composeErrors(e, e1, e2, e3) }
+                      )
+                    })
+                  })
+                )
+              )
+            })
           })
         })
       } else Unit

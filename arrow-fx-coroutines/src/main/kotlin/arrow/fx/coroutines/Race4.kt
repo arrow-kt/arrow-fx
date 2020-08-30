@@ -104,17 +104,17 @@ suspend fun <A, B, C, D> raceN(
                 r3.fold({
                   r4.fold({
                     err
-                  }, { err3 ->
-                    Platform.composeErrors(err, err3)
+                  }, { err4 ->
+                    Platform.composeErrors(err, err4)
                   })
-                }, { err2 ->
+                }, { err3 ->
                   r3.fold({
-                    Platform.composeErrors(err, err2)
-                  }, { err3 ->
-                    Platform.composeErrors(err, err2, err3)
+                    Platform.composeErrors(err, err3)
+                  }, { err4 ->
+                    Platform.composeErrors(err, err3, err4)
                   })
                 })
-              }, { err4 ->
+              }, { err2 ->
                 r3.fold({
                   Platform.composeErrors(err, err2)
                 }, { err3 ->
@@ -136,30 +136,39 @@ suspend fun <A, B, C, D> raceN(
     val connA = SuspendConnection()
     val connB = SuspendConnection()
     val connC = SuspendConnection()
+    val connD = SuspendConnection()
 
     conn.push(listOf(connA.cancelToken(), connB.cancelToken(), connC.cancelToken()))
 
     fa.startCoroutineCancellable(CancellableContinuation(ctx, connA) { result ->
       result.fold({
-        onSuccess(active, conn, connB, connC, cont::resumeWith, Race4.First(it))
+        onSuccess(active, conn, connB, connC, connD, cont::resumeWith, Race4.First(it))
       }, {
-        onError(active, cont::resumeWith, conn, connB, connC, it)
+        onError(active, cont::resumeWith, conn, connB, connC, connD, it)
       })
     })
 
     fb.startCoroutineCancellable(CancellableContinuation(ctx, connB) { result ->
       result.fold({
-        onSuccess(active, conn, connA, connC, cont::resumeWith, Race4.Second(it))
+        onSuccess(active, conn, connA, connC, connD, cont::resumeWith, Race4.Second(it))
       }, {
-        onError(active, cont::resumeWith, conn, connA, connC, it)
+        onError(active, cont::resumeWith, conn, connA, connC, connD, it)
       })
     })
 
     fc.startCoroutineCancellable(CancellableContinuation(ctx, connC) { result ->
       result.fold({
-        onSuccess(active, conn, connA, connB, cont::resumeWith, Race4.Third(it))
+        onSuccess(active, conn, connA, connB, connD, cont::resumeWith, Race4.Third(it))
       }, {
-        onError(active, cont::resumeWith, conn, connA, connB, it)
+        onError(active, cont::resumeWith, conn, connA, connB, connD, it)
+      })
+    })
+
+    fd.startCoroutineCancellable(CancellableContinuation(ctx, connC) { result ->
+      result.fold({
+        onSuccess(active, conn, connA, connB, connC, cont::resumeWith, Race4.Fourth(it))
+      }, {
+        onError(active, cont::resumeWith, conn, connA, connB, connC, it)
       })
     })
 
