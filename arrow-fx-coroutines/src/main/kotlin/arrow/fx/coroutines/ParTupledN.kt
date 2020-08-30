@@ -40,7 +40,7 @@ suspend fun <A, B, C, D> parTupledN(
   fc: suspend () -> C,
   fd: suspend () -> D
 ): Tuple4<A, B, C, D> =
-  parTupledN(ComputationPool, fa, fb, fc, fc)
+  parTupledN(ComputationPool, fa, fb, fc, fd)
 
 /**
  * Tuples [fa], [fb] on the provided [CoroutineContext].
@@ -68,7 +68,7 @@ suspend fun <A, B, C> parTupledN(ctx: CoroutineContext, fa: suspend () -> A, fb:
 
 /**
  * Tuples [fa], [fb], [fc], & [fd] on the provided [CoroutineContext].
- * Cancelling this operation cancels both tasks running in parallel.
+ * Cancelling this operation cancels all tasks running in parallel.
  *
  * **WARNING** it runs in parallel depending on the capabilities of the provided [CoroutineContext].
  * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
@@ -300,6 +300,122 @@ suspend fun <A, B, C, D> parMapN(
         tryComplete(newState)
       }, { e ->
         sendException(connA, connC, e)
+      })
+    })
+
+    COROUTINE_SUSPENDED
+  }
+
+/**
+ * Parallel maps [fa], [fb], [fc], and [fd] on the provided [CoroutineContext].
+ * Cancelling this operation cancels both tasks running in parallel.
+ *
+ * **WARNING** this function forks [fa], [fb], [fc], and [fd] but if it runs in parallel depends
+ * on the capabilities of the provided [CoroutineContext].
+ * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
+ *
+ * @see parMapN for a function that ensures it runs in parallel on the [ComputationPool].
+ */
+suspend fun <A, B, C, D, E> parMapN(
+  ctx: CoroutineContext,
+  fa: suspend () -> A,
+  fb: suspend () -> B,
+  fc: suspend () -> C,
+  fd: suspend () -> D,
+  f: (A, B, C, D) -> E
+): E =
+  suspendCoroutineUninterceptedOrReturn { cont ->
+    val conn = cont.context.connection()
+    val cont = cont.intercepted()
+    val cb = cont::resumeWith
+
+    val state: AtomicRefW<Tuple4<A?, B?, C?, D?>?> = AtomicRefW(null)
+    val active = AtomicBooleanW(true)
+
+    val connA = SuspendConnection()
+    val connB = SuspendConnection()
+    val connC = SuspendConnection()
+    val connD = SuspendConnection()
+
+    // Composite cancellable that cancels all ops.
+    // NOTE: conn.pop() called when cb gets called below in complete.
+    conn.push(listOf(connA.cancelToken(), connB.cancelToken(), connC.cancelToken()))
+
+    fun complete(a: A, b: B, c: C, d: D) {
+      conn.pop()
+      cb(Result.success(f(a, b, c, d)))
+    }
+
+    fun tryComplete(result: Tuple4<A?, B?, C?, D?>?): Unit {
+      result?.let { (a, b, c, d) ->
+        a?.let {
+          b?.let {
+            c?.let {
+              d?.let {
+                complete(a, b, c, d)
+              }
+            }
+          }
+        }
+      } ?: Unit
+    }
+
+    fun sendException(other: SuspendConnection, other2: SuspendConnection, other3: SuspendConnection, e: Throwable) =
+      if (active.getAndSet(false)) { // We were already cancelled so don't do anything.
+        other.cancelToken().cancel.startCoroutine(Continuation(EmptyCoroutineContext) { r1 ->
+          other2.cancelToken().cancel.startCoroutine(Continuation(EmptyCoroutineContext) { r2 ->
+            conn.pop()
+            cb(Result.failure(r1.fold({
+              r2.fold({ e }, { e3 -> Platform.composeErrors(e, e3) })
+            }, { e2 ->
+              r2.fold({ Platform.composeErrors(e, e2) }, { e3 -> Platform.composeErrors(e, e2, e3) })
+            })))
+          })
+        })
+      } else Unit
+
+    // Can be started with a `startCancellableCoroutine` builder instead.
+    fa.startCoroutineCancellable(CancellableContinuation(ctx, connA) { resA ->
+      resA.fold({ a ->
+        val newState = state.updateAndGet { current ->
+          current?.copy(a = a) ?: Tuple4(a, null, null, null)
+        }
+        tryComplete(newState)
+      }, { e ->
+        sendException(connB, connC, connD, e)
+      })
+    })
+
+    fb.startCoroutineCancellable(CancellableContinuation(ctx, connB) { resB ->
+      resB.fold({ b ->
+        val newState = state.updateAndGet { current ->
+          current?.copy(b = b) ?: Tuple4(null, b, null, null)
+        }
+        tryComplete(newState)
+      }, { e ->
+        sendException(connA, connC, connD, e)
+      })
+    })
+
+    fc.startCoroutineCancellable(CancellableContinuation(ctx, connC) { resC ->
+      resC.fold({ c ->
+        val newState = state.updateAndGet { current ->
+          current?.copy(c = c) ?: Tuple4(null, null, c, null)
+        }
+        tryComplete(newState)
+      }, { e ->
+        sendException(connA, connB, connD, e)
+      })
+    })
+
+    fd.startCoroutineCancellable(CancellableContinuation(ctx, connD) { resC ->
+      resC.fold({ d ->
+        val newState = state.updateAndGet { current ->
+          current?.copy(d = d) ?: Tuple4(null, null, null, d)
+        }
+        tryComplete(newState)
+      }, { e ->
+        sendException(connA, connB, connC, e)
       })
     })
 
