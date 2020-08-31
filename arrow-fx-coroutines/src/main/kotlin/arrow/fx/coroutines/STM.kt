@@ -704,21 +704,11 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
   override suspend fun <A> TVar<A>.write(a: A): Unit =
     accessMap[this as TVar<Any?>]?.update(a) ?: unsafeRead().let { accessMap[this] = Entry(it, a) }
 
-  /**
-   * Utility which locks all [TVar]'s that were written to and passes them to [withLocked].
-   *
-   * The second argument to [withLocked] is the release function which releases all taken locks, but does not
-   *  notify waiters via [TVar.notify].
-   *
-   * The second argument to [withValidAndLockedReadSet] is a fallback to execute when
-   *  a [TVar] was invalid. This releases all locks and returns the result of [onInvalid].
-   */
-  internal inline fun <A> withValidAndLockedReadSet(
-    withLocked: (List<Pair<TVar<Any?>, Entry>>, () -> Unit) -> A,
-    onInvalid: () -> A
-  ): A {
-    val writesOrdered: MutableList<Pair<TVar<Any?>, Entry>> = mutableListOf()
-    val release: () -> Unit = { writesOrdered.forEach { (tv, entry) -> (tv).release(this, entry.initialVal) } }
+  internal fun validateAndCommit(): Boolean {
+    if (accessMap.isEmpty()) return true
+
+    val locked = mutableListOf<Map.Entry<TVar<Any?>, Entry>>()
+    val reads = mutableListOf<Map.Entry<TVar<Any?>, Entry>>()
 
     /**
      * Why do we not lock reads?
@@ -729,61 +719,34 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
      *  that has no effect on this transaction because our write will 100% persist consistently (we hold all locks) and
      *  any other transaction depending on a variable we are about to write to has to wait for us and then verify again
      */
-    // TODO I would not need a lock order if I retry when encountering a locked TVar which essentially removes the need for ids and sorting
-    //  at the cost of two potentially deadlocking transactions now having two retry rather than wait
-    //  I am pretty sure that is an optimization, but I'd love benchmarks for this.
-    accessMap.toList()
-      // TODO this check could be done while acquiring write locks, right now this checks writes twice, once here and once during
-      //  locking. I'll wait for benchmarks on this one.
-      .also {
-        // quick check if any values are already invalid
-        // This is not strictly necessary but helps because it avoids taking locks
-        if (it.any { (tv, entry) -> tv.readI() !== entry.initialVal })
-          return@withValidAndLockedReadSet onInvalid()
-      } // acquire locks for writes and recheck if the writes are valid
-      .partition { it.second.isWrite() }
-      .let { (writes, reads) ->
-        // acquire locks for writes and short circuit if those became invalid
-        writes.sortedBy { it.first.id }
-          .forEach { (tv, entry) ->
-            val curr = tv.lock(this)
-            if (curr !== entry.initialVal) {
-              tv.release(this, curr)
-              release()
-              return@withValidAndLockedReadSet onInvalid()
-            } else {
-              writesOrdered.add(tv to entry)
-            }
-          }
-        // recheck that none of our reads became invalid
-        if (reads.any { (tv, entry) -> tv.readI() !== entry.initialVal }) {
-          release()
-          return@withValidAndLockedReadSet onInvalid()
+    accessMap.forEach { tvToEntry ->
+      val (tv, entry) = tvToEntry
+      if (entry.isWrite()) {
+        if (tv.lock_cond(this, entry.initialVal)) {
+          locked.add(tvToEntry)
+        } else {
+          locked.forEach { it.key.release(this, it.value.initialVal) }
+          return@validateAndCommit false
+        }
+      } else {
+        if (tv.value !== entry.initialVal) {
+          locked.forEach { it.key.release(this, it.value.initialVal) }
+          return@validateAndCommit false
+        } else {
+          reads.add(tvToEntry)
         }
       }
-    return withLocked(writesOrdered, release)
-  }
-
-  /**
-   * Helper which automatically releases after [withLocked] is done.
-   */
-  private inline fun <A> withValidAndLockedReadSetAndRelease(
-    withLocked: (List<Pair<TVar<Any?>, Entry>>) -> A,
-    onInvalid: () -> A
-  ): A =
-    withValidAndLockedReadSet({ xs, rel -> withLocked(xs).also { rel() } }, onInvalid)
-
-  /**
-   * Validate and commit changes from this frame.
-   *
-   * Returns whether or not validation (and thus the commit) was successful.
-   */
-  fun validateAndCommit(): Boolean = withValidAndLockedReadSetAndRelease({
-    it.forEach { (tv, entry) ->
-      tv.release(this, entry.newVal)
     }
-    true
-  }) { false }
+
+    if (reads.any { (tv, entry) -> tv.value !== entry.initialVal }) {
+      locked.forEach { it.key.release(this, it.value.initialVal) }
+      return false
+    }
+
+    locked.forEach { it.key.release(this, it.value.newVal) }
+    notifyChanges()
+    return true
+  }
 
   fun notifyChanges(): Unit =
     accessMap.asSequence()
@@ -827,12 +790,18 @@ internal class STMTransaction<A>(val f: suspend STM.() -> A) {
   //  "live-locked" transactions are those that are continuously retry due to accessing variables with high contention and
   //   taking longer than the transactions updating those variables.
   suspend fun commit(): A {
-    loop@ while (true) {
+    loop@while (true) {
       val frame = STMFrame()
       f.startCoroutineUninterceptedOrReturn(frame, Continuation(EmptyCoroutineContext) {
         throw IllegalStateException("STM transaction was resumed after aborting. How?!")
       }).let {
-        if (it == COROUTINE_SUSPENDED) {
+        if (it != COROUTINE_SUSPENDED) {
+          // try commit
+          if (frame.validateAndCommit()) {
+            return@commit it as A
+          }
+          // retry
+        } else {
           // blocking retry
           if (frame.accessMap.isEmpty()) throw BlockedIndefinitely
 
@@ -844,28 +813,21 @@ internal class STMTransaction<A>(val f: suspend STM.() -> A) {
             //  The problem is that if we don't lock other threads may update us and we might miss it and thus block
             //   despite having seen change which is really bad for one off transactions
             //   that we are polling for with stm like registerDelay and similar
-            frame.accessMap.toList().sortedBy { (tv, _) -> tv.id }
+            frame.accessMap
               .forEach { (tv, entry) ->
                 val curr = tv.lock(frame)
                 if (curr !== entry.initialVal) {
                   tv.release(frame, curr)
                   cont.getAndSet(null)?.resume(Unit)
                   return@susp
+                } else {
+                  tv.queue(this)
+                  registered.add(tv)
+                  tv.release(frame, curr)
                 }
-                tv.queue(this)
-                registered.add(tv)
-                tv.release(frame, curr)
               }
           }
           registered.forEach { it.removeQueued(this) }
-        } else {
-          // try commit
-          if (frame.validateAndCommit().not()) {
-            // retry
-          } else {
-            frame.notifyChanges()
-            return@commit it as A
-          }
         }
       }
     }

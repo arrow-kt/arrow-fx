@@ -9,6 +9,7 @@ import arrow.fx.coroutines.STMTransaction
 import arrow.fx.coroutines.atomically
 import arrow.fx.coroutines.sleep
 import kotlinx.atomicfu.AtomicLong
+import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
 import kotlin.coroutines.resume
@@ -56,7 +57,10 @@ class TVar<A> internal constructor(a: A) {
    * This is used to implement locking. Reading threads have to loop until the value is released by a
    *  transaction.
    */
-  private val ref: AtomicRefW<Any?> = AtomicRefW(a as Any?)
+  private val ref: AtomicRef<Any?> = atomic(a as Any?)
+
+  internal val value
+    get() = ref.value
 
   /**
    * Each TVar has a unique id which is used to get a total ordering of variables to ensure that locks
@@ -86,7 +90,7 @@ class TVar<A> internal constructor(a: A) {
    * Internal unsafe (non-suspend) version of read. Used by various other internals and [unsafeRead] to
    *  read the current value respecting its state.
    */
-  internal fun readI(): A {
+  private fun readI(): A {
     while (true) {
       ref.value.let {
         if (it !is STMFrame) return@readI it as A
@@ -120,6 +124,12 @@ class TVar<A> internal constructor(a: A) {
     } while (ref.compareAndSet(res as Any?, frame).not())
     return res
   }
+
+  /**
+   * Lock a [TVar] by replacing the value with [frame] only if the current value is [expected]
+   */
+  internal fun lock_cond(frame: STMFrame, expected: A): Boolean =
+    ref.compareAndSet(expected, frame)
 
   /**
    * Queue a transaction to be notified when this [TVar] is changed and [notify] is called.
