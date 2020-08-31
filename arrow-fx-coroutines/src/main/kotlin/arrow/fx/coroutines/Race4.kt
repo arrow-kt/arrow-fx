@@ -164,7 +164,7 @@ suspend fun <A, B, C, D> raceN(
       })
     })
 
-    fd.startCoroutineCancellable(CancellableContinuation(ctx, connC) { result ->
+    fd.startCoroutineCancellable(CancellableContinuation(ctx, connD) { result ->
       result.fold({
         onSuccess(active, conn, connA, connB, connC, cont::resumeWith, Race4.Fourth(it))
       }, {
