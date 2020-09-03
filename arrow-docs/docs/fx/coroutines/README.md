@@ -19,6 +19,7 @@ So let's take a quick look at an example.
 import kotlin.coroutines.intrinsics.createCoroutineUnintercepted
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.coroutines.resume
 
 suspend fun one(): Int = 1
 
