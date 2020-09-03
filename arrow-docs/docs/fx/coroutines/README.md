@@ -17,6 +17,8 @@ So let's take a quick look at an example.
 
 ```kotlin:ank
 import kotlin.coroutines.intrinsics.createCoroutineUnintercepted
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.EmptyCoroutineContext
 
 suspend fun one(): Int = 1
 
