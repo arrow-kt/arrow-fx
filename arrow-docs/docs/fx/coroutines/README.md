@@ -1,3 +1,8 @@
+---
+layout: docs-fx
+title: "Kotlin Standard Library and Arrow Fx Coroutines"
+---
+
 # Kotlin Standard Library & Arrow Fx Coroutines
 
 ## Demystify Coroutine 
