@@ -5,7 +5,6 @@ import arrow.core.Tuple4
 import arrow.core.Tuple5
 import arrow.core.Tuple6
 import arrow.core.Tuple7
-import arrow.core.Tuple8
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
@@ -357,9 +356,9 @@ suspend fun <A, B, C, D, E, F, G> parMapN(
     ctx,
     suspend { parMapN(ctx, fa, fb, fc, fd, fe, ::Tuple5) },
     ff,
-  ) { abcde, _f ->
+  ) { abcde, f ->
     val (a, b, c, d, e) = abcde
-    f(a, b, c , d, e, _f)
+    f(a, b, c , d, e, f)
   }
 
 /**
@@ -416,7 +415,7 @@ suspend fun <A, B, C, D, E, F, G, H, I> parMapN(
 ): I =
   parMapN(
     ctx,
-    suspend { parMapN(ctx, fa, fb, fc, fd, fe, ff, fg, ::Tuple7) },
+    suspend { parMapN(ctx, fa, fb, fc, fd, fe,ff, fg, ::Tuple7) },
     fh,
   ) { abcdefg, h ->
     val (a, b, c, d, e, _f, g) = abcdefg
