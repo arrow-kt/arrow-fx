@@ -5,6 +5,7 @@ import arrow.core.Tuple4
 import arrow.core.Tuple5
 import arrow.core.Tuple6
 import arrow.core.Tuple7
+import arrow.core.Tuple8
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
@@ -115,9 +116,9 @@ suspend fun <A, B, C> parMapN(
   fb: suspend () -> B,
   f: (A, B) -> C
 ): C =
-  suspendCoroutineUninterceptedOrReturn { cont ->
-    val conn = cont.context.connection()
-    val cont = cont.intercepted()
+  suspendCoroutineUninterceptedOrReturn { _cont ->
+    val conn = _cont.context.connection()
+    val cont = _cont.intercepted()
     val cb = cont::resumeWith
 
     // Used to store Throwable, Either<A, B> or empty (null). (No sealed class used for a slightly better performing ParMap2)
@@ -193,9 +194,9 @@ suspend fun <A, B, C, D> parMapN(
   fc: suspend () -> C,
   f: (A, B, C) -> D
 ): D =
-  suspendCoroutineUninterceptedOrReturn { cont ->
-    val conn = cont.context.connection()
-    val cont = cont.intercepted()
+  suspendCoroutineUninterceptedOrReturn { _cont ->
+    val conn = _cont.context.connection()
+    val cont = _cont.intercepted()
     val cb = cont::resumeWith
 
     val state: AtomicRefW<Triple<A?, B?, C?>?> = AtomicRefW(null)
@@ -356,9 +357,9 @@ suspend fun <A, B, C, D, E, F, G> parMapN(
     ctx,
     suspend { parMapN(ctx, fa, fb, fc, fd, fe, ::Tuple5) },
     ff,
-  ) { abcde, f ->
+  ) { abcde, _f ->
     val (a, b, c, d, e) = abcde
-    f(a, b, c , d, e, f)
+    f(a, b, c , d, e, _f)
   }
 
 /**
@@ -415,9 +416,40 @@ suspend fun <A, B, C, D, E, F, G, H, I> parMapN(
 ): I =
   parMapN(
     ctx,
-    suspend { parMapN(ctx, fa, fb, fc, fd, fe,ff, fg, ::Tuple7) },
+    suspend { parMapN(ctx, fa, fb, fc, fd, fe, ff, fg, ::Tuple7) },
     fh,
   ) { abcdefg, h ->
     val (a, b, c, d, e, _f, g) = abcdefg
     f(a, b, c , d, e, _f, g, h)
+  }
+/**
+ * Parallel maps [fa], [fb], [fc], [fd], [fe], [ff], [fg], [fh], [fi] on the provided [CoroutineContext].
+ * Cancelling this operation cancels both tasks running in parallel.
+ *
+ * **WARNING** this function forks [fa], [fb], [fc], [fd], [fe], [ff], [fg], [fh], [fi] but if it runs in parallel depends
+ * on the capabilities of the provided [CoroutineContext].
+ * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
+ *
+ * @see parMapN for a function that ensures it runs in parallel on the [ComputationPool].
+ */
+suspend fun <A, B, C, D, E, F, G, H, I, J> parMapN(
+  ctx: CoroutineContext,
+  fa: suspend () -> A,
+  fb: suspend () -> B,
+  fc: suspend () -> C,
+  fd: suspend () -> D,
+  fe: suspend () -> E,
+  ff: suspend () -> F,
+  fg: suspend () -> G,
+  fh: suspend () -> H,
+  fi: suspend () -> I,
+  f: (A, B, C, D, E, F, G, H, I) -> J
+): J =
+  parMapN(
+    ctx,
+    suspend { parMapN(ctx, fa, fb, fc, fd, fe, ff, fg, fh) { a, b, c, d, e, _f, g, h -> Tuple8(a, b, c, d, e, _f, g, h) } },
+    fi
+  ) { abcdefgh, i ->
+    val (a, b, c, d, e, _f, g, h) = abcdefgh
+    f(a, b, c , d, e, _f, g, h, i)
   }
