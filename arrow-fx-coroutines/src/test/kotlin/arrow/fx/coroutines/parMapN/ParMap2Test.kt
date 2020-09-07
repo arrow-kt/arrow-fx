@@ -15,6 +15,7 @@ import arrow.fx.coroutines.never
 import arrow.fx.coroutines.parMapN
 import arrow.fx.coroutines.single
 import arrow.fx.coroutines.singleThreadName
+import arrow.fx.coroutines.suspend
 import arrow.fx.coroutines.threadName
 import arrow.fx.coroutines.throwable
 import io.kotest.matchers.shouldBe
@@ -44,27 +45,27 @@ class ParMap2Test : ArrowFxSpec(spec = {
     }
   }
 
-//  "parMapN 2 returns to original context on failure" {
-//    val mapCtxName = "parMap2"
-//    val mapCtx = Resource.fromExecutor { Executors.newFixedThreadPool(2, NamedThreadFactory { mapCtxName }) }
-//
-//    checkAll(Arb.int(1..2), Arb.throwable()) { choose, e ->
-//      single.zip(mapCtx).use { (single, mapCtx) ->
-//        evalOn(single) {
-//          threadName() shouldBe singleThreadName
-//
-//          Either.catch {
-//            when (choose) {
-//              1 -> parMapN(mapCtx, suspend { e.suspend() }, suspend { never<Nothing>() }) { _, _ -> Unit }
-//              else -> parMapN(mapCtx, suspend { never<Nothing>() }, suspend { e.suspend() }) { _, _ -> Unit }
-//            }
-//          } shouldBe Either.Left(e)
-//
-//          threadName() shouldBe singleThreadName
-//        }
-//      }
-//    }
-//  }
+  "parMapN 2 returns to original context on failure" {
+    val mapCtxName = "parMap2"
+    val mapCtx = Resource.fromExecutor { Executors.newFixedThreadPool(2, NamedThreadFactory { mapCtxName }) }
+
+    checkAll(Arb.int(1..2), Arb.throwable()) { choose, e ->
+      single.zip(mapCtx).use { (_single, _mapCtx) ->
+        evalOn(_single) {
+          threadName() shouldBe singleThreadName
+
+          Either.catch {
+            when (choose) {
+              1 -> parMapN(_mapCtx, suspend { e.suspend() }, suspend { never<Nothing>() }) { _, _ -> Unit }
+              else -> parMapN(_mapCtx, suspend { never<Nothing>() }, suspend { e.suspend() }) { _, _ -> Unit }
+            }
+          } shouldBe Either.Left(e)
+
+          threadName() shouldBe singleThreadName
+        }
+      }
+    }
+  }
 
   "parMapN 2 runs in parallel" {
     checkAll(Arb.int(), Arb.int()) { a, b ->
