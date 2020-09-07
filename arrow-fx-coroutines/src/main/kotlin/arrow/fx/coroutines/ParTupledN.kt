@@ -298,7 +298,7 @@ suspend fun <A, B, C, D, E> parMapN(
   parMapN(
     ctx,
     suspend { parMapN(ctx, fa, fb, fc, ::Triple) },
-    fd,
+    fd
   ) { abc, d ->
     val (a, b, c) = abc
     f(a, b, c ,d)
@@ -326,7 +326,7 @@ suspend fun <A, B, C, D, E, F> parMapN(
   parMapN(
     ctx,
     suspend { parMapN(ctx, fa, fb, fc, fd, ::Tuple4) },
-    fe,
+    fe
   ) { abcd, e ->
     val (a, b, c, d) = abcd
     f(a, b, c , d, e)
@@ -355,7 +355,7 @@ suspend fun <A, B, C, D, E, F, G> parMapN(
   parMapN(
     ctx,
     suspend { parMapN(ctx, fa, fb, fc, fd, fe, ::Tuple5) },
-    ff,
+    ff
   ) { abcde, _f ->
     val (a, b, c, d, e) = abcde
     f(a, b, c , d, e, _f)
@@ -385,7 +385,7 @@ suspend fun <A, B, C, D, E, F, G, H> parMapN(
   parMapN(
     ctx,
     suspend { parMapN(ctx, fa, fb, fc, fd, fe, ff, ::Tuple6) },
-    fg,
+    fg
   ) { abcdef, g ->
     val (a, b, c, d, e, _f) = abcdef
     f(a, b, c , d, e, _f, g)

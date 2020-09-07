@@ -15,7 +15,6 @@ import arrow.fx.coroutines.never
 import arrow.fx.coroutines.parMapN
 import arrow.fx.coroutines.single
 import arrow.fx.coroutines.singleThreadName
-import arrow.fx.coroutines.suspend
 import arrow.fx.coroutines.threadName
 import arrow.fx.coroutines.throwable
 import io.kotest.matchers.shouldBe
