@@ -356,9 +356,9 @@ suspend fun <A, B, C, D, E, F, G> parMapN(
     ctx,
     suspend { parMapN(ctx, fa, fb, fc, fd, fe, ::Tuple5) },
     ff,
-  ) { abcde, f ->
+  ) { abcde, _f ->
     val (a, b, c, d, e) = abcde
-    f(a, b, c , d, e, f)
+    f(a, b, c , d, e, _f)
   }
 
 /**
