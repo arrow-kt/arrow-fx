@@ -97,7 +97,14 @@ suspend fun <A, B, C, D> parMapN(
   fb: suspend () -> B,
   fc: suspend () -> C,
   f: (A, B, C) -> D
-): D = parMapN(ComputationPool, fa, fb, fc, f)
+): D =
+  parMapN(
+    suspend { parMapN(fa, fb, ::Pair) },
+    fc
+  ) { ab, c ->
+    val (a, b) = ab
+    f(a, b, c)
+  }
 
 /**
  * Parallel maps [fa], [fb] on the provided [CoroutineContext].

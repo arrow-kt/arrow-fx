@@ -20,6 +20,7 @@ import arrow.fx.coroutines.threadName
 import arrow.fx.coroutines.throwable
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
+import io.kotest.property.arbitrary.element
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.string
 import java.util.concurrent.Executors
@@ -122,14 +123,14 @@ class ParMap3Test : ArrowFxSpec(spec = {
 
       pa.get() shouldBe Pair(a, ExitCase.Cancelled)
       pb.get() shouldBe Pair(b, ExitCase.Cancelled)
-      pc.get() shouldBe Pair(b, ExitCase.Cancelled)
+      pc.get() shouldBe Pair(c, ExitCase.Cancelled)
     }
   }
 
   "parMapN 3 cancels losers if a failure occurs in one of the tasks" {
     checkAll(
       Arb.throwable(),
-      Arb.int(1..3),
+      Arb.element(listOf(1, 2, 3)),
       Arb.int(),
       Arb.int()
     ) { e, winningTask, a, b ->
@@ -137,7 +138,7 @@ class ParMap3Test : ArrowFxSpec(spec = {
       val pa = Promise<Pair<Int, ExitCase>>()
       val pb = Promise<Pair<Int, ExitCase>>()
 
-      val winner = suspend { s.acquire(); throw e }
+      val winner = suspend { s.acquireN(2); throw e }
       val loserA = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
       val loserB = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
 
