@@ -416,7 +416,7 @@ suspend fun <A, B, C, D, E, F, G, H, I> parMapN(
 ): I =
   parMapN(
     ctx,
-    suspend { parMapN(ctx, fa, fb, fc, fd, fe,ff, fg, ::Tuple7) },
+    suspend { parMapN(ctx, fa, fb, fc, fd, fe, ff, fg, ::Tuple7) },
     fh
   ) { abcdefg, h ->
     val (a, b, c, d, e, _f, g) = abcdefg
