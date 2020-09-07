@@ -301,7 +301,7 @@ suspend fun <A, B, C, D, E> parMapN(
     fd
   ) { abc, d ->
     val (a, b, c) = abc
-    f(a, b, c ,d)
+    f(a, b, c, d)
   }
 
 /**
@@ -329,7 +329,7 @@ suspend fun <A, B, C, D, E, F> parMapN(
     fe
   ) { abcd, e ->
     val (a, b, c, d) = abcd
-    f(a, b, c , d, e)
+    f(a, b, c, d, e)
   }
 
 /**
@@ -358,7 +358,7 @@ suspend fun <A, B, C, D, E, F, G> parMapN(
     ff
   ) { abcde, _f ->
     val (a, b, c, d, e) = abcde
-    f(a, b, c , d, e, _f)
+    f(a, b, c, d, e, _f)
   }
 
 /**
@@ -388,7 +388,7 @@ suspend fun <A, B, C, D, E, F, G, H> parMapN(
     fg
   ) { abcdef, g ->
     val (a, b, c, d, e, _f) = abcdef
-    f(a, b, c , d, e, _f, g)
+    f(a, b, c, d, e, _f, g)
   }
 
 /**
@@ -419,7 +419,7 @@ suspend fun <A, B, C, D, E, F, G, H, I> parMapN(
     fh,
   ) { abcdefg, h ->
     val (a, b, c, d, e, _f, g) = abcdefg
-    f(a, b, c , d, e, _f, g, h)
+    f(a, b, c, d, e, _f, g, h)
   }
 /**
  * Parallel maps [fa], [fb], [fc], [fd], [fe], [ff], [fg], [fh], [fi] on the provided [CoroutineContext].
@@ -450,5 +450,5 @@ suspend fun <A, B, C, D, E, F, G, H, I, J> parMapN(
     fi
   ) { abcdefgh, i ->
     val (a, b, c, d, e, _f, g, h) = abcdefgh
-    f(a, b, c , d, e, _f, g, h, i)
+    f(a, b, c, d, e, _f, g, h, i)
   }
