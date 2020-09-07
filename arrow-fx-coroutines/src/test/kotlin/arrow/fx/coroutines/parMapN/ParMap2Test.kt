@@ -35,7 +35,7 @@ class ParMap2Test : ArrowFxSpec(spec = {
         evalOn(_single) {
           threadName() shouldBe singleThreadName
 
-          val (s1, s2) = parMapN(_mapCtx, suspend { threadName() }, suspend { threadName() }) { a, b -> Pair(a, b) }
+          val (s1, s2) = parMapN(_mapCtx, threadName, threadName) { a, b -> Pair(a, b) }
 
           s1 shouldBe mapCtxName
           s2 shouldBe mapCtxName
