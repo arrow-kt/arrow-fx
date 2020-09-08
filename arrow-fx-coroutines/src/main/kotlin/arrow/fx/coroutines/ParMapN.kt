@@ -53,6 +53,20 @@ suspend fun <A, B, C, D> parMapN(
 ): D = parMapN(ComputationPool, fa, fb, fc, f)
 
 /**
+ * Parallel maps [fa], [fb], [fc], [fd] in parallel on [ComputationPool].
+ * Cancelling this operation cancels both operations running in parallel.
+ *
+ * @see parMapN for the same function that can race on any [CoroutineContext].
+ */
+suspend fun <A, B, C, D, E> parMapN(
+  fa: suspend () -> A,
+  fb: suspend () -> B,
+  fc: suspend () -> C,
+  fd: suspend () -> D,
+  f: (A, B, C, D) -> E
+): E = parMapN(ComputationPool, fa, fb, fc, fd, f)
+
+/**
  * Parallel maps [fa], [fb] on the provided [CoroutineContext].
  * Cancelling this operation cancels both tasks running in parallel.
  *
@@ -88,7 +102,7 @@ suspend fun <A, B, C> parMapN(
         try {
           Result.success(f(a, b))
         } catch (e: Throwable) {
-          Result.failure<C>(e.nonFatalOrThrow())
+          Result.failure(e.nonFatalOrThrow())
         }
       )
     }
@@ -151,7 +165,177 @@ suspend fun <A, B, C, D> parMapN(
     ctx,
     suspend { parMapN(ctx, fa, fb, ::Pair) },
     fc
-  ) { ab, c ->
-    val (a, b) = ab
+  ) { (a, b), c ->
     f(a, b, c)
   }
+
+/**
+ * Parallel maps [fa], [fb], [fc], [fd] on the provided [CoroutineContext].
+ * Cancelling this operation cancels both tasks running in parallel.
+ *
+ * **WARNING** this function forks [fa], [fb], [fc], [fd] but if it runs in parallel depends
+ * on the capabilities of the provided [CoroutineContext].
+ * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
+ *
+ * @see parMapN for a function that ensures it runs in parallel on the [ComputationPool].
+ */
+suspend fun <A, B, C, D, E> parMapN(
+  ctx: CoroutineContext,
+  fa: suspend () -> A,
+  fb: suspend () -> B,
+  fc: suspend () -> C,
+  fd: suspend () -> D,
+  f: (A, B, C, D) -> E
+): E =
+  parMapN(
+    ctx,
+    suspend { parMapN(ctx, fa, fb, fc, ::Triple) },
+    fd
+  ) { (a, b, c), d ->
+    f(a, b, c, d)
+  }
+
+// /**
+// * Parallel maps [fa], [fb], [fc], [fd], [fe] on the provided [CoroutineContext].
+// * Cancelling this operation cancels both tasks running in parallel.
+// *
+// * **WARNING** this function forks [fa], [fb], [fc], [fd], [fe] but if it runs in parallel depends
+// * on the capabilities of the provided [CoroutineContext].
+// * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
+// *
+// * @see parMapN for a function that ensures it runs in parallel on the [ComputationPool].
+// */
+// suspend fun <A, B, C, D, E, F> parMapN(
+//  ctx: CoroutineContext,
+//  fa: suspend () -> A,
+//  fb: suspend () -> B,
+//  fc: suspend () -> C,
+//  fd: suspend () -> D,
+//  fe: suspend () -> E,
+//  f: (A, B, C, D, E) -> F
+// ): F =
+//  parMapN(
+//    ctx,
+//    suspend { parMapN(ctx, fa, fb, fc, fd, ::Tuple4) },
+//    fe
+//  ) { (a, b, c, d), e ->
+//    f(a, b, c, d, e)
+//  }
+//
+// /**
+// * Parallel maps [fa], [fb], [fc], [fd], [fe], [ff] on the provided [CoroutineContext].
+// * Cancelling this operation cancels both tasks running in parallel.
+// *
+// * **WARNING** this function forks [fa], [fb], [fc], [fd], [fe], [ff] but if it runs in parallel depends
+// * on the capabilities of the provided [CoroutineContext].
+// * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
+// *
+// * @see parMapN for a function that ensures it runs in parallel on the [ComputationPool].
+// */
+// suspend fun <A, B, C, D, E, F, G> parMapN(
+//  ctx: CoroutineContext,
+//  fa: suspend () -> A,
+//  fb: suspend () -> B,
+//  fc: suspend () -> C,
+//  fd: suspend () -> D,
+//  fe: suspend () -> E,
+//  ff: suspend () -> F,
+//  f: (A, B, C, D, E, F) -> G
+// ): G =
+//  parMapN(
+//    ctx,
+//    suspend { parMapN(ctx, fa, fb, fc, fd, fe, ::Tuple5) },
+//    ff
+//  ) { (a, b, c, d, e), _f ->
+//    f(a, b, c, d, e, _f)
+//  }
+//
+// /**
+// * Parallel maps [fa], [fb], [fc], [fd], [fe], [ff], [fg] on the provided [CoroutineContext].
+// * Cancelling this operation cancels both tasks running in parallel.
+// *
+// * **WARNING** this function forks [fa], [fb], [fc], [fd], [fe], [ff], [fg] but if it runs in parallel depends
+// * on the capabilities of the provided [CoroutineContext].
+// * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
+// *
+// * @see parMapN for a function that ensures it runs in parallel on the [ComputationPool].
+// */
+// suspend fun <A, B, C, D, E, F, G, H> parMapN(
+//  ctx: CoroutineContext,
+//  fa: suspend () -> A,
+//  fb: suspend () -> B,
+//  fc: suspend () -> C,
+//  fd: suspend () -> D,
+//  fe: suspend () -> E,
+//  ff: suspend () -> F,
+//  fg: suspend () -> G,
+//  f: (A, B, C, D, E, F, G) -> H
+// ): H =
+//  parMapN(
+//    ctx,
+//    suspend { parMapN(ctx, fa, fb, fc, fd, fe, ff, ::Tuple6) },
+//    fg
+//  ) { (a, b, c, d, e, _f), g ->
+//    f(a, b, c, d, e, _f, g)
+//  }
+//
+// /**
+// * Parallel maps [fa], [fb], [fc], [fd], [fe], [ff], [fg], [fh] on the provided [CoroutineContext].
+// * Cancelling this operation cancels both tasks running in parallel.
+// *
+// * **WARNING** this function forks [fa], [fb], [fc], [fd], [fe], [ff], [fg], [fh] but if it runs in parallel depends
+// * on the capabilities of the provided [CoroutineContext].
+// * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
+// *
+// * @see parMapN for a function that ensures it runs in parallel on the [ComputationPool].
+// */
+// suspend fun <A, B, C, D, E, F, G, H, I> parMapN(
+//  ctx: CoroutineContext,
+//  fa: suspend () -> A,
+//  fb: suspend () -> B,
+//  fc: suspend () -> C,
+//  fd: suspend () -> D,
+//  fe: suspend () -> E,
+//  ff: suspend () -> F,
+//  fg: suspend () -> G,
+//  fh: suspend () -> H,
+//  f: (A, B, C, D, E, F, G, H) -> I
+// ): I =
+//  parMapN(
+//    ctx,
+//    suspend { parMapN(ctx, fa, fb, fc, fd, fe, ff, fg, ::Tuple7) },
+//    fh
+//  ) { (a, b, c, d, e, _f, g), h ->
+//    f(a, b, c, d, e, _f, g, h)
+//  }
+//
+// /**
+// * Parallel maps [fa], [fb], [fc], [fd], [fe], [ff], [fg], [fh], [fi] on the provided [CoroutineContext].
+// * Cancelling this operation cancels both tasks running in parallel.
+// *
+// * **WARNING** this function forks [fa], [fb], [fc], [fd], [fe], [ff], [fg], [fh], [fi] but if it runs in parallel depends
+// * on the capabilities of the provided [CoroutineContext].
+// * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
+// *
+// * @see parMapN for a function that ensures it runs in parallel on the [ComputationPool].
+// */
+// suspend fun <A, B, C, D, E, F, G, H, I, J> parMapN(
+//  ctx: CoroutineContext,
+//  fa: suspend () -> A,
+//  fb: suspend () -> B,
+//  fc: suspend () -> C,
+//  fd: suspend () -> D,
+//  fe: suspend () -> E,
+//  ff: suspend () -> F,
+//  fg: suspend () -> G,
+//  fh: suspend () -> H,
+//  fi: suspend () -> I,
+//  f: (A, B, C, D, E, F, G, H, I) -> J
+// ): J =
+//  parMapN(
+//    ctx,
+//    suspend { parMapN(ctx, fa, fb, fc, fd, fe, ff, fg, fh) { a, b, c, d, e, _f, g, h -> Tuple8(a, b, c, d, e, _f, g, h) } },
+//    fi
+//  ) { (a, b, c, d, e, _f, g, h), i ->
+//    f(a, b, c, d, e, _f, g, h, i)
+//  }
