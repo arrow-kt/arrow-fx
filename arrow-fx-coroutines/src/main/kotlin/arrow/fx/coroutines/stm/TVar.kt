@@ -72,7 +72,7 @@ class TVar<A> internal constructor(a: A) {
    * A list of running transactions waiting for a change on this variable.
    * Changes are pushed to waiting transactions via [notify]
    */
-  private val waiting = atomic<MutableList<STMTransaction<*>>>(mutableListOf())
+  private val waiting = atomic<List<STMTransaction<*>>>(emptyList())
 
   override fun hashCode(): Int = id.hashCode()
 
@@ -137,21 +137,21 @@ class TVar<A> internal constructor(a: A) {
    *  normal lock release.
    */
   internal fun queue(trans: STMTransaction<*>): Unit {
-    waiting.update { it.also { it.add(trans) } }
+    waiting.update { it + trans }
   }
 
   /**
    * A transaction resumed so remove it from the [TVar]
    */
   internal fun removeQueued(trans: STMTransaction<*>): Unit {
-    waiting.update { it.also { it.remove(trans) } }
+    waiting.update { it.filter { it !== trans } }
   }
 
   /**
    * Resume execution of all transactions waiting for this [TVar] to change.
    */
   internal fun notify(): Unit {
-    waiting.getAndSet(mutableListOf()).forEach { it.getCont()?.resume(Unit) }
+    waiting.getAndSet(emptyList()).forEach { it.getCont()?.resume(Unit) }
   }
 
   companion object {

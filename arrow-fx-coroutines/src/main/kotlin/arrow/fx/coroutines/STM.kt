@@ -1,10 +1,12 @@
 package arrow.fx.coroutines
 
+import arrow.fx.coroutines.stm.PList
 import arrow.fx.coroutines.stm.TArray
 import arrow.fx.coroutines.stm.TMVar
 import arrow.fx.coroutines.stm.TQueue
 import arrow.fx.coroutines.stm.TSem
 import arrow.fx.coroutines.stm.TVar
+import arrow.fx.coroutines.stm.cons
 import kotlinx.atomicfu.atomic
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.EmptyCoroutineContext
@@ -434,7 +436,7 @@ interface STM {
    * This function never retries.
    */
   suspend fun <A> TQueue<A>.write(a: A): Unit =
-    writes.modify { it + a }
+    writes.modify { it.cons(a) }
 
   /**
    * Remove the front element from the [TQueue] or retry if the [TQueue] is empty.
@@ -444,14 +446,15 @@ interface STM {
    */
   suspend fun <A> TQueue<A>.read(): A {
     val xs = reads.read()
-    return if (xs.isNotEmpty()) reads.write(xs.drop(1)).let { xs.first() }
+    return if (xs.isNotEmpty()) reads.write(xs.tail()).let { xs.head() }
     else {
       val ys = writes.read()
       if (ys.isEmpty()) retry()
       else {
-        writes.write(emptyList())
-        reads.write(ys.drop(1))
-        ys.first()
+        writes.write(PList.Nil)
+        val reversed = ys.reverse()
+        reads.write(reversed.tail())
+        reversed.head()
       }
     }
   }
@@ -470,9 +473,9 @@ interface STM {
    * This function never retries.
    */
   suspend fun <A> TQueue<A>.flush(): List<A> {
-    val xs = reads.read().also { if (it.isNotEmpty()) reads.write(emptyList()) }
-    val ys = writes.read().also { if (it.isNotEmpty()) writes.write(emptyList()) }
-    return xs + ys
+    val xs = reads.read().also { if (it.isNotEmpty()) reads.write(PList.Nil) }
+    val ys = writes.read().also { if (it.isNotEmpty()) writes.write(PList.Nil) }
+    return xs.toList() + ys.reverse().toList()
   }
 
   /**
@@ -506,7 +509,7 @@ interface STM {
    * This function never retries.
    */
   suspend fun <A> TQueue<A>.writeFront(a: A): Unit =
-    reads.read().let { reads.write(listOf(a) + it) }
+    reads.read().let { reads.write(it.cons(a)) }
 
   /**
    * Check if a [TQueue] is empty.
@@ -547,9 +550,11 @@ interface STM {
   /**
    * Return the current number of elements in a [TQueue]
    *
+   * This function is not cheap, it iterates all elements!
+   *
    * This function never retries.
    */
-  suspend fun <A> TQueue<A>.size(): Int = reads.read().size + writes.read().size
+  suspend fun <A> TQueue<A>.size(): Int = reads.read().size() + writes.read().size()
 
   // -------- TArray
   /**
