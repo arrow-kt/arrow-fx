@@ -2,6 +2,7 @@ package arrow.fx.coroutines
 
 import arrow.fx.coroutines.stm.TQueue
 import arrow.fx.coroutines.stm.TVar
+import arrow.fx.coroutines.stm.internal.BlockedIndefinitely
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.ints.shouldBeExactly
 import io.kotest.matchers.ints.shouldBeInRange

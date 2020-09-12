@@ -4,10 +4,10 @@ import arrow.fx.coroutines.AtomicRefW
 import arrow.fx.coroutines.Duration
 import arrow.fx.coroutines.ForkConnected
 import arrow.fx.coroutines.STM
-import arrow.fx.coroutines.STMFrame
-import arrow.fx.coroutines.STMTransaction
 import arrow.fx.coroutines.atomically
 import arrow.fx.coroutines.sleep
+import arrow.fx.coroutines.stm.internal.STMFrame
+import arrow.fx.coroutines.stm.internal.STMTransaction
 import kotlinx.atomicfu.AtomicLong
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
@@ -72,6 +72,7 @@ class TVar<A> internal constructor(a: A) {
    * A list of running transactions waiting for a change on this variable.
    * Changes are pushed to waiting transactions via [notify]
    */
+  // TODO Use a set here, and preferably something that uses sharing to avoid gc pressure from copying...
   private val waiting = atomic<List<STMTransaction<*>>>(emptyList())
 
   override fun hashCode(): Int = id.hashCode()
@@ -136,14 +137,23 @@ class TVar<A> internal constructor(a: A) {
    * This does not happen implicitly on [release] because release may also write the same value back on
    *  normal lock release.
    */
-  internal fun queue(trans: STMTransaction<*>): Unit {
+  internal fun registerWaiting(trans: STMTransaction<*>, expected: A): Boolean {
+    if (value !== expected) {
+      trans.getCont()?.resume(Unit)
+      return false
+    }
     waiting.update { it + trans }
+    return if (value !== expected) {
+      removeWaiting(trans)
+      trans.getCont()?.resume(Unit)
+      false
+    } else true
   }
 
   /**
    * A transaction resumed so remove it from the [TVar]
    */
-  internal fun removeQueued(trans: STMTransaction<*>): Unit {
+  internal fun removeWaiting(trans: STMTransaction<*>): Unit {
     waiting.update { it.filter { it !== trans } }
   }
 

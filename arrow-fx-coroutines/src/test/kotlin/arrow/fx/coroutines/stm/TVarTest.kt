@@ -1,12 +1,12 @@
 package arrow.fx.coroutines.stm
 
 import arrow.fx.coroutines.ArrowFxSpec
-import arrow.fx.coroutines.STMFrame
 import arrow.fx.coroutines.atomically
 import arrow.fx.coroutines.check
 import arrow.fx.coroutines.milliseconds
 import arrow.fx.coroutines.raceN
 import arrow.fx.coroutines.sleep
+import arrow.fx.coroutines.stm.internal.STMFrame
 import io.kotest.matchers.ints.shouldBeExactly
 import io.kotest.matchers.longs.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.shouldBe
