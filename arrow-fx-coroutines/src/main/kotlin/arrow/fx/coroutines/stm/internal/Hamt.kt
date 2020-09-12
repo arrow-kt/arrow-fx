@@ -100,8 +100,8 @@ suspend inline fun <reified A> STM.alterHamtWithHash(hamt: Hamt<A>, hash: Int, f
 suspend fun <A> STM.newHamt(): Hamt<A> = Hamt(newTVar(arrayOfNulls(ARR_SIZE)))
 
 sealed class Branch<out A> {
-  data class Branches<A>(val sub: Hamt<A>): Branch<A>()
-  data class Leaf<A>(val hash: Int, val value: A): Branch<A>()
+  data class Branches<A>(val sub: Hamt<A>) : Branch<A>()
+  data class Leaf<A>(val hash: Int, val value: A) : Branch<A>()
 }
 
 const val ARR_SIZE = 32 // 2^DEPTH_STEP

@@ -17,7 +17,7 @@ class TMapTest : ArrowFxSpec(spec = {
     }
   }
   "insert multiple values" {
-    checkAll(Arb.list(Arb.pair(Arb.int(), Arb.int())), ) { pairs ->
+    checkAll(Arb.list(Arb.pair(Arb.int(), Arb.int()))) { pairs ->
       val map = TMap.new<Int, Int>()
       atomically {
         for ((k, v) in pairs) map.insert(k, v)
