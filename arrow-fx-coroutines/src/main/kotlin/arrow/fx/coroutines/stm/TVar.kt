@@ -179,8 +179,6 @@ class TVar<A> internal constructor(a: A) {
  *  ~ 600 years to run out of unique numbers.
  * > (2^64-1) / 1000 / 1000 / 1000 / 60 / 60 / 24 / 356 ~= 600
  *
- * And even if we have a rollover to 1 again there is still the condition that two transactions
- *  need to access the now colliding [TVar]'s in a different order and then they still need the
- *  timing to match exactly to create a deadlock. I guess this is unlikely enough to ignore it.
+ * If we collide and the HashMap resolves
  */
 internal val globalC: AtomicLong = atomic(0L)

@@ -14,7 +14,7 @@ data class Hamt<A>(val branches: TVar<Array<Branch<A>?>>) {
   }
 }
 
-suspend inline fun <A> STM.lookupHamtWithHash(hmt: Hamt<A>, hash: Int): A? {
+suspend inline fun <A> STM.lookupHamtWithHash(hmt: Hamt<A>, hash: Int, test: (A) -> Boolean): A? {
   var depth = 0
   var hamt = hmt
   while (true) {
@@ -22,7 +22,7 @@ suspend inline fun <A> STM.lookupHamtWithHash(hmt: Hamt<A>, hash: Int): A? {
     val branches = hamt.branches.read()
     when (val branch = branches[branchInd]) {
       null -> return null
-      is Branch.Leaf -> return@lookupHamtWithHash branch.value
+      is Branch.Leaf -> return@lookupHamtWithHash branch.value.find(test)
       is Branch.Branches -> {
         depth = depth.nextDepth()
         hamt = branch.sub
@@ -47,7 +47,12 @@ suspend fun <A> STM.pair(depth: Int, hash1: Int, branch1: Branch<A>, hash2: Int,
 
 suspend fun <A> STM.clearHamt(hamt: Hamt<A>): Unit = hamt.branches.write(arrayOfNulls(ARR_SIZE))
 
-suspend inline fun <reified A> STM.alterHamtWithHash(hamt: Hamt<A>, hash: Int, fn: (A?) -> A?): Boolean {
+suspend inline fun <reified A> STM.alterHamtWithHash(
+  hamt: Hamt<A>,
+  hash: Int,
+  test: (A) -> Boolean,
+  fn: (A?) -> A?
+): Boolean {
   var depth = 0
   var hmt = hamt
   while (true) {
@@ -57,29 +62,56 @@ suspend inline fun <reified A> STM.alterHamtWithHash(hamt: Hamt<A>, hash: Int, f
       null -> {
         val el = fn(null) ?: return false
         val new = branches.copyOf()
-        new[branchInd] = Branch.Leaf(hash, el)
+        new[branchInd] = Branch.Leaf(hash, arrayOf(el))
         hmt.branches.write(new)
         return true
       }
       is Branch.Leaf -> {
         if (hash == branch.hash) {
-          val newEl = fn(branch.value)
-          if (newEl == null) {
-            val new = branches.copyOf()
-            new[branchInd] = null
-            hmt.branches.write(new)
-          } else {
-            val new = branches.copyOf()
-            new[branchInd] = Branch.Leaf(hash, newEl)
-            hmt.branches.write(new)
+          val ind = branch.value.indexOfFirst(test).takeIf { it != -1 }
+          when (val el = ind?.let { branch.value[it] }) {
+            null -> {
+              // insert new value with a colliding hash
+              val newEl = fn(null) ?: return false
+              val new = branches.copyOf()
+              new[branchInd] = Branch.Leaf(hash, arrayOf(newEl, *branch.value))
+              hmt.branches.write(new)
+              return true
+            }
+            else -> {
+              when (val newEl = fn(el)) {
+                null -> {
+                  // remove element
+                  if (branch.value.size > 1) {
+                    val newLeafArray = Array(branch.value.size - 1) { i ->
+                      if (i >= ind) branch.value[i + 1]
+                      else branch.value[i]
+                    }
+                  } else {
+                    val new = branches.copyOf()
+                    new[branchInd] = null
+                    hmt.branches.write(new)
+                  }
+                  return true
+                }
+                else -> {
+                  // update element
+                  val newLeafArr = branch.value.copyOf()
+                  newLeafArr[ind] = newEl
+                  val new = branches.copyOf()
+                  new[branchInd] = Branch.Leaf(hash, newLeafArr)
+                  hmt.branches.write(new)
+                  return true
+                }
+              }
+            }
           }
-          return true
         } else {
           val el = fn(null) ?: return false
           val newHamt = pair(
             depth.nextDepth(),
             hash,
-            Branch.Leaf(hash, el),
+            Branch.Leaf(hash, arrayOf(el)),
             branch.hash,
             branch
           )
@@ -101,7 +133,7 @@ suspend fun <A> STM.newHamt(): Hamt<A> = Hamt(newTVar(arrayOfNulls(ARR_SIZE)))
 
 sealed class Branch<out A> {
   data class Branches<A>(val sub: Hamt<A>) : Branch<A>()
-  data class Leaf<A>(val hash: Int, val value: A) : Branch<A>()
+  data class Leaf<A>(val hash: Int, val value: Array<A>) : Branch<A>()
 }
 
 const val ARR_SIZE = 32 // 2^DEPTH_STEP

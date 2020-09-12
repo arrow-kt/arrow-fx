@@ -596,30 +596,30 @@ interface STM {
     lookup(k) != null
 
   suspend fun <K, V> TMap<K, V>.lookup(k: K): V? =
-    lookupHamtWithHash(hamt, hashFn(k))?.second
+    lookupHamtWithHash(hamt, hashFn(k)) { it.first == k }?.second
 
   suspend fun <K, V> TMap<K, V>.insert(k: K, v: V): Unit {
-    alterHamtWithHash(hamt, hashFn(k)) { k to v }
+    alterHamtWithHash(hamt, hashFn(k), { it.first == k }) { k to v }
   }
 
   suspend fun <K, V> TMap<K, V>.update(k: K, fn: (V) -> V): Unit {
-    alterHamtWithHash(hamt, hashFn(k)) { it?.second?.let(fn)?.let { k to it } }
+    alterHamtWithHash(hamt, hashFn(k), { it.first == k }) { it?.second?.let(fn)?.let { k to it } }
   }
 
   suspend fun <K, V> TMap<K, V>.remove(k: K): Unit {
-    alterHamtWithHash(hamt, hashFn(k)) { null }
+    alterHamtWithHash(hamt, hashFn(k), { it.first == k }) { null }
   }
 
   // -------- TSet
   suspend fun <A> TSet<A>.member(a: A): Boolean =
-    lookupHamtWithHash(hamt, hashFn(a)) != null
+    lookupHamtWithHash(hamt, hashFn(a)) { it.second == a } != null
 
   suspend fun <A> TSet<A>.insert(a: A): Unit {
-    alterHamtWithHash(hamt, hashFn(a)) { Unit to a }
+    alterHamtWithHash(hamt, hashFn(a), { it.second == a }) { Unit to a }
   }
 
   suspend fun <A> TSet<A>.remove(a: A): Unit {
-    alterHamtWithHash(hamt, hashFn(a)) { null }
+    alterHamtWithHash(hamt, hashFn(a), { it.second == a }) { null }
   }
 }
 
