@@ -1,5 +1,6 @@
 package arrow.fx.coroutines
 
+import arrow.fx.coroutines.stm.Option
 import arrow.fx.coroutines.stm.PList
 import arrow.fx.coroutines.stm.TArray
 import arrow.fx.coroutines.stm.TMVar
@@ -285,8 +286,10 @@ interface STM {
    * @see TMVar.tryTake for a version that does not retry.
    * @see TMVar.read for a version that does not remove the value after reading.
    */
-  suspend fun <A> TMVar<A>.take(): A =
-    v.read().also { v.write(null) } ?: retry()
+  suspend fun <A> TMVar<A>.take(): A = when (val ret = v.read()) {
+    is Option.Some -> ret.a.also { v.write(Option.None) }
+    Option.None -> retry()
+  }
 
   /**
    * Put a value into an empty [TMVar].
@@ -295,8 +298,10 @@ interface STM {
    *
    * For a version of [TMVar.put] that does not retry see [TMVar.tryPut]
    */
-  suspend fun <A> TMVar<A>.put(a: A): Unit =
-    v.read()?.let { retry() } ?: v.write(a)
+  suspend fun <A> TMVar<A>.put(a: A): Unit = when (v.read()) {
+    is Option.Some -> retry()
+    Option.None -> v.write(Option.Some(a))
+  }
 
   /**
    * Read a value from a [TMVar] without removing it.
@@ -306,14 +311,18 @@ interface STM {
    * @see TMVar.tryRead for a version that does not retry.
    * @see TMVar.take for a version that leaves the [TMVar] empty after reading.
    */
-  suspend fun <A> TMVar<A>.read(): A =
-    v.read() ?: retry()
+  suspend fun <A> TMVar<A>.read(): A = when (val ret = v.read()) {
+    is Option.Some -> ret.a
+    Option.None -> retry()
+  }
 
   /**
    * Same as [TMVar.take] except it returns null if the [TMVar] is empty and thus never retries.
    */
-  suspend fun <A> TMVar<A>.tryTake(): A? =
-    v.read()?.also { v.write(null) }
+  suspend fun <A> TMVar<A>.tryTake(): A? = when (val ret = v.read()) {
+    is Option.Some -> ret.a.also { v.write(Option.None) }
+    Option.None -> null
+  }
 
   /**
    * Same as [TMVar.put] except that it returns true or false if was successful or it retried.
@@ -322,8 +331,10 @@ interface STM {
    *
    * @see TMVar.put for a function that retries if the [TMVar] is not empty.
    */
-  suspend fun <A> TMVar<A>.tryPut(a: A): Boolean =
-    v.read()?.let { false } ?: v.write(a).let { true }
+  suspend fun <A> TMVar<A>.tryPut(a: A): Boolean = when (v.read()) {
+    is Option.Some -> false
+    Option.None -> true.also { v.write(Option.Some(a)) }
+  }
 
   /**
    * Same as [TMVar.read] except that it returns null if the [TMVar] is empty and thus never retries.
@@ -331,14 +342,15 @@ interface STM {
    * @see TMVar.read for a function that retries if the [TMVar] is empty.
    * @see TMVar.tryTake for a function that leaves the [TMVar] empty after reading.
    */
-  suspend fun <A> TMVar<A>.tryRead(): A? =
-    v.read()
+  suspend fun <A> TMVar<A>.tryRead(): A? = when (val ret = v.read()) {
+    is Option.Some -> ret.a
+    Option.None -> null
+  }
 
   /**
    * Check if a [TMVar] is empty. This function never retries.
    */
-  suspend fun <A> TMVar<A>.isEmpty(): Boolean =
-    v.read()?.let { false } ?: true
+  suspend fun <A> TMVar<A>.isEmpty(): Boolean = v.read() is Option.None
 
   /**
    * Check if a [TMVar] is not empty. This function never retries.
@@ -349,8 +361,10 @@ interface STM {
   /**
    * Swap the content of a [TMVar] or retry if it is empty.
    */
-  suspend fun <A> TMVar<A>.swap(a: A): A =
-    v.read()?.also { v.write(a) } ?: retry()
+  suspend fun <A> TMVar<A>.swap(a: A): A = when (val ret = v.read()) {
+    is Option.Some -> ret.a.also { v.write(Option.Some(a)) }
+    Option.None -> retry()
+  }
 
   // -------- TSemaphore
   /**
