@@ -24,7 +24,6 @@ sealed class ExitCase {
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.*
- * import arrow.fx.coroutines.*
  *
  * suspend fun main(): Unit {
  *   //sampleStart
