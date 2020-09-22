@@ -6,6 +6,7 @@ import arrow.fx.coroutines.DefaultPromise.State.Pending
 import arrow.fx.coroutines.Promise.AlreadyFulfilled
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
+import kotlin.coroutines.Continuation
 
 /**
  * When made, a [Promise] is empty. Until it is fulfilled, which can only happen once.
@@ -115,7 +116,7 @@ interface Promise<A> {
 internal class DefaultPromise<A> : Promise<A> {
 
   internal sealed class State<out A> {
-    data class Pending<A>(val joiners: Map<Token, (Result<A>) -> Unit>) : State<A>()
+    data class Pending<A>(val joiners: Map<Token, Continuation<A>>) : State<A>()
     data class Complete<A>(val value: A) : State<A>()
   }
 
@@ -155,18 +156,18 @@ internal class DefaultPromise<A> : Promise<A> {
       }
     }
 
-  private fun Iterable<(Result<A>) -> Unit>.callAll(value: Result<A>): Unit =
-    forEach { cb -> cb(value) }
+  private fun Iterable<Continuation<A>>.callAll(value: Result<A>): Unit =
+    forEach { cb -> cb.resumeWith(value) }
 
   @Suppress("RESULT_CLASS_WITH_NULLABLE_OPERATOR")
-  private fun unsafeRegister(cb: (Result<A>) -> Unit): Token {
+  private fun unsafeRegister(cb: Continuation<A>): Token {
     val id = Token()
-    register(id, cb)?.let(cb)
+    register(id, cb)?.let(cb::resumeWith)
     return id
   }
 
   @Suppress("RESULT_CLASS_IN_RETURN_TYPE")
-  private tailrec fun register(id: Token, cb: (Result<A>) -> Unit): Result<A>? =
+  private tailrec fun register(id: Token, cb: Continuation<A>): Result<A>? =
     when (val current = state.value) {
       is Complete -> Result.success(current.value)
       is Pending -> {

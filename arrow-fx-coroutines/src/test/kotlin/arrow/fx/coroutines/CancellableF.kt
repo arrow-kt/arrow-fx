@@ -1,18 +1,20 @@
 package arrow.fx.coroutines
 
 import arrow.core.Either
+import io.kotest.assertions.fail
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
 import io.kotest.property.checkAll
+import kotlin.coroutines.resume
 
 class CancellableF : ArrowFxSpec(spec = {
 
   "cancelable works for immediate values" {
     checkAll(Arb.result(Arb.int())) { res ->
       Either.catch {
-        cancellable<Int> { cb ->
-          cb(res)
+        cancellable<Int> { cont ->
+          cont.resumeWith(res)
           CancelToken.unit
         }
       } shouldBe res.toEither()
@@ -39,8 +41,8 @@ class CancellableF : ArrowFxSpec(spec = {
   "cancelableF works for immediate values" {
     checkAll(Arb.result(Arb.int())) { res ->
       Either.catch {
-        cancellableF<Int> { cb ->
-          cb(res)
+        cancellableF<Int> { cont ->
+          cont.resumeWith(res)
           CancelToken.unit
         }
       } shouldBe res.toEither()
@@ -50,9 +52,9 @@ class CancellableF : ArrowFxSpec(spec = {
   "cancelableF works for async values" {
     checkAll(Arb.result(Arb.int())) { res ->
       Either.catch {
-        cancellableF<Int> { cb ->
+        cancellableF<Int> { cont ->
           Unit.suspend()
-          cb(res)
+          cont.resumeWith(res)
           CancelToken.unit
         }
       } shouldBe res.toEither()
@@ -84,11 +86,11 @@ class CancellableF : ArrowFxSpec(spec = {
       val done = Promise<Int>()
 
       val task = suspend {
-        cancellableF<Unit> { cb ->
+        cancellableF<Unit> { cont ->
           latch.complete(Unit)
           start.get()
           cancelBoundary()
-          cb(Result.success(Unit))
+          cont.resumeWith(Result.success(Unit))
           done.complete(i)
           CancelToken.unit
         }
@@ -108,7 +110,15 @@ class CancellableF : ArrowFxSpec(spec = {
       start.complete(Unit) // Continue cancellableF
 
       done.get() shouldBe i
-      p.tryGet() shouldBe null
+
+      try {
+        val res = p.join()
+        fail("Should've exploded with cancellation event but found $res")
+      } catch (e: CancellationException) {
+
+      } catch (e: Throwable) {
+        fail("Expected cancellation event but found $e")
+      }
     }
   }
 })

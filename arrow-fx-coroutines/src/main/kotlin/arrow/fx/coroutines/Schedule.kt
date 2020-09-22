@@ -779,6 +779,8 @@ suspend fun <A, B, C> repeatOrElseEither(
         last = { step.finish.value() }
         state = step.state
       }
+    } catch (cancelled: CancellationException) {
+      throw cancelled
     } catch (e: Throwable) {
       return Either.Left(orElse(e.nonFatalOrThrow(), last?.invoke()))
     }
@@ -823,6 +825,8 @@ suspend fun <A, B, C> retryOrElseEither(
     cancelBoundary()
     try {
       return Either.Right(fa.invoke())
+    } catch (cancelled: CancellationException) {
+      throw cancelled
     } catch (e: Throwable) {
       dec = schedule.update(e, state)
       state = dec.state

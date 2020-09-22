@@ -1,8 +1,11 @@
 package arrow.fx.coroutines
 
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.suspendCoroutine
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
+import kotlin.coroutines.resumeWithException
 
 /**
  * Create a cancellable `suspend` function that executes an asynchronous process on evaluation.
@@ -60,10 +63,9 @@ import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
  * @see suspendCoroutine for wrapping impure APIs without cancellation
  * @see cancellableF for wrapping impure APIs using a suspend with cancellation
  */
-suspend fun <A> cancellable(cb: ((Result<A>) -> Unit) -> CancelToken): A =
+suspend fun <A> cancellable(cb: (Continuation<A>) -> CancelToken): A =
   suspendCoroutine { cont ->
     val conn = cont.context.connection()
-    val cbb2 = Platform.onceOnly(conn, cont::resumeWith)
 
     val cancellable = ForwardCancellable()
     conn.push(cancellable.cancel())
@@ -71,9 +73,9 @@ suspend fun <A> cancellable(cb: ((Result<A>) -> Unit) -> CancelToken): A =
     if (conn.isNotCancelled()) {
       cancellable.complete(
         try {
-          cb(cbb2)
+          cb(cont)
         } catch (throwable: Throwable) {
-          cbb2(Result.failure(throwable.nonFatalOrThrow()))
+          cont.resumeWith(Result.failure(throwable.nonFatalOrThrow()))
           CancelToken.unit
         }
       )
@@ -136,21 +138,26 @@ suspend fun <A> cancellable(cb: ((Result<A>) -> Unit) -> CancelToken): A =
  * @see suspendCoroutine for wrapping impure APIs without cancellation
  * @see cancellable for wrapping impure APIs with cancellation
  */
-suspend fun <A> cancellableF(cb: suspend ((Result<A>) -> Unit) -> CancelToken): A =
+suspend fun <A> cancellableF(cb: suspend (Continuation<A>) -> CancelToken): A =
   suspendCoroutine { cont ->
     val conn = cont.context.connection()
 
     val state = AtomicRefW<((Result<Unit>) -> Unit)?>(null)
-    val cb1 = { a: Result<A> ->
-      try {
-        cont.resumeWith(a)
-      } finally {
-        // compareAndSet can only succeed in case the operation is already finished
-        // and no cancellation token was installed yet
-        if (!state.compareAndSet(null, { Unit })) {
-          val cb2 = state.value
-          state.lazySet(null)
-          cb2?.invoke(Result.success(Unit))
+
+    val cb1: Continuation<A> = object : Continuation<A> {
+      override val context: CoroutineContext = cont.context
+
+      override fun resumeWith(result: Result<A>) {
+        try {
+          cont.resumeWith(result)
+        } finally {
+          // compareAndSet can only succeed in case the operation is already finished
+          // and no cancellation token was installed yet
+          if (!state.compareAndSet(null, { Unit })) {
+            val cb2 = state.value
+            state.lazySet(null)
+            cb2?.invoke(Result.success(Unit))
+          }
         }
       }
     }
@@ -172,9 +179,11 @@ suspend fun <A> cancellableF(cb: suspend ((Result<A>) -> Unit) -> CancelToken): 
           }
         }
       )
-    }.startCoroutineCancellable(CancellableContinuation(cont.context, conn2) {
+    }.startCoroutineCancellable(CancellableContinuation(cont.context, conn2)
+    {
+
       // TODO send CancelToken exception to Enviroment
-      it.fold({ arrow.core.identity(it) }, Throwable::printStackTrace)
+//      it.fold({ arrow.core.identity(it) }, Throwable::printStackTrace)
     })
   }
 
@@ -186,6 +195,8 @@ private suspend fun waitUntilCallbackInvoked(state: AtomicRefW<((Result<Unit>) -
   }
 
 suspend fun <A> never(): A =
-  suspendCoroutine<Nothing> {}
+  cancellable<Nothing> { cont ->
+    CancelToken { cont.resumeWith(Result.failure(CancellationException())) }
+  }
 
 suspend fun unit(): Unit = Unit

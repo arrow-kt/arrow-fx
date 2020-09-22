@@ -1,6 +1,7 @@
 package arrow.fx.coroutines
 
 import arrow.core.Either
+import io.kotest.assertions.fail
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
@@ -182,12 +183,12 @@ class SemaphoreTest : ArrowFxSpec(spec = {
   }
 
   "withPermitN does not leak fibers or permits upon cancellation" {
-    checkAll(Arb.positiveInts().map(Int::toLong)) { n -> // 100 iterations takes 1 second
+    checkAll(10, Arb.positiveInts().map(Int::toLong)) { n ->
       val s = Semaphore(n)
 
-      val r = timeOutOrNull(10.milliseconds) {
+      val r = timeOutOrNull(100.milliseconds) {
         s.withPermitN(n + 1) { // Requests a n + 1 permits, puts count to -1
-          s.release() // Timeouts out due to no permit
+          fail("Should never reach this point")
         } // cancel should put count back to 0
       }
 
@@ -214,10 +215,10 @@ class SemaphoreTest : ArrowFxSpec(spec = {
   }
 
   "acquireN does not leak permits upon cancellation" {
-    checkAll(Arb.positiveInts().map(Int::toLong)) { n -> // 100 iterations takes 1 second
+    checkAll(10, Arb.positiveInts().map(Int::toLong)) { n ->
       val s = Semaphore(n)
 
-      val x = timeOutOrNull(10.milliseconds) {
+      val x = timeOutOrNull(100.milliseconds) {
         // Puts count to -1, and times out before acquired so should out count back to 1
         s.acquireN(n + 1)
         s.release() // Never runs

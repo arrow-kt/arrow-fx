@@ -6,16 +6,19 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlin.coroutines.intrinsics.startCoroutineUninterceptedOrReturn
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
+import kotlin.coroutines.resumeWithException
 
 sealed class ExitCase {
   object Completed : ExitCase() {
     override fun toString(): String =
       "ExitCase.Completed"
   }
+
   object Cancelled : ExitCase() {
     override fun toString(): String =
       "ExitCase.Cancelled"
   }
+
   data class Failure(val failure: Throwable) : ExitCase()
 }
 
@@ -53,7 +56,7 @@ suspend fun <A> uncancellable(f: suspend () -> A): A =
       })
     } else {
       deferredRelease.complete(CancelToken.unit)
-      COROUTINE_SUSPENDED
+      cont.resumeWithException(CancellationException())
     }
   }
 
@@ -260,7 +263,7 @@ suspend fun <A, B> bracketCase(
     } else COROUTINE_SUSPENDED
   } else {
     deferredRelease.complete(CancelToken.unit)
-    COROUTINE_SUSPENDED
+    cont.resumeWithException(CancellationException())
   }
 }
 
@@ -304,15 +307,15 @@ private fun <A, B> launchUseAndRelease(
   val frame = BracketUseContinuation(a, uCont, release, uncancellableContext)
   deferredRelease.complete(frame.cancel)
 
-  val x = try {
+  return try {
     val res = fb.startCoroutineUninterceptedOrReturn(frame)
     if (res == COROUTINE_SUSPENDED) return COROUTINE_SUSPENDED
-    else Result.success(res as B)
+    else launchRelease(a, null, Result.success(res as B), uCont, AtomicBooleanW(true), release, uncancellableContext)
+  } catch (cancelled: CancellationException) {
+    launchRelease(a, cancelled, null, uCont, AtomicBooleanW(true), release, uncancellableContext)
   } catch (e: Throwable) {
-    Result.failure<B>(e.nonFatalOrThrow())
+    launchRelease(a, null, Result.failure(e.nonFatalOrThrow()), uCont, AtomicBooleanW(true), release, uncancellableContext)
   }
-
-  return launchRelease(a, x, uCont, release, uncancellableContext)
 }
 
 /**
@@ -330,20 +333,22 @@ private class BracketUseContinuation<A, B>(
 
   // Guard used for thread-safety, to ensure the idempotency
   // of the release; otherwise `release` can be called twice
-  private val waitsForResult = atomic(true)
+  private val waitsForResult = AtomicBooleanW(true)
 
   suspend fun release(c: ExitCase): Unit = release(a, c)
 
   private suspend fun applyRelease(e: ExitCase): Unit {
     if (waitsForResult.compareAndSet(true, false)) release(e)
-    else Unit
   }
 
-  val cancel: CancelToken = CancelToken { applyRelease(ExitCase.Cancelled) }
+  val cancel: CancelToken =
+    CancelToken { if (waitsForResult.compareAndSet(true, false)) applyRelease(ExitCase.Cancelled) }
 
   override fun resumeWith(result: Result<B>) {
     val releasedOrSuspended = try {
-      launchRelease(a, result, uCont, release, uncancellableContext)
+      result.getCancelledOrNull()?.let { cancelled ->
+        launchRelease(a, cancelled, null, uCont, waitsForResult, release, uncancellableContext)
+      } ?: launchRelease(a, null, result, uCont, waitsForResult, release, uncancellableContext)
     } catch (e: Throwable) {
       Result.failure<B>(e.nonFatalOrThrow())
     }
@@ -362,33 +367,51 @@ private class BracketUseContinuation<A, B>(
  */
 private fun <A, B> launchRelease(
   a: A,
-  result: Result<B>,
+  cancelled: CancellationException?,
+  result: Result<B>?,
   uCont: Continuation<B>,
+  active: AtomicBooleanW,
   release: suspend (A, ExitCase) -> Unit,
   uncancellableContext: CoroutineContext
 ): Any? {
   val active = AtomicBooleanW(true)
 
-  val frame = BracketReleaseContinuation(result, uCont, uncancellableContext)
+  val frame = BracketReleaseContinuation(cancelled, result, uCont, uncancellableContext)
+
   val released = suspend {
-    result.fold(
-      { if (active.compareAndSet(true, false)) release(a, ExitCase.Completed) },
-      { e -> if (active.compareAndSet(true, false)) release(a, ExitCase.Failure(e)) }
-    )
+    if (active.compareAndSet(true, false)) {
+      if (result == null) {
+        release(a, ExitCase.Cancelled)
+      } else {
+        result.fold(
+          { release(a, ExitCase.Completed) },
+          { e -> release(a, ExitCase.Failure(e)) }
+        )
+      }
+    }
   }
 
   return try {
     val res = released.startCoroutineUninterceptedOrReturn(frame)
-    if (res == COROUTINE_SUSPENDED) return COROUTINE_SUSPENDED
-    else result
+
+    when {
+      res == COROUTINE_SUSPENDED -> COROUTINE_SUSPENDED
+      result != null -> result
+      else -> Result.failure<B>(cancelled!!)
+    }
+  } catch (e: CancellationException) {
+    // Cancellation exception in release is ignored
+    if (result == null) Result.failure<B>(cancelled!!) else result
   } catch (e2: Throwable) { // Should compose this error with `Result<B>`
-    Result.failure<B>(result.fold({ e2 }, { e -> Platform.composeErrors(e, e2) }))
+    if (result == null) Platform.composeErrors(cancelled!!, e2)
+    else Result.failure<B>(result.fold({ e2 }, { e -> Platform.composeErrors(e, e2) }))
   }
 }
 
 @Suppress("RESULT_CLASS_IN_RETURN_TYPE")
 private class BracketReleaseContinuation<B>(
-  val b: Result<B>,
+  val cancelled: CancellationException?,
+  val b: Result<B>?,
   val uCont: Continuation<B>,
   uncancellableContext: CoroutineContext
 ) : Continuation<Unit> {
@@ -397,12 +420,21 @@ private class BracketReleaseContinuation<B>(
 
   override fun resumeWith(result: Result<Unit>) {
     // Release returned `Unit` or `Throwable`
-    val res = b.fold({
-      result.fold({ b }, { e -> Result.failure(e) })
-    }, { e ->
-      result.fold({ b }, { e2 -> Result.failure(Platform.composeErrors(e, e2)) })
-    })
+
+    val res: Result<B> =
+      if (b == null) result.fold({ Result.failure<B>(cancelled!!) }, { e2 -> Result.failure(Platform.composeErrors(cancelled!!, e2)) })
+      else {
+        val bb: Result<B> = b
+        bb.fold({ // If `release` resulted in `CancellationException` we ignore it.
+          result.fold({ bb }, { e -> if (e is CancellationException) bb else Result.failure(e) })
+        }, { e ->
+          result.fold({ bb }, { e2 -> Result.failure(Platform.composeErrors(e, e2)) })
+        })
+      }
 
     uCont.resumeWith(res)
   }
 }
+
+fun <A> Result<A>.getCancelledOrNull(): CancellationException? =
+  fold({ null }, { it as? CancellationException })

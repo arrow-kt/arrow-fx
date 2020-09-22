@@ -39,9 +39,9 @@ internal val scheduler: ScheduledExecutorService by lazy {
  **/
 suspend fun sleep(duration: Duration): Unit =
   if (duration.amount <= 0) Unit
-  else cancellable { resumeWith ->
+  else cancellable { cont ->
     val cancelRef = scheduler.schedule(
-      { resumeWith(Result.success(Unit)) },
+      { cont.resumeWith(Result.success(Unit)) },
       duration.amount,
       duration.timeUnit
     )

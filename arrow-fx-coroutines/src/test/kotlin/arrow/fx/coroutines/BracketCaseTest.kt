@@ -2,10 +2,13 @@ package arrow.fx.coroutines
 
 import arrow.core.Either
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
+import io.kotest.property.Exhaustive
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.long
 import io.kotest.property.checkAll
+import org.junit.jupiter.api.fail
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
@@ -13,7 +16,7 @@ import kotlin.time.measureTimedValue
 class BracketCaseTest : ArrowFxSpec(spec = {
 
   "Uncancellable back pressures timeoutOrNull" {
-    checkAll(Arb.long(10, 100), Arb.long(300, 400)) { a, b ->
+    checkAll(10, Arb.long(10, 100), Arb.long(300, 400)) { a, b ->
       val (n, duration) = measureTimedValue {
         timeOutOrNull(a.milliseconds) {
           uncancellable { sleep(b.milliseconds) }
@@ -278,6 +281,138 @@ class BracketCaseTest : ArrowFxSpec(spec = {
     }
   }
 
+  "immediate CancellationException from acquire is treated as fatal acquire exception" {
+    assertThrowable {
+      bracketCase<Unit, Unit>(
+        acquire = { throw CancellationException() },
+        use = { fail("Use shouldn't run with CancellationException in acquire") },
+        release = { _, case -> fail("Release shouldn't run with CancellationException in acquire") }
+      )
+    }.shouldBeInstanceOf<CancellationException>()
+  }
+
+  "suspended CancellationException from acquire is treated as fatal acquire exception" {
+    assertThrowable {
+      bracketCase<Unit, Unit>(
+        acquire = { CancellationException().suspend() },
+        use = { fail("Use shouldn't run with CancellationException in acquire") },
+        release = { _, case -> fail("Release shouldn't run with CancellationException in acquire") }
+      )
+    }.shouldBeInstanceOf<CancellationException>()
+  }
+
+  "immediate CancellationException in use results in release with ExitCase.Cancelled" {
+    val exit = Promise<ExitCase>()
+
+    assertThrowable {
+      bracketCase<Unit, Unit>(
+        acquire = { Unit },
+        use = { throw CancellationException() },
+        release = { _, case -> exit.complete(case) }
+      )
+    }.shouldBeInstanceOf<CancellationException>()
+
+    exit.get() shouldBe ExitCase.Cancelled
+  }
+
+  "immediate CancellationException in use after suspended acquire results in release with ExitCase.Cancelled" {
+    val exit = Promise<ExitCase>()
+
+    assertThrowable {
+      bracketCase<Unit, Unit>(
+        acquire = { Unit.suspend() },
+        use = { throw CancellationException() },
+        release = { _, case -> exit.complete(case) }
+      )
+    }.shouldBeInstanceOf<CancellationException>()
+
+    exit.get() shouldBe ExitCase.Cancelled
+  }
+
+  "suspended CancellationException in use results in release with ExitCase.Cancelled after immediate acquire " {
+    val exit = Promise<ExitCase>()
+
+    assertThrowable {
+      bracketCase<Unit, Unit>(
+        acquire = { Unit },
+        use = { CancellationException().suspend() },
+        release = { _, case -> exit.complete(case) }
+      )
+    }.shouldBeInstanceOf<CancellationException>()
+
+    exit.get() shouldBe ExitCase.Cancelled
+  }
+
+  "suspended CancellationException in use results in release with ExitCase.Cancelled after suspended acquire " {
+    val exit = Promise<ExitCase>()
+
+    assertThrowable {
+      bracketCase<Unit, Unit>(
+        acquire = { Unit.suspend() },
+        use = { CancellationException().suspend() },
+        release = { _, case -> exit.complete(case) }
+      )
+    }.shouldBeInstanceOf<CancellationException>()
+
+    exit.get() shouldBe ExitCase.Cancelled
+  }
+
+  "immediate CancellationException in release gets ignored with immediate acquire/use" {
+    val exit = Promise<ExitCase>()
+
+    bracketCase(
+      acquire = { Unit },
+      use = { Unit },
+      release = { _, case ->
+        exit.complete(case)
+        throw CancellationException()
+      }
+    )
+    exit.get() shouldBe ExitCase.Completed
+  }
+
+  "suspended CancellationException in release gets ignored with immediate acquire/use" {
+    val exit = Promise<ExitCase>()
+
+    bracketCase(
+      acquire = { Unit },
+      use = { Unit },
+      release = { _, case ->
+        exit.complete(case)
+        CancellationException().suspend()
+      }
+    )
+    exit.get() shouldBe ExitCase.Completed
+  }
+
+  "immediate CancellationException in release gets ignored with suspended acquire/use" {
+    val exit = Promise<ExitCase>()
+
+    bracketCase(
+      acquire = { Unit.suspend() },
+      use = { Unit.suspend() },
+      release = { _, case ->
+        exit.complete(case)
+        throw CancellationException()
+      }
+    )
+    exit.get() shouldBe ExitCase.Completed
+  }
+
+  "suspended CancellationException in release gets ignored with suspended acquire/use" {
+    val exit = Promise<ExitCase>()
+
+    bracketCase(
+      acquire = { Unit.suspend() },
+      use = { Unit.suspend() },
+      release = { _, case ->
+        exit.complete(case)
+        CancellationException().suspend()
+      }
+    )
+    exit.get() shouldBe ExitCase.Completed
+  }
+
   "release on bracketCase is not cancellable" {
     checkAll(Arb.int(), Arb.int()) { x, y ->
       val mVar = ConcurrentVar(x)
@@ -299,3 +434,4 @@ class BracketCaseTest : ArrowFxSpec(spec = {
     }
   }
 })
+

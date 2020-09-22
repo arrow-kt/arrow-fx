@@ -2,6 +2,7 @@ package arrow.fx.coroutines
 
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
+import kotlin.coroutines.Continuation
 
 /**
  * An eager Promise implementation to bridge results across processes internally.
@@ -11,7 +12,7 @@ internal class UnsafePromise<A> {
 
   private sealed class State<out A> {
     object Empty : State<Nothing>()
-    data class Waiting<A>(val joiners: List<(Result<A>) -> Unit>) : State<A>()
+    data class Waiting<A>(val joiners: List<Continuation<A>>) : State<A>()
 
     @Suppress("RESULT_CLASS_IN_RETURN_TYPE")
     data class Full<A>(val a: Result<A>) : State<A>()
@@ -26,11 +27,11 @@ internal class UnsafePromise<A> {
       else -> null
     }
 
-  fun get(cb: (Result<A>) -> Unit) {
+  fun get(cb: Continuation<A>) {
     tailrec fun go(): Unit = when (val oldState = state.value) {
       State.Empty -> if (state.compareAndSet(oldState, State.Waiting(listOf(cb)))) Unit else go()
       is State.Waiting -> if (state.compareAndSet(oldState, State.Waiting(oldState.joiners + cb))) Unit else go()
-      is State.Full -> cb(oldState.a)
+      is State.Full -> cb.resumeWith(oldState.a)
     }
 
     go()
@@ -46,7 +47,7 @@ internal class UnsafePromise<A> {
     tailrec fun go(): Unit = when (val oldState = state.value) {
       State.Empty -> if (state.compareAndSet(oldState, State.Full(value))) Unit else go()
       is State.Waiting -> {
-        if (state.compareAndSet(oldState, State.Full(value))) oldState.joiners.forEach { it(value) }
+        if (state.compareAndSet(oldState, State.Full(value))) oldState.joiners.forEach { it.resumeWith(value) }
         else go()
       }
       is State.Full -> throw ArrowInternalException()
@@ -55,7 +56,7 @@ internal class UnsafePromise<A> {
     go()
   }
 
-  fun remove(cb: (Result<A>) -> Unit) = when (val oldState = state.value) {
+  fun remove(cb: Continuation<A>) = when (val oldState = state.value) {
     State.Empty -> Unit
     is State.Waiting -> state.value = State.Waiting(oldState.joiners - cb)
     is State.Full -> Unit

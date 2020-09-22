@@ -3,6 +3,7 @@ package arrow.fx.coroutines
 import arrow.fx.coroutines.DefaultConcurrentVar.Companion.State.WaitForPut
 import arrow.fx.coroutines.DefaultConcurrentVar.Companion.State.WaitForTake
 import kotlinx.atomicfu.atomic
+import kotlin.coroutines.Continuation
 
 /**
  * [ConcurrentVar] is a mutable concurrent safe variable which is either `empty` or contains a `single value` of type [A].
@@ -264,7 +265,7 @@ private class DefaultConcurrentVar<A> constructor(initial: State<A>) : Concurren
     when (val current = state.value) {
       is WaitForTake -> false
       is WaitForPut -> {
-        var first: Listener<A>? = null
+        var first: Continuation<A>? = null
         val update: State<A> = if (current.takes.isEmpty()) {
           State(a)
         } else {
@@ -282,7 +283,7 @@ private class DefaultConcurrentVar<A> constructor(initial: State<A>) : Concurren
       }
     }
 
-  private tailrec suspend fun unsafePut(a: A, onPut: Listener<Unit>): CancelToken =
+  private tailrec suspend fun unsafePut(a: A, onPut: Continuation<Unit>): CancelToken =
     when (val current = state.value) {
       is WaitForTake -> {
         val id = Token()
@@ -291,7 +292,7 @@ private class DefaultConcurrentVar<A> constructor(initial: State<A>) : Concurren
         else unsafePut(a, onPut)
       }
       is WaitForPut -> {
-        var first: Listener<A>? = null
+        var first: Continuation<A>? = null
         val update = if (current.takes.isEmpty()) {
           State(a)
         } else {
@@ -304,10 +305,10 @@ private class DefaultConcurrentVar<A> constructor(initial: State<A>) : Concurren
         if (state.compareAndSet(current, update)) {
           if (first != null || current.reads.isNotEmpty()) {
             callPutAndAllReaders(a, first, current.reads)
-            onPut(Result.success(Unit))
+            onPut.resumeWith(Result.success(Unit))
             CancelToken.unit
           } else {
-            onPut(Result.success(Unit))
+            onPut.resumeWith(Result.success(Unit))
             CancelToken.unit
           }
         } else unsafePut(a, onPut)
@@ -335,7 +336,7 @@ private class DefaultConcurrentVar<A> constructor(initial: State<A>) : Concurren
           val xs = current.listeners.entries.drop(1)
           val update = WaitForTake(ax, xs.toMap())
           if (state.compareAndSet(current, update)) {
-            notify(Result.success(Unit))
+            notify.resumeWith(Result.success(Unit))
             Maybe.Just(current.value)
           } else {
             unsafeTryTake()
@@ -345,12 +346,12 @@ private class DefaultConcurrentVar<A> constructor(initial: State<A>) : Concurren
       is WaitForPut -> Maybe.None
     }
 
-  private tailrec suspend fun unsafeTake(onTake: Listener<A>): CancelToken =
+  private tailrec suspend fun unsafeTake(onTake: Continuation<A>): CancelToken =
     when (val current = state.value) {
       is WaitForTake -> {
         if (current.listeners.isEmpty()) {
           if (state.compareAndSet(current, State.empty())) {
-            onTake(Result.success(current.value))
+            onTake.resumeWith(Result.success(current.value))
             CancelToken.unit
           } else {
             unsafeTake(onTake)
@@ -359,8 +360,8 @@ private class DefaultConcurrentVar<A> constructor(initial: State<A>) : Concurren
           val (ax, notify) = current.listeners.values.first()
           val xs = current.listeners.entries.drop(1)
           if (state.compareAndSet(current, WaitForTake(ax, xs.toMap()))) {
-            notify(Result.success(Unit))
-            onTake(Result.success(current.value))
+            notify.resumeWith(Result.success(Unit))
+            onTake.resumeWith(Result.success(current.value))
             CancelToken.unit
           } else unsafeTake(onTake)
         }
@@ -384,10 +385,10 @@ private class DefaultConcurrentVar<A> constructor(initial: State<A>) : Concurren
       is WaitForTake -> Unit
     }
 
-  private tailrec fun unsafeRead(onRead: Listener<A>): CancelToken =
+  private tailrec fun unsafeRead(onRead: Continuation<A>): CancelToken =
     when (val current = state.value) {
       is WaitForTake -> {
-        onRead(Result.success(current.value))
+        onRead.resumeWith(Result.success(current.value))
         CancelToken.unit
       }
       is WaitForPut -> {
@@ -409,23 +410,23 @@ private class DefaultConcurrentVar<A> constructor(initial: State<A>) : Concurren
       is WaitForTake -> Unit
     }
 
-  private suspend fun callPutAndAllReaders(
+  private fun callPutAndAllReaders(
     a: A,
-    put: Listener<A>?,
-    reads: Map<Token, Listener<A>>
+    put: Continuation<A>?,
+    reads: Map<Token, Continuation<A>>
   ): Boolean {
     val value = Result.success(a)
     reads.values.callAll(value)
 
     return if (put != null) {
-      put(value)
+      put.resumeWith(value)
       true
     } else true
   }
 
   // For streaming a value to a whole `reads` collection
-  private suspend fun Iterable<Listener<A>>.callAll(value: Result<A>): Unit =
-    forEach { cb -> cb(value) }
+  private fun Iterable<Continuation<A>>.callAll(value: Result<A>): Unit =
+    forEach { cont: Continuation<A> -> cont.resumeWith(value) }
 
   companion object {
     internal sealed class State<out A> {
@@ -437,13 +438,11 @@ private class DefaultConcurrentVar<A> constructor(initial: State<A>) : Concurren
         fun <A> empty(): State<A> = ref as State<A>
       }
 
-      data class WaitForPut<A>(val reads: Map<Token, Listener<A>>, val takes: Map<Token, Listener<A>>) : State<A>()
-      data class WaitForTake<A>(val value: A, val listeners: Map<Token, Pair<A, Listener<Unit>>>) : State<A>()
+      data class WaitForPut<A>(val reads: Map<Token, Continuation<A>>, val takes: Map<Token, Continuation<A>>) : State<A>()
+      data class WaitForTake<A>(val value: A, val listeners: Map<Token, Pair<A, Continuation<Unit>>>) : State<A>()
     }
   }
 }
-
-internal typealias Listener<A> = (Result<A>) -> Unit
 
 internal fun <K, V> List<Map.Entry<K, V>>.toMap(): Map<K, V> =
   when (size) {

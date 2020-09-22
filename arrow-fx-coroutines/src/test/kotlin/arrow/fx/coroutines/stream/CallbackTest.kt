@@ -13,10 +13,13 @@ import arrow.fx.coroutines.assertThrowable
 import arrow.fx.coroutines.cancelBoundary
 import arrow.fx.coroutines.milliseconds
 import arrow.fx.coroutines.parTupledN
+import arrow.fx.coroutines.rethrow
 import arrow.fx.coroutines.sleep
 import arrow.fx.coroutines.startCoroutineCancellable
 import arrow.fx.coroutines.suspend
 import arrow.fx.coroutines.throwable
+import io.kotest.assertions.failure
+import io.kotest.assertions.timing.eventually
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
@@ -25,7 +28,10 @@ import io.kotest.property.arbitrary.map
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
+import kotlin.time.ExperimentalTime
+import kotlin.time.seconds
 
+@ExperimentalTime
 class CallbackTest : StreamSpec(iterations = 250, spec = {
 
   "should be lazy" {
@@ -138,25 +144,23 @@ class CallbackTest : StreamSpec(iterations = 250, spec = {
 
   "runs cancel token" {
     checkAll(Arb.int()) {
-      val latch = Promise<Unit>()
-      val effect = Atomic(false)
+      val effect = Promise<Unit>()
 
       val s = Stream.cancellable<Int> {
-        CancelToken { effect.set(true) }
+        CancelToken {
+          effect.complete(Unit)
+            .mapLeft { failure("Bracket finalizer may only be called once") }
+            .rethrow()
+        }
       }
 
       val f = ForkAndForget {
-        parTupledN(
-          { s.drain() },
-          { latch.complete(Unit) }
-        )
+        s.drain()
       }
-
-      parTupledN({ latch.get() }, { sleep(20.milliseconds) })
 
       f.cancel()
 
-      effect.get() shouldBe true
+      eventually(1.seconds) { effect.get() }
     }
   }
 

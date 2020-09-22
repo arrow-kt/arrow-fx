@@ -1,6 +1,5 @@
 package arrow.fx.coroutines
 
-import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 
 /**
@@ -34,6 +33,9 @@ import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
  */
 suspend fun cancelBoundary(): Unit =
   suspendCoroutineUninterceptedOrReturn { cont ->
-    if (cont.context.connection().isCancelled()) COROUTINE_SUSPENDED
+    if (cont.context.connection().isCancelled()) throw CancellationException()
     else Unit
   }
+
+// TODO replace with Kotlin 1.4 CancellationException
+typealias CancellationException = java.util.concurrent.CancellationException

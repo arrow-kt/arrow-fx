@@ -1,6 +1,7 @@
 package arrow.fx.coroutines
 
 import arrow.core.Either
+import io.kotest.assertions.failure
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
@@ -13,7 +14,11 @@ class GuaranteeCaseTest : ArrowFxSpec(spec = {
 
       val res = guaranteeCase(
         fa = { i },
-        finalizer = { ex -> p.complete(ex) }
+        finalizer = { ex ->
+          p.complete(ex)
+            .mapLeft { failure("Bracket finalizer may only be called once") }
+            .rethrow()
+        }
       )
 
       p.get() shouldBe ExitCase.Completed
@@ -27,7 +32,11 @@ class GuaranteeCaseTest : ArrowFxSpec(spec = {
       val attempted = Either.catch {
         guaranteeCase<Int>(
           fa = { throw e },
-          finalizer = { ex -> p.complete(ex) }
+          finalizer = { ex ->
+            p.complete(ex)
+              .mapLeft { failure("Bracket finalizer may only be called once") }
+              .rethrow()
+          }
         )
       }
 
@@ -46,7 +55,11 @@ class GuaranteeCaseTest : ArrowFxSpec(spec = {
           start.complete(Unit)
           never<Unit>()
         },
-        finalizer = { ex -> p.complete(ex) }
+        finalizer = { ex ->
+          p.complete(ex)
+            .mapLeft { failure("Bracket finalizer may only be called once") }
+            .rethrow()
+        }
       )
     }
 

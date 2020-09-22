@@ -108,6 +108,17 @@ abstract class ArrowFxSpec(
       property
     )
 
+  suspend fun <A> checkAll(
+    iterations: Int,
+    genA: Arb<A>,
+    property: suspend PropertyContext.(A) -> Unit
+  ): PropertyContext =
+    io.kotest.property.checkAll(
+      iterations,
+      genA,
+      property
+    )
+
   suspend fun <A, B> checkAll(
     genA: Arb<A>,
     genB: Arb<B>,
