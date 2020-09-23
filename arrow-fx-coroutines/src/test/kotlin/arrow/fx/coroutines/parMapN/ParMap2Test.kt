@@ -27,7 +27,7 @@ import java.util.concurrent.Executors
 
 class ParMap2Test : ArrowFxSpec(spec = {
   "parMapN 2 returns to original context" {
-    val mapCtxName = "parMapN"
+    val mapCtxName = "parMap2"
     val mapCtx = Resource.fromExecutor { Executors.newFixedThreadPool(2, NamedThreadFactory { mapCtxName }) }
 
     checkAll {
