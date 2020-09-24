@@ -72,8 +72,8 @@ class ParMap3Test : ArrowFxSpec(spec = {
   "parMapN 3 runs in parallel" {
     checkAll(Arb.int(), Arb.int(), Arb.int()) { a, b, c ->
       val r = Atomic("")
-      val modifyGate1 = Promise<Int>()
-      val modifyGate2 = Promise<Int>()
+      val modifyGate1 = Promise<Unit>()
+      val modifyGate2 = Promise<Unit>()
 
       parMapN(
         {
