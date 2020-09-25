@@ -59,7 +59,7 @@ suspend fun <O> Stream<O>.firstOrNull(): O? =
  * This a terminal operator, meaning this functions `suspend`s until the [Stream] finishes.
  * If any errors are raised while streaming, it's thrown from this `suspend` scope.
  */
-suspend fun <O> Stream<O>.firstOrError(): O? =
+suspend fun <O> Stream<O>.firstOrError(): O =
   firstOrNull() ?: throw NoSuchElementException()
 
 /**
