@@ -4,6 +4,9 @@ import arrow.core.Either
 import arrow.core.None
 import arrow.core.Some
 import arrow.core.getOrElse
+import arrow.core.left
+import arrow.core.nonFatalOrThrow
+import arrow.core.right
 import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.Platform
 import arrow.fx.coroutines.Token
@@ -235,7 +238,12 @@ internal tailrec suspend fun go(
               } else false
 
               val newExtendedScope = if (closedExtendedScope) null else extendedTopLevelScope
-              when (val res2 = Either.catch { scope.open(res.isInterruptible) }) {
+              val res2 = try {
+                scope.open(res.isInterruptible).right()
+              } catch (t: Throwable) {
+                t.nonFatalOrThrow().left()
+              }
+              when (res2) {
                 is Either.Left -> go(scope, extendLastTopLevelScope, newExtendedScope, view.next(Result.Fail(res2.a)))
                 is Either.Right -> go(res2.b, extendLastTopLevelScope, newExtendedScope, view.next(Result.Pure(res2.b.id)))
               }
