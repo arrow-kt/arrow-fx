@@ -29,22 +29,27 @@ class TestStream(val timeout: Duration) {
   }
 
   suspend fun expectNothingMore() {
-    val actualValues = dequeueWithTimeout(now).toList()
-    check(actualValues.isEmpty()) { "Expected nothing more but got: $actualValues" }
+    val values = queue.dequeue().interruptAfter(now).toList()
+    check(values.isEmpty()) { "Expected nothing more but got: $values" }
   }
 
   private val queue = Queue.unsafeUnbounded<Any?>()
 
-  private fun dequeueWithTimeout(timeout: Duration = this.timeout): Stream<Any?> =
-    queue.dequeue().interruptAfter(timeout.toArrowDuration())
-
-  suspend fun next(): Any? = dequeueWithTimeout()
-    .firstOrNull() ?: error("Timeout after $timeout")
+  suspend fun next(): Any? =
+    queue.dequeue().interruptAfter(timeout).firstOrError { "Timeout after $timeout" }
 
 }
 
+// TODO(pablisco): Maybe move to TerminalOps
+private suspend fun <O> Stream<O>.firstOrError(message: () -> String) =
+  firstOrNull() ?: error(message())
+
 @OptIn(ExperimentalTime::class)
 private val now = 0.toDuration(TimeUnit.SECONDS)
+
+@OptIn(ExperimentalTime::class)
+private fun <O> Stream<O>.interruptAfter(duration: Duration): Stream<O> =
+  interruptAfter(duration.toArrowDuration())
 
 @OptIn(ExperimentalTime::class)
 private fun Duration.toArrowDuration(): ArrowDuration =
