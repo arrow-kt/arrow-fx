@@ -58,9 +58,22 @@ suspend fun <O> Stream<O>.firstOrNull(): O? =
  *
  * This a terminal operator, meaning this functions `suspend`s until the [Stream] finishes.
  * If any errors are raised while streaming, it's thrown from this `suspend` scope.
+ *
+ * It's possible to include an alternative [FailStrategy] which describes how to fail in case of not finding the desired element.
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.stream.*
+ *
+ * //sampleStart
+ * suspend fun main(): Unit =
+ *   Stream.empty<Int>()
+ *     .firstOrError { error("Oops!") } // equivalent to .lastOrError { throw IllegalStateException("Oops!") }
+ *     .let(::println) // not reached, IllegalStateException("Oops!") is thrown
+ * //sampleEnd
+ * ```
  */
-suspend fun <O> Stream<O>.firstOrError(): O =
-  firstOrNull() ?: throw NoSuchElementException()
+suspend fun <O> Stream<O>.firstOrError(failStrategy: FailStrategy = ::noSuchElement): O =
+  firstOrNull() ?: failStrategy()
 
 /**
  * Runs all the effects of this [Stream], and returns `null` if the stream emitted no values
@@ -84,14 +97,29 @@ suspend fun <O> Stream<O>.lastOrNull(): O? =
   foldChunks<O, O?>(null) { acc, c -> c.lastOrNull() ?: acc }
 
 /**
- * Runs all the effects of this [Stream], raising a [NoSuchElementException] if the stream emitted no values,
+ * Runs all the effects of this [Stream], raising a [NoSuchElementException], by default, if the stream emitted no values,
  * and returning the last value emitted otherwise.
  *
  * This a terminal operator, meaning this functions `suspend`s until the [Stream] finishes.
  * If any errors are raised while streaming, it's thrown from this `suspend` scope.
+ *
+ * It's possible to include an alternative [FailStrategy] which describes how to fail in case of not finding the desired element.
+ * //sampleStart
+ * suspend fun main(): Unit =
+ *   Stream(1, 2, 3)
+ *     .drop(3)
+ *     .lastOrError { error("Oops!") } // equivalent to .lastOrError { throw IllegalStateException("Oops!") }
+ *     .let(::println) // not reached, IllegalStateException("Oops!") is thrown
+ * //sampleEnd
+ * ```
  */
-suspend fun <O> Stream<O>.lastOrError(): O =
-  lastOrNull() ?: throw NoSuchElementException()
+suspend fun <O> Stream<O>.lastOrError(failStrategy: FailStrategy = ::noSuchElement): O =
+  lastOrNull() ?: failStrategy()
+
+/**
+ * This typealias defines a function that can only compile if we throw an exception, or call a function that returns [Nothing].
+ */
+typealias FailStrategy = () -> Nothing
 
 /**
  * Folds all the effects of this stream in to a value by folding
@@ -106,3 +134,6 @@ suspend fun <O, B> Stream<O>.foldChunks(init: B, f: (B, Chunk<O>) -> B): B =
 
 private suspend fun <O, B> Stream<O>.compiler(init: B, foldChunk: (B, Chunk<O>) -> B): B =
   asPull.compiler(init, foldChunk)
+
+@Suppress("NOTHING_TO_INLINE") // we want to avoid polluting the stack trace
+private inline fun noSuchElement(): Nothing = throw NoSuchElementException()
