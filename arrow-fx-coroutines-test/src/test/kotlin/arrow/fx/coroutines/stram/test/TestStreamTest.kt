@@ -2,14 +2,21 @@ package arrow.fx.coroutines.stram.test
 
 import arrow.fx.coroutines.stream.Stream
 import arrow.fx.coroutines.stream.test.testStreamCompat
-import org.junit.jupiter.api.Test
+import io.kotest.core.spec.style.StringSpec
 
-class TestStreamTest {
+class TestStreamTest : StringSpec({
 
-  @Test
-  fun `expects single item`(): Unit = testStreamCompat {
-    Stream.just("Hello").capture()
-    expect("Hello")
+  "expects single item" {
+    testStreamCompat {
+      Stream.just("Hello").capture()
+      expect("Hello")
+    }
   }
 
-}
+//  @Test
+//  fun `expects single item`(): Unit = testStreamCompat {
+//    Stream.just("Hello").capture()
+//    expect("Hello")
+//  }
+
+})
