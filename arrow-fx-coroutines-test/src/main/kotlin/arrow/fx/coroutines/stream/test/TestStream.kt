@@ -13,14 +13,19 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.toDuration
 import arrow.fx.coroutines.Duration as ArrowDuration
 
-@OptIn(ExperimentalTime::class)
+@ExperimentalTime
 fun testStream(
   timeout: Duration = 1.toDuration(DurationUnit.SECONDS),
   block: suspend TestStream.() -> Unit,
+): Unit = testStreamCompat(timeout = timeout.toArrowDuration(), block = block)
+
+fun testStreamCompat(
+  timeout: ArrowDuration = ArrowDuration(1, TimeUnit.SECONDS),
+  block: suspend TestStream.() -> Unit,
 ): Unit = TestStream(timeout = timeout).runBlocking { block() }
 
-@OptIn(ExperimentalTime::class)
-class TestStream(val timeout: Duration) {
+// TODO: Convert to Kotlin Duration when not experimental
+class TestStream internal constructor(private val timeout: ArrowDuration) {
 
   suspend fun Stream<*>.capture(): Unit = through(queue.enqueue()).drain()
 
@@ -40,17 +45,19 @@ class TestStream(val timeout: Duration) {
 
 }
 
-// TODO(pablisco): Maybe move to TerminalOps
 private suspend fun <O> Stream<O>.firstOrError(message: () -> String) =
   firstOrNull() ?: error(message())
 
-@OptIn(ExperimentalTime::class)
-private val now = 0.toDuration(TimeUnit.SECONDS)
+private val now = ArrowDuration(0, TimeUnit.SECONDS)
 
-@OptIn(ExperimentalTime::class)
+@ExperimentalTime
 private fun <O> Stream<O>.interruptAfter(duration: Duration): Stream<O> =
   interruptAfter(duration.toArrowDuration())
 
-@OptIn(ExperimentalTime::class)
+@ExperimentalTime
 private fun Duration.toArrowDuration(): ArrowDuration =
   ArrowDuration(toLongMilliseconds(), TimeUnit.MILLISECONDS)
+
+@ExperimentalTime
+private fun ArrowDuration.toKotlinDuration(): Duration =
+  millis.toDuration(DurationUnit.MILLISECONDS)
