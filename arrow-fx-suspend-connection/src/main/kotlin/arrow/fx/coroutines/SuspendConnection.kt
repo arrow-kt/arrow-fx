@@ -24,17 +24,14 @@ inline class CancelToken(val cancel: suspend () -> Unit) {
   }
 }
 
-typealias Disposable = () -> Unit
-
-internal fun CoroutineContext.connection(): SuspendConnection =
+fun CoroutineContext.connection(): SuspendConnection =
   this[SuspendConnection] ?: SuspendConnection.uncancellable
 
 /**
  * SuspendConnection is a state-machine inside [CoroutineContext] that manages cancellation.
  * This could in the future also serve as a mechanism to collect debug information on running connections.
  */
-@PublishedApi
-internal sealed class SuspendConnection : AbstractCoroutineContextElement(SuspendConnection) {
+sealed class SuspendConnection : AbstractCoroutineContextElement(SuspendConnection) {
 
   abstract suspend fun cancel(): Unit
   fun cancelToken(): CancelToken = CancelToken { cancel() }
@@ -53,10 +50,6 @@ internal sealed class SuspendConnection : AbstractCoroutineContextElement(Suspen
 
   abstract fun pop(): CancelToken
   abstract fun tryReactivate(): Boolean
-
-  fun toDisposable(): Disposable = {
-    Platform.unsafeRunSync { cancel() }
-  }
 
   companion object Key : CoroutineContext.Key<SuspendConnection> {
     val uncancellable: SuspendConnection = Uncancellable
