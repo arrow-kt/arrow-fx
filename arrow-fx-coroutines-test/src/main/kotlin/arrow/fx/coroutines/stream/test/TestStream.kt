@@ -16,12 +16,12 @@ import arrow.fx.coroutines.Duration as ArrowDuration
 @ExperimentalTime
 fun testStream(
   timeout: Duration = 1.toDuration(DurationUnit.SECONDS),
-  block: suspend TestStream.() -> Unit,
+  block: suspend TestStream.() -> Unit
 ): Unit = testStreamCompat(timeout = timeout.toArrowDuration(), block = block)
 
 fun testStreamCompat(
   timeout: ArrowDuration = ArrowDuration(1, TimeUnit.SECONDS),
-  block: suspend TestStream.() -> Unit,
+  block: suspend TestStream.() -> Unit
 ): Unit = runBlocking { TestStream(timeout = timeout).block() }
 
 // TODO: Convert to Kotlin Duration when not experimental
@@ -51,13 +51,5 @@ private suspend fun <O> Stream<O>.firstOrError(message: () -> String) =
 private val now = ArrowDuration(0, TimeUnit.SECONDS)
 
 @ExperimentalTime
-private fun <O> Stream<O>.interruptAfter(duration: Duration): Stream<O> =
-  interruptAfter(duration.toArrowDuration())
-
-@ExperimentalTime
 private fun Duration.toArrowDuration(): ArrowDuration =
   ArrowDuration(toLongMilliseconds(), TimeUnit.MILLISECONDS)
-
-@ExperimentalTime
-private fun ArrowDuration.toKotlinDuration(): Duration =
-  millis.toDuration(DurationUnit.MILLISECONDS)
