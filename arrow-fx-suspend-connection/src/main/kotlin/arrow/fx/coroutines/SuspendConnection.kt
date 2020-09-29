@@ -8,22 +8,6 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
 
-/**
- * Inline marker to mark a [CancelToken],
- * This allows for clearer APIs in functions that expect a [CancelToken] to be returned.
- */
-@Suppress("EXPERIMENTAL_FEATURE_WARNING")
-inline class CancelToken(val cancel: suspend () -> Unit) {
-
-  suspend fun invoke(): Unit = cancel.invoke()
-
-  override fun toString(): String = "CancelToken(..)"
-
-  companion object {
-    val unit = CancelToken { Unit }
-  }
-}
-
 fun CoroutineContext.connection(): SuspendConnection =
   this[SuspendConnection] ?: SuspendConnection.uncancellable
 
@@ -34,21 +18,20 @@ fun CoroutineContext.connection(): SuspendConnection =
 sealed class SuspendConnection : AbstractCoroutineContextElement(SuspendConnection) {
 
   abstract suspend fun cancel(): Unit
-  fun cancelToken(): CancelToken = CancelToken { cancel() }
 
   abstract fun isCancelled(): Boolean
-  abstract fun push(tokens: List<CancelToken>): Unit
+  abstract fun push(tokens: List<suspend () -> Unit>): Unit
   fun isNotCancelled(): Boolean = !isCancelled()
 
-  abstract fun push(token: CancelToken): Unit
+  abstract fun push(token: suspend () -> Unit): Unit
 
   fun pushPair(lh: SuspendConnection, rh: SuspendConnection): Unit =
-    pushPair(lh.cancelToken(), rh.cancelToken())
+    pushPair({ lh.cancel() }, { rh.cancel() })
 
-  fun pushPair(lh: CancelToken, rh: CancelToken): Unit =
+  fun pushPair(lh: suspend () -> Unit, rh: suspend () -> Unit): Unit =
     push(listOf(lh, rh))
 
-  abstract fun pop(): CancelToken
+  abstract fun pop(): suspend () -> Unit
   abstract fun tryReactivate(): Boolean
 
   companion object Key : CoroutineContext.Key<SuspendConnection> {
@@ -59,42 +42,42 @@ sealed class SuspendConnection : AbstractCoroutineContextElement(SuspendConnecti
   object Uncancellable : SuspendConnection() {
     override suspend fun cancel() = Unit
     override fun isCancelled(): Boolean = false
-    override fun push(tokens: List<CancelToken>) = Unit
-    override fun push(token: CancelToken) = Unit
-    override fun pop(): CancelToken = CancelToken.unit
+    override fun push(tokens: List<suspend () -> Unit>) = Unit
+    override fun push(token: suspend () -> Unit) = Unit
+    override fun pop(): suspend () -> Unit = suspend { Unit }
     override fun tryReactivate(): Boolean = true
     override fun toString(): String = "UncancellableConnection"
   }
 
   class DefaultConnection : SuspendConnection() {
-    private val state: AtomicRef<List<CancelToken>?> = atomic(emptyList())
+    private val state: AtomicRef<List<suspend () -> Unit>?> = atomic(emptyList())
 
     override suspend fun cancel(): Unit =
       state.getAndSet(null).let { stack ->
         when {
-          stack == null || stack.isEmpty() -> CancelToken.unit
+          stack == null || stack.isEmpty() -> Unit
           else -> stack.cancelAll()
         }
       }
 
     override fun isCancelled(): Boolean = state.value == null
 
-    override tailrec fun push(token: CancelToken): Unit = when (val list = state.value) {
+    override tailrec fun push(token: suspend () -> Unit): Unit = when (val list = state.value) {
       // If connection is already cancelled cancel token immediately.
-      null -> token.cancel
+      null -> token
         .startCoroutine(Continuation(EmptyCoroutineContext) { })
       else ->
         if (state.compareAndSet(list, listOf(token) + list)) Unit
         else push(token)
     }
 
-    override fun push(tokens: List<CancelToken>) =
-      push(tokens.asSingleToken())
+    override fun push(tokens: List<suspend () -> Unit>) =
+      push { tokens.cancelAll() }
 
-    override tailrec fun pop(): CancelToken {
+    override tailrec fun pop(): suspend () -> Unit {
       val state = state.value
       return when {
-        state == null || state.isEmpty() -> CancelToken.unit
+        state == null || state.isEmpty() -> suspend { Unit }
         else ->
           if (this.state.compareAndSet(state, state.drop(1))) state.first()
           else pop()
@@ -104,11 +87,8 @@ sealed class SuspendConnection : AbstractCoroutineContextElement(SuspendConnecti
     override fun tryReactivate(): Boolean =
       state.compareAndSet(null, emptyList())
 
-    private suspend fun List<CancelToken>.cancelAll(): Unit =
+    private suspend fun List<suspend () -> Unit>.cancelAll(): Unit =
       forEach { it.invoke() }
-
-    private fun List<CancelToken>.asSingleToken(): CancelToken =
-      CancelToken { cancelAll() }
 
     override fun toString(): String =
       "SuspendConnection(isCancelled = ${isCancelled()}, size= ${state.value?.size ?: 0})"
