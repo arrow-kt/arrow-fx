@@ -4,8 +4,8 @@ import arrow.fx.coroutines.stream.Stream
 import arrow.fx.coroutines.stream.concurrent.Queue
 import arrow.fx.coroutines.stream.drain
 import arrow.fx.coroutines.stream.firstOrNull
-import arrow.fx.coroutines.stream.test.lang.runBlocking
 import arrow.fx.coroutines.stream.toList
+import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
@@ -22,7 +22,7 @@ fun testStream(
 fun testStreamCompat(
   timeout: ArrowDuration = ArrowDuration(1, TimeUnit.SECONDS),
   block: suspend TestStream.() -> Unit,
-): Unit = TestStream(timeout = timeout).runBlocking { block() }
+): Unit = runBlocking { TestStream(timeout = timeout).block() }
 
 // TODO: Convert to Kotlin Duration when not experimental
 class TestStream internal constructor(private val timeout: ArrowDuration) {
