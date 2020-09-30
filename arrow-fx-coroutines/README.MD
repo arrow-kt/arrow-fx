@@ -2,7 +2,7 @@
 
 [![Arrow Fx logo](https://raw.githubusercontent.com/arrow-kt/arrow-site/master/docs/img/fx/arrow-fx-brand-sidebar.svg?sanitize=true)](https://arrow-kt.io)
 
-Λrrow Fx is part of Arrow Fx [**Λrrow**](https://arrow-kt.io/docs/fx/), and the public documentation and information on how to use the library can be found there.
+Λrrow Fx Coroutines is part of Arrow Fx [**Λrrow**](https://arrow-kt.io/docs/fx/), and the public documentation and information on how to use the library can be found there.
 
 # Contributing and understanding the internals of Arrow Fx Coroutines
 
@@ -232,9 +232,9 @@ Now that we know what it means to `intercept` and why it's crucial to build effe
 
 `createCoroutineUnintercepted` is the lowest level function of creating (and thus subsequently starting) a Coroutine, and you'll find it is used in most other function with either `createCoroutineXXX` or `startCoroutineXXX`.
 
-It's found in the `kotlin.coroutines.intrinsics` package, which we saw 1 method of so far `intercepted`. And we'll cover the other content below. As we've already mentioned above, this method turns a `suspend () -> A` function into a `Coroutine`, which is an instance of a suspendable computation. This Coroutine hasn't started running yet, and we can run it as many times as we want. As you might've guessed from above, we can start the Coroutine by calling `resume(Unit)` on it.
+It's found in the `kotlin.coroutines.intrinsics` package, which we saw 1 method of so far `intercepted`. And we'll cover the other content below. As we've already mentioned above, this method turns a `suspend () -> T` function into a `Coroutine`, which is an instance of a suspendable computation. This Coroutine hasn't started running yet, and we can run it as many times as we want. As you might've guessed from above, we can start the Coroutine by calling `resume(Unit)` on it.
 
-For a given program `suspend () -> A` we pass a `Continuation<A>`, and `createCoroutineUnintercepted` returns us a `Continuation<Unit>`. This `Continuation<Unit>` models a Coroutine, which is the program `suspend () -> A` wired to it's `context` and callback `resume: (Result<A>) -> Unit`.
+For a given program `suspend () -> T` we pass a `Continuation<A>`, and `createCoroutineUnintercepted` returns us a `Continuation<Unit>`. This `Continuation<Unit>` models a Coroutine, which is the program `suspend () -> T` wired to it's `context` and callback `resume: (Result<T>) -> Unit`.
 
 Let's see a quick example of the creation of a simple Coroutine which is started multiple times.
 
@@ -271,7 +271,7 @@ public fun <T> (suspend () -> T).startCoroutine(completion: Continuation<T>) {
 
 ### suspendCoroutineUninterceptedOrReturn / COROUTINE_SUSPENDED
 
-As you might've noticed in all examples above, we haven't actually used any suspension so far. But what does it mean to suspend? Most simply put it means the function doesn't immediately returns, but is going to return the result through the a callback `(Result<A>) -> Unit`.
+As you might've noticed in all examples above, we haven't actually used any suspension so far. But what does it mean to suspend? Most simply put it means the function doesn't immediately returns, but is going to return the result through the callback `(Result<T>) -> Unit`.
 
 At the lowest guts of writing suspend functions you can find this function, is capable of returning immediately or returning in a suspended way. We however have to signal to Kotlin's Coroutine system that we're returning immediately or we're suspending and returning at a later point in time. This is done with the marker `COROUTINE_SUSPENDED`.
 
@@ -381,7 +381,7 @@ suspending returned: COROUTINE_SUSPENDED
 
 Here in the output we can clearly see that in the first case the callback is never invoked, and we get the result immediately returned to us.
 In contrast to the second case where the callback is invoked, **and** the immediate returned value is `COROUTINE_SUSPENDED`.
-This means that if we use `startCoroutineUninterceptedOrReturn` you **always** need to check the returned value to check if it's `COROUTINE_SUSPENDED` or a user returned value (which in that case needs to be casted back from Any? to A).
+This means that if we use `startCoroutineUninterceptedOrReturn` you **always** need to check the returned value to check if it's `COROUTINE_SUSPENDED` or a user returned value (which in that case needs to be casted back from Any? to T).
 
 This might all seem very obscure, but very powerful as we'll discuss below how we use these primitives to implement some of Arrow Fx Coroutines core operations.
 
@@ -438,18 +438,18 @@ suspend fun cancelBoundary(): Unit =
 ```
 
 So a `cancelBoundary` checks if the `SuspendConnection#isCancelled` and if so it suspends forever and never invokes the callback, effectively this means it stops running the code.
-In the case the `SuspendConnection` isnt' cancelled it immediately returns `Unit`. Here we use `suspendCoroutineUninterceptedOrReturn` since we can return immediately when no cancellation signal was triggered, and we don't want to intercept or schedule but we have to check the `Continuation#context` to be able to access the `SuspendConnection`.
+In the case the `SuspendConnection` isn't cancelled, it immediately returns `Unit`. Here we use `suspendCoroutineUninterceptedOrReturn` since we can return immediately when no cancellation signal was triggered, and we don't want to intercept or schedule but we have to check the `Continuation#context` to be able to access the `SuspendConnection`.
 
 So this is how from any user or library code we can add checks for cancellation that automatically exit when a cancellation signal was trigerred.
 
 When `isCancelled` returns `true`, this means that all the registered `CancelToken`'s inside `SuspendConnection` have run, or are running.
 
 NOTE:
-In Kotlin 1.4, CancellationException was added to the Kotlin Std as an ExperimentalApi. The documentation states that a cancellable coroutine should throw it to signal that it has been canccelled. In a future version of Arrow Fx Coroutines we can follow this pattern by instead of suspend upon cancellation like we did in Arrow Fx IO, and as is known from Cats Effects IO, we can `throw CancellationException`. This would also only happen when we're running on a cancellable `SuspendConnection`, and we'd still be able to control cancellation in the same way as we know now are you might be familiar with from Cats Effects IO or Arrow Fx IO.
+In Kotlin 1.4, CancellationException was added to the Kotlin Std as an ExperimentalApi. The documentation states that a cancellable coroutine should throw it to signal that it has been canccelled. In a future version of Arrow Fx Coroutines we can follow this pattern by instead of suspend upon cancellation like we did in Arrow Fx IO, and as is known from Cats Effects IO, we can `throw CancellationException`. This would also only happen when we're running on a cancellable `SuspendConnection`, and we'd still be able to control cancellation in the same way as you might be familiar with from Cats Effects IO or Arrow Fx IO.
 
 ### startCoroutineCancellable
 
-So how do we start a Coroutine with `SuspendConnection`, so we can start `suspend () -> A` in a cancellable way. Using `SuspendConnection` is no different than using any other `CoroutineContext`, so let's take a look at the most simple example we can come up with.
+So how do we start a Coroutine with `SuspendConnection`, so we can start `suspend () -> T` in a cancellable way. Using `SuspendConnection` is no different than using any other `CoroutineContext`, so let's take a look at the most simple example we can come up with.
 
 ```kotlin
 import arrow.fx.coroutines.CancelToken
@@ -531,7 +531,7 @@ suspend fun <A> cancellable(cb: ((Result<A>) -> Unit) -> CancelToken): A =
   }
 ```
 
-We `suspendCoroutine` to access the `Continuation`, and since we use `suspendCoroutine` here it will also `interept` and thus behave in the same safe way as Kotlin's high-level combinators.
+We `suspendCoroutine` to access the `Continuation`, and since we use `suspendCoroutine` here it will also `intercept` and thus behave in the same safe way as Kotlin's high-level combinators.
 We retrieve the `SuspendConnection`, and default back to an `Uncancellable` connection.
 
 Since we don't know how long it will take before `cb: ((Result<A>) -> Unit) -> CancelToken` returns the `CancelToken` we need a mechanism to back-pressure `conn`, when it gets cancelled, until we receive the `CancelToken`. Otherwise `conn` might get cancelled whilst `CancelToken` is not registered yet creating a race-condition and possibly leaking resources.
