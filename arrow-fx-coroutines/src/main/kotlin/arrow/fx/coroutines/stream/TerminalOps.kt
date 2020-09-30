@@ -104,6 +104,8 @@ suspend fun <O> Stream<O>.lastOrNull(): O? =
  * If any errors are raised while streaming, it's thrown from this `suspend` scope.
  *
  * It's possible to include an alternative [FailStrategy] which describes how to fail in case of not finding the desired element.
+ *
+ * ```kotlin:ank:playground
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3)
