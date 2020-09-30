@@ -26,7 +26,7 @@ fun testStream(
 fun testStreamCompat(
   timeout: ArrowDuration = ArrowDuration(1, TimeUnit.SECONDS),
   block: suspend TestStream.() -> Unit
-): Unit = runBlocking { TestStream(timeout = timeout).block() }
+): Unit = arrow.fx.coroutines.Enviroment().unsafeRunSync { TestStream(timeout = timeout).block() }
 
 // TODO: Convert to Kotlin Duration when not experimental
 class TestStream internal constructor(private val timeout: ArrowDuration) {
