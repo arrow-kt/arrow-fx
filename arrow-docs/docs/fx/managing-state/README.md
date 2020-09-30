@@ -67,7 +67,7 @@ suspend fun main(): Unit {
 }
 ```
 
-When a thread tries to invoke `ConcurrentVar.take()` it will block until the `ConcurrentVar` has a value to take and then removes the value.
+When a thread tries to invoke `ConcurrentVar.take()` it will suspend until the `ConcurrentVar` has a value to take and then removes the value.
 This means, after taking, no other thread can finish a call to `ConcurrentVar.take()` until `ConcurrentVar.put()` is called putting a value in the `ConcurrentVar`.
 This means that the section between `take` and `put` is never run by more than one thread at a time.
 In our example this section is marked as `<1>`.
