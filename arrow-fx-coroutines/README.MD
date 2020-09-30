@@ -2,7 +2,7 @@
 
 [![Arrow Fx logo](https://raw.githubusercontent.com/arrow-kt/arrow-site/master/docs/img/fx/arrow-fx-brand-sidebar.svg?sanitize=true)](https://arrow-kt.io)
 
-Λrrow Fx is part of Arrow Fx [**Λrrow**](https://arrow-kt.io/docs/fx/), and the public documentation and information on how to use the library can e found there.
+Λrrow Fx is part of Arrow Fx [**Λrrow**](https://arrow-kt.io/docs/fx/), and the public documentation and information on how to use the library can be found there.
 
 # Contributing and understanding the internals of Arrow Fx Coroutines
 
@@ -40,7 +40,7 @@ interface Continuation<A> {
 }
 ```
 
-As mentioned above, a `suspend` programs can return immediately or `suspend` and return it's value at aa later point in time. Thus this can be modeled with a `Contination<A>` where both the immediate result or a suspended result is always returned to `resume`, this ensures that the result is always consumed in the same manner no matter how the `suspend` program behaves.
+As mentioned above, a `suspend` programs can return immediately or `suspend` and return it's value at a later point in time. Thus this can be modeled with a `Contination<A>` where both the immediate result or a suspended result is always returned to `resume`, this ensures that the result is always consumed in the same manner no matter how the `suspend` program behaves.
 
 Important to note here is that the `resume` callback works with `Result<A>` which is similar to `Either<Throwable, Int>` but with a fast inlined implementation. This allows us to safely run any code inside `suspend`, whilst keeping our programs from blowing up since it will be safely rewired to `resume`.
 
@@ -52,7 +52,7 @@ Such a `Continuation` is always required to consume any `suspend` program throug
 
 The most high level runner in the standard library is `startCoroutine`, and it's the first method we'll discuss that creates a `Coroutine` and runs it. Kotlin’s standard library defines a Coroutine as an instance of a suspendable computation. In other words, a Coroutine is a compiled `suspend () -> T` program wired to a Continuation.
 
-So let’s take a quick look at an example with the 3 types we've seen and discussed above.
+Let’s take a quick look at an example with the 3 types we've seen and discussed above.
 
 ```kotlin
 import kotlin.coroutines.Continuation
@@ -108,7 +108,7 @@ Here we can see that `ContinuationInterceptor` is a `CoroutineContext.Element`, 
 
 When the `Continuation` is finished running, then before returning it will call `releaseInterceptedContinuation`, but only in the case `interceptContinuation` returned a different `Continuation` than it received.
 
-So let's take a look at a simple example.
+Let's take a look at a simple example.
 
 ```kotlin
 import kotlin.coroutines.AbstractCoroutineContextElement
@@ -261,7 +261,7 @@ fun main() {
 }
 ```
 
-So if we look back at `startCoroutine`, we see that is simply creates a Coroutine, **always** invokes its interceptor and then immediately starts it. So the highest level runner, combines the lowest level functions. 
+If we look back at `startCoroutine`, we see that is simply creates a Coroutine, **always** invokes its interceptor and then immediately starts it. So the highest level runner, combines the lowest level functions. 
 
 ```
 public fun <T> (suspend () -> T).startCoroutine(completion: Continuation<T>) {
