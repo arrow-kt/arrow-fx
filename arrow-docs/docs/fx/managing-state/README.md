@@ -182,7 +182,7 @@ There are two other important downsides of `STM` to note:
 - Transactions are worse under high contention.
 If a variable is updated many many times a second it may be beneficial to use a different concurrency tool like atomic references or locks.
 - Transactions have no notion of fairness. If two threads wait for a lock to be released, the one who came first will get the lock next.
-This does not happen with transactions. If multiple transactions retry and block (ie they wait for a variable to change), they will all resume at the same time when a variable changes.
+This does not happen with transactions. If multiple transactions retry and suspends (ie they wait for a variable to change), they will all resume at the same time when a variable changes.
 The fastest transaction always wins, which makes it possible to starve long-running transactions forever.
 
 These downsides are tradeoffs and for most use cases do not apply, but it is still important to be aware of them!
