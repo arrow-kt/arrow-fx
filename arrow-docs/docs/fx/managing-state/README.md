@@ -79,7 +79,7 @@ This offers a few ways to deal with shared state now:
 ## Drawbacks
 
 A major drawback to locks is that they are tricky to use correctly:
-- Forgot to release a lock? Any future attempt at taking it will fail, and that thread will block forever!
+- Forgot to release a lock? Any future attempt at taking it will fail, and that thread will suspend forever!
 - Forgot to take a lock? Hello race-conditions again!
 - Take multiple locks in the wrong order? Now we may enter a scenario where two threads wait on each other to make progress and release their locks, but neither can because the other holds the lock the thread is waiting for.
 This is called a deadlock and will block those threads forever.
