@@ -1,15 +1,12 @@
 package arrow.fx.coroutines.stream.test
 
-import arrow.core.getOrElse
-import arrow.core.orElse
+import arrow.fx.coroutines.Environment
 import arrow.fx.coroutines.stream.Stream
 import arrow.fx.coroutines.stream.concurrent.Queue
 import arrow.fx.coroutines.stream.drain
 import arrow.fx.coroutines.stream.firstOrNull
+import arrow.fx.coroutines.stream.handleErrorWith
 import arrow.fx.coroutines.stream.toList
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
@@ -26,13 +23,13 @@ fun testStream(
 fun testStreamCompat(
   timeout: ArrowDuration = ArrowDuration(1, TimeUnit.SECONDS),
   block: suspend TestStream.() -> Unit
-): Unit = arrow.fx.coroutines.Enviroment().unsafeRunSync { TestStream(timeout = timeout).block() }
+): Unit = Environment().unsafeRunSync { TestStream(timeout = timeout).block() }
 
 // TODO: Convert to Kotlin Duration when not experimental
 class TestStream internal constructor(private val timeout: ArrowDuration) {
 
   fun Stream<*>.capture() {
-    arrow.fx.coroutines.Enviroment().unsafeRunAsnyc {
+    Environment().unsafeRunAsync {
       through(queue.enqueue())
         .handleErrorWith { Stream.effect { exceptionQueue.enqueue1(it) } }
         .drain()
@@ -44,7 +41,11 @@ class TestStream internal constructor(private val timeout: ArrowDuration) {
   }
 
   suspend inline fun expect(vararg items: Any?): Unit = next(items.size).let { next ->
-    check(next.contentEquals(items)) { "Expected $items but got $next" }
+    check(next.contentEquals(items)) {
+      val itemsOut = items.joinToString(", ", "[", "]")
+      val nextOut = next.joinToString(", ", "[", "]")
+      "Expected $itemsOut but got $nextOut"
+    }
   }
 
   suspend inline fun expectException(exception: Throwable): Unit = nextException().let { next ->
@@ -52,15 +53,15 @@ class TestStream internal constructor(private val timeout: ArrowDuration) {
   }
 
   suspend fun expectNothingMore() {
-    val values = queue.dequeue().interruptAfter(now).toList()
-    check(values.isEmpty()) { "Expected nothing more but got: $values" }
+    val option = queue.tryDequeue1()
+    check(option.isEmpty()) { "Expected nothing more but got: $option" }
   }
 
   suspend fun next(): Any? = queue.next()
 
   suspend fun nextException(): Any? = exceptionQueue.next()
 
-  suspend fun next(n: Int) =
+  suspend fun next(n: Int): Array<Any?> =
     queue.dequeue().timeout(timeout).take(n).toList().toTypedArray()
 
   private val queue = Queue.unsafeUnbounded<Any?>()
@@ -68,14 +69,10 @@ class TestStream internal constructor(private val timeout: ArrowDuration) {
 
   private suspend fun <O> Queue<O>.next(): O =
     dequeue().interruptAfter(timeout).firstOrError { "Timeout after $timeout" }
-
 }
-
 
 private suspend fun <O> Stream<O>.firstOrError(message: () -> String) =
   firstOrNull() ?: error(message())
-
-private val now = ArrowDuration(0, TimeUnit.SECONDS)
 
 @ExperimentalTime
 private fun Duration.toArrowDuration(): ArrowDuration =

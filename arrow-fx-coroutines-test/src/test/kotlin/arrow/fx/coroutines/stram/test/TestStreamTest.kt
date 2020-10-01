@@ -52,8 +52,8 @@ class TestStreamTest : StringSpec({
     }
   }
 
-  // TODO: Not working ATM
-  "handle multiple streams".config(enabled = false) {
+  // TODO: Fix flakyness
+  "handle multiple streams" {
     testStreamCompat {
       Stream("Hello").capture()
       Stream("World").capture()
