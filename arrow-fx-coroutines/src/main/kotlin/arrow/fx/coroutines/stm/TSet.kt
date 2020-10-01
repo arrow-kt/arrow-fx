@@ -5,9 +5,9 @@ import arrow.fx.coroutines.stm.internal.Hamt
 import arrow.fx.coroutines.stm.internal.newHamt
 import arrow.typeclasses.Hash
 
-suspend fun <A> STM.newTSet(fn: (A) -> Int): TSet<A> = TSet(newHamt(), fn)
-suspend fun <A> STM.newTSet(): TSet<A> = newTSet { it.hashCode() }
-suspend fun <A> STM.newTSet(hash: Hash<A>): TSet<A> = newTSet { hash.run { it.hash() } }
+fun <A> STM.newTSet(fn: (A) -> Int): TSet<A> = TSet(newHamt(), fn)
+fun <A> STM.newTSet(): TSet<A> = newTSet { it.hashCode() }
+fun <A> STM.newTSet(hash: Hash<A>): TSet<A> = newTSet { hash.run { it.hash() } }
 
 data class TSet<A>internal constructor(internal val hamt: Hamt<Pair<Unit, A>>, internal val hashFn: (A) -> Int) {
   companion object {

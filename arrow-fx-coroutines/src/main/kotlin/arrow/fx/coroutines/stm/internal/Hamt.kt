@@ -14,7 +14,7 @@ data class Hamt<A>(val branches: TVar<Array<Branch<A>?>>) {
   }
 }
 
-suspend inline fun <A> STM.lookupHamtWithHash(hmt: Hamt<A>, hash: Int, test: (A) -> Boolean): A? {
+inline fun <A> STM.lookupHamtWithHash(hmt: Hamt<A>, hash: Int, test: (A) -> Boolean): A? {
   var depth = 0
   var hamt = hmt
   while (true) {
@@ -31,7 +31,7 @@ suspend inline fun <A> STM.lookupHamtWithHash(hmt: Hamt<A>, hash: Int, test: (A)
   }
 }
 
-suspend fun <A> STM.pair(depth: Int, hash1: Int, branch1: Branch<A>, hash2: Int, branch2: Branch<A>): Hamt<A> {
+fun <A> STM.pair(depth: Int, hash1: Int, branch1: Branch<A>, hash2: Int, branch2: Branch<A>): Hamt<A> {
   val branchInd1 = hash1.indexAtDepth(depth)
   val branchInd2 = hash2.indexAtDepth(depth)
   val branches = arrayOfNulls<Branch<A>>(ARR_SIZE)
@@ -45,9 +45,9 @@ suspend fun <A> STM.pair(depth: Int, hash1: Int, branch1: Branch<A>, hash2: Int,
   return Hamt(newTVar(branches))
 }
 
-suspend fun <A> STM.clearHamt(hamt: Hamt<A>): Unit = hamt.branches.write(arrayOfNulls(ARR_SIZE))
+fun <A> STM.clearHamt(hamt: Hamt<A>): Unit = hamt.branches.write(arrayOfNulls(ARR_SIZE))
 
-suspend inline fun <reified A> STM.alterHamtWithHash(
+inline fun <reified A> STM.alterHamtWithHash(
   hamt: Hamt<A>,
   hash: Int,
   test: (A) -> Boolean,
@@ -129,7 +129,7 @@ suspend inline fun <reified A> STM.alterHamtWithHash(
   }
 }
 
-suspend fun <A> STM.newHamt(): Hamt<A> = Hamt(newTVar(arrayOfNulls(ARR_SIZE)))
+fun <A> STM.newHamt(): Hamt<A> = Hamt(newTVar(arrayOfNulls(ARR_SIZE)))
 
 sealed class Branch<out A> {
   data class Branches<A>(val sub: Hamt<A>) : Branch<A>()

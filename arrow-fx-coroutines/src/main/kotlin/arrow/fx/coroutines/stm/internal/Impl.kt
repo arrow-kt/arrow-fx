@@ -45,36 +45,34 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
    * This could be modeled with exceptions as well, but that complicates a users exceptions handling
    *  and in general does not seem as nice.
    */
-  override suspend fun retry(): Nothing = suspendCoroutine {}
+  override fun retry(): Nothing = throw RetryException
 
-  override suspend fun <A> (suspend STM.() -> A).orElse(other: suspend STM.() -> A): A =
+  override fun <A> (STM.() -> A).orElse(other: STM.() -> A): A =
     runLocal(this@orElse, { this@STMFrame.other() }) { throw it }
 
-  override suspend fun <A> catch(f: suspend STM.() -> A, onError: suspend STM.(Throwable) -> A): A =
+  override fun <A> catch(f: STM.() -> A, onError: STM.(Throwable) -> A): A =
     runLocal(f, { this@STMFrame.retry() }) { this@STMFrame.onError(it) }
 
   private inline fun <A> runLocal(
-    crossinline f: suspend STM.() -> A,
+    f: STM.() -> A,
     onRetry: () -> A,
     onError: (Throwable) -> A
   ): A {
     while (true) {
       val frame = STMFrame(this@STMFrame)
       try {
-        f.startCoroutineUninterceptedOrReturn(frame, Continuation(EmptyCoroutineContext) {
-          throw IllegalStateException("STM transaction was resumed after aborting. How?!")
-        }).let {
-          // Validate the inner frame right now to check for a quick early abort and a cheaper retry
-          //  If we are already invalid here there is no point in continuing.
-          if (frame.validate()) {
-            if (it == COROUTINE_SUSPENDED) {
-              this@STMFrame.mergeReads(frame)
-              return@runLocal onRetry()
-            } else {
-              this@STMFrame.merge(frame)
-              return@runLocal it as A
-            }
-          }
+        val res = frame.f()
+
+        // Validate the inner frame right now to check for a quick early abort and a cheaper retry
+        //  If we are already invalid here there is no point in continuing.
+        if (frame.validate()) {
+          this@STMFrame.merge(frame)
+          return@runLocal res as A
+        }
+      } catch (ignored: RetryException) {
+        if (frame.validate()) {
+          this@STMFrame.mergeReads(frame)
+          return@runLocal onRetry()
         }
       } catch (e: Throwable) {
         // An invalid frame retries even if it throws, so our sub-frame also needs to handle this correctly
@@ -89,9 +87,9 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
   /**
    * First checks if we have already read this variable, if not it reads it and stores the result
    */
-  override suspend fun <A> TVar<A>.read(): A =
+  override fun <A> TVar<A>.read(): A =
     when (val r = readVar(this as TVar<Any?>)) {
-      Entry.NOT_PRESENT -> unsafeRead().also { accessMap[this] = Entry(it, Entry.NO_CHANGE) }
+      Entry.NOT_PRESENT -> readI().also { accessMap[this] = Entry(it, Entry.NO_CHANGE) }
       else -> r as A
     }
 
@@ -100,8 +98,8 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
    *
    * If we have not seen this variable before we add a read which stores it in the read set as well.
    */
-  override suspend fun <A> TVar<A>.write(a: A): Unit =
-    accessMap[this as TVar<Any?>]?.update(a) ?: unsafeRead().let { accessMap[this] = Entry(it, a) }
+  override fun <A> TVar<A>.write(a: A): Unit =
+    accessMap[this as TVar<Any?>]?.update(a) ?: readI().let { accessMap[this] = Entry(it, a) }
 
   internal fun validate(): Boolean =
     accessMap.all { (tv, entry) -> tv.value === entry.initialVal }
@@ -167,13 +165,15 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
  */
 object BlockedIndefinitely : Throwable("Transaction blocked indefinitely")
 
+object RetryException : Throwable("Arrow STM Retry. This should always be caught by arrow internally. Please report this as a bug if that is not the case!")
+
 // --------
 /**
  * Wrapper for a running transaction.
  *
  * Keeps the continuation that [TVar]'s use to resume this transaction.
  */
-internal class STMTransaction<A>(val f: suspend STM.() -> A) {
+internal class STMTransaction<A>(val f: STM.() -> A) {
   private val cont = atomic<Continuation<Unit>?>(null)
 
   /**
@@ -189,37 +189,27 @@ internal class STMTransaction<A>(val f: suspend STM.() -> A) {
   //  "live-locked" transactions are those that are continuously retry due to accessing variables with high contention and
   //   taking longer than the transactions updating those variables.
   suspend fun commit(): A {
-    loop@while (true) {
+    loop@ while (true) {
       val frame = STMFrame()
       try {
-        f.startCoroutineUninterceptedOrReturn(frame, Continuation(EmptyCoroutineContext) {
-          throw IllegalStateException("STM transaction was resumed after aborting. How?!")
-        }).let {
-          if (it != COROUTINE_SUSPENDED) {
-            // try commit
-            if (frame.validateAndCommit()) {
-              return@commit it as A
-            }
-            // retry
-          } else {
-            // blocking retry
-            if (frame.accessMap.isEmpty()) throw BlockedIndefinitely
+        val res = frame.f()
 
-            val registered = mutableListOf<TVar<Any?>>()
-            suspendCoroutine<Unit> susp@{ k ->
-              cont.value = k
+        if (frame.validateAndCommit()) return@commit res
+      } catch (ignored: RetryException) {
+        if (frame.accessMap.isEmpty()) throw BlockedIndefinitely
 
-              frame.accessMap
-                .forEach { (tv, entry) ->
-                  if (tv.registerWaiting(this, entry.initialVal)) registered.add(tv)
-                  else return@susp
-                }
+        val registered = mutableListOf<TVar<Any?>>()
+        suspendCoroutine<Unit> susp@{ k ->
+          cont.value = k
+
+          frame.accessMap
+            .forEach { (tv, entry) ->
+              if (tv.registerWaiting(this, entry.initialVal)) registered.add(tv)
+              else return@susp
             }
-            registered.forEach { it.removeWaiting(this) }
-          }
         }
+        registered.forEach { it.removeWaiting(this) }
       } catch (e: Throwable) {
-        // An invalid transaction should be retried even if it threw an exception
         if (frame.validate()) throw e
       }
     }

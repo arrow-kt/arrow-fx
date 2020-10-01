@@ -3,7 +3,7 @@ package arrow.fx.coroutines.stm
 import arrow.core.Predicate
 import arrow.fx.coroutines.STM
 
-suspend fun <A> STM.newTQueue(): TQueue<A> = TQueue(newTVar(PList.Nil), newTVar(PList.Nil))
+fun <A> STM.newTQueue(): TQueue<A> = TQueue(newTVar(PList.Nil), newTVar(PList.Nil))
 
 /**
  * A [TQueue] is a transactional unbounded queue which can be written to and read from concurrently.

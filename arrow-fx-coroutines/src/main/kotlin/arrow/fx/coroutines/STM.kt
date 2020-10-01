@@ -63,18 +63,18 @@ import kotlin.coroutines.RestrictsSuspension
  * import arrow.fx.coroutines.STM
  *
  * //sampleStart
- * suspend fun STM.transfer(from: TVar<Int>, to: TVar<Int>, amount: Int): Unit {
+ * fun STM.transfer(from: TVar<Int>, to: TVar<Int>, amount: Int): Unit {
  *   withdraw(from, amount)
  *   deposit(to, amount)
  * }
  *
- * suspend fun STM.deposit(acc: TVar<Int>, amount: Int): Unit {
+ * fun STM.deposit(acc: TVar<Int>, amount: Int): Unit {
  *   val current = acc.read()
  *   acc.write(current + amount)
  *   // or the shorthand acc.modify { it + amount }
  * }
  *
- * suspend fun STM.withdraw(acc: TVar<Int>, amount: Int): Unit {
+ * fun STM.withdraw(acc: TVar<Int>, amount: Int): Unit {
  *   val current = acc.read()
  *   if (current - amount >= 0) acc.write(current + amount)
  *   else throw IllegalStateException("Not enough money in the account!")
@@ -104,7 +104,7 @@ import kotlin.coroutines.RestrictsSuspension
  * It is sometimes beneficial to manually abort a transaction until a variable changes. This can be for a variety of reasons such as
  *  seeing an invalid state or having no value to read.
  *
- * Inside a transaction we can always call [retry] to trigger an immediate abort. The transaction will suspend and be resumed as soon
+ * Inside a transaction we can always call [retry] to trigger an immediate abort. The transaction will and be resumed as soon
  *  as one of the variables that has been accessed by this transaction changes.
  *
  * ```kotlin:ank:playground
@@ -117,18 +117,18 @@ import kotlin.coroutines.RestrictsSuspension
  * import arrow.fx.coroutines.STM
  *
  * //sampleStart
- * suspend fun STM.transfer(from: TVar<Int>, to: TVar<Int>, amount: Int): Unit {
+ * fun STM.transfer(from: TVar<Int>, to: TVar<Int>, amount: Int): Unit {
  *   withdraw(from, amount)
  *   deposit(to, amount)
  * }
  *
- * suspend fun STM.deposit(acc: TVar<Int>, amount: Int): Unit {
+ * fun STM.deposit(acc: TVar<Int>, amount: Int): Unit {
  *   val current = acc.read()
  *   acc.write(current + amount)
  *   // or the shorthand acc.modify { it + amount }
  * }
  *
- * suspend fun STM.withdraw(acc: TVar<Int>, amount: Int): Unit {
+ * fun STM.withdraw(acc: TVar<Int>, amount: Int): Unit {
  *   val current = acc.read()
  *   if (current - amount >= 0) acc.write(current + amount)
  *   else retry() // we now retry if there is not enough money in the account
@@ -164,7 +164,7 @@ import kotlin.coroutines.RestrictsSuspension
  *
  * [retry] can be used to implement a lot of complex transactions and many datastructures like [TMVar] or [TQueue] use to to great effect.
  *
- * > Note: [retry] will suspend a transaction until a variable updates. It will not block, but if no variable is updated it will wait forever!
+ * > Note: [retry] will a transaction until a variable updates. It will not block, but if no variable is updated it will wait forever!
  *
  * ## Branching with [orElse]
  *
@@ -179,7 +179,7 @@ import kotlin.coroutines.RestrictsSuspension
  * import arrow.fx.coroutines.stm
  *
  * //sampleStart
- * suspend fun STM.transaction(v: TVar<Int>): Int? =
+ * fun STM.transaction(v: TVar<Int>): Int? =
  *   stm {
  *     val result = v.read()
  *     check(result in 0..10)
@@ -217,24 +217,23 @@ import kotlin.coroutines.RestrictsSuspension
  * - [Composable memory transactions, by Tim Harris, Simon Marlow, Simon Peyton Jones, and Maurice Herlihy, in ACM Conference on Principles and Practice of Parallel Programming 2005.](https://www.microsoft.com/en-us/research/publication/composable-memory-transactions/)
  */
 // TODO Explore this https://dl.acm.org/doi/pdf/10.1145/2976002.2976020 when benchmarks are set up
-@RestrictsSuspension
 interface STM {
   /**
    * Rerun the current transaction.
    *
    * This semantically-blocks until any of the accessed [TVar]'s changed.
    */
-  suspend fun retry(): Nothing
+  fun retry(): Nothing
 
   /**
    * Run the given transaction and fallback to the other one if the first one calls [retry].
    */
-  suspend infix fun <A> (suspend STM.() -> A).orElse(other: suspend STM.() -> A): A
+  infix fun <A> (STM.() -> A).orElse(other: STM.() -> A): A
 
   /**
    * Run [f] and handle any exception thrown with [onError].
    */
-  suspend fun <A> catch(f: suspend STM.() -> A, onError: suspend STM.(Throwable) -> A): A
+  fun <A> catch(f: STM.() -> A, onError: STM.(Throwable) -> A): A
 
   /**
    * Read the value from a [TVar].
@@ -245,7 +244,7 @@ interface STM {
    *   transaction will retry
    * - The above is guaranteed through any nesting of STM blocks (via [orElse] or other combinators)
    */
-  suspend fun <A> TVar<A>.read(): A
+  fun <A> TVar<A>.read(): A
 
   /**
    * Set the value of a [TVar].
@@ -256,26 +255,26 @@ interface STM {
    *   same as the current value otherwise the transaction will retry
    * - The above is guaranteed through any nesting of STM blocks (via [orElse] or other combinators)
    */
-  suspend fun <A> TVar<A>.write(a: A): Unit
+  fun <A> TVar<A>.write(a: A): Unit
 
   /**
    * Modify the value of a [TVar]
    *
    * `modify(f) = write(f(read()))`
    */
-  suspend fun <A> TVar<A>.modify(f: (A) -> A): Unit = write(f(read()))
+  fun <A> TVar<A>.modify(f: (A) -> A): Unit = write(f(read()))
 
   /**
    * Swap the content of the [TVar]
    *
    * @return The previous value stored inside the [TVar]
    */
-  suspend fun <A> TVar<A>.swap(a: A): A = read().also { write(a) }
+  fun <A> TVar<A>.swap(a: A): A = read().also { write(a) }
 
   /**
    * Create a new [TVar] inside a transaction, because [TVar.new] is not possible inside [STM] transactions.
    */
-  suspend fun <A> newTVar(a: A): TVar<A> = TVar(a)
+  fun <A> newTVar(a: A): TVar<A> = TVar(a)
 
   // -------- TMVar
   /**
@@ -286,7 +285,7 @@ interface STM {
    * @see TMVar.tryTake for a version that does not retry.
    * @see TMVar.read for a version that does not remove the value after reading.
    */
-  suspend fun <A> TMVar<A>.take(): A = when (val ret = v.read()) {
+  fun <A> TMVar<A>.take(): A = when (val ret = v.read()) {
     is Option.Some -> ret.a.also { v.write(Option.None) }
     Option.None -> retry()
   }
@@ -298,7 +297,7 @@ interface STM {
    *
    * For a version of [TMVar.put] that does not retry see [TMVar.tryPut]
    */
-  suspend fun <A> TMVar<A>.put(a: A): Unit = when (v.read()) {
+  fun <A> TMVar<A>.put(a: A): Unit = when (v.read()) {
     is Option.Some -> retry()
     Option.None -> v.write(Option.Some(a))
   }
@@ -311,7 +310,7 @@ interface STM {
    * @see TMVar.tryRead for a version that does not retry.
    * @see TMVar.take for a version that leaves the [TMVar] empty after reading.
    */
-  suspend fun <A> TMVar<A>.read(): A = when (val ret = v.read()) {
+  fun <A> TMVar<A>.read(): A = when (val ret = v.read()) {
     is Option.Some -> ret.a
     Option.None -> retry()
   }
@@ -319,7 +318,7 @@ interface STM {
   /**
    * Same as [TMVar.take] except it returns null if the [TMVar] is empty and thus never retries.
    */
-  suspend fun <A> TMVar<A>.tryTake(): A? = when (val ret = v.read()) {
+  fun <A> TMVar<A>.tryTake(): A? = when (val ret = v.read()) {
     is Option.Some -> ret.a.also { v.write(Option.None) }
     Option.None -> null
   }
@@ -331,7 +330,7 @@ interface STM {
    *
    * @see TMVar.put for a function that retries if the [TMVar] is not empty.
    */
-  suspend fun <A> TMVar<A>.tryPut(a: A): Boolean = when (v.read()) {
+  fun <A> TMVar<A>.tryPut(a: A): Boolean = when (v.read()) {
     is Option.Some -> false
     Option.None -> true.also { v.write(Option.Some(a)) }
   }
@@ -342,7 +341,7 @@ interface STM {
    * @see TMVar.read for a function that retries if the [TMVar] is empty.
    * @see TMVar.tryTake for a function that leaves the [TMVar] empty after reading.
    */
-  suspend fun <A> TMVar<A>.tryRead(): A? = when (val ret = v.read()) {
+  fun <A> TMVar<A>.tryRead(): A? = when (val ret = v.read()) {
     is Option.Some -> ret.a
     Option.None -> null
   }
@@ -350,18 +349,18 @@ interface STM {
   /**
    * Check if a [TMVar] is empty. This function never retries.
    */
-  suspend fun <A> TMVar<A>.isEmpty(): Boolean = v.read() is Option.None
+  fun <A> TMVar<A>.isEmpty(): Boolean = v.read() is Option.None
 
   /**
    * Check if a [TMVar] is not empty. This function never retries.
    */
-  suspend fun <A> TMVar<A>.isNotEmpty(): Boolean =
+  fun <A> TMVar<A>.isNotEmpty(): Boolean =
     isEmpty().not()
 
   /**
    * Swap the content of a [TMVar] or retry if it is empty.
    */
-  suspend fun <A> TMVar<A>.swap(a: A): A = when (val ret = v.read()) {
+  fun <A> TMVar<A>.swap(a: A): A = when (val ret = v.read()) {
     is Option.Some -> ret.a.also { v.write(Option.Some(a)) }
     Option.None -> retry()
   }
@@ -372,7 +371,7 @@ interface STM {
    *
    * This function never retries.
    */
-  suspend fun TSem.available(): Int =
+  fun TSem.available(): Int =
     v.read()
 
   /**
@@ -382,7 +381,7 @@ interface STM {
    *
    * @see TSem.tryAcquire for a version that does not retry.
    */
-  suspend fun TSem.acquire(): Unit =
+  fun TSem.acquire(): Unit =
     acquire(1)
 
   /**
@@ -392,7 +391,7 @@ interface STM {
    *
    * @see TSem.tryAcquire for a version that does not retry.
    */
-  suspend fun TSem.acquire(n: Int): Unit {
+  fun TSem.acquire(n: Int): Unit {
     val curr = v.read()
     check(curr - n >= 0)
     v.write(curr - n)
@@ -405,7 +404,7 @@ interface STM {
    *
    * @see TSem.acquire for a version that retries if there are not enough permits.
    */
-  suspend fun TSem.tryAcquire(): Boolean =
+  fun TSem.tryAcquire(): Boolean =
     tryAcquire(1)
 
   /**
@@ -415,7 +414,7 @@ interface STM {
    *
    * @see TSem.acquire for a version that retries if there are not enough permits.
    */
-  suspend fun TSem.tryAcquire(n: Int): Boolean =
+  fun TSem.tryAcquire(n: Int): Boolean =
     stm { acquire(n); true } orElse { false }
 
   /**
@@ -423,7 +422,7 @@ interface STM {
    *
    * This function never retries.
    */
-  suspend fun TSem.release(): Unit =
+  fun TSem.release(): Unit =
     v.write(v.read() + 1)
 
   /**
@@ -433,7 +432,7 @@ interface STM {
    *
    * This function never retries.
    */
-  suspend fun TSem.release(n: Int): Unit = when (n) {
+  fun TSem.release(n: Int): Unit = when (n) {
     0 -> Unit
     1 -> release()
     else ->
@@ -447,7 +446,7 @@ interface STM {
    *
    * This function never retries.
    */
-  suspend fun <A> TQueue<A>.write(a: A): Unit =
+  fun <A> TQueue<A>.write(a: A): Unit =
     writes.modify { it.cons(a) }
 
   /**
@@ -456,7 +455,7 @@ interface STM {
    * @see TQueue.tryRead for a version that does not retry.
    * @see TQueue.peek for a version that does not remove the element.
    */
-  suspend fun <A> TQueue<A>.read(): A {
+  fun <A> TQueue<A>.read(): A {
     val xs = reads.read()
     return if (xs.isNotEmpty()) reads.write(xs.tail()).let { xs.head() }
     else {
@@ -476,7 +475,7 @@ interface STM {
    *
    * This function never retries.
    */
-  suspend fun <A> TQueue<A>.tryRead(): A? =
+  fun <A> TQueue<A>.tryRead(): A? =
     (stm { read() } orElse { null })
 
   /**
@@ -484,7 +483,7 @@ interface STM {
    *
    * This function never retries.
    */
-  suspend fun <A> TQueue<A>.flush(): List<A> {
+  fun <A> TQueue<A>.flush(): List<A> {
     val xs = reads.read().also { if (it.isNotEmpty()) reads.write(PList.Nil) }
     val ys = writes.read().also { if (it.isNotEmpty()) writes.write(PList.Nil) }
     return xs.toList() + ys.reverse().toList()
@@ -498,7 +497,7 @@ interface STM {
    * @see TQueue.read for a version that removes the front element.
    * @see TQueue.tryPeek for a version that does not retry.
    */
-  suspend fun <A> TQueue<A>.peek(): A =
+  fun <A> TQueue<A>.peek(): A =
     read().also { writeFront(it) }
 
   /**
@@ -509,7 +508,7 @@ interface STM {
    * @see TQueue.tryRead for a version that removes the front element
    * @see TQueue.peek for a version that retries if the [TQueue] is empty.
    */
-  suspend fun <A> TQueue<A>.tryPeek(): A? =
+  fun <A> TQueue<A>.tryPeek(): A? =
     tryRead()?.also { writeFront(it) }
 
   /**
@@ -520,7 +519,7 @@ interface STM {
    *
    * This function never retries.
    */
-  suspend fun <A> TQueue<A>.writeFront(a: A): Unit =
+  fun <A> TQueue<A>.writeFront(a: A): Unit =
     reads.read().let { reads.write(it.cons(a)) }
 
   /**
@@ -528,7 +527,7 @@ interface STM {
    *
    * This function never retries.
    */
-  suspend fun <A> TQueue<A>.isEmpty(): Boolean =
+  fun <A> TQueue<A>.isEmpty(): Boolean =
     reads.read().isEmpty() && writes.read().isEmpty()
 
   /**
@@ -536,7 +535,7 @@ interface STM {
    *
    * This function never retries.
    */
-  suspend fun <A> TQueue<A>.isNotEmpty(): Boolean =
+  fun <A> TQueue<A>.isNotEmpty(): Boolean =
     reads.read().isNotEmpty() || writes.read().isNotEmpty()
 
   /**
@@ -544,7 +543,7 @@ interface STM {
    *
    * This function never retries.
    */
-  suspend fun <A> TQueue<A>.filter(pred: (A) -> Boolean): Unit {
+  fun <A> TQueue<A>.filter(pred: (A) -> Boolean): Unit {
     reads.modify { it.filter(pred) }
     writes.modify { it.filter(pred) }
   }
@@ -554,7 +553,7 @@ interface STM {
    *
    * This function never retries.
    */
-  suspend fun <A> TQueue<A>.filterNot(pred: (A) -> Boolean): Unit {
+  fun <A> TQueue<A>.filterNot(pred: (A) -> Boolean): Unit {
     reads.modify { it.filterNot(pred) }
     writes.modify { it.filterNot(pred) }
   }
@@ -566,7 +565,7 @@ interface STM {
    *
    * This function never retries.
    */
-  suspend fun <A> TQueue<A>.size(): Int = reads.read().size() + writes.read().size()
+  fun <A> TQueue<A>.size(): Int = reads.read().size() + writes.read().size()
 
   // -------- TArray
   /**
@@ -576,7 +575,7 @@ interface STM {
    *
    * This function never retries.
    */
-  suspend fun <A> TArray<A>.get(i: Int): A =
+  fun <A> TArray<A>.get(i: Int): A =
     v[i].read()
 
   /**
@@ -586,7 +585,7 @@ interface STM {
    *
    * This function never retries.
    */
-  suspend fun <A> TArray<A>.write(i: Int, a: A): Unit =
+  fun <A> TArray<A>.write(i: Int, a: A): Unit =
     v[i].write(a)
 
   /**
@@ -594,7 +593,7 @@ interface STM {
    *
    * This function never retries.
    */
-  suspend fun <A> TArray<A>.transform(f: (A) -> A): Unit =
+  fun <A> TArray<A>.transform(f: (A) -> A): Unit =
     v.forEach { it.modify(f) }
 
   /**
@@ -602,37 +601,37 @@ interface STM {
    *
    * This function never retries.
    */
-  suspend fun <A, B> TArray<A>.fold(init: B, f: (B, A) -> B): B =
+  fun <A, B> TArray<A>.fold(init: B, f: (B, A) -> B): B =
     v.fold(init) { acc, v -> f(acc, v.read()) }
 
   // -------- TMap
-  suspend fun <K, V> TMap<K, V>.member(k: K): Boolean =
+  fun <K, V> TMap<K, V>.member(k: K): Boolean =
     lookup(k) != null
 
-  suspend fun <K, V> TMap<K, V>.lookup(k: K): V? =
+  fun <K, V> TMap<K, V>.lookup(k: K): V? =
     lookupHamtWithHash(hamt, hashFn(k)) { it.first == k }?.second
 
-  suspend fun <K, V> TMap<K, V>.insert(k: K, v: V): Unit {
+  fun <K, V> TMap<K, V>.insert(k: K, v: V): Unit {
     alterHamtWithHash(hamt, hashFn(k), { it.first == k }) { k to v }
   }
 
-  suspend fun <K, V> TMap<K, V>.update(k: K, fn: (V) -> V): Unit {
+  fun <K, V> TMap<K, V>.update(k: K, fn: (V) -> V): Unit {
     alterHamtWithHash(hamt, hashFn(k), { it.first == k }) { it?.second?.let(fn)?.let { k to it } }
   }
 
-  suspend fun <K, V> TMap<K, V>.remove(k: K): Unit {
+  fun <K, V> TMap<K, V>.remove(k: K): Unit {
     alterHamtWithHash(hamt, hashFn(k), { it.first == k }) { null }
   }
 
   // -------- TSet
-  suspend fun <A> TSet<A>.member(a: A): Boolean =
+  fun <A> TSet<A>.member(a: A): Boolean =
     lookupHamtWithHash(hamt, hashFn(a)) { it.second == a } != null
 
-  suspend fun <A> TSet<A>.insert(a: A): Unit {
+  fun <A> TSet<A>.insert(a: A): Unit {
     alterHamtWithHash(hamt, hashFn(a), { it.second == a }) { Unit to a }
   }
 
-  suspend fun <A> TSet<A>.remove(a: A): Unit {
+  fun <A> TSet<A>.remove(a: A): Unit {
     alterHamtWithHash(hamt, hashFn(a), { it.second == a }) { null }
   }
 }
@@ -642,14 +641,14 @@ interface STM {
  *
  * Equal to [suspend] just with an [STM] receiver.
  */
-inline fun <A> stm(noinline f: suspend STM.() -> A): suspend STM.() -> A = f
+inline fun <A> stm(noinline f: STM.() -> A): STM.() -> A = f
 
 /**
  * Retry if [b] is false otherwise does nothing.
  *
  * `check(b) = if (b.not()) retry() else Unit`
  */
-suspend fun STM.check(b: Boolean): Unit = if (b.not()) retry() else Unit
+fun STM.check(b: Boolean): Unit = if (b.not()) retry() else Unit
 
 /**
  * Run a transaction to completion.
@@ -671,8 +670,8 @@ suspend fun STM.check(b: Boolean): Unit = if (b.not()) retry() else Unit
  * This can be problematic if a large number of small transactions starves out a larger transaction by forcing it to retry a lot.
  * In practice this rarely happens, however to avoid such a scenario it is recommended to keep transactions small.
  *
- * This may suspend if [STM.retry] is called and no [TVar] changed (It resumes automatically on changes).
+ * This may if [STM.retry] is called and no [TVar] changed (It resumes automatically on changes).
  *
  * This also rethrows all exceptions not caught by [STM.catch] inside [f].
  */
-suspend fun <A> atomically(f: suspend STM.() -> A): A = STMTransaction(f).commit()
+suspend fun <A> atomically(f: STM.() -> A): A = STMTransaction(f).commit()

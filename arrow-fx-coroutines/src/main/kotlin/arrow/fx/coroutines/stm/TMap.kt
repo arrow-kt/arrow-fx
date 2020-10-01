@@ -5,9 +5,9 @@ import arrow.fx.coroutines.stm.internal.Hamt
 import arrow.fx.coroutines.stm.internal.newHamt
 import arrow.typeclasses.Hash
 
-suspend fun <K, V> STM.newTMap(fn: (K) -> Int): TMap<K, V> = TMap(newHamt(), fn)
-suspend fun <K, V> STM.newTMap(): TMap<K, V> = newTMap { it.hashCode() }
-suspend fun <K, V> STM.newTMap(hash: Hash<K>): TMap<K, V> = newTMap { hash.run { it.hash() } }
+fun <K, V> STM.newTMap(fn: (K) -> Int): TMap<K, V> = TMap(newHamt(), fn)
+fun <K, V> STM.newTMap(): TMap<K, V> = newTMap { it.hashCode() }
+fun <K, V> STM.newTMap(hash: Hash<K>): TMap<K, V> = newTMap { hash.run { it.hash() } }
 
 data class TMap<K, V>internal constructor(internal val hamt: Hamt<Pair<K, V>>, internal val hashFn: (K) -> Int) {
   companion object {

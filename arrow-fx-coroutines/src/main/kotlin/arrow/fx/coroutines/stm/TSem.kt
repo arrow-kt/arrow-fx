@@ -3,7 +3,7 @@ package arrow.fx.coroutines.stm
 import arrow.fx.coroutines.STM
 import arrow.fx.coroutines.Semaphore
 
-suspend fun STM.newTSem(initial: Int): TSem = TSem(newTVar(checkNotNegative(initial)))
+fun STM.newTSem(initial: Int): TSem = TSem(newTVar(checkNotNegative(initial)))
 
 /**
  * [TSem] is the transactional analog to [Semaphore].

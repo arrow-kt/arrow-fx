@@ -2,13 +2,13 @@ package arrow.fx.coroutines.stm
 
 import arrow.fx.coroutines.STM
 
-suspend fun <A> STM.newTArray(size: Int, f: (Int) -> A): TArray<A> =
+fun <A> STM.newTArray(size: Int, f: (Int) -> A): TArray<A> =
   TArray(Array(size) { i -> TVar(f(i)) })
-suspend fun <A> STM.newTArray(size: Int, a: A): TArray<A> =
+fun <A> STM.newTArray(size: Int, a: A): TArray<A> =
   newTArray(size) { a }
-suspend fun <A> STM.newTArray(vararg arr: A): TArray<A> =
+fun <A> STM.newTArray(vararg arr: A): TArray<A> =
   TArray(arr.map { newTVar(it) }.toTypedArray())
-suspend fun <A> STM.newTArray(xs: Iterable<A>): TArray<A> =
+fun <A> STM.newTArray(xs: Iterable<A>): TArray<A> =
   TArray(xs.map { newTVar(it) }.toTypedArray())
 
 /**
