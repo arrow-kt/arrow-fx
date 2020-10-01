@@ -32,9 +32,10 @@ fun testStreamCompat(
 class TestStream internal constructor(private val timeout: ArrowDuration) {
 
   fun Stream<*>.capture() {
-    GlobalScope.launch {
-      runCatching { through(queue.enqueue()).drain() }
-        .onFailure { exceptionQueue.enqueue1(it) }
+    arrow.fx.coroutines.Enviroment().unsafeRunAsnyc {
+      through(queue.enqueue())
+        .handleErrorWith { Stream.effect { exceptionQueue.enqueue1(it) } }
+        .drain()
     }
   }
 
