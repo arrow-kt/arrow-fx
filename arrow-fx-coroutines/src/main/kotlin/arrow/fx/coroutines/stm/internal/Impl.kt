@@ -4,9 +4,6 @@ import arrow.fx.coroutines.STM
 import arrow.fx.coroutines.stm.TVar
 import kotlinx.atomicfu.atomic
 import kotlin.coroutines.Continuation
-import kotlin.coroutines.EmptyCoroutineContext
-import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
-import kotlin.coroutines.intrinsics.startCoroutineUninterceptedOrReturn
 import kotlin.coroutines.suspendCoroutine
 
 /**

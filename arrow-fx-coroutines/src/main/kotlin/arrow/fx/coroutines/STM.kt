@@ -13,7 +13,6 @@ import arrow.fx.coroutines.stm.cons
 import arrow.fx.coroutines.stm.internal.STMTransaction
 import arrow.fx.coroutines.stm.internal.alterHamtWithHash
 import arrow.fx.coroutines.stm.internal.lookupHamtWithHash
-import kotlin.coroutines.RestrictsSuspension
 
 /**
  * # Consistent and safe concurrent state updates
