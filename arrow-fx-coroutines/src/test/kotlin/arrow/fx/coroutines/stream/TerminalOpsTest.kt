@@ -20,10 +20,10 @@ class TerminalOpsTest : StreamSpec(spec = {
     "drain" {
       stream.expect(toEmit = 0).drain()
     }
-    "first or null" {
+    "first" {
       stream.first() shouldBe null
     }
-    "first or error" {
+    "first or else" {
       shouldThrow<IllegalStateException> {
         stream.firstOrElse { error("Oops!") }
       }.shouldHaveMessage("Oops!")
@@ -55,7 +55,7 @@ class TerminalOpsTest : StreamSpec(spec = {
     "drain" {
       stream.expect(toEmit = 1).drain()
     }
-    "first or null" {
+    "first" {
       stream.first() shouldBe 42
     }
     "first or alternative" {
@@ -86,7 +86,7 @@ class TerminalOpsTest : StreamSpec(spec = {
     "drain" {
       stream.expect(toEmit = 3).drain()
     }
-    "first or null" {
+    "first" {
       stream.first() shouldBe 40
     }
     "first or alternative" {
@@ -108,7 +108,7 @@ class TerminalOpsTest : StreamSpec(spec = {
 
   "infinite stream" - {
     val stream = Stream.iterateEffect(0) { it + 1 }
-      .timeout(Duration(1, TimeUnit.SECONDS))
+      .timeout(Duration(1000, TimeUnit.SECONDS))
     "to list" {
       shouldThrow<TimeoutException> { stream.toList() }
     }
@@ -118,7 +118,7 @@ class TerminalOpsTest : StreamSpec(spec = {
     "drain" {
       shouldThrow<TimeoutException> { stream.drain() }
     }
-    "first or null" {
+    "first" {
       stream.first() shouldBe 0
     }
     "first or alternative" {
