@@ -174,8 +174,7 @@ class CallbackTest : StreamSpec(iterations = 250, spec = {
           emit(Unit)
           done.complete(i)
           CancelToken.unit
-        }
-          .lastOrError()
+        }.lastOrElse { error("Stream not complete") }
       }
 
       val p = UnsafePromise<Unit>()

@@ -18,32 +18,28 @@ class TerminalOpsTest : StreamSpec(spec = {
       stream.toSet() shouldBe emptySet()
     }
     "drain" {
-      stream.limit(callsTo = 0).drain()
+      stream.expect(toEmit = 0).drain()
     }
     "first or null" {
-      stream.firstOrNull() shouldBe null
+      stream.first() shouldBe null
     }
     "first or error" {
-      shouldThrow<NoSuchElementException> {
-        stream.firstOrError()
-      }
-    }
-    "first or custom error" {
       shouldThrow<IllegalStateException> {
-        stream.firstOrError { error("Oops!") }
+        stream.firstOrElse { error("Oops!") }
       }.shouldHaveMessage("Oops!")
     }
+    "first or alternative" {
+      stream.firstOrElse { 42 } shouldBe 42
+    }
     "last or null" {
-      stream.lastOrNull() shouldBe null
+      stream.last() shouldBe null
+    }
+    "last or alternative" {
+        stream.lastOrElse { 42 } shouldBe 42
     }
     "last or error" {
-      shouldThrow<NoSuchElementException> {
-        stream.lastOrError()
-      }
-    }
-    "last or custom error" {
       shouldThrow<IllegalStateException> {
-        stream.lastOrError { error("Oops!") }
+        stream.lastOrElse { error("Oops!") }
       }.shouldHaveMessage("Oops!")
     }
   }
@@ -57,25 +53,25 @@ class TerminalOpsTest : StreamSpec(spec = {
       stream.toSet() shouldBe setOf(42)
     }
     "drain" {
-      stream.limit(callsTo = 1).drain()
+      stream.expect(toEmit = 1).drain()
     }
     "first or null" {
-      stream.firstOrNull() shouldBe 42
+      stream.first() shouldBe 42
+    }
+    "first or alternative" {
+      stream.firstOrElse { 43 } shouldBe 42
     }
     "first or error" {
-      stream.firstOrError() shouldBe 42
-    }
-    "first or custom error" {
-      stream.firstOrError { error("Oops!") } shouldBe 42
+      stream.firstOrElse { error("Oops!") } shouldBe 42
     }
     "last or null" {
-      stream.lastOrNull() shouldBe 42
+      stream.last() shouldBe 42
+    }
+    "last or alternative" {
+      stream.lastOrElse { 43 } shouldBe 42
     }
     "last or error" {
-      stream.lastOrError() shouldBe 42
-    }
-    "last or custom error" {
-      stream.lastOrError { error("Oops!") } shouldBe 42
+      stream.lastOrElse { error("Oops!") } shouldBe 42
     }
   }
 
@@ -88,31 +84,31 @@ class TerminalOpsTest : StreamSpec(spec = {
       stream.toSet() shouldBe setOf(40, 41, 42)
     }
     "drain" {
-      stream.limit(callsTo = 3).drain()
+      stream.expect(toEmit = 3).drain()
     }
     "first or null" {
-      stream.firstOrNull() shouldBe 40
+      stream.first() shouldBe 40
+    }
+    "first or alternative" {
+      stream.firstOrElse { 43 } shouldBe 40
     }
     "first or error" {
-      stream.firstOrError() shouldBe 40
-    }
-    "first or custom error" {
-      stream.firstOrError { error("Oops!") } shouldBe 40
+      stream.firstOrElse { error("Oops!") } shouldBe 40
     }
     "last or null" {
-      stream.lastOrNull() shouldBe 42
+      stream.last() shouldBe 42
+    }
+    "last or alternative" {
+      stream.lastOrElse { 43 } shouldBe 42
     }
     "last or error" {
-      stream.lastOrError() shouldBe 42
-    }
-    "last or custom error" {
-      stream.lastOrError { error("Oops!") } shouldBe 42
+      stream.lastOrElse { error("Oops!") } shouldBe 42
     }
   }
 
   "infinite stream" - {
     val stream = Stream.iterateEffect(0) { it + 1 }
-      .timeout(Duration(10, TimeUnit.MILLISECONDS))
+      .timeout(Duration(1, TimeUnit.SECONDS))
     "to list" {
       shouldThrow<TimeoutException> { stream.toList() }
     }
@@ -123,26 +119,26 @@ class TerminalOpsTest : StreamSpec(spec = {
       shouldThrow<TimeoutException> { stream.drain() }
     }
     "first or null" {
-      stream.firstOrNull() shouldBe 0
+      stream.first() shouldBe 0
+    }
+    "first or alternative" {
+      stream.firstOrElse { 42 } shouldBe 0
     }
     "first or error" {
-      stream.firstOrError() shouldBe 0
-    }
-    "first or custom error" {
-      stream.firstOrError { error("Oops!") } shouldBe 0
+      stream.firstOrElse { error("Oops!") } shouldBe 0
     }
     "last or null" {
-      shouldThrow<TimeoutException> { stream.lastOrNull() }
+      shouldThrow<TimeoutException> { stream.last() }
+    }
+    "last or alternative" {
+      shouldThrow<TimeoutException> { stream.lastOrElse { 42 } }
     }
     "last or error" {
-      shouldThrow<TimeoutException> { stream.lastOrError() }
-    }
-    "last or custom error" {
-      shouldThrow<TimeoutException> { stream.lastOrError { error("Oops!") } }
+      shouldThrow<TimeoutException> { stream.lastOrElse { error("Oops!") } }
     }
   }
 })
 
-private fun <O> Stream<O>.limit(callsTo: Int): Stream<Int> =
+private fun <O> Stream<O>.expect(toEmit: Int) =
   fold(0) { counter, _ -> counter + 1 }
-    .effectTap { counter -> counter shouldBe callsTo }
+    .effectTap { counter -> counter shouldBe toEmit }

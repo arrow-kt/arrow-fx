@@ -47,7 +47,7 @@ suspend fun <O> Stream<O>.drain(): Unit =
  * This a terminal operator, meaning this functions `suspend`s until the [Stream] finishes.
  * If any errors are raised while streaming, it's thrown from this `suspend` scope.
  */
-suspend fun <O> Stream<O>.firstOrNull(): O? =
+suspend fun <O> Stream<O>.first(): O? =
   take(1).foldChunks<O, O?>(null) { acc, c ->
     acc ?: c.firstOrNull()
   }
@@ -59,7 +59,7 @@ suspend fun <O> Stream<O>.firstOrNull(): O? =
  * This a terminal operator, meaning this functions `suspend`s until the [Stream] finishes.
  * If any errors are raised while streaming, it's thrown from this `suspend` scope.
  *
- * It's possible to include an alternative [FailStrategy] which describes how to fail in case of not finding the desired element.
+ * It's possible to include an [alternative] function which can be used to return an alternative value or fail with an exception.
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.stream.*
@@ -67,13 +67,13 @@ suspend fun <O> Stream<O>.firstOrNull(): O? =
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream.empty<Int>()
- *     .firstOrError { error("Oops!") } // equivalent to .lastOrError { throw IllegalStateException("Oops!") }
+ *     .lastOrElse { error("Oops!") } // equivalent to .lastOrError { throw IllegalStateException("Oops!") }
  *     .let(::println) // not reached, IllegalStateException("Oops!") is thrown
  * //sampleEnd
  * ```
  */
-suspend fun <O> Stream<O>.firstOrError(failStrategy: FailStrategy = ::noSuchElement): O =
-  firstOrNull() ?: failStrategy()
+suspend fun <O> Stream<O>.firstOrElse(alternative: () -> O): O =
+  first() ?: alternative()
 
 /**
  * Runs all the effects of this [Stream], and returns `null` if the stream emitted no values
@@ -93,7 +93,7 @@ suspend fun <O> Stream<O>.firstOrError(failStrategy: FailStrategy = ::noSuchElem
  * This a terminal operator, meaning this functions `suspend`s until the [Stream] finishes.
  * If any errors are raised while streaming, it's thrown from this `suspend` scope.
  */
-suspend fun <O> Stream<O>.lastOrNull(): O? =
+suspend fun <O> Stream<O>.last(): O? =
   foldChunks<O, O?>(null) { acc, c -> c.lastOrNull() ?: acc }
 
 /**
@@ -103,25 +103,20 @@ suspend fun <O> Stream<O>.lastOrNull(): O? =
  * This a terminal operator, meaning this functions `suspend`s until the [Stream] finishes.
  * If any errors are raised while streaming, it's thrown from this `suspend` scope.
  *
- * It's possible to include an alternative [FailStrategy] which describes how to fail in case of not finding the desired element.
+ * It's possible to include an [alternative] function which can be used to return an alternative value or fail with an exception.
  *
  * ```kotlin:ank:playground
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3)
  *     .drop(3)
- *     .lastOrError { error("Oops!") } // equivalent to .lastOrError { throw IllegalStateException("Oops!") }
+ *     .lastOrElse { error("Oops!") } // equivalent to .lastOrError { throw IllegalStateException("Oops!") }
  *     .let(::println) // not reached, IllegalStateException("Oops!") is thrown
  * //sampleEnd
  * ```
  */
-suspend fun <O> Stream<O>.lastOrError(failStrategy: FailStrategy = ::noSuchElement): O =
-  lastOrNull() ?: failStrategy()
-
-/**
- * This typealias defines a function that can only compile if we throw an exception, or call a function that returns [Nothing].
- */
-typealias FailStrategy = () -> Nothing
+suspend fun <O> Stream<O>.lastOrElse(alternative: () -> O): O =
+  last() ?: alternative()
 
 /**
  * Folds all the effects of this stream in to a value by folding
@@ -136,6 +131,3 @@ suspend fun <O, B> Stream<O>.foldChunks(init: B, f: (B, Chunk<O>) -> B): B =
 
 private suspend fun <O, B> Stream<O>.compiler(init: B, foldChunk: (B, Chunk<O>) -> B): B =
   asPull.compiler(init, foldChunk)
-
-@Suppress("NOTHING_TO_INLINE") // we want to avoid polluting the stack trace
-private inline fun noSuchElement(): Nothing = throw NoSuchElementException()
