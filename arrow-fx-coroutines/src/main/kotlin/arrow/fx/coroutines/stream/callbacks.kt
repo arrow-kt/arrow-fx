@@ -121,7 +121,7 @@ fun <A> Stream.Companion.cancellable(@BuilderInference f: suspend EmitterSyntax<
     val cancel = Promise<CancelToken>()
 
     Stream.bracketCase({
-      ForkAndForget { emitterCallback(f, cancel, error, q) }
+      ForkAndForget(EmptyCoroutineContext) { emitterCallback(f, cancel, error, q) }
     }, { f, exit ->
       when (exit) {
         is ExitCase.Cancelled -> cancel.get().cancel.invoke()
