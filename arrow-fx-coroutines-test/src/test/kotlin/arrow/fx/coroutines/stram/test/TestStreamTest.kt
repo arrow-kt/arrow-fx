@@ -2,63 +2,147 @@ package arrow.fx.coroutines.stram.test
 
 import arrow.fx.coroutines.stream.Stream
 import arrow.fx.coroutines.stream.concurrent.Queue
-import arrow.fx.coroutines.stream.test.testStreamCompat
-import io.kotest.core.spec.style.StringSpec
+import arrow.fx.coroutines.stream.test.testStream
+import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.collections.shouldContainAll
+import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 
-class TestStreamTest : StringSpec({
+class TestStreamTest : FreeSpec({
 
-  "expects nothing when stream is empty" {
-    testStreamCompat {
-      Stream.empty<String>().capture()
-      expectNothingMore()
+  "builtin assertions" - {
+
+    "expects nothing when stream is empty" {
+      testStream {
+        Stream.empty<String>().capture()
+        expectNothingMore()
+      }
+    }
+
+    "expects single item" {
+      testStream {
+        Stream.just("Hello").capture()
+        expect("Hello")
+      }
+    }
+
+    "expects multiple items" {
+      testStream {
+        Stream("Hello", "World").capture()
+
+        expectAll("Hello", "World")
+      }
+    }
+
+    "expects items in order" {
+      testStream {
+        val queue = Queue.unbounded<String>()
+        queue.dequeue().capture()
+
+        queue.enqueue1("Hello")
+        expect("Hello")
+        queue.enqueue1("World")
+        expect("World")
+      }
+    }
+
+    "expects exception" {
+      testStream {
+        val expectedException = RuntimeException()
+
+        Stream.raiseError<RuntimeException>(expectedException).capture()
+
+        expectException(expectedException)
+      }
+    }
+
+    "handle multiple streams" {
+      testStream {
+        Stream("World").capture()
+        Stream("Hello").capture()
+
+        expectAll("Hello", "World")
+      }
+    }
+
+    "expects with predicate" {
+      testStream {
+        Stream("input").capture()
+
+        expectThat<String> { it.startsWith("in") }
+      }
+    }
+
+    "capture in order" {
+      testStream {
+        captureInOrder(Stream("Hello"), Stream("World"))
+
+        expectInOrder("Hello", "World")
+      }
     }
   }
 
-  "expects single item" {
-    testStreamCompat {
-      Stream.just("Hello").capture()
-      expect("Hello")
+  "custom assertions" - {
+
+    "expects nothing when stream is empty" {
+      testStream {
+        Stream.empty<String>().capture()
+        nextOrNull() shouldBe null
+      }
     }
-  }
 
-  "expects multiple items" {
-    testStreamCompat {
-      Stream("Hello", "World").capture()
-
-      expect("Hello", "World")
+    "expects single item" {
+      testStream {
+        Stream.just("Hello").capture()
+        next() shouldBe "Hello"
+      }
     }
-  }
 
-  "expects items in order" {
-    testStreamCompat {
-      val queue = Queue.unbounded<String>()
-      queue.dequeue().capture()
+    "expects multiple items" {
+      testStream {
+        Stream("Hello", "World").capture()
 
-      queue.enqueue1("Hello")
-      expect("Hello")
-      queue.enqueue1("World")
-      expect("World")
+        next(2).shouldContainExactly("Hello", "World")
+      }
     }
-  }
 
-  "expects exception" {
-    testStreamCompat {
-      val expectedException = RuntimeException()
+    "expects items in order" {
+      testStream {
+        val queue = Queue.unbounded<String>()
+        queue.dequeue().capture()
 
-      Stream.raiseError<RuntimeException>(expectedException).capture()
-
-      expectException(expectedException)
+        queue.enqueue1("Hello")
+        next() shouldBe "Hello"
+        queue.enqueue1("World")
+        next() shouldBe "World"
+      }
     }
-  }
 
-  // TODO: Fix flakyness
-  "handle multiple streams" {
-    testStreamCompat {
-      Stream("Hello").capture()
-      Stream("World").capture()
+    "expects exception" {
+      testStream {
+        val expectedException = RuntimeException()
 
-      expect("Hello", "World")
+        Stream.raiseError<RuntimeException>(expectedException).capture()
+
+        nextException() shouldBe expectedException
+      }
+    }
+
+    "handle multiple streams" {
+      testStream {
+        Stream("World").capture()
+        Stream("Hello").capture()
+
+        next(2) shouldContainAll listOf("Hello", "World")
+      }
+    }
+
+    "capture in order" {
+      testStream {
+        captureInOrder(Stream("Hello"), Stream("World"))
+
+        next(2) shouldBe arrayOf("Hello", "World")
+      }
     }
   }
 
