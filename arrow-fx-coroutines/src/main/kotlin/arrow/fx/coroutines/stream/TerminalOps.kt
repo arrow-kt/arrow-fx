@@ -39,7 +39,7 @@ suspend fun <O> Stream<O>.drain(): Unit =
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream.range(0..1000)
- *     .firstOrNull()
+ *     .first()
  *     .let(::println) // 0
  * //sampleEnd
  * ```
@@ -85,7 +85,7 @@ suspend fun <O> Stream<O>.firstOrElse(alternative: () -> O): O =
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3)
- *     .lastOrNull()
+ *     .last()
  *     .let(::println) // 3
  * //sampleEnd
  * ```
@@ -106,6 +106,8 @@ suspend fun <O> Stream<O>.last(): O? =
  * It's possible to include an [alternative] function which can be used to return an alternative value or fail with an exception.
  *
  * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.stream.*
+ *
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3)
