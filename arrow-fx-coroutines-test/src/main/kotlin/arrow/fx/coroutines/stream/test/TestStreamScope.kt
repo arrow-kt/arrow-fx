@@ -67,7 +67,7 @@ class TestStreamScope internal constructor(
     }
   }
 
-  private suspend fun Stream<*>.blockingCapture(): Stream<Unit> =
+  private fun Stream<*>.blockingCapture(): Stream<Unit> =
     through(queue.enqueue())
       .handleErrorWith { Stream.effect { exceptionQueue.enqueue1(it) } }
       .interruptAfter(captureTimeout)
