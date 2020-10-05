@@ -63,7 +63,7 @@ class TestStreamScope internal constructor(
    */
   fun captureInOrder(vararg streams: Stream<*>) {
     Environment().unsafeRunAsync {
-      Stream(*streams).effectMap { it.blockingCapture() }.flatten().drain()
+      Stream(*streams).flatMap { it.blockingCapture() }.drain()
     }
   }
 
