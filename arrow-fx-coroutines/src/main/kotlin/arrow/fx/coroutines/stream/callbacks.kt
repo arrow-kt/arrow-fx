@@ -121,7 +121,7 @@ fun <A> Stream.Companion.cancellable(@BuilderInference f: suspend EmitterSyntax<
 
     Stream.bracketCase({
       emitterCallback(f, cancel, error, q)
-    }, { f, exit ->
+    }, { _, exit ->
       when (exit) {
         is ExitCase.Cancelled -> cancel.get().cancel.invoke()
         else -> Unit
