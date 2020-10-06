@@ -3,7 +3,6 @@ package arrow.fx.coroutines.stream
 import arrow.core.Either
 import arrow.fx.coroutines.CancelToken
 import arrow.fx.coroutines.ExitCase
-import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.UnsafePromise
 import arrow.fx.coroutines.andThen
@@ -121,7 +120,7 @@ fun <A> Stream.Companion.cancellable(@BuilderInference f: suspend EmitterSyntax<
     val cancel = Promise<CancelToken>()
 
     Stream.bracketCase({
-      ForkAndForget(EmptyCoroutineContext) { emitterCallback(f, cancel, error, q) }
+      emitterCallback(f, cancel, error, q)
     }, { f, exit ->
       when (exit) {
         is ExitCase.Cancelled -> cancel.get().cancel.invoke()
