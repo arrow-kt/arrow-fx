@@ -126,7 +126,6 @@ fun <A> Stream.Companion.cancellable(@BuilderInference f: suspend EmitterSyntax<
         is ExitCase.Cancelled -> cancel.get().cancel.invoke()
         else -> Unit
       }
-      f.cancel()
     }).flatMap {
       q.dequeue()
         .interruptWhen { Either.Left(error.join()) }
