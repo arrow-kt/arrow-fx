@@ -17,16 +17,3 @@ inline class CancelToken(val cancel: suspend () -> Unit) {
 }
 
 typealias Disposable = () -> Unit
-
-internal fun SuspendConnection.cancelToken(): CancelToken =
-  CancelToken { cancel() }
-
-internal fun SuspendConnection.push(tokens: List<CancelToken>): Unit =
-  push(tokens.map { it.cancel })
-
-internal fun SuspendConnection.push(token: CancelToken): Unit =
-  push(token.cancel)
-
-internal fun SuspendConnection.toDisposable(): Disposable = {
-  Platform.unsafeRunSync { cancel() }
-}

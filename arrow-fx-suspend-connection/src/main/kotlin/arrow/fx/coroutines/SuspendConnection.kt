@@ -8,9 +8,6 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
 
-fun CoroutineContext.connection(): SuspendConnection =
-  this[SuspendConnection] ?: SuspendConnection.uncancellable
-
 /**
  * SuspendConnection is a state-machine inside [CoroutineContext] that manages cancellation.
  * This could in the future also serve as a mechanism to collect debug information on running connections.
