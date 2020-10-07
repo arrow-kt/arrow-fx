@@ -39,7 +39,7 @@ suspend fun <O> Stream<O>.drain(): Unit =
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream.range(0..1000)
- *     .first()
+ *     .firstOrNull()
  *     .let(::println) // 0
  * //sampleEnd
  * ```
