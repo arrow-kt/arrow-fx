@@ -23,7 +23,8 @@ suspend fun <T> (suspend () -> T).evalOn(ctx: CoroutineContext): T =
  */
 suspend fun <T> evalOn(
   context: CoroutineContext,
- ): T = suspendCoroutineUninterceptedOrReturn sc@{ uCont ->
+  block: suspend () -> T
+): T = suspendCoroutineUninterceptedOrReturn sc@{ uCont ->
 
   if (uCont.context.connection().isCancelled()) return@sc COROUTINE_SUSPENDED
 
