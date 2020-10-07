@@ -57,11 +57,12 @@ internal fun CoroutineContext.connection(): SuspendConnection =
  * [DefaultConnection] keeps track of all [CancelToken] registered for a given [CoroutineContext].
  * It does so by keeping all [CancelToken] in a FIFO stack, and running them in order when cancelled.
  *
- * Since [SuspendConnection] is a FIFO stack, we can register a token before running a cancellable operation,
+ * Since [SuspendConnection] is a stack, we can register a token before running a cancellable operation,
  * and pop the token after the cancellable operation has finished so
  * we don't run a [CancelToken] when it's not necessary anymore since that could lead to (undefined) weird behavior.
- * You can see this usage in [parMapN], [raceN], [racePair] & [raceTriple].
- *
+ * You can see this usage in [parMapN], [raceN], [racePair] & [raceTriple],
+ * where we create multiple new connections and push them onto the stack with [push] and remove them with [pop]
+ * when the operations running on those connections terminate.
  */
 @PublishedApi
 internal sealed class SuspendConnection : AbstractCoroutineContextElement(SuspendConnection) {
