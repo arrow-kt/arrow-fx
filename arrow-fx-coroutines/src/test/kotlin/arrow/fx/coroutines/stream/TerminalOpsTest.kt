@@ -21,7 +21,7 @@ class TerminalOpsTest : StreamSpec(spec = {
       stream.expect(toEmit = 0).drain()
     }
     "first" {
-      stream.first() shouldBe null
+      stream.firstOrNull() shouldBe null
     }
     "first or else" {
       shouldThrow<IllegalStateException> {
@@ -32,7 +32,7 @@ class TerminalOpsTest : StreamSpec(spec = {
       stream.firstOrElse { 42 } shouldBe 42
     }
     "last or null" {
-      stream.last() shouldBe null
+      stream.lastOrNull() shouldBe null
     }
     "last or alternative" {
         stream.lastOrElse { 42 } shouldBe 42
@@ -56,7 +56,7 @@ class TerminalOpsTest : StreamSpec(spec = {
       stream.expect(toEmit = 1).drain()
     }
     "first" {
-      stream.first() shouldBe 42
+      stream.firstOrNull() shouldBe 42
     }
     "first or alternative" {
       stream.firstOrElse { 43 } shouldBe 42
@@ -65,7 +65,7 @@ class TerminalOpsTest : StreamSpec(spec = {
       stream.firstOrElse { error("Oops!") } shouldBe 42
     }
     "last or null" {
-      stream.last() shouldBe 42
+      stream.lastOrNull() shouldBe 42
     }
     "last or alternative" {
       stream.lastOrElse { 43 } shouldBe 42
@@ -87,7 +87,7 @@ class TerminalOpsTest : StreamSpec(spec = {
       stream.expect(toEmit = 3).drain()
     }
     "first" {
-      stream.first() shouldBe 40
+      stream.firstOrNull() shouldBe 40
     }
     "first or alternative" {
       stream.firstOrElse { 43 } shouldBe 40
@@ -96,7 +96,7 @@ class TerminalOpsTest : StreamSpec(spec = {
       stream.firstOrElse { error("Oops!") } shouldBe 40
     }
     "last or null" {
-      stream.last() shouldBe 42
+      stream.lastOrNull() shouldBe 42
     }
     "last or alternative" {
       stream.lastOrElse { 43 } shouldBe 42
@@ -119,7 +119,7 @@ class TerminalOpsTest : StreamSpec(spec = {
       shouldThrow<TimeoutException> { stream.drain() }
     }
     "first" {
-      stream.first() shouldBe 0
+      stream.firstOrNull() shouldBe 0
     }
     "first or alternative" {
       stream.firstOrElse { 42 } shouldBe 0
@@ -128,7 +128,7 @@ class TerminalOpsTest : StreamSpec(spec = {
       stream.firstOrElse { error("Oops!") } shouldBe 0
     }
     "last or null" {
-      shouldThrow<TimeoutException> { stream.last() }
+      shouldThrow<TimeoutException> { stream.lastOrNull() }
     }
     "last or alternative" {
       shouldThrow<TimeoutException> { stream.lastOrElse { 42 } }

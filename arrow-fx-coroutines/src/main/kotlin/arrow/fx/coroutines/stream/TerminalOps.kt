@@ -47,7 +47,7 @@ suspend fun <O> Stream<O>.drain(): Unit =
  * This a terminal operator, meaning this functions `suspend`s until the [Stream] finishes.
  * If any errors are raised while streaming, it's thrown from this `suspend` scope.
  */
-suspend fun <O> Stream<O>.first(): O? =
+suspend fun <O> Stream<O>.firstOrNull(): O? =
   take(1).foldChunks<O, O?>(null) { acc, c ->
     acc ?: c.firstOrNull()
   }
@@ -73,7 +73,7 @@ suspend fun <O> Stream<O>.first(): O? =
  * ```
  */
 suspend fun <O> Stream<O>.firstOrElse(alternative: () -> O): O =
-  first() ?: alternative()
+  firstOrNull() ?: alternative()
 
 /**
  * Runs all the effects of this [Stream], and returns `null` if the stream emitted no values
@@ -85,7 +85,7 @@ suspend fun <O> Stream<O>.firstOrElse(alternative: () -> O): O =
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3)
- *     .last()
+ *     .lastOrNull()
  *     .let(::println) // 3
  * //sampleEnd
  * ```
@@ -93,7 +93,7 @@ suspend fun <O> Stream<O>.firstOrElse(alternative: () -> O): O =
  * This a terminal operator, meaning this functions `suspend`s until the [Stream] finishes.
  * If any errors are raised while streaming, it's thrown from this `suspend` scope.
  */
-suspend fun <O> Stream<O>.last(): O? =
+suspend fun <O> Stream<O>.lastOrNull(): O? =
   foldChunks<O, O?>(null) { acc, c -> c.lastOrNull() ?: acc }
 
 /**
@@ -118,7 +118,7 @@ suspend fun <O> Stream<O>.last(): O? =
  * ```
  */
 suspend fun <O> Stream<O>.lastOrElse(alternative: () -> O): O =
-  last() ?: alternative()
+  lastOrNull() ?: alternative()
 
 /**
  * Folds all the effects of this stream in to a value by folding
