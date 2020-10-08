@@ -1,8 +1,14 @@
-package arrow.fx.coroutines
+package arrow.fx.stm
 
-import arrow.fx.coroutines.stm.TQueue
-import arrow.fx.coroutines.stm.TVar
-import arrow.fx.coroutines.stm.internal.BlockedIndefinitely
+import arrow.fx.coroutines.Fiber
+import arrow.fx.coroutines.ForkConnected
+import arrow.fx.coroutines.microseconds
+import arrow.fx.coroutines.milliseconds
+import arrow.fx.coroutines.parMapN
+import arrow.fx.coroutines.parTraverse
+import arrow.fx.coroutines.sleep
+import arrow.fx.coroutines.timeOutOrNull
+import arrow.fx.stm.internal.BlockedIndefinitely
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.ints.shouldBeExactly
 import io.kotest.matchers.ints.shouldBeInRange

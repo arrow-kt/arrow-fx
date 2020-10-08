@@ -1,7 +1,7 @@
-package arrow.fx.coroutines.stm.internal
+package arrow.fx.stm.internal
 
-import arrow.fx.coroutines.STM
-import arrow.fx.coroutines.stm.TVar
+import arrow.fx.stm.TVar
+import arrow.fx.stm.STM
 
 /**
  * Low level stm datastructure which can be used to efficiently implement other datastructures like Map/Set on top.

@@ -1,6 +1,4 @@
-package arrow.fx.coroutines.stm
-
-import arrow.fx.coroutines.STM
+package arrow.fx.stm
 
 fun <A> STM.newTArray(size: Int, f: (Int) -> A): TArray<A> =
   TArray(Array(size) { i -> TVar(f(i)) })

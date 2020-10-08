@@ -1,7 +1,6 @@
-package arrow.fx.coroutines.stm
+package arrow.fx.stm
 
 import arrow.fx.coroutines.ConcurrentVar
-import arrow.fx.coroutines.STM
 
 fun <A> STM.newTMVar(a: A): TMVar<A> = TMVar<A>(newTVar(Option.Some(a)))
 fun <A> STM.newEmptyTMVar(): TMVar<A> = TMVar<A>(newTVar(Option.None))

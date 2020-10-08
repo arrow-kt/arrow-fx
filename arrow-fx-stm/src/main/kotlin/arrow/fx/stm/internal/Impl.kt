@@ -1,7 +1,7 @@
-package arrow.fx.coroutines.stm.internal
+package arrow.fx.stm.internal
 
-import arrow.fx.coroutines.STM
-import arrow.fx.coroutines.stm.TVar
+import arrow.fx.stm.STM
+import arrow.fx.stm.TVar
 import kotlinx.atomicfu.atomic
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.suspendCoroutine

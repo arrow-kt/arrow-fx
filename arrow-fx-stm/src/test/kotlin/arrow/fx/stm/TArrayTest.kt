@@ -1,7 +1,5 @@
-package arrow.fx.coroutines.stm
+package arrow.fx.stm
 
-import arrow.fx.coroutines.ArrowFxSpec
-import arrow.fx.coroutines.atomically
 import io.kotest.matchers.ints.shouldBeExactly
 import io.kotest.matchers.shouldBe
 

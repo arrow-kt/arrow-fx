@@ -1,8 +1,7 @@
-package arrow.fx.coroutines.stm
+package arrow.fx.stm
 
-import arrow.fx.coroutines.STM
-import arrow.fx.coroutines.stm.internal.Hamt
-import arrow.fx.coroutines.stm.internal.newHamt
+import arrow.fx.stm.internal.Hamt
+import arrow.fx.stm.internal.newHamt
 import arrow.typeclasses.Hash
 
 fun <K, V> STM.newTMap(fn: (K) -> Int): TMap<K, V> = TMap(newHamt(), fn)

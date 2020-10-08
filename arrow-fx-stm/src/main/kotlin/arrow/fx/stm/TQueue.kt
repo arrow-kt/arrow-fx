@@ -1,7 +1,6 @@
-package arrow.fx.coroutines.stm
+package arrow.fx.stm
 
 import arrow.core.Predicate
-import arrow.fx.coroutines.STM
 
 fun <A> STM.newTQueue(): TQueue<A> = TQueue(newTVar(PList.Nil), newTVar(PList.Nil))
 

@@ -1,6 +1,5 @@
-package arrow.fx.coroutines.stm
+package arrow.fx.stm
 
-import arrow.fx.coroutines.STM
 import arrow.fx.coroutines.Semaphore
 
 fun STM.newTSem(initial: Int): TSem = TSem(newTVar(checkNotNegative(initial)))

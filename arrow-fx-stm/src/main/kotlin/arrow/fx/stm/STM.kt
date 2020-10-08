@@ -1,18 +1,9 @@
-package arrow.fx.coroutines
+package arrow.fx.stm
 
-import arrow.fx.coroutines.stm.Option
-import arrow.fx.coroutines.stm.PList
-import arrow.fx.coroutines.stm.TArray
-import arrow.fx.coroutines.stm.TMVar
-import arrow.fx.coroutines.stm.TMap
-import arrow.fx.coroutines.stm.TQueue
-import arrow.fx.coroutines.stm.TSem
-import arrow.fx.coroutines.stm.TSet
-import arrow.fx.coroutines.stm.TVar
-import arrow.fx.coroutines.stm.cons
-import arrow.fx.coroutines.stm.internal.STMTransaction
-import arrow.fx.coroutines.stm.internal.alterHamtWithHash
-import arrow.fx.coroutines.stm.internal.lookupHamtWithHash
+import arrow.fx.coroutines.ConcurrentVar
+import arrow.fx.stm.internal.STMTransaction
+import arrow.fx.stm.internal.alterHamtWithHash
+import arrow.fx.stm.internal.lookupHamtWithHash
 
 /**
  * # Consistent and safe concurrent state updates
@@ -58,7 +49,7 @@ import arrow.fx.coroutines.stm.internal.lookupHamtWithHash
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.Environment
  * import arrow.fx.coroutines.atomically
- * import arrow.fx.coroutines.stm.TVar
+ * import arrow.fx.stm.TVar
  * import arrow.fx.coroutines.STM
  *
  * //sampleStart
@@ -109,7 +100,7 @@ import arrow.fx.coroutines.stm.internal.lookupHamtWithHash
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.Environment
  * import arrow.fx.coroutines.atomically
- * import arrow.fx.coroutines.stm.TVar
+ * import arrow.fx.stm.TVar
  * import arrow.fx.coroutines.ForkConnected
  * import arrow.fx.coroutines.seconds
  * import arrow.fx.coroutines.sleep
@@ -173,9 +164,9 @@ import arrow.fx.coroutines.stm.internal.lookupHamtWithHash
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.Environment
  * import arrow.fx.coroutines.atomically
- * import arrow.fx.coroutines.stm.TVar
+ * import arrow.fx.stm.TVar
  * import arrow.fx.coroutines.STM
- * import arrow.fx.coroutines.stm
+ * import arrow.fx.stm
  *
  * //sampleStart
  * fun STM.transaction(v: TVar<Int>): Int? =

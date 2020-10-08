@@ -1,13 +1,11 @@
-package arrow.fx.coroutines.stm
+package arrow.fx.stm
 
 import arrow.fx.coroutines.AtomicRefW
 import arrow.fx.coroutines.Duration
 import arrow.fx.coroutines.ForkConnected
-import arrow.fx.coroutines.STM
-import arrow.fx.coroutines.atomically
 import arrow.fx.coroutines.sleep
-import arrow.fx.coroutines.stm.internal.STMFrame
-import arrow.fx.coroutines.stm.internal.STMTransaction
+import arrow.fx.stm.internal.STMFrame
+import arrow.fx.stm.internal.STMTransaction
 import kotlinx.atomicfu.AtomicLong
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
