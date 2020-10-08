@@ -48,9 +48,9 @@ import arrow.fx.stm.internal.lookupHamtWithHash
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.Environment
- * import arrow.fx.coroutines.atomically
+ * import arrow.fx.stm.atomically
  * import arrow.fx.stm.TVar
- * import arrow.fx.coroutines.STM
+ * import arrow.fx.stm.STM
  *
  * //sampleStart
  * fun STM.transfer(from: TVar<Int>, to: TVar<Int>, amount: Int): Unit {
@@ -99,12 +99,12 @@ import arrow.fx.stm.internal.lookupHamtWithHash
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.Environment
- * import arrow.fx.coroutines.atomically
+ * import arrow.fx.stm.atomically
  * import arrow.fx.stm.TVar
+ * import arrow.fx.stm.STM
  * import arrow.fx.coroutines.ForkConnected
  * import arrow.fx.coroutines.seconds
  * import arrow.fx.coroutines.sleep
- * import arrow.fx.coroutines.STM
  *
  * //sampleStart
  * fun STM.transfer(from: TVar<Int>, to: TVar<Int>, amount: Int): Unit {
@@ -163,10 +163,10 @@ import arrow.fx.stm.internal.lookupHamtWithHash
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.Environment
- * import arrow.fx.coroutines.atomically
+ * import arrow.fx.stm.atomically
  * import arrow.fx.stm.TVar
- * import arrow.fx.coroutines.STM
- * import arrow.fx.stm
+ * import arrow.fx.stm.STM
+ * import arrow.fx.stm.stm
  *
  * //sampleStart
  * fun STM.transaction(v: TVar<Int>): Int? =
