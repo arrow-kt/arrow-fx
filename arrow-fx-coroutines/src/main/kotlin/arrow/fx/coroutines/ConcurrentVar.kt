@@ -1,5 +1,7 @@
 package arrow.fx.coroutines
 
+import arrow.core.Tuple2
+import arrow.core.toT
 import arrow.fx.coroutines.DefaultConcurrentVar.Companion.State.WaitForPut
 import arrow.fx.coroutines.DefaultConcurrentVar.Companion.State.WaitForTake
 import kotlinx.atomicfu.atomic
@@ -182,6 +184,37 @@ interface ConcurrentVar<A> {
    */
   suspend fun read(): A
 
+  /**
+   * Run an effect with the current value.
+   *
+   * This takes the value and puts it back right after executing [f].
+   *
+   * Should [f] fail or the current coroutine be cancelled the value will also be put back.
+   */
+  suspend fun <B> withConcurrentVar(f: suspend (A) -> B): B
+
+  /**
+   * Modify the value with an effect.
+   *
+   * This will take the value, apply [f] and put the first value of the tuple back. It also returns the second value.
+   *
+   * Should [f] fail or the current coroutine be cancelled the old value will be put back.
+   *
+   * @see [modify_] A version that returns unit and does not expect a Tuple
+   */
+  suspend fun <B> modify(f: suspend (A) -> Tuple2<A, B>): B
+
+  /**
+   * Modify the value with an effect.
+   *
+   * This will take the value, apply [f] and put the result back.
+   *
+   * Should [f] fail or the current coroutine be cancelled the old value will be put back.
+   *
+   * @see [modify] A version that allows a custom return value instead of unit.
+   */
+  suspend fun modify_(f: suspend (A) -> A): Unit = modify { f(it) toT Unit }
+
   companion object {
     /** Builds an [ConcurrentVar] instance with an [initial] value. */
     suspend operator fun <A> invoke(initial: A): ConcurrentVar<A> =
@@ -259,6 +292,33 @@ private class DefaultConcurrentVar<A> constructor(initial: State<A>) : Concurren
 
   override suspend fun read(): A =
     cancellable(::unsafeRead)
+
+  override suspend fun <B> withConcurrentVar(f: suspend (A) -> B): B =
+    bracketCase(
+      acquire = ::take,
+      use = f,
+      release = { a, _ -> put(a) }
+    )
+
+  override suspend fun <B> modify(f: suspend (A) -> Tuple2<A, B>): B {
+    // ugly. Is there a better way?
+    var res: A? = null
+    return bracketCase(
+      acquire = ::take,
+      use = {
+        val (a, b) = f(it)
+        res = a
+        b
+      },
+      release = { a, exit ->
+        when (exit) {
+          is ExitCase.Failure -> put(a)
+          is ExitCase.Cancelled -> put(a)
+          is ExitCase.Completed -> put(res!!)
+        }
+      }
+    )
+  }
 
   private tailrec suspend fun unsafeTryPut(a: A): Boolean =
     when (val current = state.value) {
