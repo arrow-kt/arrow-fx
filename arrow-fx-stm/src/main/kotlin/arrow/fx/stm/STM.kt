@@ -35,16 +35,9 @@ import arrow.fx.stm.internal.lookupHamtWithHash
  * ## Reading and writing to concurrent state:
  *
  * In order to modify transactional datastructures we have to be inside the [STM] context. This is achieved either by defining our
- *  functions with [STM] as the receiver or using [stm] to define functions.
+ *  functions with [STM] as the receiver or using [stm] to create lambda functions with [STM] as the receiver.
  *
- * Running a transaction is then done using [atomically].
- *
- * > Note: A transaction that sees an invalid state (a [TVar] that was read has been changed concurrently) it will restart and try again.
- *   This essentially means we start from scratch, therefore it is recommended to keep transactions small and to never use code that
- *   has side-effects inside. We use `@RestrictSuspension` to disallow the use of suspension functions but functions that are not suspended
- *   and execute side-effects can be called. This is bad practice however for multiple reasons:
- *   - Transactions may be aborted at any time so accessing resources may never trigger finalizers
- *   - Transactions may rerun an arbitrary amount of times before finishing and thus all effects will rerun.
+ * Running a transaction is then done using [atomically]:
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.Environment
@@ -86,16 +79,22 @@ import arrow.fx.stm.internal.lookupHamtWithHash
  * ```
  * This example shows a banking service moving money from one account to the other with [STM].
  * Should the first account not have enough money we throw an exception. This code is guaranteed to never deadlock and to never
- *  produce an invalid state by out of order updates. These guarantees follow from the semantics of [STM] itself and are universal
- *  to all [STM] programs.
+ *  produce an invalid state by committing after read state has changed concurrently.
+ *  These guarantees follow from the semantics of [STM] itself and are thus universal to all [STM] programs.
+ *
+ *  > Note: A transaction that sees an invalid state (a [TVar] that was read has been changed concurrently) it will restart and try again.
+ *   This essentially means we start from scratch, therefore it is recommended to keep transactions small and to never use code that
+ *   has side-effects inside. However no kotlin interface can actually keep you from doing side effects inside STM.
+ *   This is bad practice however for multiple reasons:
+ *   - Transactions may be aborted at any time so accessing resources may never trigger finalizers
+ *   - Transactions may rerun an arbitrary amount of times before finishing and thus all effects will rerun.
  *
  * ## Retrying manually
  *
- * It is sometimes beneficial to manually abort a transaction until a variable changes. This can be for a variety of reasons such as
- *  seeing an invalid state or having no value to read.
+ * It is sometimes beneficial to manually abort the current transaction if, for example, an invalid state has been read. E.g. a [TQueue] had no elements to read.
+ *  The aborted transaction will automatically restart once any previously accessed variable has changed.
  *
- * Inside a transaction we can always call [retry] to trigger an immediate abort. The transaction will and be resumed as soon
- *  as one of the variables that has been accessed by this transaction changes.
+ * This is achieved by the primitive [retry]:
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.Environment
@@ -154,12 +153,10 @@ import arrow.fx.stm.internal.lookupHamtWithHash
  *
  * [retry] can be used to implement a lot of complex transactions and many datastructures like [TMVar] or [TQueue] use to to great effect.
  *
- * > Note: [retry] will a transaction until a variable updates. It will not block, but if no variable is updated it will wait forever!
- *
  * ## Branching with [orElse]
  *
  * [orElse] is another important primitive which allows a user to detect if a branch called [retry] and then use a fallback instead.
- * If both branches [retry] the entire transaction will [retry].
+ *  If the fallback retries as well the whole transaction retries.
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.Environment
@@ -192,16 +189,16 @@ import arrow.fx.stm.internal.lookupHamtWithHash
  * }
  * ```
  *
- * This uses [stm] which is a helper like the stdlib [suspend] to ease access to [orElse].
- * When the value inside the variable is not in the correct range the transaction retries (due to [check] calling [retry]).
- * If it is in the correct range it simply returns the value. [orElse] here intercepts a [retry] and executes the alternative should that happen.
+ * This uses [stm] which is a helper just like the stdlib function [suspend] to ease use of [orElse].
+ * In this transaction, when the value inside the variable is not in the correct range, the transaction retries (due to [check] calling [retry]).
+ * If it is in the correct range it simply returns the value. [orElse] here intercepts a call to [retry] and executes the alternative.
  *
  * ## Exceptions
  *
  * Throwing inside [STM] will let the exception bubble up to either a [catch] handler or to [atomically] which will rethrow it.
  *
  * > Note: Using `try {...} catch (e: Exception) {...}` is not encouraged because any state change inside `try` will not be undone when
- *   an exception occurs! The recommended way of catching exceptions is to use [catch] which properly discards those changes.
+ *   an exception occurs! The recommended way of catching exceptions is to use [catch] which properly rolls back the transaction!
  *
  * Further reading:
  * - [Composable memory transactions, by Tim Harris, Simon Marlow, Simon Peyton Jones, and Maurice Herlihy, in ACM Conference on Principles and Practice of Parallel Programming 2005.](https://www.microsoft.com/en-us/research/publication/composable-memory-transactions/)
