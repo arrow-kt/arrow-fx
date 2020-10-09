@@ -185,31 +185,31 @@ interface ConcurrentVar<A> {
   suspend fun read(): A
 
   /**
-   * Run an effect with the current value.
+   * Exception- and Cancellation-safe wrapper for operating on the contents of a [ConcurrentVar].
    *
-   * This takes the value and puts it back right after executing [f].
+   * Should an exception occur during [f]'s execution, or if it is cancelled, the value will always be put back.
    *
-   * Should [f] fail or the current coroutine be cancelled the value will also be put back.
+   * This operation is only atomic if there are no other producers for this [ConcurrentVar].
    */
   suspend fun <B> withConcurrentVar(f: suspend (A) -> B): B
 
   /**
-   * Modify the value with an effect.
+   * Exception- and Cancellation-safe wrapper for modifying the contents of a [ConcurrentVar].
    *
-   * This will take the value, apply [f] and put the first value of the tuple back. It also returns the second value.
+   * Should an exception occur during [f]'s execution, or if it is cancelled, the initial value will be put back.
    *
-   * Should [f] fail or the current coroutine be cancelled the old value will be put back.
+   * This operation is only atomic if there are no other producers for this [ConcurrentVar].
    *
    * @see [modify_] A version that returns unit and does not expect a Tuple
    */
   suspend fun <B> modify(f: suspend (A) -> Tuple2<A, B>): B
 
   /**
-   * Modify the value with an effect.
+   * Exception- and Cancellation-safe wrapper for modifying the contents of a [ConcurrentVar].
    *
-   * This will take the value, apply [f] and put the result back.
+   * Should an exception occur during [f]'s execution, or if it is cancelled, the initial value will be put back.
    *
-   * Should [f] fail or the current coroutine be cancelled the old value will be put back.
+   * This operation is only atomic if there are no other producers for this [ConcurrentVar].
    *
    * @see [modify] A version that allows a custom return value instead of unit.
    */
