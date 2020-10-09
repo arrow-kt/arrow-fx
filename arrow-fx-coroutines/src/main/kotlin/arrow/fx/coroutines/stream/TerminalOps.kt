@@ -67,7 +67,7 @@ suspend fun <O> Stream<O>.firstOrNull(): O? =
  * //sampleStart
  * suspend fun main(): Unit =
  *   Stream.empty<Int>()
- *     .lastOrElse { error("Oops!") } // equivalent to .lastOrError { throw IllegalStateException("Oops!") }
+ *     .firstOrElse { error("Oops!") } // equivalent to .firstOrElse { throw IllegalStateException("Oops!") }
  *     .let(::println) // not reached, IllegalStateException("Oops!") is thrown
  * //sampleEnd
  * ```
@@ -112,7 +112,7 @@ suspend fun <O> Stream<O>.lastOrNull(): O? =
  * suspend fun main(): Unit =
  *   Stream(1, 2, 3)
  *     .drop(3)
- *     .lastOrElse { error("Oops!") } // equivalent to .lastOrError { throw IllegalStateException("Oops!") }
+ *     .lastOrElse { error("Oops!") } // equivalent to .lastOrElse { throw IllegalStateException("Oops!") }
  *     .let(::println) // not reached, IllegalStateException("Oops!") is thrown
  * //sampleEnd
  * ```
