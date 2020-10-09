@@ -36,12 +36,6 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
   private fun readVar(v: TVar<Any?>): Any? =
     accessMap[v]?.getValue() ?: parent?.readVar(v) ?: Entry.NOT_PRESENT
 
-  /**
-   * Retry yields to the runloop and never resumes.
-   *
-   * This could be modeled with exceptions as well, but that complicates a users exceptions handling
-   *  and in general does not seem as nice.
-   */
   override fun retry(): Nothing = throw RetryException
 
   override fun <A> (STM.() -> A).orElse(other: STM.() -> A): A =

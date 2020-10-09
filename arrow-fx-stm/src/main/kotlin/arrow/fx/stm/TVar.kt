@@ -34,7 +34,7 @@ suspend fun registerDelay(delay: Duration): TVar<Boolean> =
  *
  * Strictly speaking [TVar.new] is not necessary as it can be defined as `atomically { newTVar(v) }` however [TVar.new] is much
  *  faster because it avoids creating a (pointless) transaction.
- * [STM.newTVar] should be used inside transactions because it is not possible to use [TVar.new] inside [STM] due to `@RestrictSuspension`.
+ * [STM.newTVar] should be used inside transactions because it is not possible to use [TVar.new] inside [STM] due to `suspend`.
  *
  * ## Accessing and modifying a [TVar]
  *
@@ -63,6 +63,9 @@ class TVar<A> internal constructor(a: A) {
   /**
    * Each TVar has a unique id which is used to get a total ordering of variables to ensure that locks
    *  are always acquired in the same order on each thread
+   *
+   * > The current implementation no longer waits on locks which means lock order is irrelevant. This is still used as
+   *  a good hash value though.
    */
   internal val id: Long = globalC.incrementAndGet()
 
@@ -115,6 +118,9 @@ class TVar<A> internal constructor(a: A) {
    * This works by continuously calling [readI] and then trying to compare and set the frame.
    * If the value has been modified after reading it tries again, if the value inside is locked
    *  it will loop inside [readI] until it is unlocked.
+   *
+   * > This is unused atm because locks are only taken conditionally, but is kept because it helps testing and
+   *  may be useful in the future.
    */
   internal fun lock(frame: STMFrame): A {
     var res: A
@@ -172,11 +178,4 @@ class TVar<A> internal constructor(a: A) {
   }
 }
 
-/**
- * A 64bit counter has 2^64 - 1 unique values, even 1 new TVar every nanosecond will take
- *  ~ 600 years to run out of unique numbers.
- * > (2^64-1) / 1000 / 1000 / 1000 / 60 / 60 / 24 / 356 ~= 600
- *
- * If we collide and the HashMap resolves
- */
 internal val globalC: AtomicLong = atomic(0L)
