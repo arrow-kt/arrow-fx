@@ -72,7 +72,7 @@ suspend fun <O> Stream<O>.firstOrNull(): O? =
  * //sampleEnd
  * ```
  */
-suspend fun <O> Stream<O>.firstOrElse(alternative: () -> O): O =
+suspend fun <O> Stream<O>.firstOrElse(alternative: suspend () -> O): O =
   firstOrNull() ?: alternative()
 
 /**
@@ -117,7 +117,7 @@ suspend fun <O> Stream<O>.lastOrNull(): O? =
  * //sampleEnd
  * ```
  */
-suspend fun <O> Stream<O>.lastOrElse(alternative: () -> O): O =
+suspend fun <O> Stream<O>.lastOrElse(alternative: suspend () -> O): O =
   lastOrNull() ?: alternative()
 
 /**
