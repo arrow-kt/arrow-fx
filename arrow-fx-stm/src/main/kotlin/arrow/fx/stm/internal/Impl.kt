@@ -162,7 +162,9 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
  */
 object BlockedIndefinitely : Throwable("Transaction blocked indefinitely")
 
-object RetryException : Throwable("Arrow STM Retry. This should always be caught by arrow internally. Please report this as a bug if that is not the case!")
+object RetryException : Throwable("Arrow STM Retry. This should always be caught by arrow internally. Please report this as a bug if that is not the case!") {
+  override fun fillInStackTrace(): Throwable { return this }
+}
 
 // --------
 /**
