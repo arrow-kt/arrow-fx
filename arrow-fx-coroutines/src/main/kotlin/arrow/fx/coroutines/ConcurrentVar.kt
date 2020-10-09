@@ -32,6 +32,15 @@ import kotlinx.atomicfu.atomic
  *  println(r)
  * }
  * ```
+ *
+ * ## Using [ConcurrentVar] as a lock safely
+ *
+ * [ConcurrentVar] can also be used as a lock if every operation calls [take], does work and then [put]'s the value back.
+ * However this is quite unsafe if operations can be cancelled or can throw exception while they hold a lock.
+ * The best approach to overcome this is to use [bracketCase] however since this is a rather common pattern, it is made available with [withConcurrentVar], [modify] and [modify_].
+ *
+ * > Note that this only works if all operations over the [ConcurrentVar] follow the pattern of first taking and then putting back both exactly once and in order.
+ *  Or use the helpers to also be safe in case of exceptions and cancellation.
  */
 interface ConcurrentVar<A> {
 
