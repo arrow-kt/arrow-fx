@@ -8,8 +8,8 @@ import kotlinx.atomicfu.atomic
 
 /**
  * [ConcurrentVar] is a mutable concurrent safe variable which is either `empty` or contains a `single value` of type [A].
- * It behaves the same as a single element [arrow.fx.coroutines.stream.concurrent.Queue].
- * When trying to [put] or [take], it'll suspend when it's respectively [isEmpty] or [isNotEmpty].
+ * It behaves as a single element [arrow.fx.coroutines.stream.concurrent.Queue].
+ * When trying to [put] or [take], it will suspend when it is respectively [isEmpty] or [isNotEmpty].
  *
  * There are also operators that return immediately, [tryTake] & [tryPut],
  * since checking [isEmpty] could be outdated immediately.
@@ -28,7 +28,7 @@ import kotlinx.atomicfu.atomic
  *     mvar.put(5)
  *   }
  *
- *  val r = mvar.take() // suspend until Fork puts result in MVar
+ *  val r = mvar.take() // suspend until Fork puts result in ConcurrentVar
  *  println(r)
  * }
  * ```
@@ -46,8 +46,7 @@ interface ConcurrentVar<A> {
 
   /**
    * Returns true if there are no elements. Otherwise false.
-   * This may be outdated immediately,
-   *   use [tryPut] or [tryTake] to [put] & [take] without suspending.
+   * This may be outdated immediately; use [tryPut] or [tryTake] to [put] & [take] without suspending.
    *
    * ```kotlin:ank:playground
    * import arrow.fx.coroutines.*
@@ -66,8 +65,7 @@ interface ConcurrentVar<A> {
 
   /**
    * Returns true if there no elements. Otherwise false.
-   * This may be outdated immediately,
-   *   use [tryPut] or [tryTake] to [put] & [take] without suspending.
+   * This may be outdated immediately; use [tryPut] or [tryTake] to [put] & [take] without suspending.
    *
    * ```kotlin:ank:playground
    * import arrow.fx.coroutines.*
@@ -84,8 +82,8 @@ interface ConcurrentVar<A> {
   suspend fun isNotEmpty(): Boolean
 
   /**
-   * Puts [A] in the [ConcurrentVar] if it is empty,
-   * or suspends if full until the given value is next in line to be consumed by [take].
+   * Puts [A] in the [ConcurrentVar] if it is empty, or suspends if full until the given value is next in line
+   * to be consumed by [take].
    *
    * ```kotlin:ank:playground
    * import arrow.fx.coroutines.*
@@ -151,8 +149,8 @@ interface ConcurrentVar<A> {
   suspend fun take(): A
 
   /**
-   * Try to take the value of [ConcurrentVar],
-   * returns a value immediately if the [ConcurrentVar] is not empty or null otherwise.
+   * Tries to take the value of [ConcurrentVar], returns a value immediately if the [ConcurrentVar] is not
+   * empty, or null otherwise.
    *
    * ```kotlin:ank:playground
    * import arrow.fx.coroutines.*
@@ -170,8 +168,8 @@ interface ConcurrentVar<A> {
   suspend fun tryTake(): A?
 
   /**
-   * Read the current value without emptying the MVar,
-   * assuming there is one, or otherwise it suspends until there is a value available.
+   * Reads the current value without emptying the [ConcurrentVar], assuming there is one, or otherwise
+   * it suspends until there is a value available.
    *
    * ```kotlin:ank:playground
    * import arrow.fx.coroutines.*
@@ -225,7 +223,7 @@ interface ConcurrentVar<A> {
   suspend fun modify_(f: suspend (A) -> A): Unit = modify { f(it) toT Unit }
 
   companion object {
-    /** Builds an [ConcurrentVar] instance with an [initial] value. */
+    /** Builds a [ConcurrentVar] instance with an [initial] value. */
     suspend operator fun <A> invoke(initial: A): ConcurrentVar<A> =
       DefaultConcurrentVar(DefaultConcurrentVar.Companion.State(initial))
 
