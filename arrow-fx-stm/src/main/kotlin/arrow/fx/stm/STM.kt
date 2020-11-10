@@ -9,16 +9,16 @@ import arrow.fx.stm.internal.lookupHamtWithHash
  * # Consistent and safe concurrent state updates
  *
  * Software transactional memory, or STM, is an abstraction for concurrent state modification.
- * With [STM] one can write concurrent abstractions that can easily be composed without
+ * With [STM] one can write code that concurrently accesses state and that can easily be composed without
  *  exposing details of how it ensures safety guarantees.
- * Programs written with [STM] will neither deadlock nor have race-conditions.
+ * Programs running within an [STM] transaction will neither deadlock nor have race-conditions.
  *
  * Such guarantees are usually not possible with other forms of concurrent communication such as locks,
  *  atomic variables or [ConcurrentVar].
  *
- * > The api of [STM] is based on the haskell package [stm](https://hackage.haskell.org/package/stm).
+ * > The api of [STM] is based on the haskell package [stm](https://hackage.haskell.org/package/stm) and the implementation is based on the GHC implementation for fine-grained locks.
  *
- * The base building blocks of [STM] are [TVar]'s and a few primitives [retry], [orElse] and [catch].
+ * The base building blocks of [STM] are [TVar]'s and the primitives [retry], [orElse] and [catch].
  *
  * ## STM Datastructures
  *
@@ -79,13 +79,12 @@ import arrow.fx.stm.internal.lookupHamtWithHash
  * ```
  * This example shows a banking service moving money from one account to the other with [STM].
  * Should the first account not have enough money we throw an exception. This code is guaranteed to never deadlock and to never
- *  produce an invalid state by committing after read state has changed concurrently.
- *  These guarantees follow from the semantics of [STM] itself and are thus universal to all [STM] programs.
+ *  produce an invalid state by committing after the read state has changed concurrently.
  *
- *  > Note: A transaction that sees an invalid state (a [TVar] that was read has been changed concurrently) it will restart and try again.
- *   This essentially means we start from scratch, therefore it is recommended to keep transactions small and to never use code that
+ *  > Note: A transaction that sees an invalid state (a [TVar] that was read has been changed concurrently) will restart and try again.
+ *   This usually means we rerun the function entirely, therefore it is recommended to keep transactions small and to never use code that
  *   has side-effects inside. However no kotlin interface can actually keep you from doing side effects inside STM.
- *   This is bad practice however for multiple reasons:
+ *   Using side-effects such as access to resources, logging or network access comes with severe disadvantages:
  *   - Transactions may be aborted at any time so accessing resources may never trigger finalizers
  *   - Transactions may rerun an arbitrary amount of times before finishing and thus all effects will rerun.
  *
@@ -148,7 +147,7 @@ import arrow.fx.stm.internal.lookupHamtWithHash
  * }
  * ```
  *
- * Here in this (silly) example we changed `withdraw` to retry and thus wait until enough money is in the account, which after
+ * Here in this (silly) example we changed `withdraw` to use [retry] and thus wait until enough money is in the account, which after
  *  a few seconds just happens to be the case.
  *
  * [retry] can be used to implement a lot of complex transactions and many datastructures like [TMVar] or [TQueue] use to to great effect.
@@ -189,9 +188,9 @@ import arrow.fx.stm.internal.lookupHamtWithHash
  * }
  * ```
  *
- * This uses [stm] which is a helper just like the stdlib function [suspend] to ease use of [orElse].
+ * This example uses [stm] which is a helper just like the stdlib function [suspend] to ease use of an infix function like [orElse].
  * In this transaction, when the value inside the variable is not in the correct range, the transaction retries (due to [check] calling [retry]).
- * If it is in the correct range it simply returns the value. [orElse] here intercepts a call to [retry] and executes the alternative.
+ * If it is in the correct range it simply returns the value. [orElse] here intercepts a call to [retry] and executes the alternative which simply returns null.
  *
  * ## Exceptions
  *
@@ -208,7 +207,7 @@ interface STM {
   /**
    * Rerun the current transaction.
    *
-   * This semantically-blocks until any of the accessed [TVar]'s changed.
+   * Aborts the transaction and suspends until any of the accessed [TVar]'s changed, after which the transaction restarts.
    */
   fun retry(): Nothing
 
@@ -229,7 +228,6 @@ interface STM {
    * - Any given [TVar] is only ever read once during a transaction.
    * - When committing the transaction the value read has to be equal to the current value otherwise the
    *   transaction will retry
-   * - The above is guaranteed through any nesting of STM blocks (via [orElse] or other combinators)
    */
   fun <A> TVar<A>.read(): A
 
@@ -238,9 +236,8 @@ interface STM {
    *
    * Similarly to [read] this comes with a few guarantees:
    * - For multiple writes to the same [TVar] in a transaction only the last will actually be performed
-   * - When committing the value inside the [TVar] at the time of calling [write] has to be the
+   * - When committing the value inside the [TVar], at the time of calling [write], has to be the
    *   same as the current value otherwise the transaction will retry
-   * - The above is guaranteed through any nesting of STM blocks (via [orElse] or other combinators)
    */
   fun <A> TVar<A>.write(a: A): Unit
 
@@ -640,25 +637,26 @@ fun STM.check(b: Boolean): Unit = if (b.not()) retry() else Unit
 /**
  * Run a transaction to completion.
  *
- * This comes with the guarantee that at the time of committing the transaction all read variables have to have a consistent state
- *  (they have not changed after initially reading). Otherwise the transaction will be aborted and run again.
+ * This comes with the guarantee that, at the time of committing the transaction, all read variables have a consistent state
+ *  (they have not changed after the first read). Otherwise the transaction will be aborted and run again.
  *
  * Note that only reads and writes inside a single transaction have this guarantee.
  * Code that calls [atomically] as follows will again be subject to race conditions:
  * `atomically { v.read() }.let { atomically { v.write(it + 1) } }`. Because those are separate transactions the value inside `v` might change
  *  between transactions! The only safe way is to do it in one go: `atomically { v.write(v.read() + 1) }`
  *
- * Transactions that only read or access completely disjoint set of [TVar]'s will be able to commit concurrently as [STM] in arrow
- *  does not use a global lock to commit. Only calls to [STM.write] need to be synchronized, however the performance of [STM] is still
+ * Transactions that only read or access completely disjoint set of [TVar]'s will be able to commit in parallel as [STM] in arrow
+ *  uses an approach the locks only modified [TVar]'s on commit. Only calls to [STM.write] need to be synchronized, however the performance of [STM] is still
  *  heavily linked to the amount of [TVar]'s accessed so it is good practice to keep transactions short.
  *
  * Keeping transactions short has another benefit which comes from another drawback of [STM]:
  * There is no notion of fairness when it comes to transactions. The fastest transaction always wins.
- * This can be problematic if a large number of small transactions starves out a larger transaction by forcing it to retry a lot.
+ * This can be problematic if a large number of small transactions starve out a larger transaction by forcing it to retry a lot.
  * In practice this rarely happens, however to avoid such a scenario it is recommended to keep transactions small.
  *
- * This may if [STM.retry] is called and no [TVar] changed (It resumes automatically on changes).
+ * This may suspend if [STM.retry] is called and no accessed [TVar] changed. It will then resume automatically after any accessed [TVar] changed.
  *
- * This also rethrows all exceptions not caught by [STM.catch] inside [f].
+ * Rethrows all exceptions not caught by inside [f]. Remember to use [STM.catch] to handle exceptions as `try {} catch` will not handle transaction
+ *  state properly!
  */
 suspend fun <A> atomically(f: STM.() -> A): A = STMTransaction(f).commit()
