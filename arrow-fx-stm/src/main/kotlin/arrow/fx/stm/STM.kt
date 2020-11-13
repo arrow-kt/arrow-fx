@@ -1,5 +1,6 @@
 package arrow.fx.stm
 
+import arrow.core.Tuple2
 import arrow.fx.coroutines.ConcurrentVar
 import arrow.fx.stm.internal.STMTransaction
 import arrow.fx.stm.internal.alterHamtWithHash
@@ -208,21 +209,89 @@ interface STM {
    * Rerun the current transaction.
    *
    * Aborts the transaction and suspends until any of the accessed [TVar]'s changed, after which the transaction restarts.
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.stm.stm
+   * import arrow.fx.coroutines.Environment
+   *
+   * suspend fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val result = atomically {
+   *       stm { retry() } orElse { "Alternative" }
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *   }
+   * }
+   * ```
    */
   fun retry(): Nothing
 
   /**
    * Run the given transaction and fallback to the other one if the first one calls [retry].
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.stm.stm
+   * import arrow.fx.coroutines.Environment
+   *
+   * suspend fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val result = atomically {
+   *       stm { retry() } orElse { "Alternative" }
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *   }
+   * }
+   * ```
    */
   infix fun <A> (STM.() -> A).orElse(other: STM.() -> A): A
 
   /**
    * Run [f] and handle any exception thrown with [onError].
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * suspend fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val result = atomically {
+   *       catch({ throw Throwable() }) { e -> "caught" }
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *   }
+   * }
+   * ```
    */
   fun <A> catch(f: STM.() -> A, onError: STM.(Throwable) -> A): A
 
   /**
    * Read the value from a [TVar].
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TVar
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tvar = TVar.new(10)
+   *     val result = atomically {
+   *       tvar.read()
+   *     }
+   *     //sampleEnd
+   *     println(result)
+   *   }
+   * }
+   * ```
    *
    * This comes with a few guarantees:
    * - Any given [TVar] is only ever read once during a transaction.
@@ -234,6 +303,24 @@ interface STM {
   /**
    * Set the value of a [TVar].
    *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TVar
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tvar = TVar.new(10)
+   *     val result = atomically {
+   *       tvar.write(20)
+   *     }
+   *     //sampleEnd
+   *     println(result)
+   *   }
+   * }
+   * ```
+   *
    * Similarly to [read] this comes with a few guarantees:
    * - For multiple writes to the same [TVar] in a transaction only the last will actually be performed
    * - When committing the value inside the [TVar], at the time of calling [write], has to be the
@@ -244,12 +331,49 @@ interface STM {
   /**
    * Modify the value of a [TVar]
    *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TVar
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tvar = TVar.new(10)
+   *     val result = atomically {
+   *       tvar.modify { it * 2 }
+   *     }
+   *     //sampleEnd
+   *     println(result)
+   *   }
+   * }
+   * ```
+   *
    * `modify(f) = write(f(read()))`
    */
   fun <A> TVar<A>.modify(f: (A) -> A): Unit = write(f(read()))
 
   /**
    * Swap the content of the [TVar]
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TVar
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tvar = TVar.new(10)
+   *     val result = atomically {
+   *       tvar.swap(20)
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *     println("New value ${tvar.unsafeRead()}")
+   *   }
+   * }
+   * ```
    *
    * @return The previous value stored inside the [TVar]
    */
@@ -264,6 +388,25 @@ interface STM {
   /**
    * Read the value from a [TMVar] and empty it.
    *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TMVar
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tmvar = TMVar.new(10)
+   *     val result = atomically {
+   *       tmvar.take()
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *     println("New value ${atomically { tmvar.tryTake() } }")
+   *   }
+   * }
+   * ```
+   *
    * This retries if the [TMVar] is empty and leaves the [TMVar] empty if it succeeded.
    *
    * @see TMVar.tryTake for a version that does not retry.
@@ -277,6 +420,24 @@ interface STM {
   /**
    * Put a value into an empty [TMVar].
    *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TMVar
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tmvar = TMVar.empty<Int>()
+   *     atomically {
+   *       tmvar.put(20)
+   *     }
+   *     //sampleEnd
+   *     println("New value ${atomically { tmvar.tryTake() } }")
+   *   }
+   * }
+   * ```
+   *
    * This retries if the [TMVar] is not empty.
    *
    * For a version of [TMVar.put] that does not retry see [TMVar.tryPut]
@@ -288,6 +449,25 @@ interface STM {
 
   /**
    * Read a value from a [TMVar] without removing it.
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TMVar
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tmvar = TMVar.new(30)
+   *     val result = atomically {
+   *       tmvar.read()
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *     println("New value ${atomically { tmvar.tryTake() } }")
+   *   }
+   * }
+   * ```
    *
    * This retries if the [TMVar] is empty but does not take the value out if it succeeds.
    *
@@ -301,6 +481,25 @@ interface STM {
 
   /**
    * Same as [TMVar.take] except it returns null if the [TMVar] is empty and thus never retries.
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TMVar
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tmvar = TMVar.empty<Int>()
+   *     val result = atomically {
+   *       tmvar.tryTake()
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *     println("New value ${atomically { tmvar.tryTake() } }")
+   *   }
+   * }
+   * ```
    */
   fun <A> TMVar<A>.tryTake(): A? = when (val ret = v.read()) {
     is Option.Some -> ret.a.also { v.write(Option.None) }
@@ -309,6 +508,25 @@ interface STM {
 
   /**
    * Same as [TMVar.put] except that it returns true or false if was successful or it retried.
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TMVar
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tmvar = TMVar.new(20)
+   *     val result = atomically {
+   *       tmvar.tryPut(30)
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *     println("New value ${atomically { tmvar.tryTake() } }")
+   *   }
+   * }
+   * ```
    *
    * This function never retries.
    *
@@ -322,6 +540,24 @@ interface STM {
   /**
    * Same as [TMVar.read] except that it returns null if the [TMVar] is empty and thus never retries.
    *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TMVar
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tmvar = TMVar.empty<Int>()
+   *     val result = atomically {
+   *       tmvar.tryRead()
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *   }
+   * }
+   * ```
+   *
    * @see TMVar.read for a function that retries if the [TMVar] is empty.
    * @see TMVar.tryTake for a function that leaves the [TMVar] empty after reading.
    */
@@ -332,17 +568,72 @@ interface STM {
 
   /**
    * Check if a [TMVar] is empty. This function never retries.
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TMVar
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tmvar = TMVar.empty<Int>()
+   *     val result = atomically {
+   *       tmvar.isEmpty()
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *   }
+   * }
+   * ```
    */
   fun <A> TMVar<A>.isEmpty(): Boolean = v.read() is Option.None
 
   /**
    * Check if a [TMVar] is not empty. This function never retries.
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TMVar
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tmvar = TMVar.empty<Int>()
+   *     val result = atomically {
+   *       tmvar.isNotEmpty()
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *   }
+   * }
+   * ```
    */
   fun <A> TMVar<A>.isNotEmpty(): Boolean =
     isEmpty().not()
 
   /**
    * Swap the content of a [TMVar] or retry if it is empty.
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TMVar
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tmvar = TMVar.new(30)
+   *     val result = atomically {
+   *       tmvar.swap(40)
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *     println("New value ${atomically { tmvar.tryTake() } }")
+   *   }
+   * }
+   * ```
    */
   fun <A> TMVar<A>.swap(a: A): A = when (val ret = v.read()) {
     is Option.Some -> ret.a.also { v.write(Option.Some(a)) }
@@ -353,6 +644,25 @@ interface STM {
   /**
    * Returns the currently available number of permits in a [TSem].
    *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TSem
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tsem = TSem.new(5)
+   *     val result = atomically {
+   *       tsem.available()
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *     println("Permits remaining ${atomically { tsem.available() }}")
+   *   }
+   * }
+   * ```
+   *
    * This function never retries.
    */
   fun TSem.available(): Int =
@@ -360,6 +670,24 @@ interface STM {
 
   /**
    * Acquire 1 permit from a [TSem].
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TSem
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tsem = TSem.new(5)
+   *     atomically {
+   *       tsem.acquire()
+   *     }
+   *     //sampleEnd
+   *     println("Permits remaining ${atomically { tsem.available() }}")
+   *   }
+   * }
+   * ```
    *
    * This function will retry if there are no permits available.
    *
@@ -370,6 +698,24 @@ interface STM {
 
   /**
    * Acquire [n] permit from a [TSem].
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TSem
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tsem = TSem.new(5)
+   *     atomically {
+   *       tsem.acquire(3)
+   *     }
+   *     //sampleEnd
+   *     println("Permits remaining ${atomically { tsem.available() }}")
+   *   }
+   * }
+   * ```
    *
    * This function will retry if there are less than [n] permits available.
    *
@@ -384,6 +730,25 @@ interface STM {
   /**
    * Like [TSem.acquire] except that it returns whether or not acquisition was successful.
    *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TSem
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tsem = TSem.new(0)
+   *     val result = atomically {
+   *       tsem.tryAcquire()
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *     println("Permits remaining ${atomically { tsem.available() }}")
+   *   }
+   * }
+   * ```
+   *
    * This function never retries.
    *
    * @see TSem.acquire for a version that retries if there are not enough permits.
@@ -393,6 +758,25 @@ interface STM {
 
   /**
    * Like [TSem.acquire] except that it returns whether or not acquisition was successful.
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TSem
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tsem = TSem.new(0)
+   *     val result = atomically {
+   *       tsem.tryAcquire(3)
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *     println("Permits remaining ${atomically { tsem.available() }}")
+   *   }
+   * }
+   * ```
    *
    * This function never retries.
    *
@@ -404,6 +788,24 @@ interface STM {
   /**
    * Release a permit back to the [TSem].
    *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TSem
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tsem = TSem.new(5)
+   *     atomically {
+   *       tsem.release()
+   *     }
+   *     //sampleEnd
+   *     println("Permits remaining ${atomically { tsem.available() }}")
+   *   }
+   * }
+   * ```
+   *
    * This function never retries.
    */
   fun TSem.release(): Unit =
@@ -411,6 +813,24 @@ interface STM {
 
   /**
    * Release [n] permits back to the [TSem].
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TSem
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tsem = TSem.new(5)
+   *     atomically {
+   *       tsem.release(2)
+   *     }
+   *     //sampleEnd
+   *     println("Permits remaining ${atomically { tsem.available() }}")
+   *   }
+   * }
+   * ```
    *
    * [n] must be non-negative.
    *
@@ -420,7 +840,7 @@ interface STM {
     0 -> Unit
     1 -> release()
     else ->
-      if (n < 0) throw IllegalArgumentException("Cannot decrease permits using signal(n). n was negative: $n")
+      if (n < 0) throw IllegalArgumentException("Cannot decrease permits using release(n). n was negative: $n")
       else v.write(v.read() + n)
   }
 
@@ -428,13 +848,76 @@ interface STM {
   /**
    * Append an element to the [TQueue].
    *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TQueue
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tq = TQueue.new<Int>()
+   *     atomically {
+   *       tq.write(2)
+   *     }
+   *     //sampleEnd
+   *     println("Items in queue ${atomically { tq.flush() }}")
+   *   }
+   * }
+   * ```
+   *
    * This function never retries.
    */
   fun <A> TQueue<A>.write(a: A): Unit =
     writes.modify { it.cons(a) }
 
   /**
+   * Append an element to the [TQueue]. Alias for [STM.write].
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TQueue
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tq = TQueue.new<Int>()
+   *     atomically {
+   *       tq + 2
+   *     }
+   *     //sampleEnd
+   *     println("Items in queue ${atomically { tq.flush() }}")
+   *   }
+   * }
+   * ```
+   *
+   * This function never retries.
+   */
+  operator fun <A> TQueue<A>.plus(a: A): Unit = write(a)
+
+  /**
    * Remove the front element from the [TQueue] or retry if the [TQueue] is empty.
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TQueue
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tq = TQueue.new<Int>()
+   *     val result = atomically {
+   *       tq.write(2)
+   *       tq.read()
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *     println("Items in queue ${atomically { tq.flush() }}")
+   *   }
+   * }
+   * ```
    *
    * @see TQueue.tryRead for a version that does not retry.
    * @see TQueue.peek for a version that does not remove the element.
@@ -457,6 +940,25 @@ interface STM {
   /**
    * Same as [TQueue.read] except it returns null if the [TQueue] is empty.
    *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TQueue
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tq = TQueue.new<Int>()
+   *     val result = atomically {
+   *       tq.tryRead()
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *     println("Items in queue ${atomically { tq.flush() }}")
+   *   }
+   * }
+   * ```
+   *
    * This function never retries.
    */
   fun <A> TQueue<A>.tryRead(): A? =
@@ -464,6 +966,28 @@ interface STM {
 
   /**
    * Drains all entries of a [TQueue] into a single list.
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TQueue
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tq = TQueue.new<Int>()
+   *     val result = atomically {
+   *       tq.write(2)
+   *       tq.write(4)
+   *
+   *       tq.flush()
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *     println("Items in queue ${atomically { tq.flush() }}")
+   *   }
+   * }
+   * ```
    *
    * This function never retries.
    */
@@ -476,6 +1000,27 @@ interface STM {
   /**
    * Read the front element of a [TQueue] without removing it.
    *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TQueue
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tq = TQueue.new<Int>()
+   *     val result = atomically {
+   *       tq.write(2)
+   *
+   *       tq.peek()
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *     println("Items in queue ${atomically { tq.flush() }}")
+   *   }
+   * }
+   * ```
+   *
    * This function retries if the [TQueue] is empty.
    *
    * @see TQueue.read for a version that removes the front element.
@@ -486,6 +1031,25 @@ interface STM {
 
   /**
    * Same as [TQueue.peek] except it returns null if the [TQueue] is empty.
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TQueue
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tq = TQueue.new<Int>()
+   *     val result = atomically {
+   *       tq.tryPeek()
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *     println("Items in queue ${atomically { tq.flush() }}")
+   *   }
+   * }
+   * ```
    *
    * This function never retries.
    *
@@ -498,6 +1062,25 @@ interface STM {
   /**
    * Prepend an element to the [TQueue].
    *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TQueue
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tq = TQueue.new<Int>()
+   *     atomically {
+   *       tq.write(1)
+   *       tq.writeFront(2)
+   *     }
+   *     //sampleEnd
+   *     println("Items in queue ${atomically { tq.flush() }}")
+   *   }
+   * }
+   * ```
+   *
    * Mainly used to implement [TQueue.peek] and since this writes to the read variable of a [TQueue] excessive use
    *  can lead to contention on consumers. Prefer appending to a [TQueue] if possible.
    *
@@ -509,6 +1092,24 @@ interface STM {
   /**
    * Check if a [TQueue] is empty.
    *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TQueue
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tq = TQueue.new<Int>()
+   *     val result = atomically {
+   *       tq.isEmpty()
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *   }
+   * }
+   * ```
+   *
    * This function never retries.
    */
   fun <A> TQueue<A>.isEmpty(): Boolean =
@@ -517,6 +1118,24 @@ interface STM {
   /**
    * Check if a [TQueue] is not empty.
    *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TQueue
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tq = TQueue.new<Int>()
+   *     val result = atomically {
+   *       tq.isNotEmpty()
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *   }
+   * }
+   * ```
+   *
    * This function never retries.
    */
   fun <A> TQueue<A>.isNotEmpty(): Boolean =
@@ -524,6 +1143,25 @@ interface STM {
 
   /**
    * Filter a [TQueue], removing all elements for which [pred] returns false.
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TQueue
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tq = TQueue.new<Int>()
+   *     atomically {
+   *       tq.write(0)
+   *       tq.filter { it != 0 }
+   *     }
+   *     //sampleEnd
+   *     println("Items in queue ${atomically { tq.flush() }}")
+   *   }
+   * }
+   * ```
    *
    * This function never retries.
    */
@@ -535,6 +1173,25 @@ interface STM {
   /**
    * Filter a [TQueue], removing all elements for which [pred] returns true.
    *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TQueue
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tq = TQueue.new<Int>()
+   *     atomically {
+   *       tq.write(0)
+   *       tq.filterNot { it == 0 }
+   *     }
+   *     //sampleEnd
+   *     println("Items in queue ${atomically { tq.flush() }}")
+   *   }
+   * }
+   * ```
+   *
    * This function never retries.
    */
   fun <A> TQueue<A>.filterNot(pred: (A) -> Boolean): Unit {
@@ -544,6 +1201,24 @@ interface STM {
 
   /**
    * Return the current number of elements in a [TQueue]
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TQueue
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tq = TQueue.new<Int>()
+   *     val result = atomically {
+   *       tq.size()
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *   }
+   * }
+   * ```
    *
    * This function is not cheap, it iterates all elements!
    *
@@ -555,25 +1230,80 @@ interface STM {
   /**
    * Read a variable from the [TArray].
    *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TArray
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tarr = TArray.new(size = 10, 2)
+   *     val result = atomically {
+   *       tarr[5]
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *   }
+   * }
+   * ```
+   *
    * Throws if [i] is out of bounds.
    *
    * This function never retries.
    */
-  fun <A> TArray<A>.get(i: Int): A =
+  operator fun <A> TArray<A>.get(i: Int): A =
     v[i].read()
 
   /**
-   * Write a variable to the [TArray].
+   * Set a variable in the [TArray].
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TArray
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tarr = TArray.new(size = 10, 2)
+   *     val result = atomically {
+   *       tarr[5] = 3
+   *
+   *       tarr[5]
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *   }
+   * }
+   * ```
    *
    * Throws if [i] is out of bounds.
    *
    * This function never retries.
    */
-  fun <A> TArray<A>.write(i: Int, a: A): Unit =
+  operator fun <A> TArray<A>.set(i: Int, a: A): Unit =
     v[i].write(a)
 
   /**
    * Modify each element in a [TArray] by applying [f].
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TArray
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tarr = TArray.new(size = 10, 2)
+   *     val result = atomically {
+   *       tarr.transform { it + 1 }
+   *     }
+   *     //sampleEnd
+   *   }
+   * }
+   * ```
    *
    * This function never retries.
    */
@@ -583,45 +1313,376 @@ interface STM {
   /**
    * Fold a [TArray] to a single value.
    *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TArray
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tarr = TArray.new(size = 10, 2)
+   *     val result = atomically {
+   *       tarr.fold(0) { acc, v -> acc + v }
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *   }
+   * }
+   * ```
+   *
    * This function never retries.
    */
   fun <A, B> TArray<A>.fold(init: B, f: (B, A) -> B): B =
     v.fold(init) { acc, v -> f(acc, v.read()) }
 
   // -------- TMap
+  /**
+   * Check if a key [k] is in the map
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TMap
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * suspend fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tmap = TMap.new<Int, String>()
+   *     atomically {
+   *       tmap[1] = "Hello"
+   *
+   *       tmap.remove(1)
+   *     }
+   *     //sampleEnd
+   *   }
+   * }
+   * ```
+   *
+   * This function never retries.
+   */
   fun <K, V> TMap<K, V>.member(k: K): Boolean =
     lookup(k) != null
 
+  /**
+   * Lookup a value at the specific key [k]
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TMap
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * suspend fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tmap = TMap.new<Int, String>()
+   *     val result = atomically {
+   *       tmap[1] = "Hello"
+   *       tmap[2] = "World"
+   *
+   *       tmap.lookup(1)
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *   }
+   * }
+   * ```
+   *
+   * This function never retries.
+   */
   fun <K, V> TMap<K, V>.lookup(k: K): V? =
     lookupHamtWithHash(hamt, hashFn(k)) { it.first == k }?.second
 
+  /**
+   * Alias of [STM.lookup]
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TMap
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * suspend fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tmap = TMap.new<Int, String>()
+   *     val result = atomically {
+   *       tmap[1] = "Hello"
+   *       tmap[2] = "World"
+   *
+   *       tmap[2]
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *   }
+   * }
+   * ```
+   */
+  operator fun <K, V> TMap<K, V>.get(k: K): V? = lookup(k)
+
+  /**
+   * Add a key value pair to the map
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TMap
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * suspend fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tmap = TMap.new<Int, String>()
+   *     atomically {
+   *       tmap.insert(10, "Hello")
+   *     }
+   *     //sampleEnd
+   *   }
+   * }
+   * ```
+   */
   fun <K, V> TMap<K, V>.insert(k: K, v: V): Unit {
     alterHamtWithHash(hamt, hashFn(k), { it.first == k }) { k to v }
   }
 
+  /**
+   * Alias for [STM.insert]
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TMap
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * suspend fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tmap = TMap.new<Int, String>()
+   *     atomically {
+   *       tmap[1] = "Hello"
+   *     }
+   *     //sampleEnd
+   *   }
+   * }
+   * ```
+   */
+  operator fun <K, V> TMap<K, V>.set(k: K, v: V): Unit = insert(k, v)
+
+  /**
+   * Add a key value pair to the map
+   *
+   * ```kotlin:ank:playground
+   * import arrow.core.toT
+   * import arrow.fx.stm.TMap
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * suspend fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tmap = TMap.new<Int, String>()
+   *     atomically {
+   *       tmap + (1 toT "Hello")
+   *     }
+   *     //sampleEnd
+   *   }
+   * }
+   * ```
+   */
+  operator fun <K, V> TMap<K, V>.plus(kv: Tuple2<K, V>): Unit = insert(kv.a, kv.b)
+
+  /**
+   * Add a key value pair to the map
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TMap
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * suspend fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tmap = TMap.new<Int, String>()
+   *     atomically {
+   *       tmap + (1 to "Hello")
+   *     }
+   *     //sampleEnd
+   *   }
+   * }
+   * ```
+   */
+  operator fun <K, V> TMap<K, V>.plus(kv: Pair<K, V>): Unit = insert(kv.first, kv.second)
+
+  /**
+   * Update a value at a key if it exists.
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TMap
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * suspend fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tmap = TMap.new<Int, String>()
+   *     val result = atomically {
+   *       tmap[2] = "Hello"
+   *       tmap.update(2) { it.reversed() }
+   *       tmap[2]
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *   }
+   * }
+   * ```
+   */
   fun <K, V> TMap<K, V>.update(k: K, fn: (V) -> V): Unit {
     alterHamtWithHash(hamt, hashFn(k), { it.first == k }) { it?.second?.let(fn)?.let { k to it } }
   }
 
+  /**
+   * Remove a key value pair from a map
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TMap
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * suspend fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tmap = TMap.new<Int, String>()
+   *     atomically {
+   *       tmap[1] = "Hello"
+   *       tmap.remove(1)
+   *     }
+   *     //sampleEnd
+   *   }
+   * }
+   * ```
+   */
   fun <K, V> TMap<K, V>.remove(k: K): Unit {
     alterHamtWithHash(hamt, hashFn(k), { it.first == k }) { null }
   }
 
   // -------- TSet
+  /**
+   * Check if an element is already in the set
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TSet
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * suspend fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tset = TSet.new<String>()
+   *     val result = atomically {
+   *       tset.insert("Hello")
+   *       tset.member("Hello")
+   *     }
+   *     //sampleEnd
+   *     println("Result $result")
+   *   }
+   * }
+   * ```
+   */
   fun <A> TSet<A>.member(a: A): Boolean =
     lookupHamtWithHash(hamt, hashFn(a)) { it.second == a } != null
 
+  /**
+   * Adds an element to the set.
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TSet
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * suspend fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tset = TSet.new<String>()
+   *     atomically {
+   *       tset.insert("Hello")
+   *     }
+   *     //sampleEnd
+   *   }
+   * }
+   * ```
+   */
   fun <A> TSet<A>.insert(a: A): Unit {
     alterHamtWithHash(hamt, hashFn(a), { it.second == a }) { Unit to a }
   }
 
+  /**
+   * Adds an element to the set. Alias of [STM.insert].
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TSet
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * suspend fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tset = TSet.new<String>()
+   *     atomically {
+   *       tset + "Hello"
+   *     }
+   *     //sampleEnd
+   *   }
+   * }
+   * ```
+   */
+  operator fun <A> TSet<A>.plus(a: A): Unit = insert(a)
+
+  /**
+   * Remove an element from the set.
+   *
+   * ```kotlin:ank:playground
+   * import arrow.fx.stm.TSet
+   * import arrow.fx.stm.atomically
+   * import arrow.fx.coroutines.Environment
+   *
+   * suspend fun main() {
+   *   Environment().unsafeRunSync {
+   *     //sampleStart
+   *     val tset = TSet.new<String>()
+   *     atomically {
+   *       tset.insert("Hello")
+   *       tset.remove("Hello")
+   *     }
+   *     //sampleEnd
+   *   }
+   * }
+   * ```
+   */
   fun <A> TSet<A>.remove(a: A): Unit {
     alterHamtWithHash(hamt, hashFn(a), { it.second == a }) { null }
   }
 }
 
 /**
- * Helper to create stm blocks that can be run with [orElse]
+ * Helper to create stm blocks that can be run with [STM.orElse]
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.stm.atomically
+ * import arrow.fx.stm.stm
+ * import arrow.fx.coroutines.Environment
+ *
+ * suspend fun main() {
+ *   Environment().unsafeRunSync {
+ *     //sampleStart
+ *     val i = 4
+ *     val result = atomically {
+ *       stm {
+ *         if (i == 4) retry()
+ *         "Not 4"
+ *       } orElse { "4" }
+ *     }
+ *     //sampleEnd
+ *     println("Result $result")
+ *   }
+ * }
+ * ```
  *
  * Equal to [suspend] just with an [STM] receiver.
  */
@@ -629,6 +1690,27 @@ inline fun <A> stm(noinline f: STM.() -> A): STM.() -> A = f
 
 /**
  * Retry if [b] is false otherwise does nothing.
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.stm.atomically
+ * import arrow.fx.stm.stm
+ * import arrow.fx.coroutines.Environment
+ *
+ * suspend fun main() {
+ *   Environment().unsafeRunSync {
+ *     //sampleStart
+ *     val i = 4
+ *     val result = atomically {
+ *       stm {
+ *         check(i > 5) // This calls retry and aborts if i <= 5
+ *         "Larger than 5"
+ *       } orElse { "Smaller than or equal to 5" }
+ *     }
+ *     //sampleEnd
+ *     println("Result $result")
+ *   }
+ * }
+ * ```
  *
  * `check(b) = if (b.not()) retry() else Unit`
  */
