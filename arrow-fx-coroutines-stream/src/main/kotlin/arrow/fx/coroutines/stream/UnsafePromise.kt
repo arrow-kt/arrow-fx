@@ -1,5 +1,9 @@
-package arrow.fx.coroutines
+package arrow.fx.coroutines.stream
 
+import arrow.fx.coroutines.ArrowExceptionMessage
+import arrow.fx.coroutines.ArrowInternalException
+import arrow.fx.coroutines.CancelToken
+import arrow.fx.coroutines.ForkAndForget
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
 
@@ -7,7 +11,7 @@ import kotlinx.atomicfu.atomic
  * An eager Promise implementation to bridge results across processes internally.
  * @see ForkAndForget
  */
-class UnsafePromise<A> {
+internal class UnsafePromise<A> {
 
   private sealed class State<out A> {
     object Empty : State<Nothing>()
@@ -37,7 +41,7 @@ class UnsafePromise<A> {
   }
 
   suspend fun join(): A =
-    cancellable { cb ->
+    arrow.fx.coroutines.cancellable { cb ->
       get(cb)
       CancelToken { remove(cb) }
     }

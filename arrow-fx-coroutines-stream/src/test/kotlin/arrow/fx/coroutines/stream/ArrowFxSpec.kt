@@ -1,4 +1,4 @@
-package arrow.fx.coroutines
+package arrow.fx.coroutines.stream
 
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.property.Arb

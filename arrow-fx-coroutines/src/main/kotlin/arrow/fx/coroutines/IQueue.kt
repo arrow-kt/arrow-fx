@@ -111,7 +111,7 @@ data class IQueue<A> internal constructor(
   fun toList(): List<A> = listOut + listIn.reversed()
 }
 
-internal infix fun <A> A.prependTo(q: IQueue<A>): IQueue<A> =
+infix fun <A> A.prependTo(q: IQueue<A>): IQueue<A> =
   q.prepend(this)
 
 private val EmptyQueue: IQueue<Nothing> = IQueue(emptyList(), emptyList(), 0)

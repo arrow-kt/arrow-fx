@@ -1,18 +1,26 @@
-package arrow.fx.coroutines
+package arrow.fx.coroutines.stream
 
 import arrow.core.Either
 import arrow.core.identity
+import arrow.fx.coroutines.CancelToken
+import arrow.fx.coroutines.ComputationPool
+import arrow.fx.coroutines.ExitCase
+import arrow.fx.coroutines.ForkAndForget
+import arrow.fx.coroutines.Promise
+import arrow.fx.coroutines.Resource
+import arrow.fx.coroutines.guaranteeCase
+import io.kotest.property.Arb
+import io.kotest.property.arbitrary.constant
 import arrow.core.left
 import arrow.core.right
+import arrow.fx.coroutines.Environment
 import io.kotest.assertions.fail
 import io.kotest.matchers.Matcher
 import io.kotest.matchers.MatcherResult
 import io.kotest.matchers.shouldBe
-import io.kotest.property.Arb
 import io.kotest.property.arbitrary.bind
 import io.kotest.property.arbitrary.char
 import io.kotest.property.arbitrary.choice
-import io.kotest.property.arbitrary.constant
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.long
 import io.kotest.property.arbitrary.map
@@ -25,6 +33,7 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.ThreadFactory
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlin.coroutines.intrinsics.intercepted
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
@@ -52,9 +61,10 @@ class NamedThreadFactory(private val mkName: (Int) -> String) : ThreadFactory {
 }
 
 fun unsafeEquals(other: CancelToken): Matcher<CancelToken> = object : Matcher<CancelToken> {
+  val env = Environment(EmptyCoroutineContext)
   override fun test(value: CancelToken): MatcherResult {
-    val r1 = Platform.unsafeRunSync { value.cancel.invoke() }
-    val r2 = Platform.unsafeRunSync { other.cancel.invoke() }
+    val r1 = env.unsafeRunSync { value.cancel.invoke() }
+    val r2 = env.unsafeRunSync { other.cancel.invoke() }
     return MatcherResult(r1 == r2, "Expected: $r2 but found: $r1", "$r2 and $r1 should be equal")
   }
 }
