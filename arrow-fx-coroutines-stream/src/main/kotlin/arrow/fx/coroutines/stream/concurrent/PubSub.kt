@@ -7,10 +7,10 @@ import arrow.core.Some
 import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.IQueue
 import arrow.fx.coroutines.guaranteeCase
+import arrow.fx.coroutines.UnsafePromise
 import arrow.fx.coroutines.stream.Chunk
 import arrow.fx.coroutines.stream.Stream
 import arrow.fx.coroutines.stream.Token
-import arrow.fx.coroutines.stream.UnsafePromise
 import arrow.typeclasses.Eq
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
