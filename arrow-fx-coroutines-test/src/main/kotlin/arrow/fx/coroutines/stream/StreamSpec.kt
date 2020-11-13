@@ -1,5 +1,7 @@
 package arrow.fx.coroutines.stream
 
+import arrow.fx.coroutines.ArrowFxSpec
+import arrow.fx.coroutines.suspend
 import io.kotest.property.Arb
 import io.kotest.property.Shrinker
 import io.kotest.property.arbitrary.arb

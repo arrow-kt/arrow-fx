@@ -1,6 +1,6 @@
 package arrow.fx.coroutines.stream
 
-import arrow.core.extensions.list.zip.zipWith
+import arrow.fx.coroutines.ArrowFxSpec
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -149,7 +149,7 @@ class ChunkTest : ArrowFxSpec() {
 
     "Chunk - zipWith" {
       checkAll(Arb.chunk(Arb.int()), Arb.chunk(Arb.int())) { a, b ->
-        a.zipWith(b) { x, y -> x + y }.toList() shouldBe a.toList().zipWith(b.toList()) { x, y -> x + y }
+        a.zipWith(b) { x, y -> x + y }.toList() shouldBe a.toList().zip(b.toList()) { x, y -> x + y }
       }
     }
 

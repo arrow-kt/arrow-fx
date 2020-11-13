@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.ThreadFactory
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlin.coroutines.intrinsics.intercepted
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
@@ -52,9 +53,10 @@ class NamedThreadFactory(private val mkName: (Int) -> String) : ThreadFactory {
 }
 
 fun unsafeEquals(other: CancelToken): Matcher<CancelToken> = object : Matcher<CancelToken> {
+  val env = Environment(EmptyCoroutineContext)
   override fun test(value: CancelToken): MatcherResult {
-    val r1 = Platform.unsafeRunSync { value.cancel.invoke() }
-    val r2 = Platform.unsafeRunSync { other.cancel.invoke() }
+    val r1 = env.unsafeRunSync { value.cancel.invoke() }
+    val r2 = env.unsafeRunSync { other.cancel.invoke() }
     return MatcherResult(r1 == r2, "Expected: $r2 but found: $r1", "$r2 and $r1 should be equal")
   }
 }
@@ -140,13 +142,13 @@ fun Arb.Companion.unit(): Arb<Unit> =
   Arb.constant(Unit)
 
 /** Useful for testing success & error scenarios with an `Either` generator **/
-internal fun <A> Either<Throwable, A>.rethrow(): A =
+fun <A> Either<Throwable, A>.rethrow(): A =
   fold({ throw it }, ::identity)
 
-internal fun <A> Result<A>.toEither(): Either<Throwable, A> =
+fun <A> Result<A>.toEither(): Either<Throwable, A> =
   fold({ a -> Either.Right(a) }, { e -> Either.Left(e) })
 
-internal suspend fun Throwable.suspend(): Nothing =
+suspend fun Throwable.suspend(): Nothing =
   suspendCoroutineUninterceptedOrReturn { cont ->
     suspend { throw this }.startCoroutine(Continuation(ComputationPool) {
       cont.intercepted().resumeWith(it)
@@ -155,7 +157,7 @@ internal suspend fun Throwable.suspend(): Nothing =
     COROUTINE_SUSPENDED
   }
 
-internal suspend fun <A> A.suspend(): A =
+suspend fun <A> A.suspend(): A =
   suspendCoroutineUninterceptedOrReturn { cont ->
     suspend { this }.startCoroutine(Continuation(ComputationPool) {
       cont.intercepted().resumeWith(it)
@@ -164,10 +166,10 @@ internal suspend fun <A> A.suspend(): A =
     COROUTINE_SUSPENDED
   }
 
-internal fun <A> A.suspended(): suspend () -> A =
+fun <A> A.suspended(): suspend () -> A =
   suspend { suspend() }
 
-internal suspend fun <A> Either<Throwable, A>.suspend(): A =
+suspend fun <A> Either<Throwable, A>.suspend(): A =
   suspendCoroutineUninterceptedOrReturn { cont ->
     suspend { this }.startCoroutine(Continuation(ComputationPool) {
       it.fold(
@@ -184,7 +186,7 @@ internal suspend fun <A> Either<Throwable, A>.suspend(): A =
     COROUTINE_SUSPENDED
   }
 
-internal fun <A> Either<Throwable, A>.suspended(): suspend () -> A =
+fun <A> Either<Throwable, A>.suspended(): suspend () -> A =
   suspend { suspend() }
 
 /**
@@ -207,7 +209,7 @@ inline fun <A> assertThrowable(executable: () -> A): Throwable {
   return if (a is Throwable) a else fail("Expected an exception but found: $a")
 }
 
-internal suspend fun CoroutineContext.shift(): Unit =
+suspend fun CoroutineContext.shift(): Unit =
   suspendCoroutineUninterceptedOrReturn { cont ->
     suspend { this }.startCoroutine(Continuation(this) {
       cont.resume(Unit)

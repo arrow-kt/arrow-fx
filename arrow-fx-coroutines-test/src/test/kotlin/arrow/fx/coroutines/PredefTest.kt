@@ -7,8 +7,8 @@ import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.string
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.EmptyCoroutineContext
-import kotlin.coroutines.intrinsics.startCoroutineUninterceptedOrReturn
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
+import kotlin.coroutines.intrinsics.startCoroutineUninterceptedOrReturn
 
 class PredefTest : ArrowFxSpec(spec = {
 

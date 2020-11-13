@@ -1,5 +1,6 @@
 package arrow.fx.coroutines.stream
 
+import arrow.fx.coroutines.ArrowFxSpec
 import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.Promise

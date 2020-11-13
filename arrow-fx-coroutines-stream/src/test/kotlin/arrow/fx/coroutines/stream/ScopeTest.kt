@@ -2,6 +2,7 @@ package arrow.fx.coroutines.stream
 
 import arrow.core.Right
 import arrow.core.extensions.list.foldable.foldMap
+import arrow.fx.coroutines.ArrowFxSpec
 import arrow.fx.coroutines.Atomic
 import arrow.fx.coroutines.Resource
 import io.kotest.matchers.shouldBe
