@@ -251,11 +251,11 @@ class ConcurrentVarTest : ArrowFxSpec(spec = {
         finished.complete(Unit)
       }
     }
-    sleep(10.milliseconds)
+    sleep(100.milliseconds)
     fiber.cancel()
-    started.get() shouldBe 10
+    started.tryGet() shouldBe 10
     finished.tryGet() shouldBe null
-    mVar.take() shouldBe 10
+    mVar.tryTake() shouldBe 10
   }
 
   "modify applies the correct value, returns the second parameter and sets the first" {
