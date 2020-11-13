@@ -37,8 +37,8 @@ fun STM.newTSem(initial: Int): TSem = TSem(newTVar(checkNotNegative(initial)))
  * }
  * ```
  *
- * Should there be not enough permits (remaining after [STM.acquire] has to greater than 0) the transaction will retry and wait until there are
- *  enough permits available. [STM.tryAcquire] can be used to avoid this behaviour as it returns whether or not acquisition was successful.
+ * Should there be not enough permits the transaction will retry and wait until there are enough permits available again.
+ *  [STM.tryAcquire] can be used to avoid this behaviour as it returns whether or not acquisition was successful.
  *
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TSem
