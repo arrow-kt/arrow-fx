@@ -586,6 +586,9 @@ interface STM {
    *   }
    * }
    * ```
+   *
+   * > Because the state of a transaction is constant there can never be a race condition between checking if a `TMVar` is empty and subsequent
+   *  reads in the *same* transaction.
    */
   fun <A> TMVar<A>.isEmpty(): Boolean = v.read() is Option.None
 
@@ -609,6 +612,9 @@ interface STM {
    *   }
    * }
    * ```
+   *
+   * > Because the state of a transaction is constant there can never be a race condition between checking if a `TMVar` is empty and subsequent
+   *  reads in the *same* transaction.
    */
   fun <A> TMVar<A>.isNotEmpty(): Boolean =
     isEmpty().not()
@@ -1111,6 +1117,8 @@ interface STM {
    * ```
    *
    * This function never retries.
+   *
+   * > This function has to access both [TVar]'s and thus may lead to increased contention, use sparingly.
    */
   fun <A> TQueue<A>.isEmpty(): Boolean =
     reads.read().isEmpty() && writes.read().isEmpty()
@@ -1137,6 +1145,8 @@ interface STM {
    * ```
    *
    * This function never retries.
+   *
+   * > This function has to access both [TVar]'s and thus may lead to increased contention, use sparingly.
    */
   fun <A> TQueue<A>.isNotEmpty(): Boolean =
     reads.read().isNotEmpty() || writes.read().isNotEmpty()
@@ -1164,6 +1174,8 @@ interface STM {
    * ```
    *
    * This function never retries.
+   *
+   * > This function has to access both [TVar]'s and thus may lead to increased contention, use sparingly.
    */
   fun <A> TQueue<A>.filter(pred: (A) -> Boolean): Unit {
     reads.modify { it.filter(pred) }
@@ -1193,6 +1205,8 @@ interface STM {
    * ```
    *
    * This function never retries.
+   *
+   * > This function has to access both [TVar]'s and thus may lead to increased contention, use sparingly.
    */
   fun <A> TQueue<A>.filterNot(pred: (A) -> Boolean): Unit {
     reads.modify { it.filterNot(pred) }
@@ -1220,9 +1234,9 @@ interface STM {
    * }
    * ```
    *
-   * This function is not cheap, it iterates all elements!
-   *
    * This function never retries.
+   *
+   * > This function has to access both [TVar]'s and thus may lead to increased contention, use sparingly.
    */
   fun <A> TQueue<A>.size(): Int = reads.read().size() + writes.read().size()
 
@@ -1388,7 +1402,7 @@ interface STM {
    * }
    * ```
    *
-   * This function never retries.
+   * > If the key is not present [STM.lookup] will not retry, instead it returns `null`.
    */
   fun <K, V> TMap<K, V>.lookup(k: K): V? =
     lookupHamtWithHash(hamt, hashFn(k)) { it.first == k }?.second
@@ -1416,6 +1430,8 @@ interface STM {
    *   }
    * }
    * ```
+   *
+   * > If the key is not present [STM.get] will not retry, instead it returns `null`.
    */
   operator fun <K, V> TMap<K, V>.get(k: K): V? = lookup(k)
 
