@@ -68,7 +68,7 @@ fun <A> STM.newEmptyTMVar(): TMVar<A> = TMVar<A>(newTVar(Option.None))
  *
  * Another effect of using either [STM.take] or [STM.tryTake] is that the [TMVar] will be empty after a successful call. Alternatively if you just
  *  want to read without emptying you can use either [STM.read] or [STM.tryRead] which will not remove the value.
- *  As with [STM.take] [STM.read] will fail and retry the transaction should the [TMVar] be empty, whereas [STM.tryRead] will return null instead.
+ *  As with [STM.take] [STM.read] will fail and retry the transaction should the [TMVar] be empty, whereas [STM.tryTake] and [STM.tryRead] will return null instead.
  *
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TMVar
