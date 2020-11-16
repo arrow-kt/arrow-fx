@@ -13,11 +13,9 @@ import arrow.fx.coroutines.ForkConnected
 import arrow.fx.coroutines.Platform
 import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.SuspendConnection
-import arrow.fx.coroutines.deleteFirst
 import arrow.fx.coroutines.guarantee
 import arrow.fx.coroutines.prependTo
 import arrow.fx.coroutines.raceN
-import arrow.fx.coroutines.uncons
 import kotlin.coroutines.coroutineContext
 
 /**

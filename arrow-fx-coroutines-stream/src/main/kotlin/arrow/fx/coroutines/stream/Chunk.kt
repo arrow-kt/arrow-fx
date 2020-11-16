@@ -1,9 +1,7 @@
 package arrow.fx.coroutines.stream
 
 import arrow.fx.coroutines.IQueue
-import arrow.fx.coroutines.isEmpty
 import arrow.fx.coroutines.prependTo
-import arrow.fx.coroutines.size
 import kotlin.math.max
 import kotlin.math.min
 
@@ -973,9 +971,9 @@ abstract class Chunk<out O> {
               val next = rem.first()
               val nextSize = next.size()
               when {
-                nextSize < toDrop -> loop(rem.tailOrNull()!!, toDrop - nextSize)
-                nextSize == toDrop -> Queue(rem.tailOrNull()!!, size - n)
-                else -> Queue(next.drop(toDrop) prependTo rem.tailOrNull()!!, size - n)
+                nextSize < toDrop -> loop(rem.tail(), toDrop - nextSize)
+                nextSize == toDrop -> Queue(rem.tail(), size - n)
+                else -> Queue(next.drop(toDrop) prependTo rem.tail(), size - n)
               }
             }
           loop(chunks, n)

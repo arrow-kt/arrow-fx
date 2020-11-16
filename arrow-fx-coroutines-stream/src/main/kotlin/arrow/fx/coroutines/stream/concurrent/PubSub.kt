@@ -11,6 +11,7 @@ import arrow.fx.coroutines.UnsafePromise
 import arrow.fx.coroutines.stream.Chunk
 import arrow.fx.coroutines.stream.Stream
 import arrow.fx.coroutines.stream.Token
+import arrow.fx.coroutines.stream.tail
 import arrow.typeclasses.Eq
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
@@ -607,10 +608,10 @@ internal class DefaultPubSub<I, O, QS, S>(private val strategy: PubSub.Strategy<
         when (chunk) {
           is Some -> {
             val action = { acc?.invoke(); sub.complete(chunk.t) }
-            if (!strategy.empty(queue)) consumeSubscribersLoop(ps, queue, remains.tailOrNull()!!, keep, action)
-            else Pair(ps.copy(queue = queue, subscribers = keep.enqueue(remains.tailOrNull()!!)), action)
+            if (!strategy.empty(queue)) consumeSubscribersLoop(ps, queue, remains.tail(), keep, action)
+            else Pair(ps.copy(queue = queue, subscribers = keep.enqueue(remains.tail())), action)
           }
-          None -> consumeSubscribersLoop(ps, queue, remains.tailOrNull()!!, keep.enqueue(sub), acc)
+          None -> consumeSubscribersLoop(ps, queue, remains.tail(), keep.enqueue(sub), acc)
         }
       }
     }
@@ -636,9 +637,9 @@ internal class DefaultPubSub<I, O, QS, S>(private val strategy: PubSub.Strategy<
         if (strategy.accepts(first.i, queue)) {
           val queue1 = strategy.publish(first.i, queue)
           val action = { acc?.invoke(); first.complete() }
-          publishPublishersLoop(ps, queue1, remains.tailOrNull()!!, keep, action)
+          publishPublishersLoop(ps, queue1, remains.tail(), keep, action)
         } else {
-          publishPublishersLoop(ps, queue, remains.tailOrNull()!!, keep.enqueue(first), acc)
+          publishPublishersLoop(ps, queue, remains.tail(), keep.enqueue(first), acc)
         }
       }
     }
