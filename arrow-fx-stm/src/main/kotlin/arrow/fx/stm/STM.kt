@@ -206,9 +206,12 @@ import arrow.fx.stm.internal.lookupHamtWithHash
 // TODO Explore this https://dl.acm.org/doi/pdf/10.1145/2976002.2976020 when benchmarks are set up
 interface STM {
   /**
-   * Rerun the current transaction.
+   * Abort and retry the current transaction.
    *
-   * Aborts the transaction and suspends until any of the accessed [TVar]'s changed, after which the transaction restarts.
+   * Aborts the transaction and suspends until any of the accessed [TVar]'s changed, after which the transaction will restart.
+   * Since all other datastructures are built upon [TVar]'s this automatically extends to those structures as well.
+   *
+   * The main use for this is to abort once the transaction has hit an invalid state or otherwise needs to wait for changes.
    *
    * ```kotlin:ank:playground
    * import arrow.fx.stm.atomically
