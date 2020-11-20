@@ -1,9 +1,5 @@
 package arrow.fx.stm
 
-import arrow.fx.coroutines.AtomicRefW
-import arrow.fx.coroutines.Duration
-import arrow.fx.coroutines.ForkConnected
-import arrow.fx.coroutines.sleep
 import arrow.fx.stm.internal.STMFrame
 import arrow.fx.stm.internal.STMTransaction
 import kotlinx.atomicfu.AtomicLong
@@ -11,17 +7,6 @@ import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
 import kotlin.coroutines.resume
-
-/**
- * Utility to create [TVar] which sets its value to true after a [delay].
- */
-suspend fun registerDelay(delay: Duration): TVar<Boolean> =
-  TVar.new(false).also { v ->
-    ForkConnected {
-      sleep(delay)
-      atomically { v.write(true) }
-    }
-  }
 
 /**
  * A [TVar] is a mutable reference that can only be (safely) accessed inside a [STM] transaction.
@@ -60,18 +45,15 @@ suspend fun registerDelay(delay: Duration): TVar<Boolean> =
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TVar
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tvar = TVar.new(10)
- *     val result = atomically {
- *       tvar.read()
- *     }
- *     //sampleEnd
- *     println(result)
+ *   //sampleStart
+ *   val tvar = TVar.new(10)
+ *   val result = atomically {
+ *     tvar.read()
  *   }
+ *   //sampleEnd
+ *   println(result)
  * }
  * ```
  *
@@ -89,18 +71,15 @@ suspend fun registerDelay(delay: Duration): TVar<Boolean> =
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TVar
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tvar = TVar.new(10)
- *     val result = atomically {
- *       tvar.write(20)
- *     }
- *     //sampleEnd
- *     println(result)
+ *   //sampleStart
+ *   val tvar = TVar.new(10)
+ *   val result = atomically {
+ *     tvar.write(20)
  *   }
+ *   //sampleEnd
+ *   println(result)
  * }
  * ```
  *
@@ -109,18 +88,15 @@ suspend fun registerDelay(delay: Duration): TVar<Boolean> =
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TVar
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tvar = TVar.new(10)
- *     val result = atomically {
- *       tvar.modify { it * 2 }
- *     }
- *     //sampleEnd
- *     println(result)
+ *   //sampleStart
+ *   val tvar = TVar.new(10)
+ *   val result = atomically {
+ *     tvar.modify { it * 2 }
  *   }
+ *   //sampleEnd
+ *   println(result)
  * }
  * ```
  *
@@ -129,19 +105,16 @@ suspend fun registerDelay(delay: Duration): TVar<Boolean> =
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TVar
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tvar = TVar.new(10)
- *     val result = atomically {
- *       tvar.swap(20)
- *     }
- *     //sampleEnd
- *     println("Result $result")
- *     println("New value ${tvar.unsafeRead()}")
+ *   //sampleStart
+ *   val tvar = TVar.new(10)
+ *   val result = atomically {
+ *     tvar.swap(20)
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
+ *   println("New value ${tvar.unsafeRead()}")
  * }
  * ```
  */
@@ -200,7 +173,7 @@ class TVar<A> internal constructor(a: A) {
    * Release a lock held by [frame].
    *
    * If [frame] no longer has the lock (a write happened and now read
-   *  tries to unlock) it is ignored (By the semantics of [AtomicRefW.compareAndSet])
+   *  tries to unlock) it is ignored
    */
   internal fun release(frame: STMFrame, a: A): Unit {
     ref.compareAndSet(frame, a as Any?)

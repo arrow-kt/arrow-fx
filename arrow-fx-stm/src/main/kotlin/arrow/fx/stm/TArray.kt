@@ -19,19 +19,18 @@ fun <A> STM.newTArray(xs: Iterable<A>): TArray<A> =
  * ```kotlin:ank
  * import arrow.fx.stm.TArray
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun example() {
- * //sampleStart
- * // Create a size 10 array and fill it by using the construction function.
- * TArray.new(10) { i -> i * 2 }
- * // Create a size 10 array and fill it with a constant
- * TArray.new(size = 10, 2)
- * // Create an array from `vararg` arguments:
- * TArray.new(5, 2, 10, 600)
- * // Create an array from any iterable
- * TArray.new(listOf(5,4,3,2))
- * //sampleEnd
+ *   //sampleStart
+ *   // Create a size 10 array and fill it by using the construction function.
+ *   TArray.new(10) { i -> i * 2 }
+ *   // Create a size 10 array and fill it with a constant
+ *   TArray.new(size = 10, 2)
+ *   // Create an array from `vararg` arguments:
+ *   TArray.new(5, 2, 10, 600)
+ *   // Create an array from any iterable
+ *   TArray.new(listOf(5,4,3,2))
+ *   //sampleEnd
  * }
  * ```
  *
@@ -40,18 +39,15 @@ fun <A> STM.newTArray(xs: Iterable<A>): TArray<A> =
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TArray
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
- * fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tarr = TArray.new(size = 10, 2)
- *     val result = atomically {
- *       tarr[5]
- *     }
- *     //sampleEnd
- *     println("Result $result")
+ * suspend fun main() {
+ *   //sampleStart
+ *   val tarr = TArray.new(size = 10, 2)
+ *   val result = atomically {
+ *     tarr[5]
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
  * }
  * ```
  *
@@ -60,20 +56,17 @@ fun <A> STM.newTArray(xs: Iterable<A>): TArray<A> =
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TArray
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
- * fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tarr = TArray.new(size = 10, 2)
- *     val result = atomically {
- *       tarr[5] = 3
+ * suspend fun main() {
+ *   //sampleStart
+ *   val tarr = TArray.new(size = 10, 2)
+ *   val result = atomically {
+ *     tarr[5] = 3
  *
- *       tarr[5]
- *     }
- *     //sampleEnd
- *     println("Result $result")
+ *     tarr[5]
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
  * }
  * ```
  *
@@ -82,17 +75,14 @@ fun <A> STM.newTArray(xs: Iterable<A>): TArray<A> =
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TArray
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
- * fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tarr = TArray.new(size = 10, 2)
- *     val result = atomically {
- *       tarr.transform { it + 1 }
- *     }
- *     //sampleEnd
+ * suspend fun main() {
+ *   //sampleStart
+ *   val tarr = TArray.new(size = 10, 2)
+ *   val result = atomically {
+ *     tarr.transform { it + 1 }
  *   }
+ *   //sampleEnd
  * }
  * ```
  *
@@ -101,18 +91,15 @@ fun <A> STM.newTArray(xs: Iterable<A>): TArray<A> =
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TArray
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
- * fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tarr = TArray.new(size = 10, 2)
- *     val result = atomically {
- *       tarr.fold(0) { acc, v -> acc + v }
- *     }
- *     //sampleEnd
- *     println("Result $result")
+ * suspend fun main() {
+ *   //sampleStart
+ *   val tarr = TArray.new(size = 10, 2)
+ *   val result = atomically {
+ *     tarr.fold(0) { acc, v -> acc + v }
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
  * }
  * ```
  */

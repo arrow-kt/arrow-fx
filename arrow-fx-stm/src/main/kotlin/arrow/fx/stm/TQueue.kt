@@ -25,20 +25,17 @@ fun <A> STM.newTQueue(): TQueue<A> = TQueue(newTVar(PList.Nil), newTVar(PList.Ni
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TQueue
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tq = TQueue.new<Int>()
- *     atomically {
- *       tq.write(2)
- *       // or alternatively
- *       tq + 4
- *     }
- *     //sampleEnd
- *     println("Items in queue ${atomically { tq.flush() }}")
+ *   //sampleStart
+ *   val tq = TQueue.new<Int>()
+ *   atomically {
+ *     tq.write(2)
+ *     // or alternatively
+ *     tq + 4
  *   }
+ *   //sampleEnd
+ *   println("Items in queue ${atomically { tq.flush() }}")
  * }
  * ```
  *
@@ -47,19 +44,16 @@ fun <A> STM.newTQueue(): TQueue<A> = TQueue(newTVar(PList.Nil), newTVar(PList.Ni
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TQueue
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tq = TQueue.new<Int>()
- *     atomically {
- *       tq.write(1)
- *       tq.writeFront(2)
- *     }
- *     //sampleEnd
- *     println("Items in queue ${atomically { tq.flush() }}")
+ *   //sampleStart
+ *   val tq = TQueue.new<Int>()
+ *   atomically {
+ *     tq.write(1)
+ *     tq.writeFront(2)
  *   }
+ *   //sampleEnd
+ *   println("Items in queue ${atomically { tq.flush() }}")
  * }
  * ```
  *
@@ -70,20 +64,17 @@ fun <A> STM.newTQueue(): TQueue<A> = TQueue(newTVar(PList.Nil), newTVar(PList.Ni
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TQueue
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tq = TQueue.new<Int>()
- *     val result = atomically {
- *       tq.write(2)
- *       tq.read()
- *     }
- *     //sampleEnd
- *     println("Result $result")
- *     println("Items in queue ${atomically { tq.flush() }}")
+ *   //sampleStart
+ *   val tq = TQueue.new<Int>()
+ *   val result = atomically {
+ *     tq.write(2)
+ *     tq.read()
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
+ *   println("Items in queue ${atomically { tq.flush() }}")
  * }
  * ```
  *
@@ -93,19 +84,16 @@ fun <A> STM.newTQueue(): TQueue<A> = TQueue(newTVar(PList.Nil), newTVar(PList.Ni
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TQueue
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tq = TQueue.new<Int>()
- *     val result = atomically {
- *       tq.tryRead()
- *     }
- *     //sampleEnd
- *     println("Result $result")
- *     println("Items in queue ${atomically { tq.flush() }}")
+ *   //sampleStart
+ *   val tq = TQueue.new<Int>()
+ *   val result = atomically {
+ *     tq.tryRead()
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
+ *   println("Items in queue ${atomically { tq.flush() }}")
  * }
  * ```
  *
@@ -114,21 +102,18 @@ fun <A> STM.newTQueue(): TQueue<A> = TQueue(newTVar(PList.Nil), newTVar(PList.Ni
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TQueue
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tq = TQueue.new<Int>()
- *     val result = atomically {
- *       tq.write(2)
+ *   //sampleStart
+ *   val tq = TQueue.new<Int>()
+ *   val result = atomically {
+ *     tq.write(2)
  *
- *       tq.peek()
- *     }
- *     //sampleEnd
- *     println("Result $result")
- *     println("Items in queue ${atomically { tq.flush() }}")
+ *     tq.peek()
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
+ *   println("Items in queue ${atomically { tq.flush() }}")
  * }
  * ```
  *
@@ -137,19 +122,16 @@ fun <A> STM.newTQueue(): TQueue<A> = TQueue(newTVar(PList.Nil), newTVar(PList.Ni
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TQueue
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tq = TQueue.new<Int>()
- *     val result = atomically {
- *       tq.tryPeek()
- *     }
- *     //sampleEnd
- *     println("Result $result")
- *     println("Items in queue ${atomically { tq.flush() }}")
+ *   //sampleStart
+ *   val tq = TQueue.new<Int>()
+ *   val result = atomically {
+ *     tq.tryPeek()
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
+ *   println("Items in queue ${atomically { tq.flush() }}")
  * }
  * ```
  *
@@ -158,22 +140,19 @@ fun <A> STM.newTQueue(): TQueue<A> = TQueue(newTVar(PList.Nil), newTVar(PList.Ni
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TQueue
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tq = TQueue.new<Int>()
- *     val result = atomically {
- *       tq.write(2)
- *       tq.write(4)
+ *   //sampleStart
+ *   val tq = TQueue.new<Int>()
+ *   val result = atomically {
+ *     tq.write(2)
+ *     tq.write(4)
  *
- *       tq.flush()
- *     }
- *     //sampleEnd
- *     println("Result $result")
- *     println("Items in queue ${atomically { tq.flush() }}")
+ *     tq.flush()
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
+ *   println("Items in queue ${atomically { tq.flush() }}")
  * }
  * ```
  *
@@ -184,18 +163,15 @@ fun <A> STM.newTQueue(): TQueue<A> = TQueue(newTVar(PList.Nil), newTVar(PList.Ni
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TQueue
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tq = TQueue.new<Int>()
- *     val result = atomically {
- *       tq.isEmpty()
- *     }
- *     //sampleEnd
- *     println("Result $result")
+ *   //sampleStart
+ *   val tq = TQueue.new<Int>()
+ *   val result = atomically {
+ *     tq.isEmpty()
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
  * }
  * ```
  *
@@ -204,18 +180,15 @@ fun <A> STM.newTQueue(): TQueue<A> = TQueue(newTVar(PList.Nil), newTVar(PList.Ni
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TQueue
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tq = TQueue.new<Int>()
- *     val result = atomically {
- *       tq.size()
- *     }
- *     //sampleEnd
- *     println("Result $result")
+ *   //sampleStart
+ *   val tq = TQueue.new<Int>()
+ *   val result = atomically {
+ *     tq.size()
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
  * }
  * ```
  *
@@ -228,19 +201,16 @@ fun <A> STM.newTQueue(): TQueue<A> = TQueue(newTVar(PList.Nil), newTVar(PList.Ni
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TQueue
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tq = TQueue.new<Int>()
- *     atomically {
- *       tq.write(0)
- *       tq.filter { it != 0 }
- *     }
- *     //sampleEnd
- *     println("Items in queue ${atomically { tq.flush() }}")
+ *   //sampleStart
+ *   val tq = TQueue.new<Int>()
+ *   atomically {
+ *     tq.write(0)
+ *     tq.filter { it != 0 }
  *   }
+ *   //sampleEnd
+ *   println("Items in queue ${atomically { tq.flush() }}")
  * }
  * ```
  *

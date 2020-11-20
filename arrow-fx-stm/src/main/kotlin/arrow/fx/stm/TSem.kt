@@ -1,11 +1,9 @@
 package arrow.fx.stm
 
-import arrow.fx.coroutines.Semaphore
-
 fun STM.newTSem(initial: Int): TSem = TSem(newTVar(checkNotNegative(initial)))
 
 /**
- * [TSem] is the transactional analog to [Semaphore].
+ * [TSem] is the transactional Semaphore.
  *
  * Semaphores are mostly used to limit concurrent access to resources by how many permits it can give out.
  *
@@ -19,21 +17,18 @@ fun STM.newTSem(initial: Int): TSem = TSem(newTVar(checkNotNegative(initial)))
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TSem
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tsem = TSem.new(5)
- *     atomically {
- *       // acquire one permit
- *       tsem.acquire()
- *       // acquire 3 permits
- *       tsem.acquire(3)
- *     }
- *     //sampleEnd
- *     println("Permits remaining ${atomically { tsem.available() }}")
+ *   //sampleStart
+ *   val tsem = TSem.new(5)
+ *   atomically {
+ *     // acquire one permit
+ *     tsem.acquire()
+ *     // acquire 3 permits
+ *     tsem.acquire(3)
  *   }
+ *   //sampleEnd
+ *   println("Permits remaining ${atomically { tsem.available() }}")
  * }
  * ```
  *
@@ -43,19 +38,16 @@ fun STM.newTSem(initial: Int): TSem = TSem(newTVar(checkNotNegative(initial)))
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TSem
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tsem = TSem.new(0)
- *     val result = atomically {
- *       tsem.tryAcquire()
- *     }
- *     //sampleEnd
- *     println("Result $result")
- *     println("Permits remaining ${atomically { tsem.available() }}")
+ *   //sampleStart
+ *   val tsem = TSem.new(0)
+ *   val result = atomically {
+ *     tsem.tryAcquire()
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
+ *   println("Permits remaining ${atomically { tsem.available() }}")
  * }
  * ```
  *
@@ -66,18 +58,15 @@ fun STM.newTSem(initial: Int): TSem = TSem(newTVar(checkNotNegative(initial)))
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TSem
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tsem = TSem.new(5)
- *     atomically {
- *       tsem.release()
- *     }
- *     //sampleEnd
- *     println("Permits remaining ${atomically { tsem.available() }}")
+ *   //sampleStart
+ *   val tsem = TSem.new(5)
+ *   atomically {
+ *     tsem.release()
  *   }
+ *   //sampleEnd
+ *   println("Permits remaining ${atomically { tsem.available() }}")
  * }
  * ```
  *
@@ -91,19 +80,16 @@ fun STM.newTSem(initial: Int): TSem = TSem(newTVar(checkNotNegative(initial)))
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TSem
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tsem = TSem.new(5)
- *     val result = atomically {
- *       tsem.available()
- *     }
- *     //sampleEnd
- *     println("Result $result")
- *     println("Permits remaining ${atomically { tsem.available() }}")
+ *   //sampleStart
+ *   val tsem = TSem.new(5)
+ *   val result = atomically {
+ *     tsem.available()
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
+ *   println("Permits remaining ${atomically { tsem.available() }}")
  * }
  * ```
  *

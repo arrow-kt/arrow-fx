@@ -31,18 +31,15 @@ fun <A> STM.newTSet(hash: Hash<A>): TSet<A> = newTSet { hash.run { it.hash() } }
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TSet
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tset = TSet.new<String>()
- *     atomically {
- *       tset.insert("Hello")
- *       tset + "World"
- *     }
- *     //sampleEnd
+ *   //sampleStart
+ *   val tset = TSet.new<String>()
+ *   atomically {
+ *     tset.insert("Hello")
+ *     tset + "World"
  *   }
+ *   //sampleEnd
  * }
  * ```
  *
@@ -51,18 +48,15 @@ fun <A> STM.newTSet(hash: Hash<A>): TSet<A> = newTSet { hash.run { it.hash() } }
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TSet
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tset = TSet.new<String>()
- *     atomically {
- *       tset.insert("Hello")
- *       tset.remove("Hello")
- *     }
- *     //sampleEnd
+ *   //sampleStart
+ *   val tset = TSet.new<String>()
+ *   atomically {
+ *     tset.insert("Hello")
+ *     tset.remove("Hello")
  *   }
+ *   //sampleEnd
  * }
  * ```
  *
@@ -71,19 +65,16 @@ fun <A> STM.newTSet(hash: Hash<A>): TSet<A> = newTSet { hash.run { it.hash() } }
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TSet
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tset = TSet.new<String>()
- *     val result = atomically {
- *       tset.insert("Hello")
- *       tset.member("Hello")
- *     }
- *     //sampleEnd
- *     println("Result $result")
+ *   //sampleStart
+ *   val tset = TSet.new<String>()
+ *   val result = atomically {
+ *     tset.insert("Hello")
+ *     tset.member("Hello")
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
  * }
  * ```
  *

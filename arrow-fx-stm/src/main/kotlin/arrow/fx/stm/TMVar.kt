@@ -1,13 +1,10 @@
 package arrow.fx.stm
 
-import arrow.fx.coroutines.ConcurrentVar
-
 fun <A> STM.newTMVar(a: A): TMVar<A> = TMVar<A>(newTVar(Option.Some(a)))
 fun <A> STM.newEmptyTMVar(): TMVar<A> = TMVar<A>(newTVar(Option.None))
 
 /**
- * A [TMVar] is the [STM] analog to [ConcurrentVar].
- * It represents a reference that is either empty or full.
+ * A [TMVar] is a mutable reference that can either be empty or hold a value.
  *
  * The main use for [TMVar] is as a synchronization primitive as it can be used to force other transactions
  *  to wait until a [TMVar] is full.
@@ -26,19 +23,16 @@ fun <A> STM.newEmptyTMVar(): TMVar<A> = TMVar<A>(newTVar(Option.None))
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TMVar
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tmvar = TMVar.new(10)
- *     val result = atomically {
- *       tmvar.take()
- *     }
- *     //sampleEnd
- *     println("Result $result")
- *     println("New value ${atomically { tmvar.tryTake() } }")
+ *   //sampleStart
+ *   val tmvar = TMVar.new(10)
+ *   val result = atomically {
+ *     tmvar.take()
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
+ *   println("New value ${atomically { tmvar.tryTake() } }")
  * }
  * ```
  *
@@ -50,19 +44,16 @@ fun <A> STM.newEmptyTMVar(): TMVar<A> = TMVar<A>(newTVar(Option.None))
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TMVar
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tmvar = TMVar.empty<Int>()
- *     val result = atomically {
- *       tmvar.tryTake()
- *     }
- *     //sampleEnd
- *     println("Result $result")
- *     println("New value ${atomically { tmvar.tryTake() } }")
+ *   //sampleStart
+ *   val tmvar = TMVar.empty<Int>()
+ *   val result = atomically {
+ *     tmvar.tryTake()
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
+ *   println("New value ${atomically { tmvar.tryTake() } }")
  * }
  * ```
  *
@@ -73,37 +64,31 @@ fun <A> STM.newEmptyTMVar(): TMVar<A> = TMVar<A>(newTVar(Option.None))
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TMVar
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tmvar = TMVar.new(30)
- *     val result = atomically {
- *       tmvar.read()
- *     }
- *     //sampleEnd
- *     println("Result $result")
- *     println("New value ${atomically { tmvar.tryTake() } }")
+ *   //sampleStart
+ *   val tmvar = TMVar.new(30)
+ *   val result = atomically {
+ *     tmvar.read()
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
+ *   println("New value ${atomically { tmvar.tryTake() } }")
  * }
  * ```
  *
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TMVar
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tmvar = TMVar.empty<Int>()
- *     val result = atomically {
- *       tmvar.tryRead()
- *     }
- *     //sampleEnd
- *     println("Result $result")
+ *   //sampleStart
+ *   val tmvar = TMVar.empty<Int>()
+ *   val result = atomically {
+ *     tmvar.tryRead()
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
  * }
  * ```
  *
@@ -114,18 +99,15 @@ fun <A> STM.newEmptyTMVar(): TMVar<A> = TMVar<A>(newTVar(Option.None))
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TMVar
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tmvar = TMVar.empty<Int>()
- *     atomically {
- *       tmvar.put(20)
- *     }
- *     //sampleEnd
- *     println("New value ${atomically { tmvar.tryTake() } }")
+ *   //sampleStart
+ *   val tmvar = TMVar.empty<Int>()
+ *   atomically {
+ *     tmvar.put(20)
  *   }
+ *   //sampleEnd
+ *   println("New value ${atomically { tmvar.tryTake() } }")
  * }
  * ```
  *
@@ -135,19 +117,16 @@ fun <A> STM.newEmptyTMVar(): TMVar<A> = TMVar<A>(newTVar(Option.None))
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TMVar
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tmvar = TMVar.new(20)
- *     val result = atomically {
- *       tmvar.tryPut(30)
- *     }
- *     //sampleEnd
- *     println("Result $result")
- *     println("New value ${atomically { tmvar.tryTake() } }")
+ *   //sampleStart
+ *   val tmvar = TMVar.new(20)
+ *   val result = atomically {
+ *     tmvar.tryPut(30)
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
+ *   println("New value ${atomically { tmvar.tryTake() } }")
  * }
  * ```
  *
@@ -156,19 +135,16 @@ fun <A> STM.newEmptyTMVar(): TMVar<A> = TMVar<A>(newTVar(Option.None))
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TMVar
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tmvar = TMVar.new(30)
- *     val result = atomically {
- *       tmvar.swap(40)
- *     }
- *     //sampleEnd
- *     println("Result $result")
- *     println("New value ${atomically { tmvar.tryTake() } }")
+ *   //sampleStart
+ *   val tmvar = TMVar.new(30)
+ *   val result = atomically {
+ *     tmvar.swap(40)
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
+ *   println("New value ${atomically { tmvar.tryTake() } }")
  * }
  * ```
  *
@@ -179,18 +155,15 @@ fun <A> STM.newEmptyTMVar(): TMVar<A> = TMVar<A>(newTVar(Option.None))
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TMVar
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tmvar = TMVar.empty<Int>()
- *     val result = atomically {
- *       tmvar.isEmpty()
- *     }
- *     //sampleEnd
- *     println("Result $result")
+ *   //sampleStart
+ *   val tmvar = TMVar.empty<Int>()
+ *   val result = atomically {
+ *     tmvar.isEmpty()
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
  * }
  * ```
  *

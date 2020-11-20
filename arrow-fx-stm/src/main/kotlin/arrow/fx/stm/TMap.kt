@@ -30,21 +30,18 @@ fun <K, V> STM.newTMap(hash: Hash<K>): TMap<K, V> = newTMap { hash.run { it.hash
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TMap
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tmap = TMap.new<Int, String>()
- *     val result = atomically {
- *       tmap[1] = "Hello"
- *       tmap[2] = "World"
+ *   //sampleStart
+ *   val tmap = TMap.new<Int, String>()
+ *   val result = atomically {
+ *     tmap[1] = "Hello"
+ *     tmap[2] = "World"
  *
- *       tmap.lookup(1) + tmap[2]
- *     }
- *     //sampleEnd
- *     println("Result $result")
+ *     tmap.lookup(1) + tmap[2]
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
  * }
  * ```
  *
@@ -57,18 +54,15 @@ fun <K, V> STM.newTMap(hash: Hash<K>): TMap<K, V> = newTMap { hash.run { it.hash
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TMap
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tmap = TMap.new<Int, String>()
- *     atomically {
- *       tmap.insert(1, "Hello")
- *       tmap[2] = "World"
- *     }
- *     //sampleEnd
+ *   //sampleStart
+ *   val tmap = TMap.new<Int, String>()
+ *   atomically {
+ *     tmap.insert(1, "Hello")
+ *     tmap[2] = "World"
  *   }
+ *   //sampleEnd
  * }
  * ```
  *
@@ -78,18 +72,15 @@ fun <K, V> STM.newTMap(hash: Hash<K>): TMap<K, V> = newTMap { hash.run { it.hash
  * import arrow.fx.stm.TMap
  * import arrow.core.toT
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tmap = TMap.new<Int, String>()
- *     atomically {
- *       tmap + (1 to "Hello")
- *       tmap + (2 toT "World")
- *     }
- *     //sampleEnd
+ *   //sampleStart
+ *   val tmap = TMap.new<Int, String>()
+ *   atomically {
+ *     tmap + (1 to "Hello")
+ *     tmap + (2 toT "World")
  *   }
+ *   //sampleEnd
  * }
  * ```
  *
@@ -100,21 +91,18 @@ fun <K, V> STM.newTMap(hash: Hash<K>): TMap<K, V> = newTMap { hash.run { it.hash
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TMap
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tmap = TMap.new<Int, String>()
- *     val result = atomically {
- *       tmap[1] = "Hello"
- *       tmap[2] = "World"
+ *   //sampleStart
+ *   val tmap = TMap.new<Int, String>()
+ *   val result = atomically {
+ *     tmap[1] = "Hello"
+ *     tmap[2] = "World"
  *
- *       tmap.update(1) { it.reversed() }
- *     }
- *     //sampleEnd
- *     println("Result $result")
+ *     tmap.update(1) { it.reversed() }
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
  * }
  * ```
  *
@@ -125,19 +113,16 @@ fun <K, V> STM.newTMap(hash: Hash<K>): TMap<K, V> = newTMap { hash.run { it.hash
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TMap
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tmap = TMap.new<Int, String>()
- *     val result = atomically {
- *       tmap[1] = "Hello"
- *       tmap.member(1)
- *     }
- *     //sampleEnd
- *     println("Result $result")
+ *   //sampleStart
+ *   val tmap = TMap.new<Int, String>()
+ *   val result = atomically {
+ *     tmap[1] = "Hello"
+ *     tmap.member(1)
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
  * }
  * ```
  *
@@ -148,19 +133,16 @@ fun <K, V> STM.newTMap(hash: Hash<K>): TMap<K, V> = newTMap { hash.run { it.hash
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TMap
  * import arrow.fx.stm.atomically
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val tmap = TMap.new<Int, String>()
- *     atomically {
- *       tmap[1] = "Hello"
+ *   //sampleStart
+ *   val tmap = TMap.new<Int, String>()
+ *   atomically {
+ *     tmap[1] = "Hello"
  *
- *       tmap.remove(1)
- *     }
- *     //sampleEnd
+ *     tmap.remove(1)
  *   }
+ *   //sampleEnd
  * }
  * ```
  *

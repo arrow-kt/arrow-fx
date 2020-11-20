@@ -1,7 +1,6 @@
 package arrow.fx.stm
 
 import arrow.core.Tuple2
-import arrow.fx.coroutines.ConcurrentVar
 import arrow.fx.stm.internal.STMTransaction
 import arrow.fx.stm.internal.alterHamtWithHash
 import arrow.fx.stm.internal.lookupHamtWithHash
@@ -13,9 +12,6 @@ import arrow.fx.stm.internal.lookupHamtWithHash
  * With [STM] one can write code that concurrently accesses state and that can easily be composed without
  *  exposing details of how it ensures safety guarantees.
  * Programs running within an [STM] transaction will neither deadlock nor have race-conditions.
- *
- * Such guarantees are usually not possible with other forms of concurrent communication such as locks,
- *  atomic variables or [ConcurrentVar].
  *
  * > The api of [STM] is based on the haskell package [stm](https://hackage.haskell.org/package/stm) and the implementation is based on the GHC implementation for fine-grained locks.
  *
@@ -41,7 +37,6 @@ import arrow.fx.stm.internal.lookupHamtWithHash
  * Running a transaction is then done using [atomically]:
  *
  * ```kotlin:ank:playground
- * import arrow.fx.coroutines.Environment
  * import arrow.fx.stm.atomically
  * import arrow.fx.stm.TVar
  * import arrow.fx.stm.STM
@@ -65,17 +60,15 @@ import arrow.fx.stm.internal.lookupHamtWithHash
  * }
  * //sampleEnd
  *
- * fun main() {
- *   Environment().unsafeRunSync {
- *     val acc1 = TVar.new(500)
- *     val acc2 = TVar.new(300)
- *     println("Balance account 1: ${acc1.unsafeRead()}")
- *     println("Balance account 2: ${acc2.unsafeRead()}")
- *     println("Performing transaction")
- *     atomically { transfer(acc1, acc2, 50) }
- *     println("Balance account 1: ${acc1.unsafeRead()}")
- *     println("Balance account 2: ${acc2.unsafeRead()}")
- *   }
+ * suspend fun main() {
+ *   val acc1 = TVar.new(500)
+ *   val acc2 = TVar.new(300)
+ *   println("Balance account 1: ${acc1.unsafeRead()}")
+ *   println("Balance account 2: ${acc2.unsafeRead()}")
+ *   println("Performing transaction")
+ *   atomically { transfer(acc1, acc2, 50) }
+ *   println("Balance account 1: ${acc1.unsafeRead()}")
+ *   println("Balance account 2: ${acc2.unsafeRead()}")
  * }
  * ```
  * This example shows a banking service moving money from one account to the other with [STM].
@@ -97,10 +90,10 @@ import arrow.fx.stm.internal.lookupHamtWithHash
  * This is achieved by the primitive [retry]:
  *
  * ```kotlin:ank:playground
- * import arrow.fx.coroutines.Environment
  * import arrow.fx.stm.atomically
  * import arrow.fx.stm.TVar
  * import arrow.fx.stm.STM
+ * import arrow.fx.coroutines.Environment
  * import arrow.fx.coroutines.ForkConnected
  * import arrow.fx.coroutines.seconds
  * import arrow.fx.coroutines.sleep
@@ -216,17 +209,14 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.atomically
    * import arrow.fx.stm.stm
-   * import arrow.fx.coroutines.Environment
    *
    * suspend fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val result = atomically {
-   *       stm { retry() } orElse { "Alternative" }
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
+   *   //sampleStart
+   *   val result = atomically {
+   *     stm { retry() } orElse { "Alternative" }
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
    * }
    * ```
    */
@@ -238,17 +228,14 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.atomically
    * import arrow.fx.stm.stm
-   * import arrow.fx.coroutines.Environment
    *
    * suspend fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val result = atomically {
-   *       stm { retry() } orElse { "Alternative" }
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
+   *   //sampleStart
+   *   val result = atomically {
+   *     stm { retry() } orElse { "Alternative" }
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
    * }
    * ```
    */
@@ -259,17 +246,14 @@ interface STM {
    *
    * ```kotlin:ank:playground
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
    * suspend fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val result = atomically {
-   *       catch({ throw Throwable() }) { e -> "caught" }
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
+   *   //sampleStart
+   *   val result = atomically {
+   *     catch({ throw Throwable() }) { e -> "caught" }
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
    * }
    * ```
    */
@@ -281,18 +265,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TVar
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tvar = TVar.new(10)
-   *     val result = atomically {
-   *       tvar.read()
-   *     }
-   *     //sampleEnd
-   *     println(result)
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tvar = TVar.new(10)
+   *   val result = atomically {
+   *     tvar.read()
    *   }
+   *   //sampleEnd
+   *   println(result)
    * }
    * ```
    *
@@ -309,18 +290,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TVar
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tvar = TVar.new(10)
-   *     val result = atomically {
-   *       tvar.write(20)
-   *     }
-   *     //sampleEnd
-   *     println(result)
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tvar = TVar.new(10)
+   *   val result = atomically {
+   *     tvar.write(20)
    *   }
+   *   //sampleEnd
+   *   println(result)
    * }
    * ```
    *
@@ -337,18 +315,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TVar
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tvar = TVar.new(10)
-   *     val result = atomically {
-   *       tvar.modify { it * 2 }
-   *     }
-   *     //sampleEnd
-   *     println(result)
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tvar = TVar.new(10)
+   *   val result = atomically {
+   *     tvar.modify { it * 2 }
    *   }
+   *   //sampleEnd
+   *   println(result)
    * }
    * ```
    *
@@ -362,19 +337,16 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TVar
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tvar = TVar.new(10)
-   *     val result = atomically {
-   *       tvar.swap(20)
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
-   *     println("New value ${tvar.unsafeRead()}")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tvar = TVar.new(10)
+   *   val result = atomically {
+   *     tvar.swap(20)
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
+   *   println("New value ${tvar.unsafeRead()}")
    * }
    * ```
    *
@@ -394,19 +366,16 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TMVar
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tmvar = TMVar.new(10)
-   *     val result = atomically {
-   *       tmvar.take()
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
-   *     println("New value ${atomically { tmvar.tryTake() } }")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tmvar = TMVar.new(10)
+   *   val result = atomically {
+   *     tmvar.take()
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
+   *   println("New value ${atomically { tmvar.tryTake() } }")
    * }
    * ```
    *
@@ -426,18 +395,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TMVar
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tmvar = TMVar.empty<Int>()
-   *     atomically {
-   *       tmvar.put(20)
-   *     }
-   *     //sampleEnd
-   *     println("New value ${atomically { tmvar.tryTake() } }")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tmvar = TMVar.empty<Int>()
+   *   atomically {
+   *     tmvar.put(20)
    *   }
+   *   //sampleEnd
+   *   println("New value ${atomically { tmvar.tryTake() } }")
    * }
    * ```
    *
@@ -456,19 +422,16 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TMVar
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tmvar = TMVar.new(30)
-   *     val result = atomically {
-   *       tmvar.read()
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
-   *     println("New value ${atomically { tmvar.tryTake() } }")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tmvar = TMVar.new(30)
+   *   val result = atomically {
+   *     tmvar.read()
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
+   *   println("New value ${atomically { tmvar.tryTake() } }")
    * }
    * ```
    *
@@ -488,19 +451,16 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TMVar
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tmvar = TMVar.empty<Int>()
-   *     val result = atomically {
-   *       tmvar.tryTake()
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
-   *     println("New value ${atomically { tmvar.tryTake() } }")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tmvar = TMVar.empty<Int>()
+   *   val result = atomically {
+   *     tmvar.tryTake()
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
+   *   println("New value ${atomically { tmvar.tryTake() } }")
    * }
    * ```
    */
@@ -515,19 +475,16 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TMVar
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tmvar = TMVar.new(20)
-   *     val result = atomically {
-   *       tmvar.tryPut(30)
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
-   *     println("New value ${atomically { tmvar.tryTake() } }")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tmvar = TMVar.new(20)
+   *   val result = atomically {
+   *     tmvar.tryPut(30)
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
+   *   println("New value ${atomically { tmvar.tryTake() } }")
    * }
    * ```
    *
@@ -546,18 +503,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TMVar
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tmvar = TMVar.empty<Int>()
-   *     val result = atomically {
-   *       tmvar.tryRead()
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tmvar = TMVar.empty<Int>()
+   *   val result = atomically {
+   *     tmvar.tryRead()
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
    * }
    * ```
    *
@@ -575,18 +529,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TMVar
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tmvar = TMVar.empty<Int>()
-   *     val result = atomically {
-   *       tmvar.isEmpty()
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tmvar = TMVar.empty<Int>()
+   *   val result = atomically {
+   *     tmvar.isEmpty()
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
    * }
    * ```
    *
@@ -601,18 +552,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TMVar
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tmvar = TMVar.empty<Int>()
-   *     val result = atomically {
-   *       tmvar.isNotEmpty()
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tmvar = TMVar.empty<Int>()
+   *   val result = atomically {
+   *     tmvar.isNotEmpty()
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
    * }
    * ```
    *
@@ -628,19 +576,16 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TMVar
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tmvar = TMVar.new(30)
-   *     val result = atomically {
-   *       tmvar.swap(40)
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
-   *     println("New value ${atomically { tmvar.tryTake() } }")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tmvar = TMVar.new(30)
+   *   val result = atomically {
+   *     tmvar.swap(40)
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
+   *   println("New value ${atomically { tmvar.tryTake() } }")
    * }
    * ```
    */
@@ -656,19 +601,16 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TSem
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tsem = TSem.new(5)
-   *     val result = atomically {
-   *       tsem.available()
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
-   *     println("Permits remaining ${atomically { tsem.available() }}")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tsem = TSem.new(5)
+   *   val result = atomically {
+   *     tsem.available()
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
+   *   println("Permits remaining ${atomically { tsem.available() }}")
    * }
    * ```
    *
@@ -683,18 +625,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TSem
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tsem = TSem.new(5)
-   *     atomically {
-   *       tsem.acquire()
-   *     }
-   *     //sampleEnd
-   *     println("Permits remaining ${atomically { tsem.available() }}")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tsem = TSem.new(5)
+   *   atomically {
+   *     tsem.acquire()
    *   }
+   *   //sampleEnd
+   *   println("Permits remaining ${atomically { tsem.available() }}")
    * }
    * ```
    *
@@ -711,18 +650,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TSem
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tsem = TSem.new(5)
-   *     atomically {
-   *       tsem.acquire(3)
-   *     }
-   *     //sampleEnd
-   *     println("Permits remaining ${atomically { tsem.available() }}")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tsem = TSem.new(5)
+   *   atomically {
+   *     tsem.acquire(3)
    *   }
+   *   //sampleEnd
+   *   println("Permits remaining ${atomically { tsem.available() }}")
    * }
    * ```
    *
@@ -742,19 +678,16 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TSem
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tsem = TSem.new(0)
-   *     val result = atomically {
-   *       tsem.tryAcquire()
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
-   *     println("Permits remaining ${atomically { tsem.available() }}")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tsem = TSem.new(0)
+   *   val result = atomically {
+   *     tsem.tryAcquire()
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
+   *   println("Permits remaining ${atomically { tsem.available() }}")
    * }
    * ```
    *
@@ -771,19 +704,16 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TSem
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tsem = TSem.new(0)
-   *     val result = atomically {
-   *       tsem.tryAcquire(3)
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
-   *     println("Permits remaining ${atomically { tsem.available() }}")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tsem = TSem.new(0)
+   *   val result = atomically {
+   *     tsem.tryAcquire(3)
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
+   *   println("Permits remaining ${atomically { tsem.available() }}")
    * }
    * ```
    *
@@ -800,18 +730,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TSem
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tsem = TSem.new(5)
-   *     atomically {
-   *       tsem.release()
-   *     }
-   *     //sampleEnd
-   *     println("Permits remaining ${atomically { tsem.available() }}")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tsem = TSem.new(5)
+   *   atomically {
+   *     tsem.release()
    *   }
+   *   //sampleEnd
+   *   println("Permits remaining ${atomically { tsem.available() }}")
    * }
    * ```
    *
@@ -826,18 +753,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TSem
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tsem = TSem.new(5)
-   *     atomically {
-   *       tsem.release(2)
-   *     }
-   *     //sampleEnd
-   *     println("Permits remaining ${atomically { tsem.available() }}")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tsem = TSem.new(5)
+   *   atomically {
+   *     tsem.release(2)
    *   }
+   *   //sampleEnd
+   *   println("Permits remaining ${atomically { tsem.available() }}")
    * }
    * ```
    *
@@ -860,18 +784,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TQueue
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tq = TQueue.new<Int>()
-   *     atomically {
-   *       tq.write(2)
-   *     }
-   *     //sampleEnd
-   *     println("Items in queue ${atomically { tq.flush() }}")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tq = TQueue.new<Int>()
+   *   atomically {
+   *     tq.write(2)
    *   }
+   *   //sampleEnd
+   *   println("Items in queue ${atomically { tq.flush() }}")
    * }
    * ```
    *
@@ -886,18 +807,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TQueue
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tq = TQueue.new<Int>()
-   *     atomically {
-   *       tq + 2
-   *     }
-   *     //sampleEnd
-   *     println("Items in queue ${atomically { tq.flush() }}")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tq = TQueue.new<Int>()
+   *   atomically {
+   *     tq + 2
    *   }
+   *   //sampleEnd
+   *   println("Items in queue ${atomically { tq.flush() }}")
    * }
    * ```
    *
@@ -911,20 +829,17 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TQueue
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tq = TQueue.new<Int>()
-   *     val result = atomically {
-   *       tq.write(2)
-   *       tq.read()
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
-   *     println("Items in queue ${atomically { tq.flush() }}")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tq = TQueue.new<Int>()
+   *   val result = atomically {
+   *     tq.write(2)
+   *     tq.read()
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
+   *   println("Items in queue ${atomically { tq.flush() }}")
    * }
    * ```
    *
@@ -952,19 +867,16 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TQueue
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tq = TQueue.new<Int>()
-   *     val result = atomically {
-   *       tq.tryRead()
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
-   *     println("Items in queue ${atomically { tq.flush() }}")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tq = TQueue.new<Int>()
+   *   val result = atomically {
+   *     tq.tryRead()
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
+   *   println("Items in queue ${atomically { tq.flush() }}")
    * }
    * ```
    *
@@ -979,22 +891,19 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TQueue
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tq = TQueue.new<Int>()
-   *     val result = atomically {
-   *       tq.write(2)
-   *       tq.write(4)
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tq = TQueue.new<Int>()
+   *   val result = atomically {
+   *     tq.write(2)
+   *     tq.write(4)
    *
-   *       tq.flush()
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
-   *     println("Items in queue ${atomically { tq.flush() }}")
+   *     tq.flush()
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
+   *   println("Items in queue ${atomically { tq.flush() }}")
    * }
    * ```
    *
@@ -1012,21 +921,18 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TQueue
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tq = TQueue.new<Int>()
-   *     val result = atomically {
-   *       tq.write(2)
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tq = TQueue.new<Int>()
+   *   val result = atomically {
+   *     tq.write(2)
    *
-   *       tq.peek()
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
-   *     println("Items in queue ${atomically { tq.flush() }}")
+   *     tq.peek()
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
+   *   println("Items in queue ${atomically { tq.flush() }}")
    * }
    * ```
    *
@@ -1044,19 +950,16 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TQueue
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tq = TQueue.new<Int>()
-   *     val result = atomically {
-   *       tq.tryPeek()
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
-   *     println("Items in queue ${atomically { tq.flush() }}")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tq = TQueue.new<Int>()
+   *   val result = atomically {
+   *     tq.tryPeek()
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
+   *   println("Items in queue ${atomically { tq.flush() }}")
    * }
    * ```
    *
@@ -1074,19 +977,16 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TQueue
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tq = TQueue.new<Int>()
-   *     atomically {
-   *       tq.write(1)
-   *       tq.writeFront(2)
-   *     }
-   *     //sampleEnd
-   *     println("Items in queue ${atomically { tq.flush() }}")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tq = TQueue.new<Int>()
+   *   atomically {
+   *     tq.write(1)
+   *     tq.writeFront(2)
    *   }
+   *   //sampleEnd
+   *   println("Items in queue ${atomically { tq.flush() }}")
    * }
    * ```
    *
@@ -1104,18 +1004,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TQueue
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tq = TQueue.new<Int>()
-   *     val result = atomically {
-   *       tq.isEmpty()
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tq = TQueue.new<Int>()
+   *   val result = atomically {
+   *     tq.isEmpty()
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
    * }
    * ```
    *
@@ -1132,18 +1029,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TQueue
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tq = TQueue.new<Int>()
-   *     val result = atomically {
-   *       tq.isNotEmpty()
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tq = TQueue.new<Int>()
+   *   val result = atomically {
+   *     tq.isNotEmpty()
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
    * }
    * ```
    *
@@ -1160,19 +1054,16 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TQueue
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tq = TQueue.new<Int>()
-   *     atomically {
-   *       tq.write(0)
-   *       tq.filter { it != 0 }
-   *     }
-   *     //sampleEnd
-   *     println("Items in queue ${atomically { tq.flush() }}")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tq = TQueue.new<Int>()
+   *   atomically {
+   *     tq.write(0)
+   *     tq.filter { it != 0 }
    *   }
+   *   //sampleEnd
+   *   println("Items in queue ${atomically { tq.flush() }}")
    * }
    * ```
    *
@@ -1191,19 +1082,16 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TQueue
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tq = TQueue.new<Int>()
-   *     atomically {
-   *       tq.write(0)
-   *       tq.filterNot { it == 0 }
-   *     }
-   *     //sampleEnd
-   *     println("Items in queue ${atomically { tq.flush() }}")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tq = TQueue.new<Int>()
+   *   atomically {
+   *     tq.write(0)
+   *     tq.filterNot { it == 0 }
    *   }
+   *   //sampleEnd
+   *   println("Items in queue ${atomically { tq.flush() }}")
    * }
    * ```
    *
@@ -1222,18 +1110,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TQueue
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tq = TQueue.new<Int>()
-   *     val result = atomically {
-   *       tq.size()
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tq = TQueue.new<Int>()
+   *   val result = atomically {
+   *     tq.size()
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
    * }
    * ```
    *
@@ -1250,18 +1135,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TArray
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tarr = TArray.new(size = 10, 2)
-   *     val result = atomically {
-   *       tarr[5]
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tarr = TArray.new(size = 10, 2)
+   *   val result = atomically {
+   *     tarr[5]
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
    * }
    * ```
    *
@@ -1278,20 +1160,17 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TArray
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tarr = TArray.new(size = 10, 2)
-   *     val result = atomically {
-   *       tarr[5] = 3
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tarr = TArray.new(size = 10, 2)
+   *   val result = atomically {
+   *     tarr[5] = 3
    *
-   *       tarr[5]
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
+   *     tarr[5]
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
    * }
    * ```
    *
@@ -1308,17 +1187,14 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TArray
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tarr = TArray.new(size = 10, 2)
-   *     val result = atomically {
-   *       tarr.transform { it + 1 }
-   *     }
-   *     //sampleEnd
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tarr = TArray.new(size = 10, 2)
+   *   val result = atomically {
+   *     tarr.transform { it + 1 }
    *   }
+   *   //sampleEnd
    * }
    * ```
    *
@@ -1333,18 +1209,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TArray
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
-   * fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tarr = TArray.new(size = 10, 2)
-   *     val result = atomically {
-   *       tarr.fold(0) { acc, v -> acc + v }
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
+   * suspend fun main() {
+   *   //sampleStart
+   *   val tarr = TArray.new(size = 10, 2)
+   *   val result = atomically {
+   *     tarr.fold(0) { acc, v -> acc + v }
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
    * }
    * ```
    *
@@ -1360,19 +1233,16 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TMap
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
    * suspend fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tmap = TMap.new<Int, String>()
-   *     atomically {
-   *       tmap[1] = "Hello"
+   *   //sampleStart
+   *   val tmap = TMap.new<Int, String>()
+   *   atomically {
+   *     tmap[1] = "Hello"
    *
-   *       tmap.remove(1)
-   *     }
-   *     //sampleEnd
+   *     tmap.remove(1)
    *   }
+   *   //sampleEnd
    * }
    * ```
    *
@@ -1387,21 +1257,18 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TMap
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
    * suspend fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tmap = TMap.new<Int, String>()
-   *     val result = atomically {
-   *       tmap[1] = "Hello"
-   *       tmap[2] = "World"
+   *   //sampleStart
+   *   val tmap = TMap.new<Int, String>()
+   *   val result = atomically {
+   *     tmap[1] = "Hello"
+   *     tmap[2] = "World"
    *
-   *       tmap.lookup(1)
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
+   *     tmap.lookup(1)
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
    * }
    * ```
    *
@@ -1416,21 +1283,18 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TMap
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
    * suspend fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tmap = TMap.new<Int, String>()
-   *     val result = atomically {
-   *       tmap[1] = "Hello"
-   *       tmap[2] = "World"
+   *   //sampleStart
+   *   val tmap = TMap.new<Int, String>()
+   *   val result = atomically {
+   *     tmap[1] = "Hello"
+   *     tmap[2] = "World"
    *
-   *       tmap[2]
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
+   *     tmap[2]
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
    * }
    * ```
    *
@@ -1444,17 +1308,14 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TMap
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
    * suspend fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tmap = TMap.new<Int, String>()
-   *     atomically {
-   *       tmap.insert(10, "Hello")
-   *     }
-   *     //sampleEnd
+   *   //sampleStart
+   *   val tmap = TMap.new<Int, String>()
+   *   atomically {
+   *     tmap.insert(10, "Hello")
    *   }
+   *   //sampleEnd
    * }
    * ```
    */
@@ -1468,17 +1329,14 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TMap
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
    * suspend fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tmap = TMap.new<Int, String>()
-   *     atomically {
-   *       tmap[1] = "Hello"
-   *     }
-   *     //sampleEnd
+   *   //sampleStart
+   *   val tmap = TMap.new<Int, String>()
+   *   atomically {
+   *     tmap[1] = "Hello"
    *   }
+   *   //sampleEnd
    * }
    * ```
    */
@@ -1491,17 +1349,14 @@ interface STM {
    * import arrow.core.toT
    * import arrow.fx.stm.TMap
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
    * suspend fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tmap = TMap.new<Int, String>()
-   *     atomically {
-   *       tmap + (1 toT "Hello")
-   *     }
-   *     //sampleEnd
+   *   //sampleStart
+   *   val tmap = TMap.new<Int, String>()
+   *   atomically {
+   *     tmap + (1 toT "Hello")
    *   }
+   *   //sampleEnd
    * }
    * ```
    */
@@ -1513,17 +1368,14 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TMap
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
    * suspend fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tmap = TMap.new<Int, String>()
-   *     atomically {
-   *       tmap + (1 to "Hello")
-   *     }
-   *     //sampleEnd
+   *   //sampleStart
+   *   val tmap = TMap.new<Int, String>()
+   *   atomically {
+   *     tmap + (1 to "Hello")
    *   }
+   *   //sampleEnd
    * }
    * ```
    */
@@ -1535,20 +1387,17 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TMap
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
    * suspend fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tmap = TMap.new<Int, String>()
-   *     val result = atomically {
-   *       tmap[2] = "Hello"
-   *       tmap.update(2) { it.reversed() }
-   *       tmap[2]
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
+   *   //sampleStart
+   *   val tmap = TMap.new<Int, String>()
+   *   val result = atomically {
+   *     tmap[2] = "Hello"
+   *     tmap.update(2) { it.reversed() }
+   *     tmap[2]
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
    * }
    * ```
    */
@@ -1562,18 +1411,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TMap
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
    * suspend fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tmap = TMap.new<Int, String>()
-   *     atomically {
-   *       tmap[1] = "Hello"
-   *       tmap.remove(1)
-   *     }
-   *     //sampleEnd
+   *   //sampleStart
+   *   val tmap = TMap.new<Int, String>()
+   *   atomically {
+   *     tmap[1] = "Hello"
+   *     tmap.remove(1)
    *   }
+   *   //sampleEnd
    * }
    * ```
    */
@@ -1588,19 +1434,16 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TSet
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
    * suspend fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tset = TSet.new<String>()
-   *     val result = atomically {
-   *       tset.insert("Hello")
-   *       tset.member("Hello")
-   *     }
-   *     //sampleEnd
-   *     println("Result $result")
+   *   //sampleStart
+   *   val tset = TSet.new<String>()
+   *   val result = atomically {
+   *     tset.insert("Hello")
+   *     tset.member("Hello")
    *   }
+   *   //sampleEnd
+   *   println("Result $result")
    * }
    * ```
    */
@@ -1613,17 +1456,14 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TSet
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
    * suspend fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tset = TSet.new<String>()
-   *     atomically {
-   *       tset.insert("Hello")
-   *     }
-   *     //sampleEnd
+   *   //sampleStart
+   *   val tset = TSet.new<String>()
+   *   atomically {
+   *     tset.insert("Hello")
    *   }
+   *   //sampleEnd
    * }
    * ```
    */
@@ -1637,17 +1477,14 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TSet
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
    * suspend fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tset = TSet.new<String>()
-   *     atomically {
-   *       tset + "Hello"
-   *     }
-   *     //sampleEnd
+   *   //sampleStart
+   *   val tset = TSet.new<String>()
+   *   atomically {
+   *     tset + "Hello"
    *   }
+   *   //sampleEnd
    * }
    * ```
    */
@@ -1659,18 +1496,15 @@ interface STM {
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TSet
    * import arrow.fx.stm.atomically
-   * import arrow.fx.coroutines.Environment
    *
    * suspend fun main() {
-   *   Environment().unsafeRunSync {
-   *     //sampleStart
-   *     val tset = TSet.new<String>()
-   *     atomically {
-   *       tset.insert("Hello")
-   *       tset.remove("Hello")
-   *     }
-   *     //sampleEnd
+   *   //sampleStart
+   *   val tset = TSet.new<String>()
+   *   atomically {
+   *     tset.insert("Hello")
+   *     tset.remove("Hello")
    *   }
+   *   //sampleEnd
    * }
    * ```
    */
@@ -1685,21 +1519,18 @@ interface STM {
  * ```kotlin:ank:playground
  * import arrow.fx.stm.atomically
  * import arrow.fx.stm.stm
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val i = 4
- *     val result = atomically {
- *       stm {
- *         if (i == 4) retry()
- *         "Not 4"
- *       } orElse { "4" }
- *     }
- *     //sampleEnd
- *     println("Result $result")
+ *   //sampleStart
+ *   val i = 4
+ *   val result = atomically {
+ *     stm {
+ *       if (i == 4) retry()
+ *       "Not 4"
+ *     } orElse { "4" }
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
  * }
  * ```
  *
@@ -1713,21 +1544,18 @@ inline fun <A> stm(noinline f: STM.() -> A): STM.() -> A = f
  * ```kotlin:ank:playground
  * import arrow.fx.stm.atomically
  * import arrow.fx.stm.stm
- * import arrow.fx.coroutines.Environment
  *
  * suspend fun main() {
- *   Environment().unsafeRunSync {
- *     //sampleStart
- *     val i = 4
- *     val result = atomically {
- *       stm {
- *         check(i > 5) // This calls retry and aborts if i <= 5
- *         "Larger than 5"
- *       } orElse { "Smaller than or equal to 5" }
- *     }
- *     //sampleEnd
- *     println("Result $result")
+ *   //sampleStart
+ *   val i = 4
+ *   val result = atomically {
+ *     stm {
+ *       check(i > 5) // This calls retry and aborts if i <= 5
+ *       "Larger than 5"
+ *     } orElse { "Smaller than or equal to 5" }
  *   }
+ *   //sampleEnd
+ *   println("Result $result")
  * }
  * ```
  *
