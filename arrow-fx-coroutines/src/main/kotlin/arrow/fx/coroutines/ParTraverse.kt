@@ -9,7 +9,7 @@ import kotlin.coroutines.EmptyCoroutineContext
  * Cancelling this operation cancels all running tasks.
  */
 suspend fun <A> Iterable<suspend () -> A>.parSequenceN(n: Long): List<A> =
-  parSequenceN(ComputationPool, n)
+  parSequenceN(getDefaultContext(ComputationPool), n)
 
 /**
  * Sequences all tasks in [n] parallel processes and return the result.
@@ -52,7 +52,7 @@ suspend fun <A> Iterable<suspend () -> A>.parSequence(ctx: CoroutineContext): Li
  */
 suspend fun <A, B> Iterable<A>.parTraverseN(n: Long, f: suspend (A) -> B): List<B> {
   val s = Semaphore(n)
-  return parTraverse(ComputationPool) { a ->
+  return parTraverse(getDefaultContext(ComputationPool)) { a ->
     s.withPermit { f(a) }
   }
 }
@@ -78,7 +78,7 @@ suspend fun <A, B> Iterable<A>.parTraverseN(ctx: CoroutineContext, n: Long, f: s
  * Cancelling this operation cancels all running tasks.
  */
 suspend fun <A, B> Iterable<A>.parTraverse(f: suspend (A) -> B): List<B> =
-  parTraverse(ComputationPool, f)
+  parTraverse(getDefaultContext(ComputationPool), f)
 
 /**
  * Traverses this [Iterable] and runs all mappers [f] on [CoroutineContext].

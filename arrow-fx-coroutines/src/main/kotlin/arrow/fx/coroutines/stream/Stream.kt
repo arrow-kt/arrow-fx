@@ -15,7 +15,9 @@ import arrow.fx.coroutines.Fiber
 import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.Resource
+import arrow.fx.coroutines.defaultContext
 import arrow.fx.coroutines.forkAndForget
+import arrow.fx.coroutines.getDefaultContext
 import arrow.fx.coroutines.guaranteeCase
 import arrow.fx.coroutines.prependTo
 import arrow.fx.coroutines.stream.concurrent.Signal
@@ -23,6 +25,7 @@ import arrow.typeclasses.Monoid
 import arrow.typeclasses.Semigroup
 import java.util.concurrent.TimeoutException
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.coroutineContext
 import kotlin.random.Random
 
 class ForStream private constructor() {
