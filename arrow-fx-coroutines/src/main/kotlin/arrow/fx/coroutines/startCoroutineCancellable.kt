@@ -14,7 +14,7 @@ abstract class CancellableContinuation<A> internal constructor() : Continuation<
 /** Constructor for [CancellableContinuation] */
 @Suppress("FunctionName")
 fun <A> CancellableContinuation(
-  ctx: CoroutineContext = ComputationPool,
+  ctx: CoroutineContext,
   resumeWith: (Result<A>) -> Unit
 ): CancellableContinuation<A> = CancellableContinuation(ctx, SuspendConnection(), resumeWith)
 
@@ -39,7 +39,7 @@ fun <A> (suspend () -> A).startCoroutineCancellable(completion: CancellableConti
  */
 @Suppress("FunctionName")
 internal fun <A> CancellableContinuation(
-  ctx: CoroutineContext = ComputationPool,
+  ctx: CoroutineContext,
   conn: SuspendConnection,
   resumeWith: (Result<A>) -> Unit
 ): CancellableContinuation<A> = object : CancellableContinuation<A>() {

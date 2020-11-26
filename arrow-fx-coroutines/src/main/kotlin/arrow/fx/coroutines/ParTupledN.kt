@@ -9,7 +9,7 @@ import kotlin.coroutines.CoroutineContext
  * @see parTupledN for the same function that can race on any [CoroutineContext].
  */
 suspend fun <A, B> parTupledN(fa: suspend () -> A, fb: suspend () -> B): Pair<A, B> =
-  parTupledN(ComputationPool, fa, fb)
+  parTupledN(getDefaultContext(ComputationPool), fa, fb)
 
 /**
  * Tuples [fa], [fb], [fc] in parallel on [ComputationPool].
@@ -18,7 +18,7 @@ suspend fun <A, B> parTupledN(fa: suspend () -> A, fb: suspend () -> B): Pair<A,
  * @see parTupledN for the same function that can race on any [CoroutineContext].
  */
 suspend fun <A, B, C> parTupledN(fa: suspend () -> A, fb: suspend () -> B, fc: suspend () -> C): Triple<A, B, C> =
-  parTupledN(ComputationPool, fa, fb, fc)
+  parTupledN(getDefaultContext(ComputationPool), fa, fb, fc)
 
 /**
  * Tuples [fa], [fb] on the provided [CoroutineContext].

@@ -57,7 +57,7 @@ internal fun <A> Fiber(promise: UnsafePromise<A>, conn: SuspendConnection): Fibe
  * You can [Fiber.join] or [Fiber.cancel] the computation.
  * Cancelling this [Fiber] **will not** cancel its parent.
  */
-suspend fun <A> ForkConnected(ctx: CoroutineContext = ComputationPool, f: suspend () -> A): Fiber<A> =
+suspend fun <A> ForkConnected(ctx: CoroutineContext, f: suspend () -> A): Fiber<A> =
   suspendCoroutineUninterceptedOrReturn { cont ->
     val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
 
@@ -69,9 +69,15 @@ suspend fun <A> ForkConnected(ctx: CoroutineContext = ComputationPool, f: suspen
     Fiber(promise, conn2)
   }
 
+suspend fun <A> ForkConnected(f: suspend () -> A): Fiber<A> =
+  ForkConnected(getDefaultContext(ComputationPool), f)
+
 /** @see ForkConnected **/
-suspend fun <A> (suspend () -> A).forkConnected(ctx: CoroutineContext = ComputationPool): Fiber<A> =
+suspend fun <A> (suspend () -> A).forkConnected(ctx: CoroutineContext): Fiber<A> =
   ForkConnected(ctx, this)
+
+suspend fun <A> (suspend () -> A).forkConnected(): Fiber<A> =
+  forkConnected(getDefaultContext(ComputationPool))
 
 /**
  * Launches a new suspendable cancellable coroutine within a [Fiber].
@@ -105,7 +111,7 @@ suspend fun <A> (suspend () -> A).forkConnected(ctx: CoroutineContext = Computat
  * ```
  */
 suspend fun <A> ForkScoped(
-  ctx: CoroutineContext = ComputationPool,
+  ctx: CoroutineContext,
   interruptWhen: suspend () -> Unit,
   f: suspend () -> A
 ): Fiber<A> = suspendCoroutineUninterceptedOrReturn { cont ->
@@ -124,11 +130,19 @@ suspend fun <A> ForkScoped(
   Fiber(promise, conn2)
 }
 
+suspend fun <A> ForkScoped(
+  interruptWhen: suspend () -> Unit,
+  f: suspend () -> A
+): Fiber<A> = ForkScoped(getDefaultContext(ComputationPool), interruptWhen, f)
+
 /** @see ForkScoped */
 suspend fun <A> (suspend () -> A).forkScoped(
-  ctx: CoroutineContext = ComputationPool,
+  ctx: CoroutineContext,
   interruptWhen: suspend () -> Unit
 ): Fiber<A> = ForkScoped(ctx, interruptWhen, this)
+
+suspend fun <A> (suspend () -> A).forkScoped(interruptWhen: suspend () -> Unit): Fiber<A> =
+  forkScoped(getDefaultContext(ComputationPool), interruptWhen)
 
 /**
  * Launches a new suspendable cancellable coroutine within a [Fiber].
@@ -139,14 +153,19 @@ suspend fun <A> (suspend () -> A).forkScoped(
  *
  * @see ForkConnected for a fork operation that wires cancellation to its parent in a safe way.
  */
-suspend fun <A> ForkAndForget(ctx: CoroutineContext = ComputationPool, f: suspend () -> A): Fiber<A> =
+suspend fun <A> ForkAndForget(ctx: CoroutineContext, f: suspend () -> A): Fiber<A> =
   f.forkAndForget(ctx)
 
+suspend fun <A> ForkAndForget(f: suspend () -> A): Fiber<A> =
+  ForkAndForget(getDefaultContext(ComputationPool), f)
+
 /** @see ForkAndForget */
-suspend fun <A> (suspend () -> A).forkAndForget(ctx: CoroutineContext = ComputationPool): Fiber<A> {
+suspend fun <A> (suspend () -> A).forkAndForget(ctx: CoroutineContext): Fiber<A> {
   val promise = UnsafePromise<A>()
   // A new SuspendConnection, because its cancellation is now decoupled from our current one.
   val conn = SuspendConnection()
   startCoroutineCancellable(CancellableContinuation(ctx, conn, promise::complete))
   return Fiber(promise, conn)
 }
+
+suspend fun <A> (suspend () -> A).forkAndForget(): Fiber<A> = forkAndForget(getDefaultContext(ComputationPool))

@@ -1,7 +1,9 @@
 package arrow.fx.coroutines
 
+import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlin.coroutines.startCoroutine
 
 /**
@@ -78,7 +80,7 @@ interface Environment {
 
   companion object {
     operator fun invoke(ctx: CoroutineContext = ComputationPool): Environment =
-      DefaultEnvironment(ctx)
+      DefaultEnvironment(ctx.asDefaultCtx())
   }
 }
 
@@ -98,3 +100,17 @@ internal class DefaultEnvironment(override val ctx: CoroutineContext) : Environm
       res.fold(a, e) // Return error to caller
     })
 }
+
+private fun CoroutineContext.asDefaultCtx(): CoroutineContext = plus(DefaultContext(this))
+
+internal class DefaultContext(val ctx: CoroutineContext) : AbstractCoroutineContextElement(DefaultContext) {
+  companion object Key : CoroutineContext.Key<DefaultContext>
+}
+
+internal inline fun CoroutineContext.defaultContext(ctx: CoroutineContext): CoroutineContext =
+  this[DefaultContext] ?: ctx
+
+internal suspend inline fun getDefaultContext(ctx: CoroutineContext = ComputationPool): CoroutineContext =
+  suspendCoroutineUninterceptedOrReturn { cont ->
+    cont.context.defaultContext(ctx)
+  }

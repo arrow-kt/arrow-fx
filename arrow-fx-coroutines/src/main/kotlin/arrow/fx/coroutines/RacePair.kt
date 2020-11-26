@@ -15,7 +15,7 @@ fun <A, B, C> Either<Pair<A, Fiber<B>>, Pair<Fiber<A>, B>>.fold(ifLeft: (A, Fibe
   fold({ (a, b) -> ifLeft(a, b) }, { (a, b) -> ifRight(a, b) })
 
 suspend fun <A, B> racePair(fa: suspend () -> A, fb: suspend () -> B): RacePair<A, B> =
-  racePair(ComputationPool, fa, fb)
+  racePair(getDefaultContext(ComputationPool), fa, fb)
 
 /**
  * Races two tasks concurrently within a new suspend fun.
