@@ -3,6 +3,7 @@ package arrow.fx.coroutines
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.coroutineContext
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlin.coroutines.startCoroutine
 
@@ -111,6 +112,4 @@ internal inline fun CoroutineContext.defaultContext(ctx: CoroutineContext): Coro
   this[DefaultContext] ?: ctx
 
 internal suspend inline fun getDefaultContext(ctx: CoroutineContext = ComputationPool): CoroutineContext =
-  suspendCoroutineUninterceptedOrReturn { cont ->
-    cont.context.defaultContext(ctx)
-  }
+  coroutineContext.defaultContext(ctx)
