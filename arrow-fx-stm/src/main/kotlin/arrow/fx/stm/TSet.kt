@@ -37,7 +37,7 @@ fun <A> STM.newTSet(hash: Hash<A>): TSet<A> = newTSet { hash.run { it.hash() } }
  *   val tset = TSet.new<String>()
  *   atomically {
  *     tset.insert("Hello")
- *     tset + "World"
+ *     tset += "World"
  *   }
  *   //sampleEnd
  * }

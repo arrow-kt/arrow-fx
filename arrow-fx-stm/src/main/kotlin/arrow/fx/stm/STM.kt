@@ -23,7 +23,7 @@ import arrow.fx.stm.internal.lookupHamtWithHash
  * - [TQueue]: A transactional mutable queue
  * - [TMVar]: A mutable transactional variable that may be empty
  * - [TArray]: Array of [TVar]'s
- * - [TSem]: Transactional semaphore
+ * - [TSemaphore]: Transactional semaphore
  * - [TVar]: A transactional mutable variable
  *
  * All of these structures (excluding [TVar]) are built upon [TVar]'s and the [STM] primitives and implementing other
@@ -596,7 +596,7 @@ interface STM {
 
   // -------- TSemaphore
   /**
-   * Returns the currently available number of permits in a [TSem].
+   * Returns the currently available number of permits in a [TSemaphore].
    *
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TSem
@@ -616,11 +616,11 @@ interface STM {
    *
    * This function never retries.
    */
-  fun TSem.available(): Int =
+  fun TSemaphore.available(): Int =
     v.read()
 
   /**
-   * Acquire 1 permit from a [TSem].
+   * Acquire 1 permit from a [TSemaphore].
    *
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TSem
@@ -639,13 +639,13 @@ interface STM {
    *
    * This function will retry if there are no permits available.
    *
-   * @see TSem.tryAcquire for a version that does not retry.
+   * @see TSemaphore.tryAcquire for a version that does not retry.
    */
-  fun TSem.acquire(): Unit =
+  fun TSemaphore.acquire(): Unit =
     acquire(1)
 
   /**
-   * Acquire [n] permit from a [TSem].
+   * Acquire [n] permit from a [TSemaphore].
    *
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TSem
@@ -664,16 +664,16 @@ interface STM {
    *
    * This function will retry if there are less than [n] permits available.
    *
-   * @see TSem.tryAcquire for a version that does not retry.
+   * @see TSemaphore.tryAcquire for a version that does not retry.
    */
-  fun TSem.acquire(n: Int): Unit {
+  fun TSemaphore.acquire(n: Int): Unit {
     val curr = v.read()
     check(curr - n >= 0)
     v.write(curr - n)
   }
 
   /**
-   * Like [TSem.acquire] except that it returns whether or not acquisition was successful.
+   * Like [TSemaphore.acquire] except that it returns whether or not acquisition was successful.
    *
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TSem
@@ -693,13 +693,13 @@ interface STM {
    *
    * This function never retries.
    *
-   * @see TSem.acquire for a version that retries if there are not enough permits.
+   * @see TSemaphore.acquire for a version that retries if there are not enough permits.
    */
-  fun TSem.tryAcquire(): Boolean =
+  fun TSemaphore.tryAcquire(): Boolean =
     tryAcquire(1)
 
   /**
-   * Like [TSem.acquire] except that it returns whether or not acquisition was successful.
+   * Like [TSemaphore.acquire] except that it returns whether or not acquisition was successful.
    *
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TSem
@@ -719,13 +719,13 @@ interface STM {
    *
    * This function never retries.
    *
-   * @see TSem.acquire for a version that retries if there are not enough permits.
+   * @see TSemaphore.acquire for a version that retries if there are not enough permits.
    */
-  fun TSem.tryAcquire(n: Int): Boolean =
+  fun TSemaphore.tryAcquire(n: Int): Boolean =
     stm { acquire(n); true } orElse { false }
 
   /**
-   * Release a permit back to the [TSem].
+   * Release a permit back to the [TSemaphore].
    *
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TSem
@@ -744,11 +744,11 @@ interface STM {
    *
    * This function never retries.
    */
-  fun TSem.release(): Unit =
+  fun TSemaphore.release(): Unit =
     v.write(v.read() + 1)
 
   /**
-   * Release [n] permits back to the [TSem].
+   * Release [n] permits back to the [TSemaphore].
    *
    * ```kotlin:ank:playground
    * import arrow.fx.stm.TSem
@@ -769,7 +769,7 @@ interface STM {
    *
    * This function never retries.
    */
-  fun TSem.release(n: Int): Unit = when (n) {
+  fun TSemaphore.release(n: Int): Unit = when (n) {
     0 -> Unit
     1 -> release()
     else ->
@@ -812,7 +812,7 @@ interface STM {
    *   //sampleStart
    *   val tq = TQueue.new<Int>()
    *   atomically {
-   *     tq + 2
+   *     tq += 2
    *   }
    *   //sampleEnd
    *   println("Items in queue ${atomically { tq.flush() }}")
@@ -821,7 +821,7 @@ interface STM {
    *
    * This function never retries.
    */
-  operator fun <A> TQueue<A>.plus(a: A): Unit = write(a)
+  operator fun <A> TQueue<A>.plusAssign(a: A): Unit = write(a)
 
   /**
    * Remove the front element from the [TQueue] or retry if the [TQueue] is empty.
@@ -1354,13 +1354,13 @@ interface STM {
    *   //sampleStart
    *   val tmap = TMap.new<Int, String>()
    *   atomically {
-   *     tmap + (1 toT "Hello")
+   *     tmap += (1 toT "Hello")
    *   }
    *   //sampleEnd
    * }
    * ```
    */
-  operator fun <K, V> TMap<K, V>.plus(kv: Tuple2<K, V>): Unit = insert(kv.a, kv.b)
+  operator fun <K, V> TMap<K, V>.plusAssign(kv: Tuple2<K, V>): Unit = insert(kv.a, kv.b)
 
   /**
    * Add a key value pair to the map
@@ -1373,13 +1373,13 @@ interface STM {
    *   //sampleStart
    *   val tmap = TMap.new<Int, String>()
    *   atomically {
-   *     tmap + (1 to "Hello")
+   *     tmap += (1 to "Hello")
    *   }
    *   //sampleEnd
    * }
    * ```
    */
-  operator fun <K, V> TMap<K, V>.plus(kv: Pair<K, V>): Unit = insert(kv.first, kv.second)
+  operator fun <K, V> TMap<K, V>.plusAssign(kv: Pair<K, V>): Unit = insert(kv.first, kv.second)
 
   /**
    * Update a value at a key if it exists.
@@ -1482,13 +1482,13 @@ interface STM {
    *   //sampleStart
    *   val tset = TSet.new<String>()
    *   atomically {
-   *     tset + "Hello"
+   *     tset += "Hello"
    *   }
    *   //sampleEnd
    * }
    * ```
    */
-  operator fun <A> TSet<A>.plus(a: A): Unit = insert(a)
+  operator fun <A> TSet<A>.plusAssign(a: A): Unit = insert(a)
 
   /**
    * Remove an element from the set.

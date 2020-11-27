@@ -77,8 +77,8 @@ fun <K, V> STM.newTMap(hash: Hash<K>): TMap<K, V> = newTMap { hash.run { it.hash
  *   //sampleStart
  *   val tmap = TMap.new<Int, String>()
  *   atomically {
- *     tmap + (1 to "Hello")
- *     tmap + (2 toT "World")
+ *     tmap += (1 to "Hello")
+ *     tmap += (2 toT "World")
  *   }
  *   //sampleEnd
  * }

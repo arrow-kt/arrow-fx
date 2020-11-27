@@ -1,15 +1,15 @@
 package arrow.fx.stm
 
-fun STM.newTSem(initial: Int): TSem = TSem(newTVar(checkNotNegative(initial)))
+fun STM.newTSem(initial: Int): TSemaphore = TSemaphore(newTVar(checkNotNegative(initial)))
 
 /**
- * [TSem] is the transactional Semaphore.
+ * [TSemaphore] is the transactional Semaphore.
  *
  * Semaphores are mostly used to limit concurrent access to resources by how many permits it can give out.
  *
- * ## Creating a [TSem]
+ * ## Creating a [TSemaphore]
  *
- * A [TSem] is created by using either [TSem.new] outside of transactions or [STM.newTSem] inside a transaction.
+ * A [TSemaphore] is created by using either [TSemaphore.new] outside of transactions or [STM.newTSem] inside a transaction.
  * Both of these methods throw if the supplied initial value is negative.
  *
  * ## Acquiring one or more permits
@@ -94,9 +94,9 @@ fun STM.newTSem(initial: Int): TSem = TSem(newTVar(checkNotNegative(initial)))
  * ```
  *
  */
-data class TSem internal constructor(internal val v: TVar<Int>) {
+data class TSemaphore internal constructor(internal val v: TVar<Int>) {
   companion object {
-    suspend fun new(initial: Int): TSem = TSem(TVar.new(checkNotNegative(initial)))
+    suspend fun new(initial: Int): TSemaphore = TSemaphore(TVar.new(checkNotNegative(initial)))
   }
 }
 

@@ -32,7 +32,7 @@ fun <A> STM.newTQueue(): TQueue<A> = TQueue(newTVar(PList.Nil), newTVar(PList.Ni
  *   atomically {
  *     tq.write(2)
  *     // or alternatively
- *     tq + 4
+ *     tq += 4
  *   }
  *   //sampleEnd
  *   println("Items in queue ${atomically { tq.flush() }}")
