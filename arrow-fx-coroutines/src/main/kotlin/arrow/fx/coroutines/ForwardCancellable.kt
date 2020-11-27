@@ -2,6 +2,7 @@ package arrow.fx.coroutines
 
 import kotlinx.atomicfu.atomic
 import kotlin.coroutines.Continuation
+import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
 import kotlin.coroutines.suspendCoroutine
@@ -31,22 +32,21 @@ internal class ForwardCancellable {
   private val state = atomic(init)
 
   suspend fun cancel(): Unit {
-    fun loop(conn: SuspendConnection, cb: (Result<Unit>) -> Unit): Unit = state.value.let { current ->
+    fun loop(ctx: CoroutineContext, conn: SuspendConnection, cb: (Result<Unit>) -> Unit): Unit = state.value.let { current ->
       when (current) {
         is State.Empty ->
-          if (!state.compareAndSet(current, State.Empty(listOf(cb) + current.stack))) loop(conn, cb)
+          if (!state.compareAndSet(current, State.Empty(listOf(cb) + current.stack))) loop(ctx, conn, cb)
           else Unit
 
         is State.Active -> {
           state.lazySet(finished) // GC purposes
-          // Platform.trampoline { }
-          current.token.cancel.startCoroutineCancellable(CancellableContinuation(EmptyCoroutineContext, conn, cb))
+          current.token.cancel.startCoroutineCancellable(CancellableContinuation(ctx, conn, cb))
         }
       }
     }
 
     return suspendCoroutine { cont ->
-      loop(cont.context[SuspendConnection] ?: SuspendConnection.uncancellable, cont::resumeWith)
+      loop(cont.context, cont.context[SuspendConnection] ?: SuspendConnection.uncancellable, cont::resumeWith)
     }
   }
 
@@ -65,10 +65,8 @@ internal class ForwardCancellable {
         if (!state.compareAndSet(current, State.Active(value)))
           complete(value)
       } else {
-        if (!state.compareAndSet(current, finished))
-          complete(value)
-        else
-          execute(value, current.stack)
+        if (!state.compareAndSet(current, finished)) complete(value)
+        else execute(value, current.stack)
       }
     }
   }

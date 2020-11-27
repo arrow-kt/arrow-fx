@@ -3,8 +3,6 @@ package arrow.fx.coroutines
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import kotlin.coroutines.Continuation
-import kotlin.coroutines.EmptyCoroutineContext
-import kotlin.coroutines.startCoroutine
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlin.coroutines.intrinsics.startCoroutineUninterceptedOrReturn
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
@@ -82,12 +80,12 @@ suspend fun <A> timeOutOrNull(duration: Duration, fa: suspend () -> A): A? =
 
     suspend { sleep(duration) }.startCoroutineCancellable(
       CancellableContinuation(
-        EmptyCoroutineContext,
+        ComputationPool,
         timerConn
       ) { timeOut ->
         timeOut.fold({
           if (isActive.compareAndSet(true, false)) {
-            suspend { faConn.cancel() }.startCoroutine(Continuation(EmptyCoroutineContext) {
+            suspend { faConn.cancel() }.startCoroutineUnintercepted(Continuation(ComputationPool) {
               it.fold({ cont.intercepted().resume(null) }, cont.intercepted()::resumeWithException)
             })
           }
