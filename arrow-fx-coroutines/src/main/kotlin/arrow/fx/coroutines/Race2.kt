@@ -110,7 +110,7 @@ suspend fun <A, B> raceN(ctx: CoroutineContext, fa: suspend () -> A, fb: suspend
   ): Unit =
     if (active.getAndSet(false)) {
       // Why?
-      suspend { other.cancel() }.startCoroutine(Continuation(ComputationPool) { r2: Result<Unit> ->
+      suspend { other.cancel() }.startCoroutine(Continuation(EmptyCoroutineContext) { r2: Result<Unit> ->
         main.pop()
         cb(Result.failure(r2.fold({ err }, { Platform.composeErrors(err, it) })))
       })
