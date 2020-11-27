@@ -21,7 +21,7 @@ fun <K, V> STM.newTMap(hash: Hash<K>): TMap<K, V> = newTMap { hash.run { it.hash
  *
  * Depending on whether or not you are in a transaction you can use either [STM.newTMap] or [TMap.new] to create a new [TMap].
  *
- * There are a few alternatives because [TMap] can be supplied a custom hash strategy. If no argument is given it defaults to [hashCode].
+ * There are a few alternatives because [TMap] can be supplied a custom hash strategy. If no argument is given it defaults to [Any.hashCode].
  *
  * ## Reading an element with a key
  *
@@ -66,7 +66,7 @@ fun <K, V> STM.newTMap(hash: Hash<K>): TMap<K, V> = newTMap { hash.run { it.hash
  * }
  * ```
  *
- * Another option when adding elements is to use [STM.plus]:
+ * Another option when adding elements is to use [STM.plusAssign]:
  *
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TMap

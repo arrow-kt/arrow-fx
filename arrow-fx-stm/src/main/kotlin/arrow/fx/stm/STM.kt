@@ -599,12 +599,12 @@ interface STM {
    * Returns the currently available number of permits in a [TSemaphore].
    *
    * ```kotlin:ank:playground
-   * import arrow.fx.stm.TSem
+   * import arrow.fx.stm.TSemaphore
    * import arrow.fx.stm.atomically
    *
    * suspend fun main() {
    *   //sampleStart
-   *   val tsem = TSem.new(5)
+   *   val tsem = TSemaphore.new(5)
    *   val result = atomically {
    *     tsem.available()
    *   }
@@ -623,12 +623,12 @@ interface STM {
    * Acquire 1 permit from a [TSemaphore].
    *
    * ```kotlin:ank:playground
-   * import arrow.fx.stm.TSem
+   * import arrow.fx.stm.TSemaphore
    * import arrow.fx.stm.atomically
    *
    * suspend fun main() {
    *   //sampleStart
-   *   val tsem = TSem.new(5)
+   *   val tsem = TSemaphore.new(5)
    *   atomically {
    *     tsem.acquire()
    *   }
@@ -648,12 +648,12 @@ interface STM {
    * Acquire [n] permit from a [TSemaphore].
    *
    * ```kotlin:ank:playground
-   * import arrow.fx.stm.TSem
+   * import arrow.fx.stm.TSemaphore
    * import arrow.fx.stm.atomically
    *
    * suspend fun main() {
    *   //sampleStart
-   *   val tsem = TSem.new(5)
+   *   val tsem = TSemaphore.new(5)
    *   atomically {
    *     tsem.acquire(3)
    *   }
@@ -676,12 +676,12 @@ interface STM {
    * Like [TSemaphore.acquire] except that it returns whether or not acquisition was successful.
    *
    * ```kotlin:ank:playground
-   * import arrow.fx.stm.TSem
+   * import arrow.fx.stm.TSemaphore
    * import arrow.fx.stm.atomically
    *
    * suspend fun main() {
    *   //sampleStart
-   *   val tsem = TSem.new(0)
+   *   val tsem = TSemaphore.new(0)
    *   val result = atomically {
    *     tsem.tryAcquire()
    *   }
@@ -702,12 +702,12 @@ interface STM {
    * Like [TSemaphore.acquire] except that it returns whether or not acquisition was successful.
    *
    * ```kotlin:ank:playground
-   * import arrow.fx.stm.TSem
+   * import arrow.fx.stm.TSemaphore
    * import arrow.fx.stm.atomically
    *
    * suspend fun main() {
    *   //sampleStart
-   *   val tsem = TSem.new(0)
+   *   val tsem = TSemaphore.new(0)
    *   val result = atomically {
    *     tsem.tryAcquire(3)
    *   }
@@ -728,12 +728,12 @@ interface STM {
    * Release a permit back to the [TSemaphore].
    *
    * ```kotlin:ank:playground
-   * import arrow.fx.stm.TSem
+   * import arrow.fx.stm.TSemaphore
    * import arrow.fx.stm.atomically
    *
    * suspend fun main() {
    *   //sampleStart
-   *   val tsem = TSem.new(5)
+   *   val tsem = TSemaphore.new(5)
    *   atomically {
    *     tsem.release()
    *   }
@@ -751,12 +751,12 @@ interface STM {
    * Release [n] permits back to the [TSemaphore].
    *
    * ```kotlin:ank:playground
-   * import arrow.fx.stm.TSem
+   * import arrow.fx.stm.TSemaphore
    * import arrow.fx.stm.atomically
    *
    * suspend fun main() {
    *   //sampleStart
-   *   val tsem = TSem.new(5)
+   *   val tsem = TSemaphore.new(5)
    *   atomically {
    *     tsem.release(2)
    *   }

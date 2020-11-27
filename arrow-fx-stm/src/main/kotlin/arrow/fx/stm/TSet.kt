@@ -22,11 +22,11 @@ fun <A> STM.newTSet(hash: Hash<A>): TSet<A> = newTSet { hash.run { it.hash() } }
  *
  * Depending on whether or not you are in a transaction you can use either [STM.newTSet] or [TSet.new] to create a new [TSet].
  *
- * There are a few alternatives because [TSet] can be supplied a custom hash strategy. If no argument is given it defaults to [hashCode].
+ * There are a few alternatives because [TSet] can be supplied a custom hash strategy. If no argument is given it defaults to [Any.hashCode].
  *
  * ## Adding elements to the set
  *
- * Adding an element can be achieved by using either [STM.insert] or its alias [STM.plus]:
+ * Adding an element can be achieved by using either [STM.insert] or its alias [STM.plusAssign]:
  *
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TSet

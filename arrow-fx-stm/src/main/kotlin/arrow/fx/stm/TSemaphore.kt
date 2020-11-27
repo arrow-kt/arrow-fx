@@ -15,12 +15,12 @@ fun STM.newTSem(initial: Int): TSemaphore = TSemaphore(newTVar(checkNotNegative(
  * ## Acquiring one or more permits
  *
  * ```kotlin:ank:playground
- * import arrow.fx.stm.TSem
+ * import arrow.fx.stm.TSemaphore
  * import arrow.fx.stm.atomically
  *
  * suspend fun main() {
  *   //sampleStart
- *   val tsem = TSem.new(5)
+ *   val tsem = TSemaphore.new(5)
  *   atomically {
  *     // acquire one permit
  *     tsem.acquire()
@@ -36,12 +36,12 @@ fun STM.newTSem(initial: Int): TSemaphore = TSemaphore(newTVar(checkNotNegative(
  *  [STM.tryAcquire] can be used to avoid this behaviour as it returns whether or not acquisition was successful.
  *
  * ```kotlin:ank:playground
- * import arrow.fx.stm.TSem
+ * import arrow.fx.stm.TSemaphore
  * import arrow.fx.stm.atomically
  *
  * suspend fun main() {
  *   //sampleStart
- *   val tsem = TSem.new(0)
+ *   val tsem = TSemaphore.new(0)
  *   val result = atomically {
  *     tsem.tryAcquire()
  *   }
@@ -56,12 +56,12 @@ fun STM.newTSem(initial: Int): TSemaphore = TSemaphore(newTVar(checkNotNegative(
  * Permits can be released again using [STM.release]:
  *
  * ```kotlin:ank:playground
- * import arrow.fx.stm.TSem
+ * import arrow.fx.stm.TSemaphore
  * import arrow.fx.stm.atomically
  *
  * suspend fun main() {
  *   //sampleStart
- *   val tsem = TSem.new(5)
+ *   val tsem = TSemaphore.new(5)
  *   atomically {
  *     tsem.release()
  *   }
@@ -78,12 +78,12 @@ fun STM.newTSem(initial: Int): TSemaphore = TSemaphore(newTVar(checkNotNegative(
  * ## Reading how many permits are currently available
  *
  * ```kotlin:ank:playground
- * import arrow.fx.stm.TSem
+ * import arrow.fx.stm.TSemaphore
  * import arrow.fx.stm.atomically
  *
  * suspend fun main() {
  *   //sampleStart
- *   val tsem = TSem.new(5)
+ *   val tsem = TSemaphore.new(5)
  *   val result = atomically {
  *     tsem.available()
  *   }
