@@ -38,6 +38,8 @@ interface Environment {
    */
   fun <A> unsafeRunSync(fa: suspend () -> A): A
 
+  fun <R, A> unsafeRunSync(receiver: R, fa: suspend R.() -> A): A
+
   /**
    * Execution strategy that will immediately return and perform the program's work without blocking the current thread.
    * This operation runs uncancellable.
@@ -47,6 +49,10 @@ interface Environment {
   fun unsafeRunAsync(fa: suspend () -> Unit): Unit =
     unsafeRunAsync(fa, { throw it }, { /* Finished normally */ })
 
+  fun <R> unsafeRunAsync(receiver: R, fa: suspend R.() -> Unit): Unit =
+    unsafeRunAsync(receiver, fa, { throw it }, { /* Finished normally */ })
+
+
   /**
    * Execution strategy that will immediately return and perform the program's work without blocking the current thread.
    * This operation runs uncancellable.
@@ -55,6 +61,8 @@ interface Environment {
    * The result will be passed to [a] in case of success, or to [e] in case of an exception.
    */
   fun <A> unsafeRunAsync(fa: suspend () -> A, e: (Throwable) -> Unit, a: (A) -> Unit): Unit
+
+  fun <R, A> unsafeRunAsync(receiver: R, fa: suspend R.() -> A, e: (Throwable) -> Unit, a: (A) -> Unit): Unit
 
   /**
    * Execution strategy that will immediately return and perform the program's work without blocking the current thread.
@@ -66,6 +74,10 @@ interface Environment {
   fun unsafeRunAsyncCancellable(fa: suspend () -> Unit): Disposable =
     unsafeRunAsyncCancellable(fa, { throw it }, { /* Finished normally */ })
 
+  fun <R> unsafeRunAsyncCancellable(receiver: R, fa: suspend R.() -> Unit): Disposable =
+    unsafeRunAsyncCancellable(receiver, fa, { throw it }, { /* Finished normally */ })
+
+
   /**
    * Execution strategy that will immediately return and perform the program's work without blocking the current thread.
    * Runs the operation [fa] in a cancellable way.
@@ -75,6 +87,8 @@ interface Environment {
    * The result will be passed to [a] in case of success, or to [e] in case of an exception.
    */
   fun <A> unsafeRunAsyncCancellable(fa: suspend () -> A, e: (Throwable) -> Unit, a: (A) -> Unit): Disposable
+
+  fun <R, A> unsafeRunAsyncCancellable(receiver: R, fa: suspend R.() -> A, e: (Throwable) -> Unit, a: (A) -> Unit): Disposable
 
   companion object {
     operator fun invoke(ctx: CoroutineContext = ComputationPool): Environment =
@@ -90,11 +104,22 @@ internal class DefaultEnvironment(override val ctx: CoroutineContext) : Environm
   override fun <A> unsafeRunSync(fa: suspend () -> A): A =
     Platform.unsafeRunSync(ctx, fa)
 
+  override fun <R, A> unsafeRunSync(receiver: R, fa: suspend R.() -> A): A =
+    Platform.unsafeRunSync(ctx, receiver, fa)
+
   override fun <A> unsafeRunAsync(fa: suspend () -> A, e: (Throwable) -> Unit, a: (A) -> Unit): Unit =
     fa.startCoroutine(Continuation(ctx) { res -> res.fold(a, e) })
 
+  override fun <R, A> unsafeRunAsync(receiver: R, fa: suspend R.() -> A, e: (Throwable) -> Unit, a: (A) -> Unit) =
+    fa.startCoroutine(receiver, Continuation(ctx) { res -> res.fold(a, e) })
+
   override fun <A> unsafeRunAsyncCancellable(fa: suspend () -> A, e: (Throwable) -> Unit, a: (A) -> Unit): Disposable =
     fa.startCoroutineCancellable(CancellableContinuation(ctx) { res ->
+      res.fold(a, e) // Return error to caller
+    })
+
+  override fun <R, A> unsafeRunAsyncCancellable(receiver: R, fa: suspend R.() -> A, e: (Throwable) -> Unit, a: (A) -> Unit): Disposable =
+    fa.startCoroutineCancellable(receiver, CancellableContinuation(ctx) { res ->
       res.fold(a, e) // Return error to caller
     })
 }

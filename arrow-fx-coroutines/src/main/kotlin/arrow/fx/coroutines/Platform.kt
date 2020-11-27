@@ -159,6 +159,23 @@ object Platform {
     }
   }
 
+  internal fun <R, A> unsafeRunSync(startOn: CoroutineContext, receiver: R, f: suspend R.() -> A): A {
+    val latch = OneShotLatch()
+    var ref: Either<Throwable, A>? = null
+    f.startCoroutine(receiver, Continuation(startOn) { a ->
+      ref = a.fold({ aa -> Either.Right(aa) }, { t -> Either.Left(t) })
+      latch.releaseShared(1)
+    })
+
+    latch.acquireSharedInterruptibly(1)
+
+    return when (val either = ref) {
+      is Either.Left -> throw either.a
+      is Either.Right -> either.b
+      null -> throw ArrowInternalException("$ArrowExceptionMessage\nSuspend execution should yield a valid result")
+    }
+  }
+
   /**
    * Composes multiple errors together, meant for those cases in which error suppression, due to a second error being
    * triggered, is not acceptable.

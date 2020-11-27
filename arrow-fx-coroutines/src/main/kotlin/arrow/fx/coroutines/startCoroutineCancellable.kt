@@ -34,6 +34,19 @@ fun <A> (suspend () -> A).startCoroutineCancellable(completion: CancellableConti
 }
 
 /**
+ * Starts a coroutine without a receiver and with result type [A].
+ * This function creates and starts a new, fresh instance of suspendable cancellable computation every time it is invoked.
+ * The [completion] continuation is invoked when the coroutine completes with a result or an exception.
+ *
+ * @returns Disposable handler to cancel the started suspendable cancellable computation.
+ */
+fun <R, A> (suspend R.() -> A).startCoroutineCancellable(receiver: R, completion: CancellableContinuation<A>): Disposable {
+  val conn = completion.context[SuspendConnection] ?: SuspendConnection.uncancellable
+  createCoroutineUnintercepted(receiver, completion).intercepted().resume(Unit)
+  return { Platform.unsafeRunSync { conn.cancel() } }
+}
+
+/**
  *
  * Constructor that allows us to launch a [CancellableContinuation] on an existing [SuspendConnection].
  */

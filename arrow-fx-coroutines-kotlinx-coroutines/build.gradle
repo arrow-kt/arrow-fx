@@ -8,6 +8,7 @@ apply from: "$DOC_CREATION"
 
 dependencies {
     implementation project(':arrow-fx-coroutines')
+    implementation project(':arrow-fx-suspend-connection')
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$KOTLIN_VERSION"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$KOTLINX_COROUTINES_VERSION"
 
