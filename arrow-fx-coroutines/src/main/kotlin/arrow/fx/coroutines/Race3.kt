@@ -60,8 +60,8 @@ suspend fun <A, B, C> raceN(
     r: Race3<A, B, C>
   ): Unit = if (isActive.getAndSet(false)) {
     // Continue on the winners Context/Thread
-    suspend { other2.cancel() }.startCoroutineUnintercepted(Continuation(ctx) { r2 ->
-      suspend { other3.cancel() }.startCoroutineUnintercepted(Continuation(ctx) { r3 ->
+    suspend { other2.cancel() }.startCoroutineUnintercepted(Continuation(ctx + SuspendConnection.uncancellable) { r2 ->
+      suspend { other3.cancel() }.startCoroutineUnintercepted(Continuation(ctx + SuspendConnection.uncancellable) { r3 ->
         main.pop()
         r2.fold({
           r3.fold({ cb(Result.success(r)) }, { e -> cb(Result.failure(e)) })
@@ -81,8 +81,8 @@ suspend fun <A, B, C> raceN(
     err: Throwable
   ): Unit = if (active.getAndSet(false)) {
     // Continue on the winners Context/Thread
-    suspend { other2.cancel() }.startCoroutineUnintercepted(Continuation(ctx) { r2 ->
-      suspend { other3.cancel() }.startCoroutineUnintercepted(Continuation(ctx) { r3 ->
+    suspend { other2.cancel() }.startCoroutineUnintercepted(Continuation(ctx + SuspendConnection.uncancellable) { r2 ->
+      suspend { other3.cancel() }.startCoroutineUnintercepted(Continuation(ctx + SuspendConnection.uncancellable) { r3 ->
         main.pop()
         cb(
           Result.failure(

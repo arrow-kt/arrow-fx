@@ -87,8 +87,8 @@ suspend fun <A, B, C> raceTriple(
       promise: UnsafePromise<A>
     ): Unit {
       if (active.getAndSet(false)) { // if an error finishes first, stop the race.
-        suspend { connB.cancel() }.startCoroutineUnintercepted(Continuation(ctx) { r2 ->
-          suspend { connC.cancel() }.startCoroutineUnintercepted(Continuation(ctx) { r3 ->
+        suspend { connB.cancel() }.startCoroutineUnintercepted(Continuation(ctx + SuspendConnection.uncancellable) { r2 ->
+          suspend { connC.cancel() }.startCoroutineUnintercepted(Continuation(ctx + SuspendConnection.uncancellable) { r3 ->
             conn.pop()
 
             val errorResult = r2.fold({

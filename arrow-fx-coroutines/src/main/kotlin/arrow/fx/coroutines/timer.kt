@@ -96,7 +96,7 @@ suspend fun <A> timeOutOrNull(duration: Duration, fa: suspend () -> A): A? =
       // If isActive then trigger cancellation on original ctx, and don't intercept since we're still on the original ctx
       // No need to resumme on an intercepted continuation since we're still on the original ctx
       if (isActive.compareAndSet(true, false)) {
-        suspend { timerConn.cancel() }.startCoroutineUnintercepted(Continuation(cont.context) {
+        suspend { timerConn.cancel() }.startCoroutineUnintercepted(Continuation(cont.context + SuspendConnection.uncancellable) {
           it.fold({ cont.resumeWith(res) }, { e -> cont.resumeWithException(Platform.composeErrors(e, res)) })
         })
       } else Unit

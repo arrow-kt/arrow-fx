@@ -73,7 +73,7 @@ suspend fun <A, B> racePair(
         }
       }, { error ->
         if (active.getAndSet(false)) { // if an error finishes first, stop the race.
-          suspend { connB.cancel() }.startCoroutineUnintercepted(Continuation(ctx) { r2 ->
+          suspend { connB.cancel() }.startCoroutineUnintercepted(Continuation(ctx + SuspendConnection.uncancellable) { r2 ->
             conn.pop()
             cont.resumeWith(Result.failure(r2.fold({ error }, { Platform.composeErrors(error, it) })))
           })
@@ -93,7 +93,7 @@ suspend fun <A, B> racePair(
         }
       }, { error ->
         if (active.getAndSet(false)) { // if an error finishes first, stop the race.
-          suspend { connA.cancel() }.startCoroutineUnintercepted(Continuation(ctx) { r2 ->
+          suspend { connA.cancel() }.startCoroutineUnintercepted(Continuation(ctx + SuspendConnection.uncancellable) { r2 ->
             conn.pop()
             cont.resumeWith(Result.failure(r2.fold({ error }, { Platform.composeErrors(error, it) })))
           })

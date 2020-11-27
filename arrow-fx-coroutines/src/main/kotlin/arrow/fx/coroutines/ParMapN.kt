@@ -93,7 +93,7 @@ suspend fun <A, B, C> parMapN(
 
     fun sendException(other: SuspendConnection, e: Throwable) = when (state.getAndSet(e)) {
       is Throwable -> Unit // Do nothing we already finished
-      else -> suspend { other.cancel() }.startCoroutineUnintercepted(Continuation(ctx) { r ->
+      else -> suspend { other.cancel() }.startCoroutineUnintercepted(Continuation(ctx + SuspendConnection.uncancellable) { r ->
         conn.pop()
         cb(Result.failure(r.fold({ e }, { e2 -> Platform.composeErrors(e, e2) })))
       })

@@ -89,7 +89,7 @@ suspend fun <A, B> raceN(ctx: CoroutineContext, fa: suspend () -> A, fb: suspend
     r: Either<T, U>
   ): Unit =
     if (isActive.getAndSet(false)) {
-      suspend { other.cancel() }.startCoroutineUnintercepted(Continuation(ctx) { r2 ->
+      suspend { other.cancel() }.startCoroutineUnintercepted(Continuation(ctx + SuspendConnection.uncancellable) { r2 ->
         main.pop()
         r2.fold({
           cb(Result.success(r))
@@ -107,7 +107,7 @@ suspend fun <A, B> raceN(ctx: CoroutineContext, fa: suspend () -> A, fb: suspend
     err: Throwable
   ): Unit =
     if (active.getAndSet(false)) {
-      suspend { other.cancel() }.startCoroutineUnintercepted(Continuation(ctx) { r2: Result<Unit> ->
+      suspend { other.cancel() }.startCoroutineUnintercepted(Continuation(ctx + SuspendConnection.uncancellable) { r2: Result<Unit> ->
         main.pop()
         cb(Result.failure(r2.fold({ err }, { Platform.composeErrors(err, it) })))
       })
