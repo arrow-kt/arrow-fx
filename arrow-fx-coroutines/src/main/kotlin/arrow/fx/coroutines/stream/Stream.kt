@@ -1306,7 +1306,7 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * //sampleEnd
    * ```
    */
-  fun <O2> concurrently(other: Stream<O2>, ctx: CoroutineContext = ComputationPool): Stream<O> =
+  fun <O2> concurrently(other: Stream<O2>, ctx: CoroutineContext): Stream<O> =
     effect { Pair(Promise<Unit>(), Promise<Either<Throwable, Unit>>()) }
       .flatMap { (interrupt, doneR) ->
         bracket(
@@ -1317,6 +1317,9 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
           }
         ).flatMap { this.interruptWhen { Either.catch { interrupt.get() } } }
       }
+
+  fun <O2> concurrently(other: Stream<O2>): Stream<O> =
+    defaultContext(ComputationPool).flatMap { concurrently(other, it) }
 
   private suspend fun <O> concurrentlyRunR(
     other: Stream<O>,
@@ -1341,15 +1344,21 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * Merges both Streams into an Stream of A and B represented by Either<A, B>.
    * This operation is equivalent to a normal merge but for different types.
    */
-  fun <B> either(ctx: CoroutineContext = ComputationPool, other: Stream<B>): Stream<Either<O, B>> =
+  fun <B> either(ctx: CoroutineContext, other: Stream<B>): Stream<Either<O, B>> =
     Stream(this.map { Left(it) }, other.map { Right(it) })
       .parJoin(2, ctx)
+
+  fun <B> either(other: Stream<B>): Stream<Either<O, B>> =
+    defaultContext(ComputationPool).flatMap { either(it, other) }
 
   /**
    * Starts this stream and cancels it as finalization of the returned stream.
    */
-  fun spawn(ctx: CoroutineContext = ComputationPool): Stream<Fiber<Unit>> =
+  fun spawn(ctx: CoroutineContext): Stream<Fiber<Unit>> =
     supervise(ctx) { drain() }
+
+  fun spawn(): Stream<Fiber<Unit>> =
+    defaultContext(ComputationPool).flatMap(::spawn)
 
   /**
    * Run the supplied effectful action at the end of this stream, regardless of how the stream terminates.
@@ -1773,8 +1782,11 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
     /**
      * Starts the supplied task and cancels it as finalization of the returned stream.
      */
-    fun <A> supervise(ctx: CoroutineContext = ComputationPool, fa: suspend () -> A): Stream<Fiber<A>> =
+    fun <A> supervise(ctx: CoroutineContext, fa: suspend () -> A): Stream<Fiber<A>> =
       bracket(acquire = { fa.forkAndForget(ctx) }, release = Fiber<A>::cancel)
+
+    fun <A> supervise(fa: suspend () -> A): Stream<Fiber<A>> =
+      defaultContext(ComputationPool).flatMap { supervise(it, fa) }
 
     /**
      * Lazily produce the range `[start, stopExclusive)`. If you want to produce
@@ -2611,3 +2623,6 @@ fun <O> Stream.Companion.monoid(): Monoid<Stream<O>> =
     override fun Stream<O>.combine(b: Stream<O>): Stream<O> =
       this@combine.append { b }
   }
+
+internal fun Stream.Companion.defaultContext(ctx: CoroutineContext = ComputationPool): Stream<CoroutineContext> =
+  Stream.effect { getDefaultContext(ctx) }
