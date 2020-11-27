@@ -2625,4 +2625,4 @@ fun <O> Stream.Companion.monoid(): Monoid<Stream<O>> =
   }
 
 internal fun Stream.Companion.defaultContext(ctx: CoroutineContext = ComputationPool): Stream<CoroutineContext> =
-  Stream.effect { getDefaultContext(ctx) }
+  effect { getDefaultContext(ctx) }
