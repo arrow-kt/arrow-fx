@@ -1,5 +1,14 @@
 package arrow.fx.coroutines
 
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.ContinuationInterceptor
+import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
+import kotlin.coroutines.intrinsics.startCoroutineUninterceptedOrReturn
+import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
+
 internal inline infix fun <A, B, C> ((A) -> B).andThen(crossinline f: (B) -> C): (A) -> C =
   { a -> f(this(a)) }
 
@@ -40,4 +49,54 @@ internal fun Iterable<*>.size(): Int =
 /** Represents a unique identifier using object equality. */
 internal class Token {
   override fun toString(): String = "Token(${Integer.toHexString(hashCode())})"
+}
+
+/**
+ * Use this function instead of [suspendCoroutine] when you always suspend, but don't always need to `intercept` before returning.
+ * It's like [suspendCoroutine] without the creation of `SafeContinuation` or `intercepted` upon returning.
+ */
+internal suspend inline fun <A> suspendCoroutineUnintercepted(crossinline f: (Continuation<A>) -> Unit): A =
+  suspendCoroutineUninterceptedOrReturn {
+    f(it)
+    COROUTINE_SUSPENDED
+  }
+
+/**
+ * Use this function to restart a coroutine directly from inside of [suspendCoroutine],
+ * when the code is already in the context of this coroutine.
+ * It does not use [ContinuationInterceptor] and does not update the context of the current thread.
+ */
+internal fun <A> (suspend () -> A).startCoroutineUnintercepted(completion: Continuation<A>): Unit =
+  startDirect(completion) { actualCompletion ->
+    startCoroutineUninterceptedOrReturn(actualCompletion)
+  }
+
+internal fun <R, A> (suspend R.() -> A).startCoroutineUnintercepted(receiver: R, completion: Continuation<A>): Unit =
+  startDirect(completion) { actualCompletion ->
+    startCoroutineUninterceptedOrReturn(receiver, actualCompletion)
+  }
+
+internal fun <A> (suspend () -> A).startCoroutineUninterceptedOrReturn(completion: Continuation<A>): Any? =
+  startCoroutineUninterceptedOrReturn(probeCoroutineCreated(completion))
+
+internal fun <R, A> (suspend R.() -> A).startCoroutineUninterceptedOrReturn(receiver: R, completion: Continuation<A>): Any? =
+    startCoroutineUninterceptedOrReturn(receiver, probeCoroutineCreated(completion))
+
+/**
+ * Starts the given [block] immediately in the current stack-frame until the first suspension point.
+ * This method supports debug probes and thus can intercept completion, thus completion is provided
+ * as the parameter of [block].
+ */
+private inline fun <T> startDirect(completion: Continuation<T>, block: (Continuation<T>) -> Any?): Unit {
+  val actualCompletion = probeCoroutineCreated(completion)
+  val value = try {
+    block(actualCompletion)
+  } catch (e: Throwable) {
+    actualCompletion.resumeWithException(e)
+    return
+  }
+  if (value !== COROUTINE_SUSPENDED) {
+    @Suppress("UNCHECKED_CAST")
+    actualCompletion.resume(value as T)
+  }
 }
