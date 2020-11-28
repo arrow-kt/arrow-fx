@@ -9,6 +9,7 @@ buildscript {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$KOTLIN_VERSION"
         classpath "org.jetbrains.kotlinx:atomicfu-gradle-plugin:$ATOMICFU_VERSION"
         classpath "com.android.tools.build:gradle:$ANDROID_TOOLS_BUILD_PLUGIN_VERSION"
+        classpath "com.github.jengelman.gradle.plugins:shadow:5.1.0"
     }
 }
 

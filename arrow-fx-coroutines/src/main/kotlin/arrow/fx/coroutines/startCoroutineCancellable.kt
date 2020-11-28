@@ -9,7 +9,10 @@ import kotlin.coroutines.resume
 /**
  * Type to constraint [startCoroutineCancellable] to the [CancellableContinuation] constructor.
  */
-abstract class CancellableContinuation<A> internal constructor() : Continuation<A>
+abstract class CancellableContinuation<A> internal constructor() : Continuation<A> {
+  override fun toString(): String =
+    "CancellableContinuation@${Integer.toHexString(System.identityHashCode(this))}"
+}
 
 /** Constructor for [CancellableContinuation] */
 @Suppress("FunctionName")

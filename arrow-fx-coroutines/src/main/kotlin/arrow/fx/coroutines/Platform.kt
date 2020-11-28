@@ -128,7 +128,7 @@ object Platform {
   internal fun <A> unsafeRunSync(f: suspend () -> A): A {
     val latch = OneShotLatch()
     var ref: Either<Throwable, A>? = null
-    f.startCoroutine(Continuation(EmptyCoroutineContext) { a ->
+    f.startCoroutine(UnsafeRunSyncCoroutine(EmptyCoroutineContext) { a ->
       ref = a.fold({ aa -> Either.Right(aa) }, { t -> Either.Left(t) })
       latch.releaseShared(1)
     })
@@ -145,7 +145,7 @@ object Platform {
   internal fun <A> unsafeRunSync(startOn: CoroutineContext, f: suspend () -> A): A {
     val latch = OneShotLatch()
     var ref: Either<Throwable, A>? = null
-    f.startCoroutine(Continuation(startOn) { a ->
+    f.startCoroutine(UnsafeRunSyncCoroutine(startOn) { a ->
       ref = a.fold({ aa -> Either.Right(aa) }, { t -> Either.Left(t) })
       latch.releaseShared(1)
     })
@@ -222,6 +222,14 @@ object Platform {
       composeErrors(first, all.drop(1))
     }
 }
+
+private interface UnsafeRunSyncCoroutine<A> : Continuation<A>
+
+private inline fun <A> UnsafeRunSyncCoroutine(ctx: CoroutineContext, crossinline resumeWith: (Result<A>) -> Unit): UnsafeRunSyncCoroutine<A> =
+  object : UnsafeRunSyncCoroutine<A> {
+    override val context: CoroutineContext = ctx
+    override fun resumeWith(result: Result<A>) = resumeWith(result)
+  }
 
 private class OneShotLatch : AbstractQueuedSynchronizer() {
   override fun tryAcquireShared(ignored: Int): Int =
