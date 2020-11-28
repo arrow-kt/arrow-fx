@@ -1060,7 +1060,7 @@ interface STM {
    *   val tq = TQueue.new<Int>()
    *   atomically {
    *     tq.write(0)
-   *     tq.filter { it != 0 }
+   *     tq.removeAll { it != 0 }
    *   }
    *   //sampleEnd
    *   println("Items in queue ${atomically { tq.flush() }}")
@@ -1071,37 +1071,9 @@ interface STM {
    *
    * > This function has to access both [TVar]'s and thus may lead to increased contention, use sparingly.
    */
-  fun <A> TQueue<A>.filter(pred: (A) -> Boolean): Unit {
+  fun <A> TQueue<A>.removeAll(pred: (A) -> Boolean): Unit {
     reads.modify { it.filter(pred) }
     writes.modify { it.filter(pred) }
-  }
-
-  /**
-   * Filter a [TQueue], removing all elements for which [pred] returns true.
-   *
-   * ```kotlin:ank:playground
-   * import arrow.fx.stm.TQueue
-   * import arrow.fx.stm.atomically
-   *
-   * suspend fun main() {
-   *   //sampleStart
-   *   val tq = TQueue.new<Int>()
-   *   atomically {
-   *     tq.write(0)
-   *     tq.filterNot { it == 0 }
-   *   }
-   *   //sampleEnd
-   *   println("Items in queue ${atomically { tq.flush() }}")
-   * }
-   * ```
-   *
-   * This function never retries.
-   *
-   * > This function has to access both [TVar]'s and thus may lead to increased contention, use sparingly.
-   */
-  fun <A> TQueue<A>.filterNot(pred: (A) -> Boolean): Unit {
-    reads.modify { it.filterNot(pred) }
-    writes.modify { it.filterNot(pred) }
   }
 
   /**

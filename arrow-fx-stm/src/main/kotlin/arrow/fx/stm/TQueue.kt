@@ -194,9 +194,9 @@ fun <A> STM.newTQueue(): TQueue<A> = TQueue(newTVar(PList.Nil), newTVar(PList.Ni
  *
  * > All three of these methods have to access both the write and read end of a [TQueue] and thus can increase contention. Use them sparingly!
  *
- * ## Filtering a [TQueue]
+ * ## Removing elements from a [TQueue]
  *
- * It is also possible to (destructively) filter a [TQueue] using [STM.filter] and [STM.filterNot]:
+ * It is also possible to remove elements from a [TQueue] using [STM.removeAll]:
  *
  * ```kotlin:ank:playground
  * import arrow.fx.stm.TQueue
@@ -207,14 +207,14 @@ fun <A> STM.newTQueue(): TQueue<A> = TQueue(newTVar(PList.Nil), newTVar(PList.Ni
  *   val tq = TQueue.new<Int>()
  *   atomically {
  *     tq.write(0)
- *     tq.filter { it != 0 }
+ *     tq.removeAll { it != 0 }
  *   }
  *   //sampleEnd
  *   println("Items in queue ${atomically { tq.flush() }}")
  * }
  * ```
  *
- * > Both filtering methods also access both ends of the queue and thus should be used rarely to avoid contention.
+ * > This method also access both ends of the queue and thus should be used infrequently to avoid contention.
  */
 data class TQueue<A> internal constructor(
   internal val reads: TVar<PList<A>>,
