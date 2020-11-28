@@ -176,11 +176,9 @@ open class ConcurrencyTestSpec(spec: ConcurrencyTestSpec.() -> Unit = {}) : Free
       var result: Either<Throwable, Any?> = Either.right(EMPTY)
       service.execute {
         try {
-          f.startCoroutineUninterceptedOrReturn(Continuation(DefaultContext(serviceCtx)) {
+          f.startCoroutineUnintercepted(Continuation(serviceCtx + DefaultContext(serviceCtx)) {
             result = it.fold({ Either.right(it) }, { Either.left(it) })
-          }).also {
-            if (it !== COROUTINE_SUSPENDED) result = Either.right(it)
-          }
+          })
         } catch (t: Throwable) {
           result = Either.left(t)
         }

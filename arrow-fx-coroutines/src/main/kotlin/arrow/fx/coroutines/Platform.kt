@@ -126,6 +126,7 @@ object Platform {
   }
 
   internal fun <A> unsafeRunSync(f: suspend () -> A): A {
+    throw IllegalStateException("shouldn't be here in the test")
     val latch = OneShotLatch()
     var ref: Either<Throwable, A>? = null
     f.startCoroutine(Continuation(EmptyCoroutineContext) { a ->
@@ -143,6 +144,7 @@ object Platform {
   }
 
   internal fun <A> unsafeRunSync(startOn: CoroutineContext, f: suspend () -> A): A {
+    throw IllegalStateException("shouldn't be here in the test")
     val latch = OneShotLatch()
     var ref: Either<Throwable, A>? = null
     f.startCoroutine(Continuation(startOn) { a ->
@@ -157,6 +159,11 @@ object Platform {
       is Either.Right -> either.b
       null -> throw ArrowInternalException("$ArrowExceptionMessage\nSuspend execution should yield a valid result")
     }
+  }
+
+  fun composeErrors(first: Throwable, res: Result<Any?>): Throwable {
+    res.fold({ first }, { e -> first.addSuppressed(e) })
+    return first
   }
 
   /**

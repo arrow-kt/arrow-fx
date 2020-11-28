@@ -400,7 +400,7 @@ class Scope private constructor(
     when (interruptible) {
       null -> Either.catch(f).mapLeft { it.left() }
       else -> {
-        val res = raceN({ interruptible.deferred.get() }, { Either.catch(f) })
+        val res = raceN(coroutineContext, { interruptible.deferred.get() }, { Either.catch(f) })
         when (res) {
           is Either.Right -> res.b.mapLeft { it.left() }
           is Either.Left -> Either.Left(res.a)

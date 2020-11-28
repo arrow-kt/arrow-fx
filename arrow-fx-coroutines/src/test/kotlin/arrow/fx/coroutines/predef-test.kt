@@ -151,7 +151,7 @@ internal fun <A> Result<A>.toEither(): Either<Throwable, A> =
 
 internal suspend fun Throwable.suspend(): Nothing =
   suspendCoroutineUninterceptedOrReturn { cont ->
-    suspend { throw this }.startCoroutine(Continuation(ComputationPool) {
+    suspend { throw this }.startCoroutine(Continuation(cont.context.defaultContext(ComputationPool)) {
       cont.intercepted().resumeWith(it)
     })
 
@@ -160,7 +160,7 @@ internal suspend fun Throwable.suspend(): Nothing =
 
 internal suspend fun <A> A.suspend(): A =
   suspendCoroutineUninterceptedOrReturn { cont ->
-    suspend { this }.startCoroutine(Continuation(ComputationPool) {
+    suspend { this }.startCoroutine(Continuation(cont.context.defaultContext(ComputationPool)) {
       cont.intercepted().resumeWith(it)
     })
 
@@ -172,7 +172,7 @@ internal fun <A> A.suspended(): suspend () -> A =
 
 internal suspend fun <A> Either<Throwable, A>.suspend(): A =
   suspendCoroutineUninterceptedOrReturn { cont ->
-    suspend { this }.startCoroutine(Continuation(ComputationPool) {
+    suspend { this }.startCoroutine(Continuation(cont.context.defaultContext(ComputationPool)) {
       it.fold(
         {
           it.fold(
