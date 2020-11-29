@@ -192,7 +192,7 @@ suspend fun <A, B, C, D> parMapN(
         })
       } else Unit
 
-    // Can be started with a `startCancellableCoroutine` builder instead.
+
     fa.startCoroutineCancellable(FiberContinuation(ctx, connA) { resA ->
       resA.fold({ a ->
         val newState = state.updateAndGet { current ->
@@ -222,7 +222,7 @@ suspend fun <A, B, C, D> parMapN(
         }
         tryComplete(newState)
       }, { e ->
-        sendException(connA, connC, e)
+        sendException(connA, connB, e)
       })
     })
 
