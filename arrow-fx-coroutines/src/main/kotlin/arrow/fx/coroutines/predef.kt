@@ -1,3 +1,4 @@
+@file:Suppress("NOTHING_TO_INLINE", "INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
 package arrow.fx.coroutines
 
 import kotlin.coroutines.Continuation
@@ -8,6 +9,7 @@ import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
+import kotlin.coroutines.jvm.internal.probeCoroutineCreated
 
 internal inline infix fun <A, B, C> ((A) -> B).andThen(crossinline f: (B) -> C): (A) -> C =
   { a -> f(this(a)) }
@@ -77,7 +79,7 @@ internal fun <R, A> (suspend R.() -> A).startCoroutineUnintercepted(receiver: R,
   }
 
 internal fun <A> (suspend () -> A).startCoroutineUninterceptedOrReturn(completion: Continuation<A>): Any? =
-  startCoroutineUninterceptedOrReturn(probeCoroutineCreated(completion))
+  startCoroutineUninterceptedOrReturn(completion)
 
 internal fun <R, A> (suspend R.() -> A).startCoroutineUninterceptedOrReturn(receiver: R, completion: Continuation<A>): Any? =
     startCoroutineUninterceptedOrReturn(receiver, probeCoroutineCreated(completion))
@@ -100,3 +102,7 @@ private inline fun <T> startDirect(completion: Continuation<T>, block: (Continua
     actualCompletion.resume(value as T)
   }
 }
+
+@PublishedApi
+internal val Any.hexAddress: String
+  inline get() = Integer.toHexString(System.identityHashCode(this))

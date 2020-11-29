@@ -65,7 +65,7 @@ suspend fun <A, B> racePair(
 
     conn.pushPair(connA, connB)
 
-    fa.startCoroutineCancellable(CancellableContinuation(ctx, connA) { result ->
+    fa.startCoroutineCancellable(FiberContinuation(ctx, connA) { result ->
       result.fold({ a ->
         if (active.getAndSet(false)) {
           conn.pop()
@@ -85,7 +85,7 @@ suspend fun <A, B> racePair(
       })
     })
 
-    fb.startCoroutineCancellable(CancellableContinuation(ctx, connB) { result ->
+    fb.startCoroutineCancellable(FiberContinuation(ctx, connB) { result ->
       result.fold({ b ->
         if (active.getAndSet(false)) {
           conn.pop()

@@ -1,7 +1,6 @@
 @file:Suppress("UNUSED", "INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
 package arrow.fx.coroutines.debug
 
-import arrow.fx.coroutines.DebugProbesImpl
 import java.io.PrintStream
 import kotlin.coroutines.Continuation
 

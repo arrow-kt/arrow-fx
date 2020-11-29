@@ -1,6 +1,4 @@
-@file:Suppress("NOTHING_TO_INLINE", "INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
-
-package arrow.fx.coroutines
+package arrow.fx.coroutines.debug
 
 import kotlinx.atomicfu.atomic
 import java.io.PrintStream
@@ -15,11 +13,6 @@ import kotlin.coroutines.Continuation
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.jvm.internal.CoroutineStackFrame
-import kotlin.coroutines.jvm.internal.probeCoroutineCreated as probe
-
-internal inline fun <T> probeCoroutineCreated(completion: Continuation<T>): Continuation<T> =
-  probe(completion)
-
 
 internal fun createArtificialFrame(message: String): StackTraceElement =
   StackTraceElement("\b\b\b($message", "\b", "\b", -1)
@@ -82,7 +75,6 @@ internal object DebugProbesImpl {
 
   fun install(): Unit = coroutineStateLock.write {
     if (++installations > 1) return
-//    startWeakRefCleanerThread()
 //    if (AgentPremain.isInstalledStatically) return
     dynamicAttach?.invoke(true) // attach
   }
@@ -90,7 +82,6 @@ internal object DebugProbesImpl {
   fun uninstall(): Unit = coroutineStateLock.write {
     check(isInstalled) { "Agent was not installed" }
     if (--installations != 0) return
-//    stopWeakRefCleanerThread()
     capturedCoroutinesMap.clear()
     callerInfoCache.clear()
 //    if (AgentPremain.isInstalledStatically) return
@@ -135,6 +126,7 @@ internal object DebugProbesImpl {
 
   private fun updateState(frame: Continuation<*>, state: String) {
     if (!isInstalled) return
+
     // KT-29997 is here only since 1.3.30
     if (state == IS_RUNNING && KotlinVersion.CURRENT.isAtLeast(1, 3, 30)) {
       val stackFrame = frame as? CoroutineStackFrame ?: return
@@ -158,6 +150,7 @@ internal object DebugProbesImpl {
     // Lookup coroutine info in cache or by traversing stack frame
     val info: DebugCoroutineInfoImpl
     val cached = callerInfoCache.remove(frame)
+
     if (cached != null) {
       info = cached
     } else {
@@ -181,6 +174,7 @@ internal object DebugProbesImpl {
   // Not guarded by the lock at all, does not really affect consistency
   internal fun <T> probeCoroutineCreated(completion: Continuation<T>): Continuation<T> {
     if (!isInstalled) return completion
+
     /*
      * If completion already has an owner, it means that we are in scoped coroutine (coroutineScope, withContext etc.),
      * then piggyback on its already existing owner and do not replace completion
@@ -194,11 +188,8 @@ internal object DebugProbesImpl {
      * even more verbose (it will attach coroutine creation stacktrace to all exceptions),
      * and then using CoroutineOwner completion as unique identifier of coroutineSuspended/resumed calls.
      */
-    val frame = if (enableCreationStackTraces) {
-      sanitizeStackTrace(Exception()).toStackTraceFrame()
-    } else {
-      null
-    }
+    val frame = if (enableCreationStackTraces) sanitizeStackTrace(Exception()).toStackTraceFrame()
+    else null
 
     return createOwner(completion, frame)
   }
@@ -244,7 +235,7 @@ internal object DebugProbesImpl {
     var includeInternalFrame = true
     for (i in (probeIndex + 1) until size - 1) {
       val element = stackTrace[i]
-      if (!element.isInternalMethod) {
+      if (!element.isInternalMethod()) {
         includeInternalFrame = true
         result += element
         continue
@@ -253,7 +244,7 @@ internal object DebugProbesImpl {
       if (includeInternalFrame) {
         result += element
         includeInternalFrame = false
-      } else if (stackTrace[i + 1].isInternalMethod) {
+      } else if (stackTrace[i + 1].isInternalMethod()) {
         continue
       } else {
         result += element
@@ -266,8 +257,8 @@ internal object DebugProbesImpl {
     return result
   }
 
-  private val StackTraceElement.isInternalMethod: Boolean
-    get() = className.startsWith("arrow.fx.coroutines")
+  private fun StackTraceElement.isInternalMethod(): Boolean =
+    className.startsWith("arrow.fx.coroutines")
 
   /**
    * This class is injected as completion of all continuations in [probeCoroutineCompleted].
@@ -285,7 +276,7 @@ internal object DebugProbesImpl {
     override fun getStackTraceElement(): StackTraceElement? = frame?.getStackTraceElement()
 
     override fun resumeWith(result: Result<T>) {
-      DebugProbesImpl.probeCoroutineCompleted(this)
+      probeCoroutineCompleted(this)
       delegate.resumeWith(result)
     }
 

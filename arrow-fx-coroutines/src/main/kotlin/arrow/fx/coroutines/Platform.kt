@@ -1,6 +1,7 @@
 package arrow.fx.coroutines
 
 import arrow.core.Either
+import arrow.fx.coroutines.debug.toDebugString
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.updateAndGet
 import java.util.concurrent.locks.AbstractQueuedSynchronizer
@@ -229,6 +230,8 @@ private inline fun <A> UnsafeRunSyncCoroutine(ctx: CoroutineContext, crossinline
   object : UnsafeRunSyncCoroutine<A> {
     override val context: CoroutineContext = ctx
     override fun resumeWith(result: Result<A>) = resumeWith(result)
+    override fun toString(): String =
+      toDebugString("UnsafeRunSyncCoroutine@$hexAddress")
   }
 
 private class OneShotLatch : AbstractQueuedSynchronizer() {

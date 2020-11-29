@@ -4,7 +4,6 @@ package arrow.fx.coroutines.debug
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 import kotlin.coroutines.jvm.internal.CoroutineStackFrame
-import arrow.fx.coroutines.DebuggerInfo
 
 /**
  * Class describing coroutine info such as its context, state and stacktrace.

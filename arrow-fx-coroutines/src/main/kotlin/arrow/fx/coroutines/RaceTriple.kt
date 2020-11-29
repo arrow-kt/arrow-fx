@@ -107,7 +107,7 @@ suspend fun <A, B, C> raceTriple(
       }
     }
 
-    fa.startCoroutineCancellable(CancellableContinuation(ctx, connA) { result ->
+    fa.startCoroutineCancellable(FiberContinuation(ctx, connA) { result ->
       result.fold({ a ->
         if (active.getAndSet(false)) {
           conn.pop()
@@ -118,7 +118,7 @@ suspend fun <A, B, C> raceTriple(
       }, { error -> onError(error, connB, connC, promiseA) })
     })
 
-    fb.startCoroutineCancellable(CancellableContinuation(ctx, connB) { result ->
+    fb.startCoroutineCancellable(FiberContinuation(ctx, connB) { result ->
       result.fold({ b ->
         if (active.getAndSet(false)) {
           conn.pop()
@@ -129,7 +129,7 @@ suspend fun <A, B, C> raceTriple(
       }, { error -> onError(error, connA, connC, promiseB) })
     })
 
-    fc.startCoroutineCancellable(CancellableContinuation(ctx, connC) { result ->
+    fc.startCoroutineCancellable(FiberContinuation(ctx, connC) { result ->
       result.fold({ c ->
         if (active.getAndSet(false)) {
           conn.pop()

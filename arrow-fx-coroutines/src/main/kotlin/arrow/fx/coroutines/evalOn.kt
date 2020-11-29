@@ -1,5 +1,7 @@
 package arrow.fx.coroutines
 
+import arrow.fx.coroutines.debug.newCoroutineContext
+import arrow.fx.coroutines.debug.toDebugString
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.loop
 import kotlin.coroutines.Continuation
@@ -34,14 +36,14 @@ suspend fun <T> evalOn(
   // FAST PATH #1 -- new context is the same as the old one
   // FAST PATH #2 -- same ContinuationInterceptor, something else changed
   // There are changes in the context, so this thread needs to be updated
-  if (newContext === oldContext || newContext[ContinuationInterceptor] === oldContext[ContinuationInterceptor]) {
+  if (newContext === oldContext || newContext[ContinuationInterceptor] === oldContext[ContinuationInterceptor] || newContext[ContinuationInterceptor] == null) {
     val coroutine = NonDispatchableCoroutine(newContext, uCont)
 
     val x = block.startCoroutineUninterceptedOrReturn(coroutine)
     return@sc (if (x != COROUTINE_SUSPENDED) x else coroutine.getResult())
   }
 
-  val coroutine = DispatchableCoroutine(newContext, uCont)
+  val coroutine = DispatchableCoroutine(newCoroutineContext(newContext), uCont)
   block.createCoroutineUnintercepted(coroutine).intercepted().resume(Unit)
   return@sc coroutine.getResult()
 }
@@ -90,6 +92,9 @@ internal class NonDispatchableCoroutine<in T>(
 
   override fun getStackTraceElement(): StackTraceElement? =
     null
+
+  override fun toString(): String =
+    toDebugString("NonDispatchableCoroutine@$hexAddress")
 }
 
 internal class DispatchableCoroutine<in T>(
@@ -110,4 +115,7 @@ internal class DispatchableCoroutine<in T>(
 
   override fun getStackTraceElement(): StackTraceElement? =
     null
+
+  override fun toString(): String =
+    toDebugString("DispatchableCoroutine@$hexAddress")
 }

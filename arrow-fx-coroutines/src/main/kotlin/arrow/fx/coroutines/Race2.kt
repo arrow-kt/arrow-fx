@@ -124,7 +124,7 @@ suspend fun <A, B> raceN(ctx: CoroutineContext, fa: suspend () -> A, fb: suspend
     val connB = SuspendConnection()
     conn.pushPair(connA, connB)
 
-    fa.startCoroutineCancellable(CancellableContinuation(ctx, connA) { result ->
+    fa.startCoroutineCancellable(FiberContinuation(ctx, connA) { result ->
       result.fold({
         onSuccess(active, conn, connB, cont::resumeWith, Either.Left(it))
       }, {
@@ -132,7 +132,7 @@ suspend fun <A, B> raceN(ctx: CoroutineContext, fa: suspend () -> A, fb: suspend
       })
     })
 
-    fb.startCoroutineCancellable(CancellableContinuation(ctx, connB) { result ->
+    fb.startCoroutineCancellable(FiberContinuation(ctx, connB) { result ->
       result.fold({
         onSuccess(active, conn, connA, cont::resumeWith, Either.Right(it))
       }, {

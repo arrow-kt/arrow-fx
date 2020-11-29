@@ -1,7 +1,9 @@
 package arrow.fx.coroutines
 
+import arrow.fx.coroutines.debug.newCoroutineContext
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
+import arrow.fx.coroutines.debug.toDebugString
 
 /**
  * [Fiber] represents a pure value that contains a running `suspend () -> A`.
@@ -65,9 +67,22 @@ suspend fun <A> ForkConnected(ctx: CoroutineContext = ComputationPool, f: suspen
     // A new SuspendConnection, because its cancellation is now decoupled from our current one.
     val conn2 = SuspendConnection()
     conn.push { conn2.cancel() }
-    f.startCoroutineCancellable(CancellableContinuation(ctx, conn2, promise::complete))
+    f.startCoroutineCancellable(FiberContinuation(ctx, conn2, promise::complete))
     Fiber(promise, conn2)
   }
+
+abstract class FiberContinuation<A> : CancellableContinuation<A>()
+
+inline fun <A> FiberContinuation(
+  ctx: CoroutineContext,
+  conn: SuspendConnection,
+  crossinline f: (Result<A>) -> Unit
+): FiberContinuation<A> = object : FiberContinuation<A>() {
+  override val context: CoroutineContext = conn + newCoroutineContext(ctx)
+  override fun resumeWith(result: Result<A>) = f(result)
+  override fun toString(): String =
+    toDebugString("FiberContinuation@$hexAddress")
+}
 
 /** @see ForkConnected **/
 suspend fun <A> (suspend () -> A).forkConnected(ctx: CoroutineContext = ComputationPool): Fiber<A> =
@@ -114,12 +129,12 @@ suspend fun <A> ForkScoped(
   val promise = UnsafePromise<A>()
   // A new SuspendConnection, because its cancellation is now decoupled from our current one.
   val conn2 = SuspendConnection()
-  conn.push{ conn2.cancel() }
+  conn.push { conn2.cancel() }
 
   suspend { // Launch cancelation trigger system concurrently
     ForkConnected { interruptWhen.invoke(); conn2.cancel() }
     f.invoke() // Fire actual operation
-  }.startCoroutineCancellable(CancellableContinuation(ctx, conn2, promise::complete))
+  }.startCoroutineCancellable(FiberContinuation(ctx, conn2, promise::complete))
 
   Fiber(promise, conn2)
 }
@@ -147,6 +162,6 @@ suspend fun <A> (suspend () -> A).forkAndForget(ctx: CoroutineContext = Computat
   val promise = UnsafePromise<A>()
   // A new SuspendConnection, because its cancellation is now decoupled from our current one.
   val conn = SuspendConnection()
-  startCoroutineCancellable(CancellableContinuation(ctx, conn, promise::complete))
+  startCoroutineCancellable(FiberContinuation(ctx, conn, promise::complete))
   return Fiber(promise, conn)
 }

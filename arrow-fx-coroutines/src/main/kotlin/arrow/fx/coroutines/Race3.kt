@@ -116,7 +116,7 @@ suspend fun <A, B, C> raceN(
 
     conn.push(listOf(suspend { connA.cancel() }, suspend { connB.cancel() }, suspend { connC.cancel() }))
 
-    fa.startCoroutineCancellable(CancellableContinuation(ctx, connA) { result ->
+    fa.startCoroutineCancellable(FiberContinuation(ctx, connA) { result ->
       result.fold({
         onSuccess(active, conn, connB, connC, cont::resumeWith, Race3.First(it))
       }, {
@@ -124,7 +124,7 @@ suspend fun <A, B, C> raceN(
       })
     })
 
-    fb.startCoroutineCancellable(CancellableContinuation(ctx, connB) { result ->
+    fb.startCoroutineCancellable(FiberContinuation(ctx, connB) { result ->
       result.fold({
         onSuccess(active, conn, connA, connC, cont::resumeWith, Race3.Second(it))
       }, {
@@ -132,7 +132,7 @@ suspend fun <A, B, C> raceN(
       })
     })
 
-    fc.startCoroutineCancellable(CancellableContinuation(ctx, connC) { result ->
+    fc.startCoroutineCancellable(FiberContinuation(ctx, connC) { result ->
       result.fold({
         onSuccess(active, conn, connA, connB, cont::resumeWith, Race3.Third(it))
       }, {

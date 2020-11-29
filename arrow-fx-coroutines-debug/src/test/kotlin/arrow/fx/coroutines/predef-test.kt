@@ -55,8 +55,12 @@ fun verifyPartialDump(createdCoroutinesCount: Int, vararg frames: String) {
   }
 
   val debuggerInfo = DebugProbes.dumpDebuggerInfo()
-  assertEquals(createdCoroutinesCount, debuggerInfo.size)
-  assertTrue(matches)
+  assert(createdCoroutinesCount == debuggerInfo.size) {
+    "Expected $createdCoroutinesCount but found ${debuggerInfo.size}"
+  }
+  assert(matches) {
+    "Expected to find ${frames.joinToString()} in the trace, but didn't match.\n\n$trace"
+  }
 }
 
 inline fun verifyDump(vararg traces: String, ignoredCoroutine: String? = null, finally: () -> Unit) {
@@ -73,8 +77,8 @@ fun verifyDump(vararg traces: String, ignoredCoroutine: String? = null) {
   val trace = baos.toString().split("\n\n")
   if (traces.isEmpty()) {
     val filtered = trace.filter { ignoredCoroutine == null || !it.contains(ignoredCoroutine) }
-    Assert.assertEquals(1, filtered.count())
-    Assert.assertTrue(filtered[0].startsWith("Coroutines dump"))
+    assertEquals(1, filtered.count())
+    assertTrue(filtered[0].startsWith("Coroutines dump"))
     return
   }
 

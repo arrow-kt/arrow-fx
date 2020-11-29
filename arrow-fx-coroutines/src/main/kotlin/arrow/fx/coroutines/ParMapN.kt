@@ -101,7 +101,7 @@ suspend fun <A, B, C> parMapN(
       })
     }
 
-    fa.startCoroutineCancellable(CancellableContinuation(ctx, connA) { resA ->
+    fa.startCoroutineCancellable(FiberContinuation(ctx, connA) { resA ->
       resA.fold({ a ->
         when (val oldState = state.getAndSet(Either.Left(a))) {
           null -> Unit // Wait for B
@@ -114,7 +114,7 @@ suspend fun <A, B, C> parMapN(
       })
     })
 
-    fb.startCoroutineCancellable(CancellableContinuation(ctx, connB) { resB ->
+    fb.startCoroutineCancellable(FiberContinuation(ctx, connB) { resB ->
       resB.fold({ b ->
         when (val oldState = state.getAndSet(Either.Right(b))) {
           null -> Unit // Wait for A
@@ -147,11 +147,84 @@ suspend fun <A, B, C, D> parMapN(
   fc: suspend () -> C,
   f: (A, B, C) -> D
 ): D =
-  parMapN(
-    ctx,
-    suspend { parMapN(ctx, fa, fb, ::Pair) },
-    fc
-  ) { ab, c ->
-    val (a, b) = ab
-    f(a, b, c)
+  suspendCoroutineUninterceptedOrReturn { cont ->
+    val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
+    val cont = cont.intercepted()
+    val cb = cont::resumeWith
+
+    val state: AtomicRefW<Triple<A?, B?, C?>?> = AtomicRefW(null)
+    val active = AtomicBooleanW(true)
+
+    val connA = SuspendConnection()
+    val connB = SuspendConnection()
+    val connC = SuspendConnection()
+
+    conn.push(listOf(suspend { connA.cancel() }, suspend { connB.cancel() }, suspend { connC.cancel() }))
+
+    fun complete(a: A, b: B, c: C) {
+      conn.pop()
+      cb(Result.success(f(a, b, c)))
+    }
+
+    fun tryComplete(result: Triple<A?, B?, C?>?): Unit {
+      result?.let { (a, b, c) ->
+        a?.let {
+          b?.let {
+            c?.let {
+              complete(a, b, c)
+            }
+          }
+        }
+      } ?: Unit
+    }
+
+    fun sendException(other: SuspendConnection, other2: SuspendConnection, e: Throwable) =
+      if (active.getAndSet(false)) { // We were already cancelled so don't do anything.
+        suspend { other.cancel() }.startCoroutine(Continuation(EmptyCoroutineContext) { r1 ->
+          suspend { other2.cancel() }.startCoroutine(Continuation(EmptyCoroutineContext) { r2 ->
+            conn.pop()
+            cb(Result.failure(r1.fold({
+              r2.fold({ e }, { e3 -> Platform.composeErrors(e, e3) })
+            }, { e2 ->
+              r2.fold({ Platform.composeErrors(e, e2) }, { e3 -> Platform.composeErrors(e, e2, e3) })
+            })))
+          })
+        })
+      } else Unit
+
+    // Can be started with a `startCancellableCoroutine` builder instead.
+    fa.startCoroutineCancellable(FiberContinuation(ctx, connA) { resA ->
+      resA.fold({ a ->
+        val newState = state.updateAndGet { current ->
+          current?.copy(first = a) ?: Triple(a, null, null)
+        }
+        tryComplete(newState)
+      }, { e ->
+        sendException(connB, connC, e)
+      })
+    })
+
+    fb.startCoroutineCancellable(FiberContinuation(ctx, connB) { resB ->
+      resB.fold({ b ->
+        val newState = state.updateAndGet { current ->
+          current?.copy(second = b) ?: Triple(null, b, null)
+        }
+        tryComplete(newState)
+      }, { e ->
+        sendException(connA, connC, e)
+      })
+    })
+
+    fc.startCoroutineCancellable(FiberContinuation(ctx, connC) { resC ->
+      resC.fold({ c ->
+        val newState = state.updateAndGet { current ->
+          current?.copy(third = c) ?: Triple(null, null, c)
+        }
+        tryComplete(newState)
+      }, { e ->
+        sendException(connA, connC, e)
+      })
+    })
+
+    COROUTINE_SUSPENDED
   }
