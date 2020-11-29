@@ -38,7 +38,6 @@ internal object DebugProbesImpl {
   internal val isInstalled: Boolean
     inline get() = installations > 0
 
-  // Values are boolean, so this map does not need to use a weak reference queue
   private val capturedCoroutinesMap = ConcurrentHashMap<CoroutineOwner<*>, Boolean>()
   private val capturedCoroutines: Set<CoroutineOwner<*>>
     inline get() = capturedCoroutinesMap.keys
@@ -62,16 +61,16 @@ internal object DebugProbesImpl {
   private val coroutineStateLock = ReentrantReadWriteLock()
 
   /*
-     * This is an optimization in the face of KT-29997:
-     * Consider suspending call stack a()->b()->c() and c() completes its execution and every call is
-     * "almost" in tail position.
-     *
-     * Then at least three RUNNING -> RUNNING transitions will occur consecutively and complexity of each is O(depth).
-     * To avoid that quadratic complexity, we are caching lookup result for such chains in this map and update it incrementally.
-     *
-     * [DebugCoroutineInfoImpl] keeps a lot of auxiliary information about a coroutine, so we use a weak reference queue
-     * to promptly release the corresponding memory when the reference to the coroutine itself was already collected.
-     */
+   * This is an optimization in the face of KT-29997:
+   * Consider suspending call stack a()->b()->c() and c() completes its execution and every call is
+   * "almost" in tail position.
+   *
+   * Then at least three RUNNING -> RUNNING transitions will occur consecutively and complexity of each is O(depth).
+   * To avoid that quadratic complexity, we are caching lookup result for such chains in this map and update it incrementally.
+   *
+   * [DebugCoroutineInfoImpl] keeps a lot of auxiliary information about a coroutine, so we use a weak reference queue
+   * to promptly release the corresponding memory when the reference to the coroutine itself was already collected.
+   */
   private val callerInfoCache = ConcurrentHashMap<CoroutineStackFrame, DebugCoroutineInfoImpl>()
 
   @Suppress("UNCHECKED_CAST")
@@ -98,7 +97,8 @@ internal object DebugProbesImpl {
     dynamicAttach?.invoke(false) // detach
   }
 
-  private fun Continuation<*>.owner(): CoroutineOwner<*>? = (this as? CoroutineStackFrame)?.owner()
+  private fun Continuation<*>.owner(): CoroutineOwner<*>? =
+    (this as? CoroutineStackFrame)?.owner()
 
   private tailrec fun CoroutineStackFrame.owner(): CoroutineOwner<*>? =
     if (this is CoroutineOwner<*>) this else callerFrame?.owner()
@@ -185,8 +185,8 @@ internal object DebugProbesImpl {
      * If completion already has an owner, it means that we are in scoped coroutine (coroutineScope, withContext etc.),
      * then piggyback on its already existing owner and do not replace completion
      */
-//    val owner = completion.owner()
-//    if (owner != null) return completion
+    val owner = completion.owner()
+    if (owner != null) return completion
 
     /*
      * Here we replace completion with a sequence of StackTraceFrame objects
@@ -537,7 +537,7 @@ internal class DebuggerInfo(source: DebugCoroutineInfoImpl, val context: Corouti
   val dispatcher: String? = context[ContinuationInterceptor]?.toString()
   val name: String? = null//context[CoroutineName]?.name
   val state: String = source.state
-  val lastObservedThreadState: String? =source.lastObservedThread?.state?.toString()
+  val lastObservedThreadState: String? = source.lastObservedThread?.state?.toString()
   val lastObservedThreadName = source.lastObservedThread?.name
   val lastObservedStackTrace: List<StackTraceElement> = source.lastObservedStackTrace()
   val sequenceNumber: Long = source.sequenceNumber

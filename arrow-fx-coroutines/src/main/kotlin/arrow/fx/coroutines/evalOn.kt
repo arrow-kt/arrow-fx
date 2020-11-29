@@ -11,6 +11,7 @@ import kotlin.coroutines.intrinsics.intercepted
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.resume
+import kotlin.coroutines.jvm.internal.CoroutineStackFrame
 
 suspend fun <T> (suspend () -> T).evalOn(ctx: CoroutineContext): T =
   evalOn(ctx, this)
@@ -52,9 +53,9 @@ internal interface SafeCoroutine {
 internal const val UNDECIDED = 0
 internal const val SUSPENDED = 1
 
-private class NonDispatchableCoroutine<in T>(
+internal class NonDispatchableCoroutine<in T>(
   ctx: CoroutineContext,
-  private val uCont: Continuation<T>
+  @JvmField val uCont: Continuation<T>
 ) : Continuation<T>, CoroutineStackFrame, SafeCoroutine {
 
   override val context: CoroutineContext = ctx
@@ -84,16 +85,16 @@ private class NonDispatchableCoroutine<in T>(
       }
     }
 
-  override val callerFrame: CoroutineStackFrame?
-    get() = this
+  override val callerFrame: CoroutineStackFrame? =
+    uCont as CoroutineStackFrame?
 
   override fun getStackTraceElement(): StackTraceElement? =
     null
 }
 
-private class DispatchableCoroutine<in T>(
+internal class DispatchableCoroutine<in T>(
   ctx: CoroutineContext,
-  private val uCont: Continuation<T>
+  @JvmField val uCont: Continuation<T>
 ) : Continuation<T>, CoroutineStackFrame, SafeCoroutine {
 
   override val context: CoroutineContext = ctx
@@ -104,14 +105,9 @@ private class DispatchableCoroutine<in T>(
 
   override fun getResult(): Any? = COROUTINE_SUSPENDED
 
-  override val callerFrame: CoroutineStackFrame?
-    get() = this
+  override val callerFrame: CoroutineStackFrame? =
+    uCont as CoroutineStackFrame?
 
   override fun getStackTraceElement(): StackTraceElement? =
     null
-}
-
-internal interface CoroutineStackFrame : kotlin.coroutines.jvm.internal.CoroutineStackFrame {
-  override val callerFrame: CoroutineStackFrame?
-  override fun getStackTraceElement(): StackTraceElement?
 }
