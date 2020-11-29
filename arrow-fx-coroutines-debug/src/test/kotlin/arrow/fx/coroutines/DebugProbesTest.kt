@@ -2,10 +2,10 @@
 
 package arrow.fx.coroutines
 
+import arrow.fx.coroutines.debug.CoroutineName
 import arrow.fx.coroutines.debug.DebugProbes
 import arrow.fx.coroutines.debug.newCoroutineContext
 import arrow.fx.coroutines.debug.toDebugString
-import arrow.fx.coroutines.debug.resetCoroutineId
 import org.junit.Test
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
@@ -168,17 +168,22 @@ class DebugProbesTest {
     }
   }
 
+  @Test
+  fun example(): Unit = withDebugProbe {
+    ForkConnected(CoroutineName("Outer fiber") + ComputationPool) {
+      parTupledN(
+        CoroutineName("parTupledN") + ComputationPool,
+        { ForkConnected(CoroutineName("Inner fiber") + ComputationPool) { never<Unit>() } },
+        { sleep(1000.milliseconds) },
+        {
+          while (true) {
+            cancelBoundary()
+          }
+        }
+      )
+    }
+    sleep(100.milliseconds)
+    DebugProbes.dumpCoroutines()
+  }
 }
 
-fun withDebugProbe(
-  sanitizeStackTraces: Boolean = true,
-  enableCreationStackTraces: Boolean = true,
-  f: suspend () -> Unit
-): Unit = Environment().unsafeRunSync {
-  DebugProbes.sanitizeStackTraces = sanitizeStackTraces
-  DebugProbes.enableCreationStackTraces = enableCreationStackTraces
-  resetCoroutineId()
-  DebugProbes.install()
-  f.invoke()
-  DebugProbes.uninstall()
-}

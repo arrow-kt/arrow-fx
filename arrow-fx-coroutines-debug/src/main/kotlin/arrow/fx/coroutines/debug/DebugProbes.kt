@@ -1,4 +1,5 @@
 @file:Suppress("UNUSED", "INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
+
 package arrow.fx.coroutines.debug
 
 import java.io.PrintStream
@@ -12,7 +13,7 @@ internal fun probeCoroutineSuspended(frame: Continuation<*>) =
   DebugProbesImpl.probeCoroutineSuspended(frame)
 
 internal fun <T> probeCoroutineCreated(completion: Continuation<T>): Continuation<T> =
-    DebugProbesImpl.probeCoroutineCreated(completion)
+  DebugProbesImpl.probeCoroutineCreated(completion)
 
 object DebugProbes {
 
@@ -65,8 +66,8 @@ object DebugProbes {
    * ```
    * Coroutines dump 2018/11/12 19:45:14
    *
-   * Coroutine "coroutine#42":StandaloneCoroutine{Active}@58fdd99, state: SUSPENDED
-   *     at MyClass$awaitData.invokeSuspend(MyClass.kt:37)
+   * Coroutine coroutine#42:FiberContinuation@58fdd99, state: SUSPENDED
+   *     at MyClass$fetchUser.invokeSuspend(MyClass.kt:37)
    * (Coroutine creation stacktrace)
    *     at MyClass.createIoRequest(MyClass.kt:142)
    *     at MyClass.fetchData(MyClass.kt:154)

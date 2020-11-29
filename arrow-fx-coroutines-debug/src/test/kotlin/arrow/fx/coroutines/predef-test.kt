@@ -1,11 +1,24 @@
+@file:Suppress("UNUSED", "INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
 package arrow.fx.coroutines
 
 import arrow.fx.coroutines.debug.DebugProbes
-import junit.framework.Assert
-import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertTrue
+import arrow.fx.coroutines.debug.resetCoroutineId
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
+
+fun withDebugProbe(
+  sanitizeStackTraces: Boolean = true,
+  enableCreationStackTraces: Boolean = true,
+  f: suspend () -> Unit
+): Unit = Environment().unsafeRunSync {
+  DebugProbes.sanitizeStackTraces = sanitizeStackTraces
+  DebugProbes.enableCreationStackTraces = enableCreationStackTraces
+  resetCoroutineId()
+  DebugProbes.install()
+  f.invoke()
+  DebugProbes.uninstall()
+}
+
 
 fun String.applyBackspace(): String {
   val array = toCharArray()
@@ -77,8 +90,12 @@ fun verifyDump(vararg traces: String, ignoredCoroutine: String? = null) {
   val trace = baos.toString().split("\n\n")
   if (traces.isEmpty()) {
     val filtered = trace.filter { ignoredCoroutine == null || !it.contains(ignoredCoroutine) }
-    assertEquals(1, filtered.count())
-    assertTrue(filtered[0].startsWith("Coroutines dump"))
+    assert(1 == filtered.count()) {
+      "Expected lines in dump, but found none"
+    }
+    assert(filtered[0].startsWith("Coroutines dump")) {
+      "Expected dump to start with \"Coroutines dump\", but found ${filtered[0]}"
+    }
     return
   }
 
