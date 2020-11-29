@@ -192,7 +192,6 @@ suspend fun <A, B, C, D> parMapN(
         })
       } else Unit
 
-
     fa.startCoroutineCancellable(FiberContinuation(ctx, connA) { resA ->
       resA.fold({ a ->
         val newState = state.updateAndGet { current ->

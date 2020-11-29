@@ -5,10 +5,8 @@ import io.kotest.assertions.fail
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
-import io.kotest.property.arbitrary.long
 import io.kotest.property.checkAll
 import kotlin.time.ExperimentalTime
-import kotlin.time.measureTimedValue
 
 @ExperimentalTime
 class BracketCaseTest : ArrowFxSpec(spec = {

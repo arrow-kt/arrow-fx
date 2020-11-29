@@ -19,7 +19,6 @@ fun withDebugProbe(
   DebugProbes.uninstall()
 }
 
-
 fun String.applyBackspace(): String {
   val array = toCharArray()
   val stack = CharArray(array.size)
@@ -34,7 +33,6 @@ fun String.applyBackspace(): String {
 
   return String(stack, 0, stackSize + 1)
 }
-
 
 fun String.trimStackTrace(): String =
   trimIndent()

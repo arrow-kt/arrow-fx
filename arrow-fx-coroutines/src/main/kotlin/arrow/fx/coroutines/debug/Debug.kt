@@ -72,7 +72,6 @@ internal val DEBUG: Boolean = systemProp(DEBUG_PROPERTY_NAME).let { value ->
   }
 }
 
-
 // It is used only in debug mode
 internal val COROUTINE_ID: AtomicLong =
   AtomicLong(0)

@@ -162,7 +162,6 @@ internal object DebugProbesImpl {
         result += element
         includeInternalFrame = true
       }
-
     }
 
     result += stackTrace[size - 1]
@@ -237,7 +236,8 @@ internal object DebugProbesImpl {
    * Private method that dumps coroutines so that different public-facing method can use
    * to produce different result types.
    */
-  private inline fun <R : Any> dumpCoroutinesInfoImpl(create: (CoroutineOwner<*>, CoroutineContext) -> R): List<R> =
+  @PublishedApi
+  internal inline fun <R : Any> dumpCoroutinesInfoImpl(create: (CoroutineOwner<*>, CoroutineContext) -> R): List<R> =
     coroutineStateLock.write {
       check(isInstalled) { "Debug probes are not installed" }
       capturedCoroutines
@@ -405,5 +405,4 @@ internal object DebugProbesImpl {
 
   private fun createArtificialFrame(message: String): StackTraceElement =
     StackTraceElement("\b\b\b($message", "\b", "\b", -1)
-
 }

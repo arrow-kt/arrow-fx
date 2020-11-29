@@ -1,8 +1,8 @@
 package arrow.fx.coroutines.debug
 
-import net.bytebuddy.*
-import net.bytebuddy.agent.*
-import net.bytebuddy.dynamic.loading.*
+import net.bytebuddy.ByteBuddy
+import net.bytebuddy.agent.ByteBuddyAgent
+import net.bytebuddy.dynamic.loading.ClassReloadingStrategy
 
 /*
  * This class is used reflectively from arrow-fx-coroutines when this module is present in the classpath.

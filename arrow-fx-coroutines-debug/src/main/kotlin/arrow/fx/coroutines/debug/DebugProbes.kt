@@ -54,8 +54,9 @@ object DebugProbes {
   }
 
   fun dumpDebuggerInfo(): List<CoroutineInfo> =
-    DebugProbesImpl.dumpDebuggerInfo()
-      .map(::CoroutineInfo)
+    DebugProbesImpl.dumpCoroutinesInfoImpl { owner, context ->
+      CoroutineInfo(context, owner.info)
+    }
 
   /**
    * Dumps all active coroutines into the given output stream, providing a consistent snapshot of all existing coroutines at the moment of invocation.
@@ -77,5 +78,4 @@ object DebugProbes {
    */
   fun dumpCoroutines(out: PrintStream = System.out): Unit =
     DebugProbesImpl.dumpCoroutines(out)
-
 }

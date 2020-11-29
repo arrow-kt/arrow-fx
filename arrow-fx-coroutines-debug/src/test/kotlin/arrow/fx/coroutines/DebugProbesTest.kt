@@ -157,7 +157,7 @@ class DebugProbesTest {
       raceTriple(EmptyCoroutineContext, { never<Unit>() }, { never<Unit>() }, { never<Unit>() })
     }
 
-    //4 Coroutines are created, the fiber and 3 inside raceTriple
+    // 4 Coroutines are created, the fiber and 3 inside raceTriple
     verifyPartialDump(4,
       "coroutine#1:FiberContinuation",
       "coroutine#2:FiberContinuation",
@@ -186,4 +186,3 @@ class DebugProbesTest {
     DebugProbes.dumpCoroutines()
   }
 }
-
