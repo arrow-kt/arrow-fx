@@ -78,9 +78,6 @@ internal fun <R, A> (suspend R.() -> A).startCoroutineUnintercepted(receiver: R,
     startCoroutineUninterceptedOrReturn(receiver, actualCompletion)
   }
 
-internal fun <A> (suspend () -> A).startCoroutineUninterceptedOrReturn(completion: Continuation<A>): Any? =
-  startCoroutineUninterceptedOrReturn(completion)
-
 internal fun <R, A> (suspend R.() -> A).startCoroutineUninterceptedOrReturn(receiver: R, completion: Continuation<A>): Any? =
     startCoroutineUninterceptedOrReturn(receiver, probeCoroutineCreated(completion))
 

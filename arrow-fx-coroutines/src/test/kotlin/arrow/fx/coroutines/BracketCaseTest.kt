@@ -5,26 +5,26 @@ import io.kotest.assertions.fail
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
-import io.kotest.property.checkAll
 import kotlin.time.ExperimentalTime
+import kotlin.time.measureTimedValue
 
 @ExperimentalTime
 class BracketCaseTest : ArrowFxSpec(spec = {
 
-//  "Uncancellable back pressures timeoutOrNull" {
-//    checkAll(Arb.long(10, 100), Arb.long(300, 400)) { a, b ->
-//      val (n, duration) = measureTimedValue {
-//        timeOutOrNull(a.milliseconds) {
-//          uncancellable { sleep(b.milliseconds) }
-//        }
-//      }
-//
-//      n shouldBe null // timed-out so should be null
-//      require((duration.inMilliseconds) >= b) {
-//        "Should've taken longer than $b milliseconds, but took $duration"
-//      }
-//    }
-//  }
+  "Uncancellable back pressures timeoutOrNull" {
+    checkAll(Arb.long(50L..100L), Arb.long(300L..400L)) { a, b ->
+      val (n, duration) = measureTimedValue {
+        timeOutOrNull(a.milliseconds) {
+          uncancellable { sleep(b.milliseconds) }
+        }
+      }
+
+      n shouldBe null // timed-out so should be null
+      require((duration.inMilliseconds) >= b) {
+        "Should've taken longer than $b milliseconds, but took $duration"
+      }
+    }
+  }
 
   "Immediate acquire bracketCase finishes successfully" {
     checkAll(Arb.int(), Arb.int()) { a, b ->
