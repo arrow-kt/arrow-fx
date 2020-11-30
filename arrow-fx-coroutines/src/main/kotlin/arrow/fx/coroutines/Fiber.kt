@@ -70,14 +70,14 @@ suspend fun <A> ForkConnected(ctx: CoroutineContext, f: suspend () -> A): Fiber<
   }
 
 suspend fun <A> ForkConnected(f: suspend () -> A): Fiber<A> =
-  ForkConnected(getDefaultContext(ComputationPool), f)
+  ForkConnected(getDefaultContext(), f)
 
 /** @see ForkConnected **/
 suspend fun <A> (suspend () -> A).forkConnected(ctx: CoroutineContext): Fiber<A> =
   ForkConnected(ctx, this)
 
 suspend fun <A> (suspend () -> A).forkConnected(): Fiber<A> =
-  forkConnected(getDefaultContext(ComputationPool))
+  forkConnected(getDefaultContext())
 
 /**
  * Launches a new suspendable cancellable coroutine within a [Fiber].
@@ -133,7 +133,7 @@ suspend fun <A> ForkScoped(
 suspend fun <A> ForkScoped(
   interruptWhen: suspend () -> Unit,
   f: suspend () -> A
-): Fiber<A> = ForkScoped(getDefaultContext(ComputationPool), interruptWhen, f)
+): Fiber<A> = ForkScoped(getDefaultContext(), interruptWhen, f)
 
 /** @see ForkScoped */
 suspend fun <A> (suspend () -> A).forkScoped(
@@ -142,7 +142,7 @@ suspend fun <A> (suspend () -> A).forkScoped(
 ): Fiber<A> = ForkScoped(ctx, interruptWhen, this)
 
 suspend fun <A> (suspend () -> A).forkScoped(interruptWhen: suspend () -> Unit): Fiber<A> =
-  forkScoped(getDefaultContext(ComputationPool), interruptWhen)
+  forkScoped(getDefaultContext(), interruptWhen)
 
 /**
  * Launches a new suspendable cancellable coroutine within a [Fiber].
@@ -157,7 +157,7 @@ suspend fun <A> ForkAndForget(ctx: CoroutineContext, f: suspend () -> A): Fiber<
   f.forkAndForget(ctx)
 
 suspend fun <A> ForkAndForget(f: suspend () -> A): Fiber<A> =
-  ForkAndForget(getDefaultContext(ComputationPool), f)
+  ForkAndForget(getDefaultContext(), f)
 
 /** @see ForkAndForget */
 suspend fun <A> (suspend () -> A).forkAndForget(ctx: CoroutineContext): Fiber<A> {
@@ -168,4 +168,4 @@ suspend fun <A> (suspend () -> A).forkAndForget(ctx: CoroutineContext): Fiber<A>
   return Fiber(promise, conn)
 }
 
-suspend fun <A> (suspend () -> A).forkAndForget(): Fiber<A> = forkAndForget(getDefaultContext(ComputationPool))
+suspend fun <A> (suspend () -> A).forkAndForget(): Fiber<A> = forkAndForget(getDefaultContext())

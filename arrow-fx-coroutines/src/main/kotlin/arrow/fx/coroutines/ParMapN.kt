@@ -35,7 +35,7 @@ import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
  * @see parMapN for the same function that can race on any [CoroutineContext].
  */
 suspend fun <A, B, C> parMapN(fa: suspend () -> A, fb: suspend () -> B, f: (A, B) -> C): C =
-  parMapN(getDefaultContext(ComputationPool), fa, fb, f)
+  parMapN(getDefaultContext(), fa, fb, f)
 
 /**
  * Runs [fa], [fb], [fc] in parallel on [ComputationPool] and combines their results using the provided function.
@@ -48,7 +48,7 @@ suspend fun <A, B, C, D> parMapN(
   fb: suspend () -> B,
   fc: suspend () -> C,
   f: (A, B, C) -> D
-): D = parMapN(getDefaultContext(ComputationPool), fa, fb, fc, f)
+): D = parMapN(getDefaultContext(), fa, fb, fc, f)
 
 /**
  * Runs [fa], [fb] on the provided [CoroutineContext] and combines their results using the provided function.

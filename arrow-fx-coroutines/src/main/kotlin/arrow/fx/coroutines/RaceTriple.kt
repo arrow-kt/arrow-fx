@@ -23,7 +23,7 @@ sealed class RaceTriple<A, B, C> {
 }
 
 suspend fun <A, B, C> raceTriple(fa: suspend () -> A, fb: suspend () -> B, fc: suspend () -> C): RaceTriple<A, B, C> =
-  raceTriple(getDefaultContext(ComputationPool), fa, fb, fc)
+  raceTriple(getDefaultContext(), fa, fb, fc)
 
 /**
  * Races three tasks concurrently within a new suspend fun.

@@ -6,7 +6,6 @@ import arrow.core.Option
 import arrow.core.Some
 import arrow.core.extensions.option.monad.flatten
 import arrow.core.orElse
-import arrow.fx.coroutines.ComputationPool
 import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.Platform
 import arrow.fx.coroutines.Semaphore
@@ -204,11 +203,11 @@ fun <O> Stream<Stream<O>>.parJoin(
 }
 
 fun <O> Stream<Stream<O>>.parJoin(maxOpen: Int): Stream<O> =
-  Stream.defaultContext(ComputationPool).flatMap { parJoin(maxOpen, it) }
+  Stream.defaultContext().flatMap { parJoin(maxOpen, it) }
 
 /** Like [parJoin] but races all inner streams simultaneously without limit. */
 fun <O> Stream<Stream<O>>.parJoinUnbounded(ctx: CoroutineContext): Stream<O> =
   parJoin(Int.MAX_VALUE, ctx)
 
 fun <O> Stream<Stream<O>>.parJoinUnbounded(): Stream<O> =
-  Stream.defaultContext(ComputationPool).flatMap(::parJoinUnbounded)
+  Stream.defaultContext().flatMap(::parJoinUnbounded)

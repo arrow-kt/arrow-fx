@@ -42,7 +42,7 @@ import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
  * @see raceN for the same function that can race on any [CoroutineContext].
  */
 suspend fun <A, B> raceN(fa: suspend () -> A, fb: suspend () -> B): Either<A, B> =
-  raceN(getDefaultContext(ComputationPool), fa, fb)
+  raceN(getDefaultContext(), fa, fb)
 
 /**
  * Races the participants [fa], [fb] on the provided [CoroutineContext].

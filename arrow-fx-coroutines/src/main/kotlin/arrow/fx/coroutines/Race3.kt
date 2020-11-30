@@ -33,7 +33,7 @@ suspend fun <A, B, C> raceN(
   fa: suspend () -> A,
   fb: suspend () -> B,
   fc: suspend () -> C
-): Race3<A, B, C> = raceN(getDefaultContext(ComputationPool), fa, fb, fc)
+): Race3<A, B, C> = raceN(getDefaultContext(), fa, fb, fc)
 
 /**
  * Races the participants [fa], [fb] & [fc] on the provided [CoroutineContext].

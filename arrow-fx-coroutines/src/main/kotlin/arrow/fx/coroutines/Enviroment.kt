@@ -110,5 +110,5 @@ internal class DefaultContext(val ctx: CoroutineContext) : AbstractCoroutineCont
 internal inline fun CoroutineContext.defaultContext(ctx: CoroutineContext): CoroutineContext =
   this[DefaultContext]?.ctx ?: ctx
 
-internal suspend inline fun getDefaultContext(ctx: CoroutineContext = ComputationPool): CoroutineContext =
-  coroutineContext.defaultContext(ctx)
+internal suspend inline fun getDefaultContext(): CoroutineContext =
+  coroutineContext.defaultContext(ComputationPool)

@@ -1317,7 +1317,7 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
       }
 
   fun <O2> concurrently(other: Stream<O2>): Stream<O> =
-    defaultContext(ComputationPool).flatMap { concurrently(other, it) }
+    defaultContext().flatMap { concurrently(other, it) }
 
   private suspend fun <O> concurrentlyRunR(
     other: Stream<O>,
@@ -1347,7 +1347,7 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
       .parJoin(2, ctx)
 
   fun <B> either(other: Stream<B>): Stream<Either<O, B>> =
-    defaultContext(ComputationPool).flatMap { either(it, other) }
+    defaultContext().flatMap { either(it, other) }
 
   /**
    * Starts this stream and cancels it as finalization of the returned stream.
@@ -1356,7 +1356,7 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
     supervise(ctx) { drain() }
 
   fun spawn(): Stream<Fiber<Unit>> =
-    defaultContext(ComputationPool).flatMap(::spawn)
+    defaultContext().flatMap(::spawn)
 
   /**
    * Run the supplied effectful action at the end of this stream, regardless of how the stream terminates.
@@ -1784,7 +1784,7 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
       bracket(acquire = { fa.forkAndForget(ctx) }, release = Fiber<A>::cancel)
 
     fun <A> supervise(fa: suspend () -> A): Stream<Fiber<A>> =
-      defaultContext(ComputationPool).flatMap { supervise(it, fa) }
+      defaultContext().flatMap { supervise(it, fa) }
 
     /**
      * Lazily produce the range `[start, stopExclusive)`. If you want to produce
@@ -2622,5 +2622,5 @@ fun <O> Stream.Companion.monoid(): Monoid<Stream<O>> =
       this@combine.append { b }
   }
 
-internal fun Stream.Companion.defaultContext(ctx: CoroutineContext = ComputationPool): Stream<CoroutineContext> =
-  Stream.effect { getDefaultContext(ctx) }
+internal fun Stream.Companion.defaultContext(): Stream<CoroutineContext> =
+  Stream.effect { getDefaultContext() }
