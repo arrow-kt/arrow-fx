@@ -180,7 +180,7 @@ class CallbackTest : StreamSpec(iterations = 250, spec = {
 
       val p = UnsafePromise<Unit>()
 
-      val cancel = task.startCoroutineCancellable(CancellableContinuation { r -> p.complete(r) })
+      val cancel = task.startCoroutineCancellable(CancellableContinuation(coroutineContext) { r -> p.complete(r) })
 
       latch.get()
 

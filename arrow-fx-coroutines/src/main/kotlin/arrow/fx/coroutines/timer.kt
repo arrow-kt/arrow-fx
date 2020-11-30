@@ -74,17 +74,19 @@ suspend fun <A> timeOutOrNull(duration: Duration, fa: suspend () -> A): A? =
     val faConn = SuspendConnection()
     val timerConn = SuspendConnection()
 
+    val defaultCtx = cont.context.defaultContext(ComputationPool)
+
     // Register our new tokens to our parents connection
     conn.push(listOf(suspend { timerConn.cancel() }, suspend { faConn.cancel() }))
 
     // Launch timer on current thread (Unintercepted) with default ctx (sleep returns there), and timer connection
     // Launch on current thread, since it will immediately fork to sleeper scheduler, and free current Thread
-    suspend { sleep(duration) }.startCoroutineUnintercepted(CancellableContinuation(ComputationPool + timerConn) { timeOut ->
+    suspend { sleep(duration) }.startCoroutineUnintercepted(CancellableContinuation(defaultCtx + timerConn) { timeOut ->
       // If isActive then we want trigger cancel `fa` on default ctx, don't intercept since sleep already returned to default ctx
       // Resume on intercepted continuation to return to original context
       if (isActive.compareAndSet(true, false)) {
         timeOut.fold({
-          suspend { faConn.cancel() }.startCoroutineUnintercepted(Continuation(ComputationPool) {
+          suspend { faConn.cancel() }.startCoroutineUnintercepted(Continuation(defaultCtx) {
             it.fold({ cont.intercepted().resume(null) }, cont.intercepted()::resumeWithException)
           })
         }, cont.intercepted()::resumeWithException)

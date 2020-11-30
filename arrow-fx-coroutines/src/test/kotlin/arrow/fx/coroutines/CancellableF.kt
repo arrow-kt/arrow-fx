@@ -28,7 +28,7 @@ class CancellableF : ArrowFxSpec(spec = {
         latch.complete(Result.success(Unit))
         CancelToken { cancelled.complete(true) }
       }
-    }.startCoroutineCancellable(CancellableContinuation { })
+    }.startCoroutineCancellable(CancellableContinuation(coroutineContext) { })
 
     latch.join()
     c.invoke()
@@ -96,7 +96,7 @@ class CancellableF : ArrowFxSpec(spec = {
 
       val p = UnsafePromise<Unit>()
 
-      val cancel = task.startCoroutineCancellable(CancellableContinuation { r -> p.complete(r) })
+      val cancel = task.startCoroutineCancellable(CancellableContinuation(coroutineContext) { r -> p.complete(r) })
 
       latch.get()
 
