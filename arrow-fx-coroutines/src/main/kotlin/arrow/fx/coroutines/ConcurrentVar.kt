@@ -1,5 +1,7 @@
 package arrow.fx.coroutines
 
+import arrow.core.Tuple2
+import arrow.core.toT
 import arrow.fx.coroutines.DefaultConcurrentVar.Companion.State.WaitForPut
 import arrow.fx.coroutines.DefaultConcurrentVar.Companion.State.WaitForTake
 import kotlinx.atomicfu.atomic
@@ -7,8 +9,8 @@ import kotlin.coroutines.Continuation
 
 /**
  * [ConcurrentVar] is a mutable concurrent safe variable which is either `empty` or contains a `single value` of type [A].
- * It behaves the same as a single element [arrow.fx.coroutines.stream.concurrent.Queue].
- * When trying to [put] or [take], it'll suspend when it's respectively [isEmpty] or [isNotEmpty].
+ * It behaves as a single element [arrow.fx.coroutines.stream.concurrent.Queue].
+ * When trying to [put] or [take], it will suspend when it is respectively [isEmpty] or [isNotEmpty].
  *
  * There are also operators that return immediately, [tryTake] & [tryPut],
  * since checking [isEmpty] could be outdated immediately.
@@ -27,17 +29,25 @@ import kotlin.coroutines.Continuation
  *     mvar.put(5)
  *   }
  *
- *  val r = mvar.take() // suspend until Fork puts result in MVar
+ *  val r = mvar.take() // suspend until Fork puts result in ConcurrentVar
  *  println(r)
  * }
  * ```
+ *
+ * ## Using [ConcurrentVar] as a lock safely
+ *
+ * [ConcurrentVar] can also be used as a lock if every operation calls [take], does work and then [put]'s the value back.
+ * However this is quite unsafe if operations can be cancelled or can throw exception while they hold a lock.
+ * The best approach to overcome this is to use [bracketCase] however since this is a rather common pattern, it is made available with [withConcurrentVar], [modify] and [modify_].
+ *
+ * > Note that this only works if all operations over the [ConcurrentVar] follow the pattern of first taking and then putting back both exactly once and in order.
+ *  Or use the helpers to also be safe in case of exceptions and cancellation.
  */
 interface ConcurrentVar<A> {
 
   /**
    * Returns true if there are no elements. Otherwise false.
-   * This may be outdated immediately,
-   *   use [tryPut] or [tryTake] to [put] & [take] without suspending.
+   * This may be outdated immediately; use [tryPut] or [tryTake] to [put] & [take] without suspending.
    *
    * ```kotlin:ank:playground
    * import arrow.fx.coroutines.*
@@ -56,8 +66,7 @@ interface ConcurrentVar<A> {
 
   /**
    * Returns true if there no elements. Otherwise false.
-   * This may be outdated immediately,
-   *   use [tryPut] or [tryTake] to [put] & [take] without suspending.
+   * This may be outdated immediately; use [tryPut] or [tryTake] to [put] & [take] without suspending.
    *
    * ```kotlin:ank:playground
    * import arrow.fx.coroutines.*
@@ -74,8 +83,8 @@ interface ConcurrentVar<A> {
   suspend fun isNotEmpty(): Boolean
 
   /**
-   * Puts [A] in the [ConcurrentVar] if it is empty,
-   * or suspends if full until the given value is next in line to be consumed by [take].
+   * Puts [A] in the [ConcurrentVar] if it is empty, or suspends if full until the given value is next in line
+   * to be consumed by [take].
    *
    * ```kotlin:ank:playground
    * import arrow.fx.coroutines.*
@@ -141,8 +150,8 @@ interface ConcurrentVar<A> {
   suspend fun take(): A
 
   /**
-   * Try to take the value of [ConcurrentVar],
-   * returns a value immediately if the [ConcurrentVar] is not empty or null otherwise.
+   * Tries to take the value of [ConcurrentVar], returns a value immediately if the [ConcurrentVar] is not
+   * empty, or null otherwise.
    *
    * ```kotlin:ank:playground
    * import arrow.fx.coroutines.*
@@ -160,8 +169,8 @@ interface ConcurrentVar<A> {
   suspend fun tryTake(): A?
 
   /**
-   * Read the current value without emptying the MVar,
-   * assuming there is one, or otherwise it suspends until there is a value available.
+   * Reads the current value without emptying the [ConcurrentVar], assuming there is one, or otherwise
+   * it suspends until there is a value available.
    *
    * ```kotlin:ank:playground
    * import arrow.fx.coroutines.*
@@ -183,8 +192,39 @@ interface ConcurrentVar<A> {
    */
   suspend fun read(): A
 
+  /**
+   * Exception- and Cancellation-safe wrapper for operating on the contents of a [ConcurrentVar].
+   *
+   * Should an exception occur during [f]'s execution, or if it is cancelled, the value will always be put back.
+   *
+   * This operation is only atomic if there are no other producers for this [ConcurrentVar].
+   */
+  suspend fun <B> withConcurrentVar(f: suspend (A) -> B): B
+
+  /**
+   * Exception- and Cancellation-safe wrapper for modifying the contents of a [ConcurrentVar].
+   *
+   * Should an exception occur during [f]'s execution, or if it is cancelled, the initial value will be put back.
+   *
+   * This operation is only atomic if there are no other producers for this [ConcurrentVar].
+   *
+   * @see [modify_] A version that returns unit and does not expect a Tuple
+   */
+  suspend fun <B> modify(f: suspend (A) -> Tuple2<A, B>): B
+
+  /**
+   * Exception- and Cancellation-safe wrapper for modifying the contents of a [ConcurrentVar].
+   *
+   * Should an exception occur during [f]'s execution, or if it is cancelled, the initial value will be put back.
+   *
+   * This operation is only atomic if there are no other producers for this [ConcurrentVar].
+   *
+   * @see [modify] A version that allows a custom return value instead of unit.
+   */
+  suspend fun modify_(f: suspend (A) -> A): Unit = modify { f(it) toT Unit }
+
   companion object {
-    /** Builds an [ConcurrentVar] instance with an [initial] value. */
+    /** Builds a [ConcurrentVar] instance with an [initial] value. */
     suspend operator fun <A> invoke(initial: A): ConcurrentVar<A> =
       DefaultConcurrentVar(DefaultConcurrentVar.Companion.State(initial))
 
@@ -260,6 +300,33 @@ private class DefaultConcurrentVar<A> constructor(initial: State<A>) : Concurren
 
   override suspend fun read(): A =
     cancellable(::unsafeRead)
+
+  override suspend fun <B> withConcurrentVar(f: suspend (A) -> B): B =
+    bracketCase(
+      acquire = ::take,
+      use = f,
+      release = { a, _ -> put(a) }
+    )
+
+  override suspend fun <B> modify(f: suspend (A) -> Tuple2<A, B>): B {
+    // ugly. Is there a better way?
+    var res: A? = null
+    return bracketCase(
+      acquire = ::take,
+      use = {
+        val (a, b) = f(it)
+        res = a
+        b
+      },
+      release = { a, exit ->
+        when (exit) {
+          is ExitCase.Failure -> put(a)
+          is ExitCase.Cancelled -> put(a)
+          is ExitCase.Completed -> put(res!!)
+        }
+      }
+    )
+  }
 
   private tailrec suspend fun unsafeTryPut(a: A): Boolean =
     when (val current = state.value) {

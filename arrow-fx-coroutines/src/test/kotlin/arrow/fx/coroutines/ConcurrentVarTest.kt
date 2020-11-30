@@ -1,9 +1,10 @@
 package arrow.fx.coroutines
 
 import arrow.core.Either
+import arrow.core.toT
+import io.kotest.assertions.fail
 import io.kotest.matchers.shouldBe
 import kotlin.time.ExperimentalTime
-import io.kotest.property.forAll
 
 @ExperimentalTime
 class ConcurrentVarTest : ArrowFxSpec(spec = {
@@ -142,14 +143,13 @@ class ConcurrentVarTest : ArrowFxSpec(spec = {
 
   "producer-consumer parallel loop" {
     val count = 10000L
-    forAll(10) { _: Int ->
+    forFew(10) {
       val channel = ConcurrentVar<Long?>(0L)
       val producerFiber = ForkAndForget { producerParallel(channel, (0L until count).toList()) }
       val consumerFiber = ForkAndForget { consumerParallel(channel, 0L) }
 
       producerFiber.join() shouldBe Unit
       consumerFiber.join() shouldBe count * (count - 1) / 2
-      true
     }
   }
 
@@ -226,6 +226,67 @@ class ConcurrentVarTest : ArrowFxSpec(spec = {
     mVar.put(10)
     val fallback = suspend { sleep(200.milliseconds); 0 }
     raceN(finished::get, fallback) shouldBe Either.Right(0)
+  }
+
+  "withConcurrentVar applies the correct value" {
+    val mVar = ConcurrentVar(10)
+    mVar.withConcurrentVar { it } shouldBe 10
+    mVar.take() shouldBe 10
+  }
+
+  "withConcurrentVar is exception safe" {
+    val mVar = ConcurrentVar(10)
+    Either.catch { mVar.withConcurrentVar { throw Throwable("Hello") } }
+      .fold({}, { fail("The impossible happened") })
+    mVar.take() shouldBe 10
+  }
+  "withConcurrentVar is cancellation safe" {
+    val mVar = ConcurrentVar(10)
+    val started = Promise<Int>()
+    val finished = Promise<Unit>()
+    val fiber = ForkAndForget {
+      mVar.withConcurrentVar {
+        started.complete(it)
+        never<Unit>()
+        finished.complete(Unit)
+      }
+    }
+    sleep(100.milliseconds)
+    fiber.cancel()
+    started.tryGet() shouldBe 10
+    finished.tryGet() shouldBe null
+    mVar.tryTake() shouldBe 10
+  }
+
+  "modify applies the correct value, returns the second parameter and sets the first" {
+    val mVar = ConcurrentVar(10)
+    mVar.modify { it + 1 toT "Hello" } shouldBe "Hello"
+    mVar.take() shouldBe 11
+  }
+
+  "modify is exception safe" {
+    val mVar = ConcurrentVar(10)
+    Either.catch { mVar.modify_ { throw Throwable("Hello") } }
+      .fold({}, { fail("The impossible happened") })
+    mVar.take() shouldBe 10
+  }
+  "modify is cancellation safe" {
+    val mVar = ConcurrentVar(10)
+    val started = Promise<Int>()
+    val finished = Promise<Unit>()
+    val fiber = ForkAndForget {
+      mVar.modify_ {
+        started.complete(it)
+        never<Unit>()
+        finished.complete(Unit)
+        it + 1
+      }
+    }
+    sleep(10.milliseconds)
+    fiber.cancel()
+    started.get() shouldBe 10
+    finished.tryGet() shouldBe null
+    mVar.take() shouldBe 10
   }
 })
 

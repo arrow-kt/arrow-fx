@@ -26,8 +26,8 @@ sealed class Race3<out A, out B, out C> {
 
 /**
  * Races the participants [fa], [fb] & [fc] in parallel on the [ComputationPool].
- * The winner of the race cancels the other participants,
- * cancelling the operation cancels all participants.
+ * The winner of the race cancels the other participants.
+ * Cancelling the operation cancels all participants.
  *
  * @see raceN for the same function that can race on any [CoroutineContext].
  */
@@ -39,13 +39,13 @@ suspend fun <A, B, C> raceN(
 
 /**
  * Races the participants [fa], [fb] & [fc] on the provided [CoroutineContext].
- * The winner of the race cancels the other participants,
- * cancelling the operation cancels all participants.
+ * The winner of the race cancels the other participants.
+ * Cancelling the operation cancels all participants.
  *
- * **WARNING** it runs in parallel depending on the capabilities of the provided [CoroutineContext].
+ * **WARNING**: operations run in parallel depending on the capabilities of the provided [CoroutineContext].
  * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
  *
- * @see raceN for a function that ensures it runs in parallel on the [ComputationPool].
+ * @see raceN for a function that ensures operations run in parallel on the [ComputationPool].
  */
 suspend fun <A, B, C> raceN(
   ctx: CoroutineContext,
@@ -61,8 +61,8 @@ suspend fun <A, B, C> raceN(
     cb: (Result<Race3<A, B, C>>) -> Unit,
     r: Race3<A, B, C>
   ): Unit = if (isActive.getAndSet(false)) {
-    other2.cancelToken().cancel.startCoroutine(Continuation(EmptyCoroutineContext) { r2 ->
-      other3.cancelToken().cancel.startCoroutine(Continuation(EmptyCoroutineContext) { r3 ->
+    suspend { other2.cancel() }.startCoroutine(Continuation(EmptyCoroutineContext) { r2 ->
+      suspend { other3.cancel() }.startCoroutine(Continuation(EmptyCoroutineContext) { r3 ->
         main.pop()
         r2.fold({
           r3.fold({ cb(Result.success(r)) }, { e -> cb(Result.failure(e)) })
@@ -81,8 +81,8 @@ suspend fun <A, B, C> raceN(
     other3: SuspendConnection,
     err: Throwable
   ): Unit = if (active.getAndSet(false)) {
-    other2.cancelToken().cancel.startCoroutine(Continuation(EmptyCoroutineContext) { r2 ->
-      other3.cancelToken().cancel.startCoroutine(Continuation(EmptyCoroutineContext) { r3 ->
+    suspend { other2.cancel() }.startCoroutine(Continuation(EmptyCoroutineContext) { r2 ->
+      suspend { other3.cancel() }.startCoroutine(Continuation(EmptyCoroutineContext) { r3 ->
         main.pop()
         cb(
           Result.failure(
@@ -106,7 +106,7 @@ suspend fun <A, B, C> raceN(
   } else Unit
 
   return suspendCoroutineUninterceptedOrReturn { cont ->
-    val conn = cont.context.connection()
+    val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
     val cont = cont.intercepted()
 
     val active = AtomicBooleanW(true)
@@ -114,7 +114,7 @@ suspend fun <A, B, C> raceN(
     val connB = SuspendConnection()
     val connC = SuspendConnection()
 
-    conn.push(listOf(connA.cancelToken(), connB.cancelToken(), connC.cancelToken()))
+    conn.push(listOf(suspend { connA.cancel() }, suspend { connB.cancel() }, suspend { connC.cancel() }))
 
     fa.startCoroutineCancellable(CancellableContinuation(ctx, connA) { result ->
       result.fold({

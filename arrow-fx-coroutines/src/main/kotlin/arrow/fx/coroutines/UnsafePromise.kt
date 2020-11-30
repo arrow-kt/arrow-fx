@@ -50,7 +50,7 @@ internal class UnsafePromise<A> {
         if (state.compareAndSet(oldState, State.Full(value))) oldState.joiners.forEach { it.resumeWith(value) }
         else go()
       }
-      is State.Full -> throw ArrowInternalException()
+      is State.Full -> throw ArrowInternalException("$ArrowExceptionMessage\nUnsafePromise completed twice")
     }
 
     go()

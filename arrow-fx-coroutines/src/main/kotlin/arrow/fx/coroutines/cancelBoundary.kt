@@ -3,11 +3,11 @@ package arrow.fx.coroutines
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 
 /**
- * Inserts a cancellable boundary
+ * Inserts a cancellable boundary.
  *
- * In a cancelable environment, we need to add mechanisms to react when cancellation is triggered.
- * In a coroutine, a cancel boundary checks for the cancellation status; and, it does not allow the coroutine to keep executing in the case cancellation was triggered.
- * Useful, for example, to cancel the continuation of a loop, as shown in this code snippet:
+ * In a cancellable environment, we need to add mechanisms to react when cancellation is triggered.
+ * In a coroutine, a cancel boundary checks for the cancellation status; it does not allow the coroutine to keep executing in the case cancellation was triggered.
+ * It is useful, for example, to cancel the continuation of a loop, as shown in this code snippet:
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.*
@@ -33,7 +33,7 @@ import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
  */
 suspend fun cancelBoundary(): Unit =
   suspendCoroutineUninterceptedOrReturn { cont ->
-    if (cont.context.connection().isCancelled()) throw CancellationException()
+    if ((cont.context[SuspendConnection] ?: SuspendConnection.uncancellable).isCancelled()) throw CancellationException()
     else Unit
   }
 

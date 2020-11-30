@@ -6,7 +6,7 @@ import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 /**
  * [Fiber] represents a pure value that contains a running `suspend () -> A`.
  *
- * You can think of fibers as being lightweight threads, a Fiber being a
+ * You can think of fibers as being lightweight threads. A [Fiber] is a
  * concurrency primitive for doing cooperative multi-tasking.
  */
 interface Fiber<A> {
@@ -31,7 +31,7 @@ interface Fiber<A> {
 }
 
 internal fun <A> Fiber(promise: UnsafePromise<A>, conn: SuspendConnection): Fiber<A> =
-  Fiber({ promise.join() }, conn.cancelToken())
+  Fiber({ promise.join() }, CancelToken { conn.cancel() })
 
 /**
  * Launches a new suspendable cancellable coroutine within a [Fiber].
@@ -59,12 +59,12 @@ internal fun <A> Fiber(promise: UnsafePromise<A>, conn: SuspendConnection): Fibe
  */
 suspend fun <A> ForkConnected(ctx: CoroutineContext = ComputationPool, f: suspend () -> A): Fiber<A> =
   suspendCoroutineUninterceptedOrReturn { cont ->
-    val conn = cont.context.connection()
+    val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
 
     val promise = UnsafePromise<A>()
     // A new SuspendConnection, because its cancellation is now decoupled from our current one.
     val conn2 = SuspendConnection()
-    conn.push(conn2.cancelToken())
+    conn.push { conn2.cancel() }
     f.startCoroutineCancellable(CancellableContinuation(ctx, conn2, promise::complete))
     Fiber(promise, conn2)
   }
@@ -78,7 +78,7 @@ suspend fun <A> (suspend () -> A).forkConnected(ctx: CoroutineContext = Computat
  * It does so by connecting the created [Fiber]'s cancellation to the provided [interruptWhen].
  * If the [interruptWhen] signal gets triggered, then this [Fiber] will get cancelled.
  *
- * You can still cancel the [Fiber] independent from the [interruptWhen] token,
+ * You can still cancel the [Fiber] independent from the [interruptWhen] token;
  * whichever one comes first cancels the [Fiber].
  *
  * This function is meant to integrate with 3rd party cancellation system such as Android.
@@ -109,12 +109,12 @@ suspend fun <A> ForkScoped(
   interruptWhen: suspend () -> Unit,
   f: suspend () -> A
 ): Fiber<A> = suspendCoroutineUninterceptedOrReturn { cont ->
-  val conn = cont.context.connection()
+  val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
 
   val promise = UnsafePromise<A>()
   // A new SuspendConnection, because its cancellation is now decoupled from our current one.
   val conn2 = SuspendConnection()
-  conn.push(conn2.cancelToken())
+  conn.push{ conn2.cancel() }
 
   suspend { // Launch cancelation trigger system concurrently
     ForkConnected { interruptWhen.invoke(); conn2.cancel() }
@@ -134,7 +134,7 @@ suspend fun <A> (suspend () -> A).forkScoped(
  * Launches a new suspendable cancellable coroutine within a [Fiber].
  * You can [Fiber.join] or [Fiber.cancel] the computation.
  *
- * **BEWARE** you immediately leak the [Fiber] when launching without connection control.
+ * **BEWARE**: you immediately leak the [Fiber] when launching without connection control.
  * Use [ForkConnected] or safely launch the fiber as a [Resource] or using [bracketCase].
  *
  * @see ForkConnected for a fork operation that wires cancellation to its parent in a safe way.

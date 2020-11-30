@@ -26,7 +26,7 @@ suspend fun <T> evalOn(
   block: suspend () -> T
 ): T = suspendCoroutineUninterceptedOrReturn sc@{ uCont ->
 
-  if (uCont.context.connection().isCancelled()) uCont.resumeWithException(CancellationException())
+  if ((uCont.context[SuspendConnection] ?: SuspendConnection.uncancellable).isCancelled()) uCont.resumeWithException(CancellationException())
 
   val oldContext = uCont.context
   val newContext = oldContext + context

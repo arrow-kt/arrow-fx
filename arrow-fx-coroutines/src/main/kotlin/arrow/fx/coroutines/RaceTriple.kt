@@ -28,8 +28,8 @@ suspend fun <A, B, C> raceTriple(fa: suspend () -> A, fb: suspend () -> B, fc: s
   raceTriple(ComputationPool, fa, fb, fc)
 
 /**
- * Race two tasks concurrently within a new suspend fun.
- * Race results in a winner and the other, yet to finish task running in a [Fiber].
+ * Races three tasks concurrently within a new suspend fun.
+ * Race results in a winner and the others, yet to finish tasks running in [Fiber].
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.*
@@ -64,7 +64,7 @@ suspend fun <A, B, C> raceTriple(
   fc: suspend () -> C
 ): RaceTriple<A, B, C> =
   suspendCoroutineUninterceptedOrReturn { cont ->
-    val conn = cont.context.connection()
+    val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
     val cont = cont.intercepted()
     val active = AtomicBooleanW(true)
 
@@ -80,7 +80,7 @@ suspend fun <A, B, C> raceTriple(
     val connC = SuspendConnection()
     val promiseC = UnsafePromise<C>()
 
-    conn.push(listOf(connA.cancelToken(), connB.cancelToken(), connC.cancelToken()))
+    conn.push(listOf(suspend { connA.cancel() }, suspend { connB.cancel() }, suspend { connC.cancel() }))
 
     fun <A> onError(
       error: Throwable,
@@ -89,8 +89,8 @@ suspend fun <A, B, C> raceTriple(
       promise: UnsafePromise<A>
     ): Unit {
       if (active.getAndSet(false)) { // if an error finishes first, stop the race.
-        connB.cancelToken().cancel.startCoroutine(Continuation(EmptyCoroutineContext) { r2 ->
-          connC.cancelToken().cancel.startCoroutine(Continuation(EmptyCoroutineContext) { r3 ->
+        suspend { connB.cancel() }.startCoroutine(Continuation(EmptyCoroutineContext) { r2 ->
+          suspend { connC.cancel() }.startCoroutine(Continuation(EmptyCoroutineContext) { r3 ->
             conn.pop()
 
             val errorResult = r2.fold({

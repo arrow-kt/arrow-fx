@@ -1,6 +1,5 @@
 package arrow.fx.coroutines
 
-import kotlinx.atomicfu.atomic
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
@@ -13,12 +12,10 @@ sealed class ExitCase {
     override fun toString(): String =
       "ExitCase.Completed"
   }
-
   object Cancelled : ExitCase() {
     override fun toString(): String =
       "ExitCase.Cancelled"
   }
-
   data class Failure(val failure: Throwable) : ExitCase()
 }
 
@@ -42,12 +39,13 @@ sealed class ExitCase {
  */
 suspend fun <A> uncancellable(f: suspend () -> A): A =
   suspendCoroutineUninterceptedOrReturn sc@{ cont ->
-    val conn = cont.context.connection()
+    val originalConnection = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
 
+    // ForwardCancellable back-pressures the originalConnection#cancel until we call `ForwardCancellable#complete`
     val deferredRelease = ForwardCancellable()
-    conn.push(deferredRelease.cancel())
+    originalConnection.push { deferredRelease.cancel() }
 
-    if (conn.isNotCancelled()) {
+    if (originalConnection.isNotCancelled()) {
       val uncancellable = cont.context + SuspendConnection.uncancellable
 
       return@sc f.startCoroutineUninterceptedOrReturn(Continuation(uncancellable) {
@@ -64,7 +62,7 @@ suspend fun <A> uncancellable(f: suspend () -> A): A =
  * Registers an [onCancel] handler after [fa].
  * [onCancel] is guaranteed to be called in case of cancellation, otherwise it's ignored.
  *
- * Useful for wiring cancellation tokens between fibers, building inter-op with other effect systems or testing.
+ * This function is useful for wiring cancellation tokens between fibers, building inter-op with other effect systems or testing.
  *
  * @param fa program that you want to register handler on
  * @param onCancel handler to run when [fa] gets cancelled.
@@ -100,8 +98,8 @@ suspend fun <A> guarantee(
 ): A = guaranteeCase(fa) { finalizer.invoke() }
 
 /**
- * Guarantees execution of a given [finalizer] after [fa] regardless of success, error or cancellation., allowing
- * for differentiating between exit conditions with to the [ExitCase] argument of the finalizer.
+ * Guarantees execution of a given [finalizer] after [fa] regardless of success, error or cancellation, allowing
+ * for differentiating between exit conditions with the [ExitCase] argument of the finalizer.
  *
  * As best practice, it's not a good idea to release resources via [guaranteeCase].
  * since [guaranteeCase] doesn't properly model acquiring, using and releasing resources.
@@ -119,11 +117,11 @@ suspend fun <A> guaranteeCase(
 ): A = bracketCase({ Unit }, { fa.invoke() }, { _, ex -> finalizer(ex) })
 
 /**
- * Meant for specifying tasks with safe resource acquisition and release in the face of errors and interruption.
+ * Describes a task with safe resource acquisition and release in the face of errors and interruption.
  * It would be the equivalent of an async capable `try/catch/finally` statements in mainstream imperative languages for resource
  * acquisition and release.
  *
- * @param acquire the action to acquire the resource
+ * @param acquire is the action to acquire the resource.
  *
  * @param use is the action to consume the resource and produce a result.
  * Once the resulting suspend program terminates, either successfully, error or disposed,
@@ -167,30 +165,30 @@ suspend fun <A, B> bracket(
  * A way to safely acquire a resource and release in the face of errors and cancellation.
  * It uses [ExitCase] to distinguish between different exit cases when releasing the acquired resource.
  *
- * [bracketCase] exists out of a three stages:
+ * [bracketCase] exists out of three stages:
  *   1. acquisition
  *   2. consumption
  *   3. releasing
  *
  * 1. Resource acquisition is **NON CANCELLABLE**.
  *   If resource acquisition fails, meaning no resource was actually successfully acquired then we short-circuit the effect.
- *   Reason being, we cannot [release] what we did not `acquire` first. Same reason we cannot call [use].
+ *   As the resource was not acquired, it is not possible to [use] or [release] it.
  *   If it is successful we pass the result to stage 2 [use].
  *
  * 2. Resource consumption is like any other `suspend` effect. The key difference here is that it's wired in such a way that
  *   [release] **will always** be called either on [ExitCase.Cancelled], [ExitCase.Failure] or [ExitCase.Completed].
- *   If it failed than the resulting [suspend] from [bracketCase] will be the error, otherwise the result of [use].
+ *   If it failed, then the resulting [suspend] from [bracketCase] will be the error; otherwise the result of [use] will be returned.
  *
  * 3. Resource releasing is **NON CANCELLABLE**, otherwise it could result in leaks.
- *   In the case it throws the resulting [suspend] will be either the error or a composed error if one occurred in the [use] stage.
+ *   In the case it throws an exception, the resulting [suspend] will be either such error, or a composed error if one occurred in the [use] stage.
  *
- * @param acquire the action to acquire the resource
+ * @param acquire is the action to acquire the resource.
  *
  * @param use is the action to consume the resource and produce a result.
  * Once the resulting suspend program terminates, either successfully, error or disposed,
  * the [release] function will run to clean up the resources.
  *
- * @param release the allocated resource after [use] terminates.
+ * @param release is the action to release the allocated resource after [use] terminates.
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.*
@@ -229,21 +227,26 @@ suspend fun <A, B> bracketCase(
   use: suspend (A) -> B,
   release: suspend (A, ExitCase) -> Unit
 ): B = suspendCoroutineUninterceptedOrReturn { cont ->
-  val conn = cont.context.connection()
+  val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
 
   val deferredRelease = ForwardCancellable()
-  conn.push(deferredRelease.cancel())
+  conn.push { deferredRelease.cancel() }
 
   // Race-condition check, avoiding starting the bracket if the connection
   // was cancelled already, to ensure that `cancel` really blocks if we
   // start `acquire` — n.b. `isCancelled` is visible here due to `push`
-
   if (!conn.isCancelled()) {
     // Note `acquire` is uncancellable (in other words it is disconnected from our SuspendConnection)
     val uncancellable = cont.context + SuspendConnection.uncancellable
 
+    // Guard used for thread-safety, to ensure the idempotency
+    // of the release; otherwise `release` can be called twice
+    // Needs to be created here, since we can have branching depending on if suspending code returns immediately or actually suspends.
+    val waitsForResult = AtomicBooleanW(true)
+
     val acquiredOrSuspended = acquire.startCoroutineUninterceptedOrReturn(
       BracketAcquireContinuation(
+        waitsForResult,
         uncancellable,
         cont,
         use,
@@ -254,7 +257,7 @@ suspend fun <A, B> bracketCase(
 
     if (acquiredOrSuspended != COROUTINE_SUSPENDED) {
       val usedAndReleasedOrSuspended =
-        launchUseAndRelease(acquiredOrSuspended as A, uncancellable, cont, use, release, deferredRelease)
+        launchUseAndRelease(waitsForResult, acquiredOrSuspended as A, uncancellable, cont, use, release, deferredRelease)
 
       if (usedAndReleasedOrSuspended != COROUTINE_SUSPENDED) (usedAndReleasedOrSuspended as Result<B>).fold(
         { it },
@@ -268,6 +271,7 @@ suspend fun <A, B> bracketCase(
 }
 
 private class BracketAcquireContinuation<A, B>(
+  val waitsForResult: AtomicBooleanW,
   val uncancellableContext: CoroutineContext,
   val uCont: Continuation<B>,
   val use: suspend (A) -> B,
@@ -279,7 +283,7 @@ private class BracketAcquireContinuation<A, B>(
   override fun resumeWith(result: Result<A>) {
     result.fold({ a ->
       val usedAndReleasedOrSuspended =
-        launchUseAndRelease(a, uncancellableContext, uCont, use, release, deferredRelease)
+        launchUseAndRelease(waitsForResult, a, uncancellableContext, uCont, use, release, deferredRelease)
 
       // Use & Release immediately returned
       if (usedAndReleasedOrSuspended != COROUTINE_SUSPENDED) {
@@ -296,6 +300,7 @@ private class BracketAcquireContinuation<A, B>(
  * or [COROUTINE_SUSPENDED] in the case the `Coroutine` suspended.
  */
 private fun <A, B> launchUseAndRelease(
+  waitsForResult: AtomicBooleanW,
   a: A,
   uncancellableContext: CoroutineContext,
   uCont: Continuation<B>,
@@ -304,7 +309,7 @@ private fun <A, B> launchUseAndRelease(
   deferredRelease: ForwardCancellable
 ): Any? {
   val fb = suspend { use(a) }
-  val frame = BracketUseContinuation(a, uCont, release, uncancellableContext)
+  val frame = BracketUseContinuation(waitsForResult, a, uCont, release, uncancellableContext)
   deferredRelease.complete(frame.cancel)
 
   return try {
@@ -323,6 +328,7 @@ private fun <A, B> launchUseAndRelease(
  * It's cancel signal needs to be registered to it's `uCont.context.connection()` using [ForwardCancellable].
  */
 private class BracketUseContinuation<A, B>(
+  val waitsForResult: AtomicBooleanW,
   val a: A,
   val uCont: Continuation<B>,
   val release: suspend (A, ExitCase) -> Unit,
@@ -331,24 +337,21 @@ private class BracketUseContinuation<A, B>(
 
   override val context: CoroutineContext = uCont.context
 
-  // Guard used for thread-safety, to ensure the idempotency
-  // of the release; otherwise `release` can be called twice
-  private val waitsForResult = AtomicBooleanW(true)
-
   suspend fun release(c: ExitCase): Unit = release(a, c)
 
   private suspend fun applyRelease(e: ExitCase): Unit {
     if (waitsForResult.compareAndSet(true, false)) release(e)
+    else Unit
   }
 
   val cancel: CancelToken =
-    CancelToken { if (waitsForResult.compareAndSet(true, false)) applyRelease(ExitCase.Cancelled) }
+    CancelToken { applyRelease(ExitCase.Cancelled) }
 
   override fun resumeWith(result: Result<B>) {
     val releasedOrSuspended = try {
       result.getCancelledOrNull()?.let { cancelled ->
         launchRelease(a, cancelled, null, uCont, waitsForResult, release, uncancellableContext)
-      } ?: launchRelease(a, null, result, uCont, waitsForResult, release, uncancellableContext)
+      } ?: launchRelease(waitsForResult, a, null, result, uCont, waitsForResult, release, uncancellableContext)
     } catch (e: Throwable) {
       Result.failure<B>(e.nonFatalOrThrow())
     }
@@ -366,20 +369,19 @@ private class BracketUseContinuation<A, B>(
  *  => `Unit` result of `release` is **always** ignored.
  */
 private fun <A, B> launchRelease(
+  waitsForResult: AtomicBooleanW,
   a: A,
   cancelled: CancellationException?,
   result: Result<B>?,
   uCont: Continuation<B>,
-  active: AtomicBooleanW,
   release: suspend (A, ExitCase) -> Unit,
   uncancellableContext: CoroutineContext
 ): Any? {
-  val active = AtomicBooleanW(true)
 
   val frame = BracketReleaseContinuation(cancelled, result, uCont, uncancellableContext)
 
   val released = suspend {
-    if (active.compareAndSet(true, false)) {
+    if (waitsForResult.compareAndSet(true, false)) {
       if (result == null) {
         release(a, ExitCase.Cancelled)
       } else {

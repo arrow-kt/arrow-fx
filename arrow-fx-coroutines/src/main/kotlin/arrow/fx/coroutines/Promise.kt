@@ -9,10 +9,12 @@ import kotlinx.atomicfu.atomic
 import kotlin.coroutines.Continuation
 
 /**
- * When made, a [Promise] is empty. Until it is fulfilled, which can only happen once.
+ * A `Promise` is commonly used to provide and receive a value from 2 different threads.
+ * Since `Promise` can only be completed once unlike [ConcurrentVar], we can consider it a
+ * synchronization primitive.
  *
- * A `Promise` is commonly used to provide and receive a value from 2 different threads,
- * since `Promise` can only be completed once unlike [ConcurrentVar] we can consider it a synchronization primitive.
+ * When made, a [Promise] is empty, and it remains in this state until it is fulfilled, which can only
+ * happen once.
  *
  * Let's say we wanted to await a `Fiber`, we could complete a Promise `latch` to signal it finished.
  * Awaiting the latch `Promise` will now prevent `main` from finishing early.
@@ -37,7 +39,7 @@ import kotlin.coroutines.Continuation
 interface Promise<A> {
 
   /**
-   * Get or throw the promised value, use `attempt` when throwing is not required.
+   * Gets the promised value or throws. Use `attempt` when throwing is not required.
    * Suspends until the promised value is available.
    *
    * ```kotlin:ank:playground
@@ -60,7 +62,7 @@ interface Promise<A> {
   suspend fun get(): A
 
   /**
-   * Try get the promised value, it returns `null` if promise is not fulfilled yet.
+   * Tries to get the promised value, returning `null` if promise is not fulfilled yet.
    * Returns [A] if promise is fulfilled.
    *
    * ```kotlin:ank:playground

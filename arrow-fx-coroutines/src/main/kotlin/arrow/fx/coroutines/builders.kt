@@ -8,7 +8,7 @@ import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
 import kotlin.coroutines.resumeWithException
 
 /**
- * Create a cancellable `suspend` function that executes an asynchronous process on evaluation.
+ * Creates a cancellable `suspend` function that executes an asynchronous process on evaluation.
  * This combinator can be used to wrap callbacks or other similar impure code that requires cancellation code.
  *
  * ```kotlin:ank:playground
@@ -65,10 +65,10 @@ import kotlin.coroutines.resumeWithException
  */
 suspend fun <A> cancellable(cb: (Continuation<A>) -> CancelToken): A =
   suspendCoroutine { cont ->
-    val conn = cont.context.connection()
+    val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
 
     val cancellable = ForwardCancellable()
-    conn.push(cancellable.cancel())
+    conn.push { cancellable.cancel() }
 
     if (conn.isNotCancelled()) {
       cancellable.complete(
@@ -83,7 +83,7 @@ suspend fun <A> cancellable(cb: (Continuation<A>) -> CancelToken): A =
   }
 
 /**
- * Create a cancellable `suspend` function that executes an asynchronous process on evaluation.
+ * Creates a cancellable `suspend` function that executes an asynchronous process on evaluation.
  * This combinator can be used to wrap callbacks or other similar impure code that requires cancellation code.
  *
  * The suspending [cb] runs in an uncancellable manner, acquiring [CancelToken] as a resource.
@@ -140,7 +140,7 @@ suspend fun <A> cancellable(cb: (Continuation<A>) -> CancelToken): A =
  */
 suspend fun <A> cancellableF(cb: suspend (Continuation<A>) -> CancelToken): A =
   suspendCoroutine { cont ->
-    val conn = cont.context.connection()
+    val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
 
     val state = AtomicRefW<((Result<Unit>) -> Unit)?>(null)
 
@@ -163,7 +163,7 @@ suspend fun <A> cancellableF(cb: suspend (Continuation<A>) -> CancelToken): A =
     }
 
     val conn2 = SuspendConnection()
-    conn.push(conn2.cancelToken())
+    conn.push { conn2.cancel() }
 
     suspend {
       // Until we've got a cancellation token, the task needs to be evaluated
@@ -181,9 +181,8 @@ suspend fun <A> cancellableF(cb: suspend (Continuation<A>) -> CancelToken): A =
       )
     }.startCoroutineCancellable(CancellableContinuation(cont.context, conn2)
     {
-
       // TODO send CancelToken exception to Enviroment
-//      it.fold({ arrow.core.identity(it) }, Throwable::printStackTrace)
+      it.fold({ arrow.core.identity(it) }, Throwable::printStackTrace)
     })
   }
 
