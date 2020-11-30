@@ -2,6 +2,12 @@ package arrow.fx.coroutines.stream
 
 import arrow.fx.coroutines.IQueue
 
+internal inline infix fun <A, B, C> ((A) -> B).andThen(crossinline f: (B) -> C): (A) -> C =
+  { a -> f(this(a)) }
+
+internal inline infix fun <A, B, C> (suspend (A) -> B).andThen(crossinline f: suspend (B) -> C): suspend (A) -> C =
+  { a: A -> f(this(a)) }
+
 internal fun checkBounds(arraySize: Int, offset: Int, length: Int) {
   require(offset in 0..arraySize)
   require(length in 0..arraySize)

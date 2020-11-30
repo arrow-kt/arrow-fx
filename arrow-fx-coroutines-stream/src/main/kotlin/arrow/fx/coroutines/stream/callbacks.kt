@@ -6,7 +6,6 @@ import arrow.fx.coroutines.UnsafePromise
 import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.Promise
-import arrow.fx.coroutines.andThen
 import arrow.fx.coroutines.guaranteeCase
 import arrow.fx.coroutines.stream.concurrent.Queue
 import kotlin.coroutines.Continuation

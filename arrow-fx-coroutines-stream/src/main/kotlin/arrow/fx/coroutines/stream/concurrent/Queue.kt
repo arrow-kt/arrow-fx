@@ -5,7 +5,7 @@ import arrow.core.Option
 import arrow.core.Some
 import arrow.core.identity
 import arrow.fx.coroutines.IQueue
-import arrow.fx.coroutines.andThen
+import arrow.fx.coroutines.stream.andThen
 import arrow.fx.coroutines.prependTo
 import arrow.fx.coroutines.stream.Chunk
 import arrow.fx.coroutines.stream.Pipe
