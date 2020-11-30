@@ -206,7 +206,6 @@ fun <O> Stream<Stream<O>>.parJoin(
 fun <O> Stream<Stream<O>>.parJoin(maxOpen: Int): Stream<O> =
   Stream.defaultContext(ComputationPool).flatMap { parJoin(maxOpen, it) }
 
-
 /** Like [parJoin] but races all inner streams simultaneously without limit. */
 fun <O> Stream<Stream<O>>.parJoinUnbounded(ctx: CoroutineContext): Stream<O> =
   parJoin(Int.MAX_VALUE, ctx)
