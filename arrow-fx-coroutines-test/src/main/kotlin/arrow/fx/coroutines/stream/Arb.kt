@@ -1,6 +1,5 @@
 package arrow.fx.coroutines.stream
 
-import arrow.fx.coroutines.prependTo
 import io.kotest.property.Arb
 import io.kotest.property.RandomSource
 import io.kotest.property.Sample
@@ -27,7 +26,7 @@ inline fun <reified A> Arb.Companion.array(
 ): Arb<Array<A>> {
   check(!range.isEmpty())
   check(range.first >= 0)
-  return arb(edgecases = emptyArray<A>() prependTo gen.edgecases().map { arrayOf(it) }) {
+  return arb(edgecases = listOf(emptyArray<A>()) + gen.edgecases().map { arrayOf(it) }) {
     sequence {
       val genIter = gen.generate(it).iterator()
       while (true) {
