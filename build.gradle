@@ -6,7 +6,7 @@ buildscript {
         google()
     }
     dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$KOTLIN_VERSION"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.20"
         classpath "org.jetbrains.kotlinx:atomicfu-gradle-plugin:$ATOMICFU_VERSION"
         classpath "com.android.tools.build:gradle:$ANDROID_TOOLS_BUILD_PLUGIN_VERSION"
     }

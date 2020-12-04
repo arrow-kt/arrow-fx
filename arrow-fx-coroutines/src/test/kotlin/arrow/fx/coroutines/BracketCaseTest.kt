@@ -317,7 +317,7 @@ class BracketCaseTest : ArrowFxSpec(spec = {
     exit.get() shouldBe ExitCase.Completed
   }
 
-  "acquire on bracketCase is not cancellable".config(enabled = false) {
+  "acquire on bracketCase is not cancellable" {
     checkAll(Arb.int(), Arb.int()) { x, y ->
       val mVar = ConcurrentVar(x)
       val latch = Promise<Unit>()
@@ -344,7 +344,7 @@ class BracketCaseTest : ArrowFxSpec(spec = {
     }
   }
 
-  "release on bracketCase is not cancellable".config(enabled = false) {
+  "release on bracketCase is not cancellable" {
     checkAll(Arb.int(), Arb.int()) { x, y ->
       val mVar = ConcurrentVar(x)
       val latch = Promise<Unit>()

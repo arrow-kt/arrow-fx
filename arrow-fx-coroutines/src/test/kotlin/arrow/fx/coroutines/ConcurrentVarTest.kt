@@ -45,7 +45,7 @@ class ConcurrentVarTest : ArrowFxSpec(spec = {
     setOf(aa, bb) shouldBe setOf(10, 20)
   }
 
-  "empty; put; put; put; take; take; take".config(enabled = false) {
+  "empty; put; put; put; take; take; take" {
     val av = ConcurrentVar.empty<Int>()
 
     val f1 = ForkAndForget { av.put(10) }
@@ -63,7 +63,7 @@ class ConcurrentVarTest : ArrowFxSpec(spec = {
     setOf(aa, bb, cc) shouldBe setOf(10, 20, 30)
   }
 
-  "empty; take; take; take; put; put; put".config(enabled = false) {
+  "empty; take; take; take; put; put; put" {
     val av = ConcurrentVar.empty<Int>()
 
     val f1 = av::take.forkAndForget()
@@ -123,7 +123,7 @@ class ConcurrentVarTest : ArrowFxSpec(spec = {
     takePutTestIsStacksafe(count, 0, mvar) shouldBe count
   }
 
-  "stack overflow test".config(enabled = false) {
+  "stack overflow test" {
     val count = 10_000L
 
     suspend fun exec(channel: Channel<Long>): Long {
@@ -141,7 +141,7 @@ class ConcurrentVarTest : ArrowFxSpec(spec = {
     exec(mvar) shouldBe count * (count - 1) / 2
   }
 
-  "producer-consumer parallel loop".config(enabled = false) {
+  "producer-consumer parallel loop" {
     val count = 10000L
     forFew(10) {
       val channel = ConcurrentVar<Long?>(0L)
@@ -168,7 +168,7 @@ class ConcurrentVarTest : ArrowFxSpec(spec = {
     fr.join() shouldBe count
   }
 
-  "concurrent take and put".config(enabled = false) {
+  "concurrent take and put" {
     val count = 1_000
     val mVar = ConcurrentVar.empty<Int>()
     val ref = Atomic(0)
@@ -200,7 +200,7 @@ class ConcurrentVarTest : ArrowFxSpec(spec = {
     setOf(r1, r3) shouldBe setOf(1, 3)
   }
 
-  "take is cancellable".config(enabled = false) {
+  "take is cancellable" {
     val mVar = ConcurrentVar.empty<Int>()
     val t1 = ForkAndForget { mVar.take() }
     val t2 = ForkAndForget { mVar.take() }
