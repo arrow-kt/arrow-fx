@@ -103,12 +103,12 @@ internal class DefaultEnvironment(override val ctx: CoroutineContext) : Environm
 
 private fun CoroutineContext.asDefaultCtx(): CoroutineContext = plus(DefaultContext(this))
 
-internal class DefaultContext(val ctx: CoroutineContext) : AbstractCoroutineContextElement(DefaultContext) {
+class DefaultContext(val ctx: CoroutineContext) : AbstractCoroutineContextElement(DefaultContext) {
   companion object Key : CoroutineContext.Key<DefaultContext>
 }
 
-internal inline fun CoroutineContext.defaultContext(ctx: CoroutineContext): CoroutineContext =
+inline fun CoroutineContext.defaultContext(ctx: CoroutineContext): CoroutineContext =
   this[DefaultContext]?.ctx ?: ctx
 
-internal suspend inline fun getDefaultContext(): CoroutineContext =
+suspend inline fun getDefaultContext(): CoroutineContext =
   coroutineContext.defaultContext(ComputationPool)
