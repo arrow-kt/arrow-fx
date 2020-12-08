@@ -16,7 +16,6 @@ import arrow.fx.coroutines.SuspendConnection
 import arrow.fx.coroutines.guarantee
 import arrow.fx.coroutines.prependTo
 import arrow.fx.coroutines.raceN
-import arrow.fx.coroutines.uncons
 import java.util.concurrent.CancellationException
 import kotlin.coroutines.coroutineContext
 

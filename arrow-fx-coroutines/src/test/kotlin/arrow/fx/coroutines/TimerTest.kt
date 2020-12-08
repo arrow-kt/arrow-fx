@@ -93,7 +93,7 @@ class TimerTest : ArrowFxSpec(spec = {
             val n0 = threadName.invoke()
 
             Either.catch {
-              timeOutOrNull(50.milliseconds) {
+              timeOutOrNull(100.milliseconds) {
                 cancellableF<Nothing> {
                   one.shift()
                   threadName.invoke() shouldBe "1"

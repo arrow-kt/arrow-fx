@@ -46,9 +46,9 @@ suspend inline fun <A> uncancellable(crossinline f: suspend () -> A): A =
  * @see guarantee for registering a handler that is guaranteed to always run.
  * @see guaranteeCase for registering a handler that executes for any [ExitCase].
  */
-inline fun <A> onCancel(
+suspend inline fun <A> onCancel(
   fa: () -> A,
-  onCancel: () -> Unit
+  crossinline onCancel: suspend () -> Unit
 ): A = guaranteeCase(fa) { case ->
   when (case) {
     is ExitCase.Cancelled -> onCancel.invoke()
@@ -69,16 +69,20 @@ inline fun <A> onCancel(
  * @param finalizer handler to run after [fa].
  * @see guaranteeCase for registering a handler that tracks the [ExitCase] of [fa].
  */
-inline fun <A> guarantee(
+suspend inline fun <A> guarantee(
   fa: () -> A,
-  finalizer: () -> Unit
+  crossinline finalizer: suspend () -> Unit
 ): A =
   try {
     fa.invoke()
   } catch (e: CancellationException) {
-    tryAndCompose(e) { finalizer() }
+    tryAndCompose(e) {
+      withContext(NonCancellable) { finalizer() }
+    }
   } catch (t: Throwable) {
-    tryAndCompose(t.nonFatalOrThrow()) { finalizer() }
+    tryAndCompose(t.nonFatalOrThrow()) {
+      withContext(NonCancellable) { finalizer() }
+    }
   }
 
 /**
@@ -95,16 +99,22 @@ inline fun <A> guarantee(
  * @param finalizer handler to run after [fa].
  * @see guarantee for registering a handler that ignores the [ExitCase] of [fa].
  */
-inline fun <A> guaranteeCase(
+suspend inline fun <A> guaranteeCase(
   fa: () -> A,
-  finalizer: (ExitCase) -> Unit
+  crossinline finalizer: suspend (ExitCase) -> Unit
 ): A =
   try {
-    fa().also { finalizer(ExitCase.Completed) }
+    fa().also {
+      withContext(NonCancellable) { finalizer(ExitCase.Completed) }
+    }
   } catch (e: CancellationException) {
-    tryAndCompose(e) { finalizer(ExitCase.Cancelled(e)) }
+    tryAndCompose(e) {
+      withContext(NonCancellable) { finalizer(ExitCase.Cancelled(e)) }
+    }
   } catch (t: Throwable) {
-    tryAndCompose(t.nonFatalOrThrow()) { finalizer(ExitCase.Failure(t.nonFatalOrThrow())) }
+    tryAndCompose(t.nonFatalOrThrow()) {
+      withContext(NonCancellable) { finalizer(ExitCase.Failure(t.nonFatalOrThrow())) }
+    }
   }
 
 /**
@@ -149,18 +159,24 @@ inline fun <A> guaranteeCase(
 suspend inline fun <A, B> bracket(
   crossinline acquire: suspend () -> A,
   use: (A) -> B,
-  release: (A) -> Unit
+  crossinline release: suspend (A) -> Unit
 ): B {
   val acquired = withContext(NonCancellable) {
     acquire()
   }
 
   return try {
-    use(acquired).also { release(acquired) }
+    use(acquired).also {
+      withContext(NonCancellable) { release(acquired) }
+    }
   } catch (e: CancellationException) {
-    tryAndCompose(e) { release(acquired) }
+    tryAndCompose(e) {
+      withContext(NonCancellable) { release(acquired) }
+    }
   } catch (t: Throwable) {
-    tryAndCompose(t.nonFatalOrThrow()) { release(acquired) }
+    tryAndCompose(t.nonFatalOrThrow()) {
+      withContext(NonCancellable) { release(acquired) }
+    }
   }
 }
 
@@ -228,18 +244,24 @@ suspend inline fun <A, B> bracket(
 suspend inline fun <A, B> bracketCase(
   crossinline acquire: suspend () -> A,
   use: suspend (A) -> B,
-  release: suspend (A, ExitCase) -> Unit
+  crossinline release: suspend (A, ExitCase) -> Unit
 ): B {
   val acquired = withContext(NonCancellable) {
     acquire()
   }
 
   return try {
-    use(acquired).also { release(acquired, ExitCase.Completed) }
+    use(acquired).also {
+      withContext(NonCancellable) { release(acquired, ExitCase.Completed) }
+    }
   } catch (e: CancellationException) {
-    tryAndCompose(e) { release(acquired, ExitCase.Cancelled(e)) }
+    tryAndCompose(e) {
+      withContext(NonCancellable) { release(acquired, ExitCase.Cancelled(e)) }
+    }
   } catch (t: Throwable) {
-    tryAndCompose(t.nonFatalOrThrow()) { release(acquired, ExitCase.Failure(t.nonFatalOrThrow())) }
+    tryAndCompose(t.nonFatalOrThrow()) {
+      withContext(NonCancellable) { release(acquired, ExitCase.Failure(t.nonFatalOrThrow())) }
+    }
   }
 }
 

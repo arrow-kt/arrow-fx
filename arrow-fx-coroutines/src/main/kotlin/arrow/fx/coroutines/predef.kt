@@ -9,7 +9,7 @@ import kotlin.coroutines.resume
  * It should never leak to the outside world.
  */
 @JvmField
-//@SharedImmutable Kotlin Native
+// @SharedImmutable Kotlin Native
 internal val NULL = Symbol("NULL")
 
 /**

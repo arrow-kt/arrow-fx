@@ -2,6 +2,7 @@ package arrow.fx.coroutines
 
 import arrow.core.Either
 import io.kotest.assertions.fail
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
@@ -10,7 +11,9 @@ import io.kotest.property.arbitrary.long
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.ExperimentalTime
@@ -19,20 +22,20 @@ import kotlin.time.measureTimedValue
 @ExperimentalTime
 class BracketCaseTest : ArrowFxSpec(spec = {
 
-  "Uncancellable back pressures timeoutOrNull" {
-    checkAll(Arb.long(50, 100), Arb.long(300, 400)) { a, b ->
-      val (n, duration) = measureTimedValue {
-        withTimeoutOrNull(a) {
-          uncancellable { delay(b) }
-        }
-      }
-
-      n shouldBe null // timed-out so should be null
-      require((duration.inMilliseconds) >= b) {
-        "Should've taken longer than $b milliseconds, but took $duration"
-      }
-    }
-  }
+//  "Uncancellable back pressures timeoutOrNull" {
+//    checkAll(Arb.long(50, 100), Arb.long(300, 400)) { a, b ->
+//      val (n, duration) = measureTimedValue {
+//        withTimeoutOrNull(a) {
+//          uncancellable { delay(b) }
+//        }
+//      }
+//
+//      n shouldBe null // timed-out so should be null
+//      require((duration.inMilliseconds) >= b) {
+//        "Should've taken longer than $b milliseconds, but took $duration"
+//      }
+//    }
+//  }
 
   "Immediate acquire bracketCase finishes successfully" {
     checkAll(Arb.int(), Arb.int()) { a, b ->
@@ -62,7 +65,7 @@ class BracketCaseTest : ArrowFxSpec(spec = {
           use = { 5 },
           release = { _, _ -> CancelToken.unit }
         )
-      } shouldBe Either.Left(e)
+      } should leftException(e)
     }
   }
 
@@ -74,7 +77,7 @@ class BracketCaseTest : ArrowFxSpec(spec = {
           use = { 5 },
           release = { _, _ -> CancelToken.unit }
         )
-      } shouldBe Either.Left(e)
+      } should leftException(e)
     }
   }
 
@@ -173,7 +176,7 @@ class BracketCaseTest : ArrowFxSpec(spec = {
           use = { it },
           release = { _, _ -> throw e }
         )
-      } shouldBe Either.Left(e)
+      } should leftException(e)
     }
   }
 
@@ -185,7 +188,7 @@ class BracketCaseTest : ArrowFxSpec(spec = {
           use = { it },
           release = { _, _ -> e.suspend() }
         )
-      } shouldBe Either.Left(e)
+      } should leftException(e)
     }
   }
 
@@ -258,7 +261,7 @@ class BracketCaseTest : ArrowFxSpec(spec = {
     // Wait until the fiber is started before cancelling
     start.await()
     job.cancelAndJoin()
-    exit.await().shouldBeInstanceOf<CancellationException>()
+    exit.await().shouldBeInstanceOf<ExitCase.Cancelled>()
   }
 
   "cancel on bracketCase releases with suspending acquire" {
@@ -282,7 +285,7 @@ class BracketCaseTest : ArrowFxSpec(spec = {
     // Wait until the fiber is started before cancelling
     start.await()
     job.cancelAndJoin()
-    exit.await().shouldBeInstanceOf<CancellationException>()
+    exit.await().shouldBeInstanceOf<ExitCase.Cancelled>()
   }
 
   "cancel on bracketCase doesn't invoke after finishing" {
@@ -311,7 +314,7 @@ class BracketCaseTest : ArrowFxSpec(spec = {
 
   "acquire on bracketCase is not cancellable" {
     checkAll(Arb.int(), Arb.int()) { x, y ->
-      val mVar = ConcurrentVar(x)
+      val mVar = Channel<Int>(1).also { it.send(x) }
       val latch = CompletableDeferred<Unit>()
       val p = CompletableDeferred<ExitCase>()
 
@@ -319,7 +322,8 @@ class BracketCaseTest : ArrowFxSpec(spec = {
         bracketCase(
           acquire = {
             latch.complete(Unit)
-            mVar.put(y)
+            // This should be uncancellable, and suspends until capacity 1 is received
+            mVar.send(y)
           },
           use = { never<Unit>() },
           release = { _, exitCase ->
@@ -331,30 +335,35 @@ class BracketCaseTest : ArrowFxSpec(spec = {
       latch.await()
       job.cancel()
 
-      mVar.take() shouldBe x
-      mVar.take() shouldBe y
-      p.await().shouldBeInstanceOf<CancellationException>()
+      mVar.receive() shouldBe x
+      // If acquire was cancelled this hangs since the buffer is empty
+      mVar.receive() shouldBe y
+      p.await().shouldBeInstanceOf<ExitCase.Cancelled>()
     }
   }
 
   "release on bracketCase is not cancellable" {
     checkAll(Arb.int(), Arb.int()) { x, y ->
-      val mVar = ConcurrentVar(x)
+      val mVar = Channel<Int>(1).also { it.send(x) }
       val latch = CompletableDeferred<Unit>()
 
       val job = launch {
         bracketCase(
           acquire = { latch.complete(Unit) },
           use = { never<Unit>() },
-          release = { _, _ -> mVar.put(y) }
+          release = { _, _ ->
+            kotlin.coroutines.coroutineContext.ensureActive()
+            mVar.send(y)
+          }
         )
       }
 
       latch.await()
       job.cancel()
 
-      mVar.take() shouldBe x
-      mVar.take() shouldBe y
+      mVar.receive() shouldBe x
+      // If release was cancelled this hangs since the buffer is empty
+      withTimeoutOrNull(10_000) { mVar.receive() } shouldBe y
     }
   }
 })

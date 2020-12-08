@@ -100,3 +100,7 @@ compareBenchmarksCI {
 repositories {
     maven { url "https://jitpack.io" }
 }
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}

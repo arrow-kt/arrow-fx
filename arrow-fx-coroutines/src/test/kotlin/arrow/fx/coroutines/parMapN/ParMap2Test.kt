@@ -7,6 +7,7 @@ import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.NamedThreadFactory
 import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.guaranteeCase
+import arrow.fx.coroutines.leftException
 import arrow.fx.coroutines.never
 import arrow.fx.coroutines.parMapN
 import arrow.fx.coroutines.single
@@ -14,6 +15,7 @@ import arrow.fx.coroutines.singleThreadName
 import arrow.fx.coroutines.suspend
 import arrow.fx.coroutines.threadName
 import arrow.fx.coroutines.throwable
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
@@ -59,7 +61,7 @@ class ParMap2Test : ArrowFxSpec(spec = {
               1 -> parMapN(_mapCtx, { e.suspend() }, { never<Nothing>() }) { _, _ -> Unit }
               else -> parMapN(_mapCtx, { never<Nothing>() }, { e.suspend() }) { _, _ -> Unit }
             }
-          } shouldBe Either.Left(e)
+          } should leftException(e)
 
           threadName() shouldBe singleThreadName
         }
@@ -144,7 +146,7 @@ class ParMap2Test : ArrowFxSpec(spec = {
         res shouldBe a
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
-      r shouldBe Either.Left(e)
+      r should leftException(e)
     }
   }
 })

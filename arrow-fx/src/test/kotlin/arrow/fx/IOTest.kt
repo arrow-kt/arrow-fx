@@ -38,6 +38,7 @@ import arrow.fx.test.generators.genK
 import arrow.fx.test.laws.ConcurrentLaws
 import arrow.typeclasses.Eq
 import io.kotlintest.fail
+import io.kotlintest.matchers.types.shouldBeInstanceOf
 import io.kotlintest.properties.Gen
 import io.kotlintest.shouldBe
 import kotlinx.coroutines.CoroutineName
@@ -781,7 +782,7 @@ class IOTest : ArrowFxSpec() {
         !sleep(2.seconds)
         !cancel
         !p.get()
-      }.equalUnderTheLaw(IO.just(arrow.fx.coroutines.ExitCase.Cancelled), IO.eqK().liftEq(Eq.any()))
+      }.unsafeRunSync().shouldBeInstanceOf<arrow.fx.coroutines.ExitCase>()
     }
 
     "IO.bracket works inside Arrow Fx Coroutines" {

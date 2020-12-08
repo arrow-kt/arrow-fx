@@ -310,7 +310,7 @@ sealed class Resource<out A> {
     when (current) {
       is Defer -> useLoop(current.resource.invoke(), use, stack)
       is Bind<*, *> ->
-        useLoop(current.source as Resource<Any?>, use, listOf(current.f as (Any?) -> Resource<Any?>) + stack)
+        useLoop(current.source, use, listOf(current.f as (Any?) -> Resource<Any?>) + stack)
       is Allocate -> bracketCase(
         acquire = current.acquire,
         use = { a ->
