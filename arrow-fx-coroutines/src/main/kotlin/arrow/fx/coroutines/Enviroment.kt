@@ -18,6 +18,7 @@ import kotlin.coroutines.startCoroutine
  *
  * This contract could be elaborated on Android to provide automatic cancellation on Android LifecycleOwner.
  */
+@Deprecated("Use KotlinX structured concurrency as unsafe Environment to launch side-effects from non-suspending code")
 interface Environment {
 
   /**

@@ -2,6 +2,7 @@ package arrow.fx.coroutines
 
 import arrow.core.Either
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
 import io.kotest.property.checkAll
@@ -59,7 +60,7 @@ class FiberTest : ArrowFxSpec(spec = {
 
     start.get()
     parent.cancel()
-    p.get() shouldBe ExitCase.Cancelled
+    p.get().shouldBeInstanceOf<ExitCase.Cancelled>()
   }
 
   "ForkConnected doesn't cancel its parent" {
@@ -158,7 +159,7 @@ class FiberTest : ArrowFxSpec(spec = {
 
     start.get()
     interrupt.complete(Unit)
-    p.get() shouldBe ExitCase.Cancelled
+    p.get().shouldBeInstanceOf<ExitCase.Cancelled>()
   }
 
   "ForkScoped runs on the expected dispatcher" {

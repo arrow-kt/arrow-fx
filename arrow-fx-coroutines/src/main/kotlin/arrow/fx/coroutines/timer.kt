@@ -34,6 +34,7 @@ internal val scheduler: ScheduledExecutorService by lazy {
  * }
  * ```
  **/
+@Deprecated("Use delay")
 suspend fun sleep(duration: Duration): Unit =
   if (duration.amount <= 0) Unit
   else cancellable { resumeWith ->
@@ -64,6 +65,7 @@ suspend fun sleep(duration: Duration): Unit =
  * }
  * ```
  **/
+@Deprecated("use withTimeOutOrNull")
 suspend fun <A> timeOutOrNull(duration: Duration, fa: suspend () -> A): A? =
   if (duration.amount <= 0L) null
   else suspendCoroutineUninterceptedOrReturn { cont ->

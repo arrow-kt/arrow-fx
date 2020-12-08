@@ -19,6 +19,7 @@ import arrow.fx.coroutines.guarantee
 import arrow.fx.coroutines.prependTo
 import arrow.fx.coroutines.raceN
 import arrow.fx.coroutines.uncons
+import java.util.concurrent.CancellationException
 import kotlin.coroutines.coroutineContext
 
 /**
@@ -171,7 +172,7 @@ class Scope private constructor(
     return Either.catch(fr).flatMap { resource ->
       scope.acquired { ex: ExitCase -> release(resource, ex) }.map { registered ->
         state.modify {
-          if (conn.isCancelled() && registered) Pair(it, suspend { release(resource, ExitCase.Cancelled) })
+          if (conn.isCancelled() && registered) Pair(it, suspend { release(resource, ExitCase.Cancelled(CancellationException())) })
           else Pair(it.copy(resources = scope prependTo it.resources), suspend { Unit })
         }.invoke()
         resource

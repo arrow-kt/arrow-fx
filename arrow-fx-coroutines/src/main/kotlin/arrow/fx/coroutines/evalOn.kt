@@ -13,6 +13,7 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.resume
 
+@Deprecated("Use withContext", replaceWith = ReplaceWith("withContext(context, block)", "kotlinx.coroutines"))
 suspend fun <T> (suspend () -> T).evalOn(ctx: CoroutineContext): T =
   evalOn(ctx, this)
 
@@ -21,6 +22,7 @@ suspend fun <T> (suspend () -> T).evalOn(ctx: CoroutineContext): T =
  *
  * State of [context] and previous [CoroutineContext] is merged
  */
+@Deprecated("Use withContext", replaceWith = ReplaceWith("withContext(context, block)", "kotlinx.coroutines"))
 suspend fun <T> evalOn(
   context: CoroutineContext,
   block: suspend () -> T

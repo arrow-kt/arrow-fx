@@ -3,10 +3,16 @@ package arrow.fx.coroutines
 import arrow.core.Either
 import io.kotest.assertions.fail
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.long
-import io.kotest.property.checkAll
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
@@ -16,8 +22,8 @@ class BracketCaseTest : ArrowFxSpec(spec = {
   "Uncancellable back pressures timeoutOrNull" {
     checkAll(Arb.long(50, 100), Arb.long(300, 400)) { a, b ->
       val (n, duration) = measureTimedValue {
-        timeOutOrNull(a.milliseconds) {
-          uncancellable { sleep(b.milliseconds) }
+        withTimeoutOrNull(a) {
+          uncancellable { delay(b) }
         }
       }
 
@@ -94,79 +100,68 @@ class BracketCaseTest : ArrowFxSpec(spec = {
 
   "bracketCase must run release task on use immediate error" {
     checkAll(Arb.int(), Arb.throwable()) { i, e ->
-      val promise = Promise<ExitCase>()
+      val promise = CompletableDeferred<ExitCase>()
 
       Either.catch {
         bracketCase<Int, Int>(
           acquire = { i },
           use = { throw e },
           release = { _, ex ->
-            promise.complete(ex)
-              .mapLeft { fail("Release should only be called once, called again with $ex") }
+            if (!promise.complete(ex)) fail("Release should only be called once, called again with $ex")
           }
         )
       }
 
-      promise.get() shouldBe ExitCase.Failure(e)
+      promise.await() shouldBe ExitCase.Failure(e)
     }
   }
 
   "bracketCase must run release task on use suspended error" {
     checkAll(Arb.int(), Arb.throwable()) { x, e ->
-      val promise = Promise<Pair<Int, ExitCase>>()
+      val promise = CompletableDeferred<Pair<Int, ExitCase>>()
 
       Either.catch {
         bracketCase<Int, Int>(
           acquire = { x },
           use = { e.suspend() },
           release = { xx, ex ->
-            promise.complete(Pair(xx, ex))
-              .mapLeft { fail("Release should only be called once, called again with $ex") }
+            if (!promise.complete(Pair(xx, ex))) fail("Release should only be called once, called again with $ex")
           }
         )
       }
 
-      promise.get() shouldBe Pair(x, ExitCase.Failure(e))
+      promise.await() shouldBe Pair(x, ExitCase.Failure(e))
     }
   }
 
   "bracketCase must always run immediate release" {
     checkAll(Arb.int()) { x ->
-      val promise = Promise<Pair<Int, ExitCase>>()
+      val promise = CompletableDeferred<Pair<Int, ExitCase>>()
 
-      Either.catch {
-        bracketCase(
-          acquire = { x },
-          use = { it },
-          release = { xx, ex ->
-            promise
-              .complete(Pair(xx, ex))
-              .mapLeft { fail("Release should only be called once, called again with $ex") }
-          }
-        )
-      }
+      bracketCase(
+        acquire = { x },
+        use = { it },
+        release = { xx, ex ->
+          if (!promise.complete(Pair(xx, ex))) fail("Release should only be called once, called again with $ex")
+        }
+      )
 
-      promise.get() shouldBe Pair(x, ExitCase.Completed)
+      promise.await() shouldBe Pair(x, ExitCase.Completed)
     }
   }
 
   "bracketCase must always run suspended release" {
     checkAll(Arb.int()) { x ->
-      val promise = Promise<Pair<Int, ExitCase>>()
+      val promise = CompletableDeferred<Pair<Int, ExitCase>>()
 
-      Either.catch {
-        bracketCase(
-          acquire = { x },
-          use = { it },
-          release = { xx, ex ->
-            promise.complete(Pair(xx, ex))
-              .mapLeft { fail("Release should only be called once, called again with $ex") }
-              .suspend()
-          }
-        )
-      }
+      bracketCase(
+        acquire = { x },
+        use = { it },
+        release = { xx, ex ->
+          if (!promise.complete(Pair(xx, ex))) fail("Release should only be called once, called again with $ex")
+        })
 
-      promise.get() shouldBe Pair(x, ExitCase.Completed)
+      promise.await() shouldBe Pair(x, ExitCase.Completed)
     }
   }
 
@@ -243,10 +238,10 @@ class BracketCaseTest : ArrowFxSpec(spec = {
   }
 
   "cancel on bracketCase releases with immediate acquire" {
-    val start = Promise<Unit>()
-    val exit = Promise<ExitCase>()
+    val start = CompletableDeferred<Unit>()
+    val exit = CompletableDeferred<ExitCase>()
 
-    val f = ForkAndForget {
+    val job = launch {
       bracketCase(
         acquire = { Unit },
         use = {
@@ -255,23 +250,22 @@ class BracketCaseTest : ArrowFxSpec(spec = {
           never<Unit>()
         },
         release = { _, exitCase ->
-          exit.complete(exitCase)
-            .mapLeft { fail("Release should only be called once, called again with $exitCase") }
+          if (!exit.complete(exitCase)) fail("Release should only be called once, called again with $exitCase")
         }
       )
     }
 
     // Wait until the fiber is started before cancelling
-    start.get()
-    f.cancel()
-    exit.get() shouldBe ExitCase.Cancelled
+    start.await()
+    job.cancelAndJoin()
+    exit.await().shouldBeInstanceOf<CancellationException>()
   }
 
   "cancel on bracketCase releases with suspending acquire" {
-    val start = Promise<Unit>()
-    val exit = Promise<ExitCase>()
+    val start = CompletableDeferred<Unit>()
+    val exit = CompletableDeferred<ExitCase>()
 
-    val f = ForkAndForget {
+    val job = launch {
       bracketCase(
         acquire = { Unit.suspend() },
         use = {
@@ -280,29 +274,27 @@ class BracketCaseTest : ArrowFxSpec(spec = {
           never<Unit>()
         },
         release = { _, exitCase ->
-          exit.complete(exitCase)
-            .mapLeft { fail("Release should only be called once, called again with $exitCase") }
+          if (!exit.complete(exitCase)) fail("Release should only be called once, called again with $exitCase")
         }
       )
     }
 
     // Wait until the fiber is started before cancelling
-    start.get()
-    f.cancel()
-    exit.get() shouldBe ExitCase.Cancelled
+    start.await()
+    job.cancelAndJoin()
+    exit.await().shouldBeInstanceOf<CancellationException>()
   }
 
   "cancel on bracketCase doesn't invoke after finishing" {
-    val start = Promise<Unit>()
-    val exit = Promise<ExitCase>()
+    val start = CompletableDeferred<Unit>()
+    val exit = CompletableDeferred<ExitCase>()
 
-    val f = ForkAndForget {
+    val job = launch {
       bracketCase(
         acquire = { Unit },
         use = { Unit.suspend() },
         release = { _, exitCase ->
-          exit.complete(exitCase)
-            .mapLeft { fail("Release should only be called once, called again with $exitCase") }
+          if (!exit.complete(exitCase)) fail("Release should only be called once, called again with $exitCase")
         }
       )
 
@@ -312,44 +304,45 @@ class BracketCaseTest : ArrowFxSpec(spec = {
     }
 
     // Wait until the fiber is started before cancelling
-    start.get()
-    f.cancel()
-    exit.get() shouldBe ExitCase.Completed
+    start.await()
+    job.cancelAndJoin()
+    exit.await() shouldBe ExitCase.Completed
   }
 
   "acquire on bracketCase is not cancellable" {
     checkAll(Arb.int(), Arb.int()) { x, y ->
       val mVar = ConcurrentVar(x)
-      val latch = Promise<Unit>()
-      val p = Promise<ExitCase>()
+      val latch = CompletableDeferred<Unit>()
+      val p = CompletableDeferred<ExitCase>()
 
-      val fiber = ForkAndForget {
+      val job = launch {
         bracketCase(
           acquire = {
             latch.complete(Unit)
             mVar.put(y)
           },
           use = { never<Unit>() },
-          release = { _, exitCase -> p.complete(exitCase) }
-        )
+          release = { _, exitCase ->
+            if (!p.complete(exitCase)) fail("Release should only be called once, called again with $exitCase")
+          })
       }
 
       // Wait until acquire started
-      latch.get()
-      ForkAndForget { fiber.cancel() }
+      latch.await()
+      job.cancel()
 
       mVar.take() shouldBe x
       mVar.take() shouldBe y
-      p.get() shouldBe ExitCase.Cancelled
+      p.await().shouldBeInstanceOf<CancellationException>()
     }
   }
 
   "release on bracketCase is not cancellable" {
     checkAll(Arb.int(), Arb.int()) { x, y ->
       val mVar = ConcurrentVar(x)
-      val latch = Promise<Unit>()
+      val latch = CompletableDeferred<Unit>()
 
-      val fiber = ForkAndForget {
+      val job = launch {
         bracketCase(
           acquire = { latch.complete(Unit) },
           use = { never<Unit>() },
@@ -357,8 +350,8 @@ class BracketCaseTest : ArrowFxSpec(spec = {
         )
       }
 
-      latch.get()
-      ForkAndForget { fiber.cancel() }
+      latch.await()
+      job.cancel()
 
       mVar.take() shouldBe x
       mVar.take() shouldBe y

@@ -9,6 +9,7 @@ import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
  * You can think of fibers as being lightweight threads. A [Fiber] is a
  * concurrency primitive for doing cooperative multi-tasking.
  */
+@Deprecated("Use kotlinx.coroutines.Deferred")
 interface Fiber<A> {
 
   suspend fun join(): A
@@ -57,6 +58,7 @@ internal fun <A> Fiber(promise: UnsafePromise<A>, conn: SuspendConnection): Fibe
  * You can [Fiber.join] or [Fiber.cancel] the computation.
  * Cancelling this [Fiber] **will not** cancel its parent.
  */
+@Deprecated("Use Deferred", ReplaceWith("async", "kotlinx.coroutines.Deferred"))
 suspend fun <A> ForkConnected(ctx: CoroutineContext = ComputationPool, f: suspend () -> A): Fiber<A> =
   suspendCoroutineUninterceptedOrReturn { cont ->
     val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
@@ -70,6 +72,7 @@ suspend fun <A> ForkConnected(ctx: CoroutineContext = ComputationPool, f: suspen
   }
 
 /** @see ForkConnected **/
+@Deprecated("Use Deferred", ReplaceWith("async", "kotlinx.coroutines.Deferred"))
 suspend fun <A> (suspend () -> A).forkConnected(ctx: CoroutineContext = ComputationPool): Fiber<A> =
   ForkConnected(ctx, this)
 

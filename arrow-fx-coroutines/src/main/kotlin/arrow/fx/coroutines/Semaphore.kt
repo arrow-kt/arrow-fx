@@ -73,6 +73,7 @@ import arrow.core.Either
  * Here we set a limit of `3` to ensure that only 3 `heavyProcess` are running at the same time.
  * This can ensure we don't stress the JVM too hard, OOM or worse.
  */
+@Deprecated("use KotlinX Semaphore", ReplaceWith("Semaphore", "kotlinx.coroutines.sync"))
 interface Semaphore {
 
   /**
@@ -284,7 +285,7 @@ private class SemaphoreDefault(private val state: Atomic<SemaphoreState>) : Sema
       use = { (g, _) -> g.invoke() },
       release = { (_, c), ex ->
         when (ex) {
-          ExitCase.Cancelled -> c.invoke()
+          is ExitCase.Cancelled -> c.invoke()
           else -> Unit
         }
       }

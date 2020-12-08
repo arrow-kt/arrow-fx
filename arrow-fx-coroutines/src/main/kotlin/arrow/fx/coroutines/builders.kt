@@ -60,6 +60,7 @@ import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
  * @see suspendCoroutine for wrapping impure APIs without cancellation
  * @see cancellableF for wrapping impure APIs using a suspend with cancellation
  */
+@Deprecated("Use suspendCancellableCoroutine")
 suspend fun <A> cancellable(cb: ((Result<A>) -> Unit) -> CancelToken): A =
   suspendCoroutine { cont ->
     val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
@@ -136,6 +137,7 @@ suspend fun <A> cancellable(cb: ((Result<A>) -> Unit) -> CancelToken): A =
  * @see suspendCoroutine for wrapping impure APIs without cancellation
  * @see cancellable for wrapping impure APIs with cancellation
  */
+@Deprecated("Use suspendCancellableCoroutine")
 suspend fun <A> cancellableF(cb: suspend ((Result<A>) -> Unit) -> CancelToken): A =
   suspendCoroutine { cont ->
     val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
@@ -167,7 +169,7 @@ suspend fun <A> cancellableF(cb: suspend ((Result<A>) -> Unit) -> CancelToken): 
         use = { waitUntilCallbackInvoked(state) },
         release = { token, ex ->
           when (ex) {
-            ExitCase.Cancelled -> token.invoke()
+            is ExitCase.Cancelled -> token.invoke()
             else -> Unit
           }
         }

@@ -2,11 +2,15 @@ package arrow.fx.coroutines
 
 import arrow.core.Either
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.bool
 import io.kotest.property.arbitrary.element
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.string
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
 
 class ParTupledNTest : ArrowFxSpec(spec = {
@@ -55,11 +59,11 @@ class ParTupledNTest : ArrowFxSpec(spec = {
   "ParTupledN 2 runs in parallel" {
     checkAll(Arb.int(), Arb.int()) { a, b ->
       val r = Atomic("")
-      val modifyGate = Promise<Int>()
+      val modifyGate = CompletableDeferred<Int>()
 
       parTupledN(
         {
-          modifyGate.get()
+          modifyGate.await()
           r.update { i -> "$i$a" }
         },
         {
@@ -83,8 +87,8 @@ class ParTupledNTest : ArrowFxSpec(spec = {
   "Cancelling ParTupledN 2 cancels all participants" {
     checkAll(Arb.int(), Arb.int()) { a, b ->
       val s = Semaphore(0L)
-      val pa = Promise<Pair<Int, ExitCase>>()
-      val pb = Promise<Pair<Int, ExitCase>>()
+      val pa = CompletableDeferred<Pair<Int, ExitCase>>()
+      val pb = CompletableDeferred<Pair<Int, ExitCase>>()
 
       val loserA = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
       val loserB = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
@@ -94,8 +98,14 @@ class ParTupledNTest : ArrowFxSpec(spec = {
       s.acquireN(2) // Suspend until all racers started
       f.cancel()
 
-      pa.get() shouldBe Pair(a, ExitCase.Cancelled)
-      pb.get() shouldBe Pair(b, ExitCase.Cancelled)
+      pa.await().let { (res, exit) ->
+        res shouldBe a
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pb.await().let { (res, exit) ->
+        res shouldBe b
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
     }
   }
 
@@ -105,18 +115,21 @@ class ParTupledNTest : ArrowFxSpec(spec = {
       Arb.bool(),
       Arb.int()
     ) { e, leftWinner, a ->
-      val s = Semaphore(0L)
-      val pa = Promise<Pair<Int, ExitCase>>()
+      val latch = CompletableDeferred<Unit>()
+      val pa = CompletableDeferred<Pair<Int, ExitCase>>()
 
-      val winner = suspend { s.acquire(); throw e }
-      val loserA = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
+      val winner = suspend { latch.await(); throw e }
+      val loserA = suspend { guaranteeCase({ latch.complete(Unit); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
 
       val r = Either.catch {
         if (leftWinner) parTupledN(winner, loserA)
         else parTupledN(loserA, winner)
       }
 
-      pa.get() shouldBe Pair(a, ExitCase.Cancelled)
+      pa.await().let { (res, exit) ->
+        res shouldBe a
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
       r shouldBe Either.Left(e)
     }
   }
@@ -127,7 +140,7 @@ class ParTupledNTest : ArrowFxSpec(spec = {
 
     checkAll {
       single.zip(mapCtx).use { (single, mapCtx) ->
-        evalOn(single) {
+        withContext(single) {
           threadName() shouldBe singleThreadName
 
           val (s1, s2, s3) = parTupledN(mapCtx, threadName, threadName, threadName)
@@ -147,7 +160,7 @@ class ParTupledNTest : ArrowFxSpec(spec = {
 
     checkAll(Arb.int(1..3), Arb.throwable()) { choose, e ->
       single.zip(mapCtx).use { (single, mapCtx) ->
-        evalOn(single) {
+        withContext(single) {
           threadName() shouldBe singleThreadName
 
           Either.catch {
@@ -167,16 +180,16 @@ class ParTupledNTest : ArrowFxSpec(spec = {
   "ParTupledN 3 runs in parallel" {
     checkAll(Arb.int(), Arb.int(), Arb.int()) { a, b, c ->
       val r = Atomic("")
-      val modifyGate1 = Promise<Unit>()
-      val modifyGate2 = Promise<Unit>()
+      val modifyGate1 = CompletableDeferred<Unit>()
+      val modifyGate2 = CompletableDeferred<Unit>()
 
       parTupledN(
         {
-          modifyGate2.get()
+          modifyGate2.await()
           r.update { i -> "$i$a" }
         },
         {
-          modifyGate1.get()
+          modifyGate1.await()
           r.update { i -> "$i$b" }
           modifyGate2.complete(Unit)
         },
@@ -198,23 +211,34 @@ class ParTupledNTest : ArrowFxSpec(spec = {
 
   "Cancelling ParTupledN 3 cancels all participants" {
     checkAll(Arb.int(), Arb.int(), Arb.int()) { a, b, c ->
-      val s = Semaphore(0L)
-      val pa = Promise<Pair<Int, ExitCase>>()
-      val pb = Promise<Pair<Int, ExitCase>>()
-      val pc = Promise<Pair<Int, ExitCase>>()
+      val latchA = CompletableDeferred<Unit>()
+      val latchB = CompletableDeferred<Unit>()
+      val latchC = CompletableDeferred<Unit>()
+      val pa = CompletableDeferred<Pair<Int, ExitCase>>()
+      val pb = CompletableDeferred<Pair<Int, ExitCase>>()
+      val pc = CompletableDeferred<Pair<Int, ExitCase>>()
 
-      val loserA = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
-      val loserB = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
-      val loserC = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pc.complete(Pair(c, ex)) } }
+      val loserA = suspend { guaranteeCase({ latchA.complete(Unit); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
+      val loserB = suspend { guaranteeCase({ latchB.complete(Unit); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
+      val loserC = suspend { guaranteeCase({ latchC.complete(Unit); never<Int>() }) { ex -> pc.complete(Pair(c, ex)) } }
 
-      val f = ForkAndForget { parTupledN(loserA, loserB, loserC) }
+      val f = launch { parTupledN(loserA, loserB, loserC) }
 
-      s.acquireN(3) // Suspend until all racers started
+      latchA.await(); latchB.await(); latchC.await() // Suspend until all racers started
       f.cancel()
 
-      pa.get() shouldBe Pair(a, ExitCase.Cancelled)
-      pb.get() shouldBe Pair(b, ExitCase.Cancelled)
-      pc.get() shouldBe Pair(c, ExitCase.Cancelled)
+      pa.await().let { (res, exit) ->
+        res shouldBe a
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pb.await().let { (res, exit) ->
+        res shouldBe b
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pc.await().let { (res, exit) ->
+        res shouldBe c
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
     }
   }
 
@@ -225,13 +249,14 @@ class ParTupledNTest : ArrowFxSpec(spec = {
       Arb.int(),
       Arb.int()
     ) { e, leftWinner, a, b ->
-      val s = Semaphore(0L)
-      val pa = Promise<Pair<Int, ExitCase>>()
-      val pb = Promise<Pair<Int, ExitCase>>()
+      val latchA = CompletableDeferred<Unit>()
+      val latchB = CompletableDeferred<Unit>()
+      val pa = CompletableDeferred<Pair<Int, ExitCase>>()
+      val pb = CompletableDeferred<Pair<Int, ExitCase>>()
 
-      val winner = suspend { s.acquireN(2); throw e }
-      val loserA = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
-      val loserB = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
+      val winner = suspend { latchA.await(); latchB.await(); throw e }
+      val loserA = suspend { guaranteeCase({ latchA.complete(Unit); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
+      val loserB = suspend { guaranteeCase({ latchB.complete(Unit); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
 
       val res = Either.catch {
         when (leftWinner) {
@@ -241,8 +266,14 @@ class ParTupledNTest : ArrowFxSpec(spec = {
         }
       }
 
-      pa.get() shouldBe Pair(a, ExitCase.Cancelled)
-      pb.get() shouldBe Pair(b, ExitCase.Cancelled)
+      pa.await().let { (res, exit) ->
+        res shouldBe a
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pb.await().let { (res, exit) ->
+        res shouldBe b
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
       res shouldBe Either.Left(e)
     }
   }

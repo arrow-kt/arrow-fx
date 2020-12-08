@@ -13,6 +13,7 @@ import arrow.fx.coroutines.stream.Pull.Result
 import arrow.fx.coroutines.stream.Pull.Result.Pure
 import arrow.fx.coroutines.stream.Pull.Result.Fail
 import arrow.fx.coroutines.stream.Pull.Result.Interrupted
+import java.util.concurrent.CancellationException
 
 sealed class Pull<out O, out R> {
 
@@ -97,7 +98,7 @@ sealed class Pull<out O, out R> {
             is Pure -> CloseScope(scopeId, null, ExitCase.Completed)
             is Interrupted<*> /* & res.context is Token */ ->
               when (val ctx = res.context) {
-                is Token -> CloseScope(scopeId, Pair(ctx, res.deferredError), ExitCase.Cancelled)
+                is Token -> CloseScope(scopeId, Pair(ctx, res.deferredError), ExitCase.Cancelled(CancellationException()))
                 else -> throw RuntimeException("Impossible context: $ctx")
               }
             is Fail -> CloseScope(scopeId, null, ExitCase.Failure(res.error)).transformWith { res2 ->
@@ -148,7 +149,7 @@ sealed class Pull<out O, out R> {
       when (this) {
         is Pure -> ExitCase.Completed
         is Fail -> ExitCase.Failure(this.error)
-        is Interrupted<*> -> ExitCase.Cancelled
+        is Interrupted<*> -> ExitCase.Cancelled(CancellationException())
       }
 
     data class Pure<R>(val r: R) : Result<R>() {

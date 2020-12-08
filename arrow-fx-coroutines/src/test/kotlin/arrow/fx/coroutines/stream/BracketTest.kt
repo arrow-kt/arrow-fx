@@ -14,6 +14,7 @@ import arrow.fx.coroutines.parTupledN
 import arrow.fx.coroutines.sleep
 import arrow.fx.coroutines.throwable
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.bool
 import io.kotest.property.arbitrary.int
@@ -248,7 +249,7 @@ class BracketTest : StreamSpec(spec = {
             .drain()
         } shouldBe e
 
-        exit.get() shouldBe ExitCase.Cancelled
+        exit.get().shouldBeInstanceOf<ExitCase.Cancelled>()
       }
     }
 
