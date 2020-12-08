@@ -1,5 +1,6 @@
 package arrow.fx.coroutines
 
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.suspendCoroutine
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
@@ -188,6 +189,6 @@ private suspend fun waitUntilCallbackInvoked(state: AtomicRefW<((Result<Unit>) -
   }
 
 suspend fun <A> never(): A =
-  suspendCoroutine<Nothing> {}
+  suspendCancellableCoroutine<Nothing> {}
 
 suspend fun unit(): Unit = Unit

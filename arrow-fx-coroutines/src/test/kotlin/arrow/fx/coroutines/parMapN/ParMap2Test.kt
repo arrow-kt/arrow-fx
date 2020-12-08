@@ -45,27 +45,27 @@ class ParMap2Test : ArrowFxSpec(spec = {
     }
   }
 
-//  "parMapN 2 returns to original context on failure" {
-//    val mapCtxName = "parMap2"
-//    val mapCtx = Resource.fromExecutor { Executors.newFixedThreadPool(2, NamedThreadFactory { mapCtxName }) }
-//
-//    checkAll(Arb.int(1..2), Arb.throwable()) { choose, e ->
-//      single.zip(mapCtx).use { (_single, _mapCtx) ->
-//        withContext(_single) {
-//          threadName() shouldBe singleThreadName
-//
-//          Either.catch {
-//            when (choose) {
-//              1 -> parMapN(_mapCtx, { e.suspend() }, { never<Nothing>() }) { _, _ -> Unit }
-//              else -> parMapN(_mapCtx, { never<Nothing>() }, { e.suspend() }) { _, _ -> Unit }
-//            }
-//          } shouldBe Either.Left(e)
-//
-//          threadName() shouldBe singleThreadName
-//        }
-//      }
-//    }
-//  }
+  "parMapN 2 returns to original context on failure" {
+    val mapCtxName = "parMap2"
+    val mapCtx = Resource.fromExecutor { Executors.newFixedThreadPool(2, NamedThreadFactory { mapCtxName }) }
+
+    checkAll(Arb.int(1..2), Arb.throwable()) { choose, e ->
+      single.zip(mapCtx).use { (_single, _mapCtx) ->
+        withContext(_single) {
+          threadName() shouldBe singleThreadName
+
+          Either.catch {
+            when (choose) {
+              1 -> parMapN(_mapCtx, { e.suspend() }, { never<Nothing>() }) { _, _ -> Unit }
+              else -> parMapN(_mapCtx, { never<Nothing>() }, { e.suspend() }) { _, _ -> Unit }
+            }
+          } shouldBe Either.Left(e)
+
+          threadName() shouldBe singleThreadName
+        }
+      }
+    }
+  }
 
   "parMapN 2 runs in parallel" {
     checkAll(Arb.int(), Arb.int()) { a, b ->
