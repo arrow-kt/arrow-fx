@@ -1,9 +1,16 @@
 package arrow.fx.coroutines
 
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.suspendCoroutine
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
+import kotlin.coroutines.startCoroutine
 
 /**
  * Creates a cancellable `suspend` function that executes an asynchronous process on evaluation.
@@ -63,23 +70,29 @@ import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
  */
 @Deprecated("Use suspendCancellableCoroutine")
 suspend fun <A> cancellable(cb: ((Result<A>) -> Unit) -> CancelToken): A =
-  suspendCoroutine { cont ->
-    val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
-    val cbb2 = Platform.onceOnly(conn, cont::resumeWith)
-
-    val cancellable = ForwardCancellable(cont.context)
-    conn.push { cancellable.cancel() }
-
-    if (conn.isNotCancelled()) {
-      cancellable.complete(
-        try {
-          cb(cbb2)
-        } catch (throwable: Throwable) {
-          cbb2(Result.failure(throwable.nonFatalOrThrow()))
-          CancelToken.unit
-        }
-      )
-    } else cancellable.complete(CancelToken.unit)
+//  suspendCoroutine { cont ->
+//    val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
+//    val cbb2 = Platform.onceOnly(conn, cont::resumeWith)
+//
+//    val cancellable = ForwardCancellable(cont.context)
+//    conn.push { cancellable.cancel() }
+//
+//    if (conn.isNotCancelled()) {
+//      cancellable.complete(
+//        try {
+//          cb(cbb2)
+//        } catch (throwable: Throwable) {
+//          cbb2(Result.failure(throwable.nonFatalOrThrow()))
+//          CancelToken.unit
+//        }
+//      )
+//    } else cancellable.complete(CancelToken.unit)
+//  }
+  suspendCancellableCoroutine { cont ->
+    cont.context.ensureActive()
+    val token = cb(cont::resumeWith)
+    if (!cont.context.isActive) Platform.unsafeRunSync { token.invoke() }
+    else cont.invokeOnCancellation { Platform.unsafeRunSync { token.invoke() } }
   }
 
 /**
@@ -140,46 +153,65 @@ suspend fun <A> cancellable(cb: ((Result<A>) -> Unit) -> CancelToken): A =
  */
 @Deprecated("Use suspendCancellableCoroutine")
 suspend fun <A> cancellableF(cb: suspend ((Result<A>) -> Unit) -> CancelToken): A =
-  suspendCoroutine { cont ->
-    val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
+  suspendCancellableCoroutine { cont ->
+    val active = AtomicRefW(true)
+    val cont1 = object : Continuation<A> {
+      override val context: CoroutineContext = cont.context
 
-    val state = AtomicRefW<((Result<Unit>) -> Unit)?>(null)
-    val cb1 = { a: Result<A> ->
-      try {
-        cont.resumeWith(a)
-      } finally {
-        // compareAndSet can only succeed in case the operation is already finished
-        // and no cancellation token was installed yet
-        if (!state.compareAndSet(null, { Unit })) {
-          val cb2 = state.value
-          state.lazySet(null)
-          cb2?.invoke(Result.success(Unit))
+      override fun resumeWith(result: Result<A>) {
+        if (active.compareAndSet(true, false)) {
+          cont.resumeWith(result)
         }
       }
     }
 
-    val conn2 = SuspendConnection()
-    conn.push { conn2.cancel() }
-
     suspend {
-      // Until we've got a cancellation token, the task needs to be evaluated
-      // uninterruptedly, otherwise risking a leak, hence the bracket
-      // TODO CREATE KotlinTracker issue using CancelToken here breaks something in compilation
-      bracketCase<suspend () -> Unit, Unit>(
-        acquire = { cb(cb1).cancel },
-        use = { waitUntilCallbackInvoked(state) },
-        release = { token, ex ->
-          when (ex) {
-            is ExitCase.Cancelled -> token.invoke()
-            else -> Unit
-          }
-        }
-      )
-    }.startCoroutineCancellable(CancellableContinuation(cont.context, conn2) {
-      // TODO send CancelToken exception to Enviroment
-      it.fold({ arrow.core.identity(it) }, Throwable::printStackTrace)
+      withContext(NonCancellable) { cb(cont1::resumeWith) }
+    }.startCoroutine(Continuation(cont.context) { res ->
+      if (active.value && !cont.context.isActive) Platform.unsafeRunSync { res.getOrThrow().invoke() }
+      else cont.invokeOnCancellation { Platform.unsafeRunSync { res.getOrThrow().invoke() } }
     })
   }
+//  suspendCoroutine { cont ->
+//    val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
+//
+//    val state = AtomicRefW<((Result<Unit>) -> Unit)?>(null)
+//    val cb1 = { a: Result<A> ->
+//      try {
+//        cont.resumeWith(a)
+//      } finally {
+//        // compareAndSet can only succeed in case the operation is already finished
+//        // and no cancellation token was installed yet
+//        if (!state.compareAndSet(null, { Unit })) {
+//          val cb2 = state.value
+//          state.lazySet(null)
+//          cb2?.invoke(Result.success(Unit))
+//        }
+//      }
+//    }
+//
+//    val conn2 = SuspendConnection()
+//    conn.push { conn2.cancel() }
+//
+//    suspend {
+//      // Until we've got a cancellation token, the task needs to be evaluated
+//      // uninterruptedly, otherwise risking a leak, hence the bracket
+//      // TODO CREATE KotlinTracker issue using CancelToken here breaks something in compilation
+//      bracketCase<suspend () -> Unit, Unit>(
+//        acquire = { cb(cb1).cancel },
+//        use = { waitUntilCallbackInvoked(state) },
+//        release = { token, ex ->
+//          when (ex) {
+//            is ExitCase.Cancelled -> token.invoke()
+//            else -> Unit
+//          }
+//        }
+//      )
+//    }.startCoroutineCancellable(CancellableContinuation(cont.context, conn2) {
+//      // TODO send CancelToken exception to Enviroment
+//      it.fold({ arrow.core.identity(it) }, Throwable::printStackTrace)
+//    })
+//  }
 
 private suspend fun waitUntilCallbackInvoked(state: AtomicRefW<((Result<Unit>) -> Unit)?>) =
   suspendCoroutineUninterceptedOrReturn<Unit> { cont ->
