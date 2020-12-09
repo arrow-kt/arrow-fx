@@ -16,6 +16,7 @@ import arrow.fx.coroutines.SuspendConnection
 import arrow.fx.coroutines.guarantee
 import arrow.fx.coroutines.prependTo
 import arrow.fx.coroutines.raceN
+import kotlinx.coroutines.Job
 import java.util.concurrent.CancellationException
 import kotlin.coroutines.coroutineContext
 
@@ -165,11 +166,12 @@ class Scope private constructor(
     release: suspend (R, ExitCase) -> Unit
   ): Either<Throwable, R> {
     val conn = coroutineContext[SuspendConnection] ?: SuspendConnection.uncancellable
+    val job = coroutineContext[Job]
     val scope = ScopedResource()
     return Either.catch(fr).flatMap { resource ->
       scope.acquired { ex: ExitCase -> release(resource, ex) }.map { registered ->
         state.modify {
-          if (conn.isCancelled() && registered) Pair(it, suspend { release(resource, ExitCase.Cancelled(CancellationException())) })
+          if ((conn.isCancelled() || job?.isCancelled == true) && registered) Pair(it, suspend { release(resource, ExitCase.Cancelled(CancellationException())) })
           else Pair(it.copy(resources = scope prependTo it.resources), suspend { Unit })
         }.invoke()
         resource

@@ -15,12 +15,14 @@ import arrow.fx.coroutines.Fiber
 import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.Resource
-import arrow.fx.coroutines.forkAndForget
 import arrow.fx.coroutines.guaranteeCase
 import arrow.fx.coroutines.prependTo
 import arrow.fx.coroutines.stream.concurrent.Signal
 import arrow.typeclasses.Monoid
 import arrow.typeclasses.Semigroup
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
 import java.util.concurrent.TimeoutException
 import kotlin.coroutines.CoroutineContext
 import kotlin.random.Random
@@ -1324,6 +1326,9 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
       other
         .interruptWhen { Either.catch { interrupt.get() } }
         .drain()
+    }.mapLeft { e ->
+      if (e is CancellationException) e.cause ?: e
+      else e
     }
 
     done.complete(r)
@@ -1771,7 +1776,7 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
      * Starts the supplied task and cancels it as finalization of the returned stream.
      */
     fun <A> supervise(ctx: CoroutineContext = ComputationPool, fa: suspend () -> A): Stream<Fiber<A>> =
-      bracket(acquire = { fa.forkAndForget(ctx) }, release = Fiber<A>::cancel)
+      bracket(acquire = { CoroutineScope(ctx).async { fa() }.toSupervisedFiber() }, release = { it.cancel() })
 
     /**
      * Lazily produce the range `[start, stopExclusive)`. If you want to produce

@@ -121,10 +121,10 @@ suspend fun <A> ForkScoped(
   interruptWhen: suspend () -> Unit,
   f: suspend () -> A
 ): Fiber<A> {
-  val job = Job()
   val scope = CoroutineScope(ctx)
-  scope.launch(job) { interruptWhen.invoke(); job.cancel() }
-  return scope.async(job) { f.invoke() }.toFiber()
+  val res = scope.async { f.invoke() }
+  scope.launch { interruptWhen.invoke(); res.cancelAndJoin() }
+  return res.toFiber()
 }
 
 /** @see ForkScoped */
@@ -142,13 +142,14 @@ suspend fun <A> (suspend () -> A).forkScoped(
  *
  * @see ForkConnected for a fork operation that wires cancellation to its parent in a safe way.
  */
+@Deprecated("Use async with SupervisorJob")
 suspend fun <A> ForkAndForget(ctx: CoroutineContext = ComputationPool, f: suspend () -> A): Fiber<A> =
   f.forkAndForget(ctx)
 
 /** @see ForkAndForget */
-// TODO replace with SupervisorJob?
+@Deprecated("Use async with SupervisorJob")
 suspend fun <A> (suspend () -> A).forkAndForget(ctx: CoroutineContext = ComputationPool): Fiber<A> =
-  CoroutineScope(ctx).async(Job()) {
+  CoroutineScope(ctx).async {
     invoke()
   }.toFiber()
 

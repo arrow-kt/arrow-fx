@@ -206,12 +206,12 @@ class CallbackTest : StreamSpec(iterations = 250, spec = {
   }
 })
 
-private fun <A> countToCallback(
+private suspend fun <A> countToCallback(
   iterations: Int,
   map: (Int) -> A,
   cb: suspend (A) -> Unit,
   onEnd: suspend () -> Unit = { }
-): Unit = suspend {
+): Unit {
   var i = 0
   arrow.fx.coroutines.repeat(Schedule.recurs(iterations)) {
     i += 1
@@ -219,4 +219,4 @@ private fun <A> countToCallback(
     sleep(500.milliseconds)
   }
   onEnd()
-}.startCoroutine(Continuation(EmptyCoroutineContext) { })
+}
