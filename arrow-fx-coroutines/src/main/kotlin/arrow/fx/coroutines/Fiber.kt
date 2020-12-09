@@ -1,8 +1,10 @@
 package arrow.fx.coroutines
 
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
@@ -63,28 +65,19 @@ internal fun <A> Fiber(promise: UnsafePromise<A>, conn: SuspendConnection): Fibe
  * You can [Fiber.join] or [Fiber.cancel] the computation.
  * Cancelling this [Fiber] **will not** cancel its parent.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @Deprecated("Use Deferred", ReplaceWith("async", "kotlinx.coroutines.Deferred"))
 // Replace with Async
 suspend fun <A> ForkConnected(ctx: CoroutineContext = ComputationPool, f: suspend () -> A): Fiber<A> {
-  val promise = CompletableDeferred<A>()
-  val job = CoroutineScope(coroutineContext + ctx).launch {
-    promise.complete(f.invoke())
+  val def = CoroutineScope(coroutineContext[Job] ?: Job()).async(ctx) {
+    runCatching { f.invoke() }
   }
+
   return object : Fiber<A> {
-    override suspend fun join(): A = promise.await()
-    override suspend fun cancel() = job.cancelAndJoin()
+    override suspend fun join(): A = def.await().getOrThrow()
+    override suspend fun cancel() = def.cancelAndJoin()
   }
 }
-//  suspendCoroutineUninterceptedOrReturn { cont ->
-//    val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
-//
-//    val promise = UnsafePromise<A>()
-//     A new SuspendConnection, because its cancellation is now decoupled from our current one.
-//    val conn2 = SuspendConnection()
-//    conn.push { conn2.cancel() }
-//    f.startCoroutineCancellable(CancellableContinuation(ctx, conn2, promise::complete))
-//    Fiber(promise, conn2)
-//  }
 
 /** @see ForkConnected **/
 @Deprecated("Use Deferred", ReplaceWith("async", "kotlinx.coroutines.Deferred"))
@@ -128,33 +121,11 @@ suspend fun <A> ForkScoped(
   interruptWhen: suspend () -> Unit,
   f: suspend () -> A
 ): Fiber<A> {
-  val promise = CompletableDeferred<A>()
   val job = Job()
   val scope = CoroutineScope(ctx)
   scope.launch(job) { interruptWhen.invoke(); job.cancel() }
-  scope.launch(job) { promise.complete(f.invoke()) }
-  return object : Fiber<A> {
-    override suspend fun join(): A = promise.await()
-    override suspend fun cancel() = job.cancelAndJoin()
-  }
+  return scope.async(job) { f.invoke() }.toFiber()
 }
-
-
-//  suspendCoroutineUninterceptedOrReturn { cont ->
-//  val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
-//
-//  val promise = UnsafePromise<A>()
-//   A new SuspendConnection, because its cancellation is now decoupled from our current one.
-//  val conn2 = SuspendConnection()
-//  conn.push { conn2.cancel() }
-//
-//  suspend { // Launch cancelation trigger system concurrently
-//    ForkConnected { interruptWhen.invoke(); conn2.cancel() }
-//    f.invoke() // Fire actual operation
-//  }.startCoroutineCancellable(CancellableContinuation(ctx, conn2, promise::complete))
-//
-//  Fiber(promise, conn2)
-//}
 
 /** @see ForkScoped */
 suspend fun <A> (suspend () -> A).forkScoped(
@@ -176,21 +147,13 @@ suspend fun <A> ForkAndForget(ctx: CoroutineContext = ComputationPool, f: suspen
 
 /** @see ForkAndForget */
 // TODO replace with SupervisorJob?
-suspend fun <A> (suspend () -> A).forkAndForget(ctx: CoroutineContext = ComputationPool): Fiber<A> {
-  val promise = CompletableDeferred<A>()
-  val job = CoroutineScope(ctx).launch(Job()) {
-    promise.complete(invoke())
-  }
+suspend fun <A> (suspend () -> A).forkAndForget(ctx: CoroutineContext = ComputationPool): Fiber<A> =
+  CoroutineScope(ctx).async(Job()) {
+    invoke()
+  }.toFiber()
 
-  return object : Fiber<A> {
-    override suspend fun join(): A = promise.await()
-    override suspend fun cancel() = job.cancelAndJoin()
+fun <A> Deferred<A>.toFiber(): Fiber<A> =
+  object : Fiber<A> {
+    override suspend fun join(): A = await()
+    override suspend fun cancel() = cancelAndJoin()
   }
-}
-//{
-//  val promise = UnsafePromise<A>()
-//   A new SuspendConnection, because its cancellation is now decoupled from our current one.
-//  val conn = SuspendConnection()
-//  startCoroutineCancellable(CancellableContinuation(ctx, conn, promise::complete))
-//  return Fiber(promise, conn)
-//}
