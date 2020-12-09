@@ -51,6 +51,51 @@ suspend fun <A, B, C, D> parMapN(
 ): D = parMapN(ComputationPool, fa, fb, fc, f)
 
 /**
+ * Runs [fa], [fb], [fc], [fd] in parallel on [ComputationPool] and combines their results using the provided function.
+ * Cancelling this operation cancels all operations running in parallel.
+ *
+ * @see parMapN for the same function that can run on any [CoroutineContext].
+ */
+suspend fun <A, B, C, D, E> parMapN(
+  fa: suspend () -> A,
+  fb: suspend () -> B,
+  fc: suspend () -> C,
+  fd: suspend () -> D,
+  f: (A, B, C, D) -> E
+): E = parMapN(ComputationPool, fa, fb, fc, fd, f)
+
+/**
+ * Runs [fa], [fb], [fc], [fd], [fe] in parallel on [ComputationPool] and combines their results using the provided function.
+ * Cancelling this operation cancels all operations running in parallel.
+ *
+ * @see parMapN for the same function that can run on any [CoroutineContext].
+ */
+suspend fun <A, B, C, D, E, F> parMapN(
+  fa: suspend () -> A,
+  fb: suspend () -> B,
+  fc: suspend () -> C,
+  fd: suspend () -> D,
+  fe: suspend () -> E,
+  f: (A, B, C, D, E) -> F
+): F = parMapN(ComputationPool, fa, fb, fc, fd, fe, f)
+
+/**
+ * Runs [fa], [fb], [fc], [fd], [fe], [ff] in parallel on [ComputationPool] and combines their results using the provided function.
+ * Cancelling this operation cancels all operations running in parallel.
+ *
+ * @see parMapN for the same function that can run on any [CoroutineContext].
+ */
+suspend fun <A, B, C, D, E, F, G> parMapN(
+  fa: suspend () -> A,
+  fb: suspend () -> B,
+  fc: suspend () -> C,
+  fd: suspend () -> D,
+  fe: suspend () -> E,
+  ff: suspend () -> F,
+  f: (A, B, C, D, E, F) -> G
+): G = parMapN(ComputationPool, fa, fb, fc, fd, fe, ff, f)
+
+/**
  * Runs [fa], [fb] on the provided [CoroutineContext] and combines their results using the provided function.
  * Cancelling this operation cancels both tasks running in parallel.
  *
@@ -152,4 +197,64 @@ suspend fun <A, B, C, D> parMapN(
   ) { ab, c ->
     val (a, b) = ab
     f(a, b, c)
+  }
+
+suspend fun <A, B, C, D, F> parMapN(
+  ctx: CoroutineContext,
+  fa: suspend () -> A,
+  fb: suspend () -> B,
+  fc: suspend () -> C,
+  fd: suspend () -> D,
+  f: (A, B, C, D) -> F
+): F =
+  parMapN(
+    ctx,
+    suspend { parMapN(ctx, fa, fb, ::Pair) },
+    suspend { parMapN(ctx, fc, fd, ::Pair) }
+  ) { ab, cd ->
+    val (a, b) = ab
+    val (c, d) = cd
+    f(a, b, c, d)
+  }
+
+suspend fun <A, B, C, D, F, E> parMapN(
+  ctx: CoroutineContext,
+  fa: suspend () -> A,
+  fb: suspend () -> B,
+  fc: suspend () -> C,
+  fd: suspend () -> D,
+  fe: suspend () -> E,
+  f: (A, B, C, D, E) -> F
+): F =
+  parMapN(
+    ctx,
+    suspend { parMapN(ctx, fa, fb, ::Pair) },
+    suspend { parMapN(ctx, fc, fd, ::Pair) },
+    fe
+  ) { ab, cd, e ->
+    val (a, b) = ab
+    val (c, d) = cd
+    f(a, b, c, d, e)
+  }
+
+suspend fun <A, B, C, D, E, F, G> parMapN(
+  ctx: CoroutineContext,
+  fa: suspend () -> A,
+  fb: suspend () -> B,
+  fc: suspend () -> C,
+  fd: suspend () -> D,
+  fe: suspend () -> E,
+  ff: suspend () -> F,
+  f: (A, B, C, D, E, F) -> G
+): G =
+  parMapN(
+    ctx,
+    suspend { parMapN(ctx, fa, fb, ::Pair) },
+    suspend { parMapN(ctx, fc, fd, ::Pair) },
+    suspend { parMapN(ctx, fe, ff, ::Pair) }
+  ) { ab, cd, ef ->
+    val (a, b) = ab
+    val (c, d) = cd
+    val (e, f) = ef
+    f(a, b, c, d, e, f)
   }
