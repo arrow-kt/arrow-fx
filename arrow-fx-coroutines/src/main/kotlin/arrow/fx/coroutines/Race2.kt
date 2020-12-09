@@ -7,11 +7,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.selects.select
-import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
-import kotlin.coroutines.intrinsics.intercepted
-import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
 
 /**
  * Races the participants [fa], [fb] in parallel on the [ComputationPool].

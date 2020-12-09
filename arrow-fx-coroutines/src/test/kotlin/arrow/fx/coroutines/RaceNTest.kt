@@ -2,6 +2,7 @@ package arrow.fx.coroutines
 
 import arrow.core.Either
 import arrow.core.identity
+import arrow.core.merge
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -116,15 +117,16 @@ class RaceNTest : ArrowFxSpec(spec = {
       val winner = suspend { latchA.await(); eith.rethrow() }
       val loserA = suspend { guaranteeCase({ latchA.complete(Unit); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
 
-      Either.catch {
+      val res = Either.catch {
         if (leftWinner) raceN(winner, loserA)
         else raceN(loserA, winner)
-      }
+      }.map { it.merge() }
 
       pa.await().let { (res, exit) ->
         res shouldBe a
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
+      res shouldBe either(eith)
     }
   }
 
@@ -252,13 +254,13 @@ class RaceNTest : ArrowFxSpec(spec = {
       val loserA = suspend { guaranteeCase({ latchA.complete(Unit); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
       val loserB = suspend { guaranteeCase({ latchB.complete(Unit); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
 
-      Either.catch {
+      val res = Either.catch {
         when (leftWinner) {
           1 -> raceN(winner, loserA, loserB)
           2 -> raceN(loserA, winner, loserB)
           else -> raceN(loserA, loserB, winner)
         }
-      }
+      }.map { it.fold(::identity, ::identity, ::identity) }
 
       pa.await().let { (res, exit) ->
         res shouldBe a
@@ -268,6 +270,7 @@ class RaceNTest : ArrowFxSpec(spec = {
         res shouldBe b
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
+      res should either(eith)
     }
   }
 })
