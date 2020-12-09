@@ -7,35 +7,31 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
-import io.kotest.property.arbitrary.long
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.ExperimentalTime
-import kotlin.time.measureTimedValue
 
 @ExperimentalTime
 class BracketCaseTest : ArrowFxSpec(spec = {
 
-//  "Uncancellable back pressures timeoutOrNull" {
-//    checkAll(Arb.long(50, 100), Arb.long(300, 400)) { a, b ->
-//      val (n, duration) = measureTimedValue {
-//        withTimeoutOrNull(a) {
-//          uncancellable { delay(b) }
-//        }
-//      }
-//
-//      n shouldBe null // timed-out so should be null
-//      require((duration.inMilliseconds) >= b) {
-//        "Should've taken longer than $b milliseconds, but took $duration"
-//      }
-//    }
-//  }
+  "Uncancellable back pressures timeoutOrNull" {
+    checkAll(Arb.long(50, 100), Arb.long(300, 400)) { a, b ->
+      val (n, duration) = measureTimedValue {
+        timeOutOrNull(a) {
+          uncancellable { delay(b) }
+        }
+      }
+
+      n shouldBe null // timed-out so should be null
+      require((duration.inMilliseconds) >= b) {
+        "Should've taken longer than $b milliseconds, but took $duration"
+      }
+    }
+  }
 
   "Immediate acquire bracketCase finishes successfully" {
     checkAll(Arb.int(), Arb.int()) { a, b ->

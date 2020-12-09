@@ -2,45 +2,24 @@ package arrow.fx.coroutines.stream
 
 import arrow.core.Either
 import arrow.core.identity
-import arrow.fx.coroutines.CancelToken
 import arrow.fx.coroutines.ComputationPool
-import arrow.fx.coroutines.ExitCase
-import arrow.fx.coroutines.ForkAndForget
-import arrow.fx.coroutines.Promise
-import arrow.fx.coroutines.Resource
-import arrow.fx.coroutines.guaranteeCase
-import io.kotest.property.arbitrary.constant
-import arrow.core.left
+§import io.kotest.property.arbitrary.constant
 import arrow.core.right
-import arrow.fx.coroutines.Environment
 import io.kotest.assertions.fail
-import io.kotest.matchers.Matcher
-import io.kotest.matchers.MatcherResult
-import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.bind
 import io.kotest.property.arbitrary.char
 import io.kotest.property.arbitrary.choice
-import io.kotest.property.arbitrary.int
-import io.kotest.property.arbitrary.long
 import io.kotest.property.arbitrary.map
 import io.kotest.property.arbitrary.string
-import kotlinx.atomicfu.atomic
-import java.io.ByteArrayOutputStream
-import java.io.OutputStream
-import java.io.PrintStream
-import java.nio.charset.StandardCharsets
-import java.util.concurrent.ThreadFactory
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlin.coroutines.intrinsics.intercepted
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.startCoroutine
-
 
 fun Arb.Companion.throwable(): Arb<Throwable> =
   Arb.string().map(::RuntimeException)
@@ -50,7 +29,6 @@ fun <A> Arb.Companion.result(right: Arb<A>): Arb<Result<A>> {
   val success: Arb<Result<A>> = right.map { a -> Result.success(a) }
   return Arb.choice(failure, success)
 }
-
 
 fun Arb.Companion.charRange(): Arb<CharRange> =
   Arb.bind(Arb.char(), Arb.char()) { a, b ->

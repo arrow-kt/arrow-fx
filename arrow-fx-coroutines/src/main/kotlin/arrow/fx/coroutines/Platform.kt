@@ -3,10 +3,10 @@ package arrow.fx.coroutines
 import arrow.core.Either
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.updateAndGet
+import kotlinx.coroutines.runBlocking
 import java.util.concurrent.locks.AbstractQueuedSynchronizer
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
 
 internal const val ArrowExceptionMessage =
@@ -125,22 +125,8 @@ object Platform {
     }
   }
 
-  internal fun <A> unsafeRunSync(f: suspend () -> A): A {
-    val latch = OneShotLatch()
-    var ref: Either<Throwable, A>? = null
-    f.startCoroutine(Continuation(EmptyCoroutineContext) { a ->
-      ref = a.fold({ aa -> Either.Right(aa) }, { t -> Either.Left(t) })
-      latch.releaseShared(1)
-    })
-
-    latch.acquireSharedInterruptibly(1)
-
-    return when (val either = ref) {
-      is Either.Left -> throw either.a
-      is Either.Right -> either.b
-      null -> throw ArrowInternalException("$ArrowExceptionMessage\nSuspend execution should yield a valid result")
-    }
-  }
+  internal fun <A> unsafeRunSync(f: suspend () -> A): A =
+    runBlocking { f() }
 
   internal fun <A> unsafeRunSync(startOn: CoroutineContext, f: suspend () -> A): A {
     val latch = OneShotLatch()

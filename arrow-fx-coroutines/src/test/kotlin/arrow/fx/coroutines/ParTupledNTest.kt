@@ -1,6 +1,7 @@
 package arrow.fx.coroutines
 
 import arrow.core.Either
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
@@ -48,7 +49,7 @@ class ParTupledNTest : ArrowFxSpec(spec = {
               1 -> parTupledN(mapCtx, { e.suspend() }, { never<Nothing>() })
               else -> parTupledN(mapCtx, { never<Nothing>() }, { e.suspend() })
             }
-          } shouldBe Either.Left(e)
+          } should leftException(e)
 
           threadName() shouldBe singleThreadName
         }
@@ -130,7 +131,7 @@ class ParTupledNTest : ArrowFxSpec(spec = {
         res shouldBe a
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
-      r shouldBe Either.Left(e)
+      r should leftException(e)
     }
   }
 
@@ -169,7 +170,7 @@ class ParTupledNTest : ArrowFxSpec(spec = {
               2 -> parTupledN(mapCtx, { never<Nothing>() }, { e.suspend() }, { never<Nothing>() })
               else -> parTupledN(mapCtx, { never<Nothing>() }, { never<Nothing>() }, { e.suspend() })
             }
-          } shouldBe Either.Left(e)
+          } should leftException(e)
 
           threadName() shouldBe singleThreadName
         }
@@ -274,7 +275,7 @@ class ParTupledNTest : ArrowFxSpec(spec = {
         res shouldBe b
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
-      res shouldBe Either.Left(e)
+      res should leftException(e)
     }
   }
 })

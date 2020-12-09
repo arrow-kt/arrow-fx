@@ -7,7 +7,7 @@ import arrow.core.right
 import io.kotest.assertions.fail
 import io.kotest.matchers.Matcher
 import io.kotest.matchers.MatcherResult
-import io.kotest.matchers.shouldBe
+import io.kotest.matchers.equalityMatcher
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.bind
@@ -245,5 +245,30 @@ fun leftException(e: Throwable): Matcher<Either<Throwable, *>> =
           "Expected Either.Left with exception of type ${e::class} and found Right with ${value.b}",
           "Should not be Either.Left with exception"
         )
+      }
+  }
+
+fun <A> either(e: Either<Throwable, A>): Matcher<Either<Throwable, A>> =
+  object : Matcher<Either<Throwable, A>> {
+    override fun test(value: Either<Throwable, A>): MatcherResult =
+      when (value) {
+        is Either.Left -> when {
+          value.a::class != (e.swap().orNull() ?: Int)::class -> MatcherResult(
+            false,
+            "Expected $e but found $value",
+            "Should not be $e"
+          )
+          value.a.message != (e.swap().orNull()?.message ?: -1) -> MatcherResult(
+            false,
+            "Expected $e but found $value",
+            "Should not be $e"
+          )
+          else -> MatcherResult(
+            true,
+            "Expected exception of type ${e::class} and found ${value.a::class}",
+            "Expected exception of type ${e::class} and found ${value.a::class}"
+          )
+        }
+        is Either.Right -> equalityMatcher(e).test(value)
       }
   }
