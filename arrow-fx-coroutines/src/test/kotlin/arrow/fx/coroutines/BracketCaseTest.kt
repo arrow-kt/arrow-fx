@@ -7,21 +7,24 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
+import io.kotest.property.arbitrary.long
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.ExperimentalTime
+import kotlin.time.measureTimedValue
 
 @ExperimentalTime
 class BracketCaseTest : ArrowFxSpec(spec = {
 
   "Uncancellable back pressures timeoutOrNull" {
-    checkAll(Arb.long(50, 100), Arb.long(300, 400)) { a, b ->
+    checkAll(Arb.long(50L..100L), Arb.long(300L..400L)) { a, b ->
       val (n, duration) = measureTimedValue {
-        timeOutOrNull(a) {
+        timeOutOrNull(a.milliseconds) {
           uncancellable { delay(b) }
         }
       }

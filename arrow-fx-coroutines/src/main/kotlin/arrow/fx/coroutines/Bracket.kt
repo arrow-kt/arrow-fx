@@ -72,8 +72,8 @@ suspend inline fun <A> onCancel(
 suspend inline fun <A> guarantee(
   fa: () -> A,
   crossinline finalizer: suspend () -> Unit
-): A =
-  try {
+): A {
+  val res = try {
     fa.invoke()
   } catch (e: CancellationException) {
     tryAndCompose(e) {
@@ -84,6 +84,9 @@ suspend inline fun <A> guarantee(
       withContext(NonCancellable) { finalizer() }
     }
   }
+  withContext(NonCancellable) { finalizer() }
+  return res
+}
 
 /**
  * Guarantees execution of a given [finalizer] after [fa] regardless of success, error or cancellation, allowing
@@ -102,11 +105,9 @@ suspend inline fun <A> guarantee(
 suspend inline fun <A> guaranteeCase(
   fa: () -> A,
   crossinline finalizer: suspend (ExitCase) -> Unit
-): A =
-  try {
-    fa().also {
-      withContext(NonCancellable) { finalizer(ExitCase.Completed) }
-    }
+): A {
+  val res = try {
+    fa()
   } catch (e: CancellationException) {
     tryAndCompose(e) {
       withContext(NonCancellable) { finalizer(ExitCase.Cancelled(e)) }
@@ -116,6 +117,9 @@ suspend inline fun <A> guaranteeCase(
       withContext(NonCancellable) { finalizer(ExitCase.Failure(t.nonFatalOrThrow())) }
     }
   }
+  withContext(NonCancellable) { finalizer(ExitCase.Completed) }
+  return res
+}
 
 /**
  * Describes a task with safe resource acquisition and release in the face of errors and interruption.
@@ -165,10 +169,8 @@ suspend inline fun <A, B> bracket(
     acquire()
   }
 
-  return try {
-    use(acquired).also {
-      withContext(NonCancellable) { release(acquired) }
-    }
+  val res = try {
+    use(acquired)
   } catch (e: CancellationException) {
     tryAndCompose(e) {
       withContext(NonCancellable) { release(acquired) }
@@ -178,6 +180,9 @@ suspend inline fun <A, B> bracket(
       withContext(NonCancellable) { release(acquired) }
     }
   }
+
+  withContext(NonCancellable) { release(acquired) }
+  return res
 }
 
 /**
@@ -250,10 +255,8 @@ suspend inline fun <A, B> bracketCase(
     acquire()
   }
 
-  return try {
-    use(acquired).also {
-      withContext(NonCancellable) { release(acquired, ExitCase.Completed) }
-    }
+  val res = try {
+    use(acquired)
   } catch (e: CancellationException) {
     tryAndCompose(e) {
       withContext(NonCancellable) { release(acquired, ExitCase.Cancelled(e)) }
@@ -263,6 +266,10 @@ suspend inline fun <A, B> bracketCase(
       withContext(NonCancellable) { release(acquired, ExitCase.Failure(t.nonFatalOrThrow())) }
     }
   }
+
+  withContext(NonCancellable) { release(acquired, ExitCase.Completed) }
+
+  return res
 }
 
 @PublishedApi
