@@ -2,6 +2,7 @@ package arrow.fx.coroutines
 
 import arrow.core.Either
 import arrow.core.identity
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
@@ -51,7 +52,7 @@ class RaceNTest : ArrowFxSpec(spec = {
               1 -> raceN(raceCtx, { e.suspend() }, { never<Nothing>() }).swap().orNull()
               else -> raceN(raceCtx, { never<Nothing>() }, { e.suspend() }).orNull()
             }
-          } shouldBe Either.Left(e)
+          } should leftException(e)
 
           threadName() shouldBe singleThreadName
         }
@@ -170,7 +171,7 @@ class RaceNTest : ArrowFxSpec(spec = {
               else -> raceN(raceCtx, { never<Nothing>() }, { never<Nothing>() }, { e.suspend() })
                 .fold({ null }, { null }, ::identity)
             }
-          } shouldBe Either.Left(e)
+          } should leftException(e)
 
           threadName() shouldBe singleThreadName
         }
@@ -212,8 +213,8 @@ class RaceNTest : ArrowFxSpec(spec = {
       val pc = CompletableDeferred<Pair<Int, ExitCase>>()
 
       val loserA = suspend { guaranteeCase({ latchA.complete(Unit); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
-      val loserB = suspend { guaranteeCase({ latchA.complete(Unit); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
-      val loserC = suspend { guaranteeCase({ latchA.complete(Unit); never<Int>() }) { ex -> pc.complete(Pair(c, ex)) } }
+      val loserB = suspend { guaranteeCase({ latchB.complete(Unit); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
+      val loserC = suspend { guaranteeCase({ latchC.complete(Unit); never<Int>() }) { ex -> pc.complete(Pair(c, ex)) } }
 
       val f = launch { raceN(loserA, loserB, loserC) }
 

@@ -1,6 +1,12 @@
 package arrow.fx.coroutines
 
 import arrow.core.Either
+import arrow.core.Left
+import arrow.core.Right
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.selects.select
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
@@ -80,64 +86,17 @@ suspend fun <A, B> raceN(fa: suspend () -> A, fb: suspend () -> B): Either<A, B>
  * @see racePair for a version that does not automatically cancel the loser.
  * @see raceN for a function that ensures it runs in parallel on the [ComputationPool].
  */
-suspend fun <A, B> raceN(ctx: CoroutineContext, fa: suspend () -> A, fb: suspend () -> B): Either<A, B> {
-  fun <T, U> onSuccess(
-    isActive: AtomicBooleanW,
-    main: SuspendConnection,
-    other: SuspendConnection,
-    cb: (Result<Either<T, U>>) -> Unit,
-    r: Either<T, U>
-  ): Unit =
-    if (isActive.getAndSet(false)) {
-      suspend { other.cancel() }.startCoroutineUnintercepted(Continuation(ctx + SuspendConnection.uncancellable) { r2 ->
-        main.pop()
-        r2.fold({
-          cb(Result.success(r))
-        }, { e ->
-          cb(Result.failure(e))
-        })
-      })
-    } else Unit
-
-  fun onError(
-    active: AtomicBooleanW,
-    cb: (Result<Nothing>) -> Unit,
-    main: SuspendConnection,
-    other: SuspendConnection,
-    err: Throwable
-  ): Unit =
-    if (active.getAndSet(false)) {
-      suspend { other.cancel() }.startCoroutineUnintercepted(Continuation(ctx + SuspendConnection.uncancellable) { r2: Result<Unit> ->
-        main.pop()
-        cb(Result.failure(r2.fold({ err }, { Platform.composeErrors(err, it) })))
-      })
-    } else Unit
-
-  return suspendCoroutineUninterceptedOrReturn { cont ->
-    val conn = cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
-    val cont = cont.intercepted()
-
-    val active = AtomicBooleanW(true)
-    val connA = SuspendConnection()
-    val connB = SuspendConnection()
-    conn.pushPair(connA, connB)
-
-    fa.startCoroutineCancellable(CancellableContinuation(ctx, connA) { result ->
-      result.fold({
-        onSuccess(active, conn, connB, cont::resumeWith, Either.Left(it))
-      }, {
-        onError(active, cont::resumeWith, conn, connB, it)
-      })
-    })
-
-    fb.startCoroutineCancellable(CancellableContinuation(ctx, connB) { result ->
-      result.fold({
-        onSuccess(active, conn, connA, cont::resumeWith, Either.Right(it))
-      }, {
-        onError(active, cont::resumeWith, conn, connA, it)
-      })
-    })
-
-    COROUTINE_SUSPENDED
+suspend fun <A, B> raceN(ctx: CoroutineContext, fa: suspend () -> A, fb: suspend () -> B): Either<A, B> =
+  coroutineScope {
+    val a = async(ctx) { fa() }
+    val b = async(ctx) { fb() }
+    select<Either<A, B>> {
+      a.onAwait.invoke { Left(it) }
+      b.onAwait.invoke { Right(it) }
+    }.also {
+      when (it) {
+        is Either.Left -> b.cancelAndJoin()
+        is Either.Right -> a.cancelAndJoin()
+      }
+    }
   }
-}
