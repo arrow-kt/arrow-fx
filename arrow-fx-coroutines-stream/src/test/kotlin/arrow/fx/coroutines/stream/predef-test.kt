@@ -3,8 +3,7 @@ package arrow.fx.coroutines.stream
 import arrow.core.Either
 import arrow.core.identity
 import arrow.fx.coroutines.ComputationPool
-§import io.kotest.property.arbitrary.constant
-import arrow.core.right
+import io.kotest.property.arbitrary.constant
 import io.kotest.assertions.fail
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.bind
