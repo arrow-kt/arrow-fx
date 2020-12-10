@@ -32,6 +32,7 @@ sealed class ExitCase {
  * }
  * ```
  */
+@Deprecated("Use withContext(NonCancellable) from KotlinX insteed", ReplaceWith("withContext(NonCancellable) { f() }", "kotlinx.coroutines.withContext"))
 suspend inline fun <A> uncancellable(crossinline f: suspend () -> A): A =
   withContext(NonCancellable) { f() }
 
@@ -76,13 +77,9 @@ suspend inline fun <A> guarantee(
   val res = try {
     fa.invoke()
   } catch (e: CancellationException) {
-    tryAndCompose(e) {
-      withContext(NonCancellable) { finalizer() }
-    }
+    runReleaseAndRethrow(e) { finalizer() }
   } catch (t: Throwable) {
-    tryAndCompose(t.nonFatalOrThrow()) {
-      withContext(NonCancellable) { finalizer() }
-    }
+    runReleaseAndRethrow(t.nonFatalOrThrow()) { finalizer() }
   }
   withContext(NonCancellable) { finalizer() }
   return res
@@ -109,13 +106,9 @@ suspend inline fun <A> guaranteeCase(
   val res = try {
     fa()
   } catch (e: CancellationException) {
-    tryAndCompose(e) {
-      withContext(NonCancellable) { finalizer(ExitCase.Cancelled(e)) }
-    }
+    runReleaseAndRethrow(e) { finalizer(ExitCase.Cancelled(e)) }
   } catch (t: Throwable) {
-    tryAndCompose(t.nonFatalOrThrow()) {
-      withContext(NonCancellable) { finalizer(ExitCase.Failure(t.nonFatalOrThrow())) }
-    }
+    runReleaseAndRethrow(t.nonFatalOrThrow()) { finalizer(ExitCase.Failure(t.nonFatalOrThrow())) }
   }
   withContext(NonCancellable) { finalizer(ExitCase.Completed) }
   return res
@@ -172,13 +165,9 @@ suspend inline fun <A, B> bracket(
   val res = try {
     use(acquired)
   } catch (e: CancellationException) {
-    tryAndCompose(e) {
-      withContext(NonCancellable) { release(acquired) }
-    }
+    runReleaseAndRethrow(e) { release(acquired) }
   } catch (t: Throwable) {
-    tryAndCompose(t.nonFatalOrThrow()) {
-      withContext(NonCancellable) { release(acquired) }
-    }
+    runReleaseAndRethrow(t.nonFatalOrThrow()) { release(acquired) }
   }
 
   withContext(NonCancellable) { release(acquired) }
@@ -258,13 +247,9 @@ suspend inline fun <A, B> bracketCase(
   val res = try {
     use(acquired)
   } catch (e: CancellationException) {
-    tryAndCompose(e) {
-      withContext(NonCancellable) { release(acquired, ExitCase.Cancelled(e)) }
-    }
+    runReleaseAndRethrow(e) { release(acquired, ExitCase.Cancelled(e)) }
   } catch (t: Throwable) {
-    tryAndCompose(t.nonFatalOrThrow()) {
-      withContext(NonCancellable) { release(acquired, ExitCase.Failure(t.nonFatalOrThrow())) }
-    }
+    runReleaseAndRethrow(t.nonFatalOrThrow()) { release(acquired, ExitCase.Failure(t.nonFatalOrThrow())) }
   }
 
   withContext(NonCancellable) { release(acquired, ExitCase.Completed) }
@@ -273,9 +258,11 @@ suspend inline fun <A, B> bracketCase(
 }
 
 @PublishedApi
-internal inline fun tryAndCompose(original: Throwable, f: () -> Unit): Nothing {
+internal suspend inline fun runReleaseAndRethrow(original: Throwable, crossinline f: suspend () -> Unit): Nothing {
   try {
-    f()
+    withContext(NonCancellable) {
+      f()
+    }
   } catch (e: Throwable) {
     original.addSuppressed(e.nonFatalOrThrow())
   }

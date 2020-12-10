@@ -32,9 +32,11 @@ import kotlin.coroutines.coroutineContext
  * }
  * ```
  */
+@Deprecated(
+  "Use coroutineContext.ensureActive()",
+  ReplaceWith("coroutineContext.ensureActive()",
+    "kotlinx.coroutines.ensureActive",
+    "kotlin.coroutines.coroutineContext")
+)
 suspend fun cancelBoundary(): Unit =
   coroutineContext.ensureActive()
-//  suspendCoroutineUninterceptedOrReturn { cont ->
-//    if ((cont.context[SuspendConnection] ?: SuspendConnection.uncancellable).isCancelled()) COROUTINE_SUSPENDED
-//    else Unit
-//  }

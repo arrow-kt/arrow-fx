@@ -1,5 +1,6 @@
 package arrow.fx.coroutines
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancelAndJoin
@@ -27,7 +28,7 @@ sealed class RaceTriple<A, B, C> {
 }
 
 suspend fun <A, B, C> raceTriple(fa: suspend () -> A, fb: suspend () -> B, fc: suspend () -> C): RaceTriple<A, B, C> =
-  raceTriple(ComputationPool, fa, fb, fc)
+  raceTriple(Dispatchers.Default, fa, fb, fc)
 
 /**
  * Races three tasks concurrently within a new suspend fun.

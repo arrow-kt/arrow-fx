@@ -3,7 +3,7 @@ package arrow.fx.coroutines
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
-@Deprecated("Use withContext", replaceWith = ReplaceWith("withContext(context, block)", "kotlinx.coroutines"))
+@Deprecated("Use withContext", replaceWith = ReplaceWith("withContext(ctx, block)", "kotlinx.coroutines.withContext"))
 suspend fun <T> (suspend () -> T).evalOn(ctx: CoroutineContext): T =
   evalOn(ctx, this)
 
@@ -12,7 +12,7 @@ suspend fun <T> (suspend () -> T).evalOn(ctx: CoroutineContext): T =
  *
  * State of [context] and previous [CoroutineContext] is merged
  */
-@Deprecated("Use withContext", replaceWith = ReplaceWith("withContext(context, block)", "kotlinx.coroutines"))
+@Deprecated("Use withContext", replaceWith = ReplaceWith("withContext(context, block)", "kotlinx.coroutines.withContext"))
 suspend fun <T> evalOn(
   context: CoroutineContext,
   block: suspend () -> T

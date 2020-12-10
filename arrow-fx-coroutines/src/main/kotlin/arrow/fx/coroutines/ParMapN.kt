@@ -8,11 +8,11 @@ import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
-suspend fun <A, B, C> parMapN(
-  fa: suspend () -> A,
-  fb: suspend () -> B,
-  f: (A, B) -> C
-): C = parMapN(Dispatchers.Default, fa, fb, f)
+suspend inline fun <A, B, C> parMapN(
+  crossinline fa: suspend () -> A,
+  crossinline fb: suspend () -> B,
+  crossinline f: suspend (A, B) -> C
+): C = parMapN(EmptyCoroutineContext, fa, fb, f)
 
 /**
  * Runs [fa], [fb] in parallel on [ctx] and combines their results using the provided function.
@@ -42,27 +42,23 @@ suspend fun <A, B, C> parMapN(
  *
  * @see parMapN for the same function that can race on any [CoroutineContext].
  */
-suspend fun <A, B, C> parMapN(
+suspend inline fun <A, B, C> parMapN(
   ctx: CoroutineContext = EmptyCoroutineContext,
-  fa: suspend () -> A,
-  fb: suspend () -> B,
-  f: (A, B) -> C
-): C {
-  var a: Any? = NULL
-  var b: Any? = NULL
-  coroutineScope {
-    launch(ctx) { a = fa() }
-    launch(ctx) { b = fb() }
-  }
-  return f(NULL.unbox(a), NULL.unbox(b))
+  crossinline fa: suspend () -> A,
+  crossinline fb: suspend () -> B,
+  crossinline f: suspend (A, B) -> C
+): C = coroutineScope {
+  val a = async(ctx) { fa() }
+  val b = async(ctx) { fb() }
+  f(a.await(), b.await())
 }
 
-suspend fun <A, B, C, D> parMapN(
-  fa: suspend () -> A,
-  fb: suspend () -> B,
-  fc: suspend () -> C,
-  f: (A, B, C) -> D
-): D = parMapN(Dispatchers.Default, fa, fb, fc, f)
+suspend inline fun <A, B, C, D> parMapN(
+  crossinline fa: suspend () -> A,
+  crossinline fb: suspend () -> B,
+  crossinline fc: suspend () -> C,
+  crossinline f: suspend (A, B, C) -> D
+): D = parMapN(EmptyCoroutineContext, fa, fb, fc, f)
 
 /**
  * Runs [fa], [fb], [fc] in parallel on [ctx] and combines their results using the provided function.
@@ -95,12 +91,12 @@ suspend fun <A, B, C, D> parMapN(
  * @see parMapN for the same function that can race on any [CoroutineContext].
  */
 // TODO provide efficient impls like below for N-arity.
-suspend fun <A, B, C, D> parMapN(
+suspend inline fun <A, B, C, D> parMapN(
   ctx: CoroutineContext = EmptyCoroutineContext,
-  fa: suspend () -> A,
-  fb: suspend () -> B,
-  fc: suspend () -> C,
-  f: (A, B, C) -> D
+  crossinline fa: suspend () -> A,
+  crossinline fb: suspend () -> B,
+  crossinline fc: suspend () -> C,
+  crossinline f: suspend (A, B, C) -> D
 ): D = coroutineScope {
   val a = async(ctx) { fa() }
   val b = async(ctx) { fb() }

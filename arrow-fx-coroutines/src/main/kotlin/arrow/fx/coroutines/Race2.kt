@@ -5,12 +5,15 @@ import arrow.core.Left
 import arrow.core.Right
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.selects.select
+import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
 /**
- * Races the participants [fa], [fb] in parallel on the [ComputationPool].
+ * Races the participants [fa], [fb] in parallel on the [Dispatchers.Default].
  * The winner of the race cancels the other participants.
  * Cancelling the operation cancels all participants.
  * An [uncancellable] participant will back-pressure the result of [raceN].
@@ -43,16 +46,15 @@ import kotlin.coroutines.CoroutineContext
  * @see racePair for a version that does not automatically cancel the loser.
  * @see raceN for the same function that can race on any [CoroutineContext].
  */
-suspend fun <A, B> raceN(fa: suspend () -> A, fb: suspend () -> B): Either<A, B> =
-  raceN(ComputationPool, fa, fb)
+suspend inline fun <A, B> raceN(crossinline fa: suspend () -> A, crossinline fb: suspend () -> B): Either<A, B> =
+  raceN(EmptyCoroutineContext, fa, fb)
 
 /**
  * Races the participants [fa], [fb] on the provided [CoroutineContext].
  * The winner of the race cancels the other participants.
  * Cancelling the operation cancels all participants.
  *
- * **WARNING**: operations run in parallel depending on the capabilities of the provided [CoroutineContext].
- * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
+ * If the context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
  *
  * ```kotlin:ank:playground
  * import arrow.core.Either
@@ -79,10 +81,13 @@ suspend fun <A, B> raceN(fa: suspend () -> A, fb: suspend () -> B): Either<A, B>
  * @param fa task to participate in the race
  * @param fb task to participate in the race
  * @return either [Either.Left] if [fa] won the race, or [Either.Right] if [fb] won the race.
- * @see racePair for a version that does not automatically cancel the loser.
- * @see raceN for a function that ensures it runs in parallel on the [ComputationPool].
+ * @see raceN for a function that ensures it runs in parallel on the [Dispatchers.Default].
  */
-suspend fun <A, B> raceN(ctx: CoroutineContext, fa: suspend () -> A, fb: suspend () -> B): Either<A, B> =
+suspend inline fun <A, B> raceN(
+  ctx: CoroutineContext = EmptyCoroutineContext,
+  crossinline fa: suspend () -> A,
+  crossinline fb: suspend () -> B
+): Either<A, B> =
   coroutineScope {
     val a = async(ctx) { fa() }
     val b = async(ctx) { fb() }

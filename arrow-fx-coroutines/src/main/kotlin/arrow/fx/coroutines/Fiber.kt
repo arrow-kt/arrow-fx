@@ -65,9 +65,10 @@ internal fun <A> Fiber(promise: UnsafePromise<A>, conn: SuspendConnection): Fibe
  * You can [Fiber.join] or [Fiber.cancel] the computation.
  * Cancelling this [Fiber] **will not** cancel its parent.
  */
-@OptIn(ExperimentalCoroutinesApi::class)
-@Deprecated("Use Deferred", ReplaceWith("async", "kotlinx.coroutines.Deferred"))
-// Replace with Async
+@Deprecated(
+  "Use Deferred with KotlinX Coroutines Structured Concurrency",
+  ReplaceWith("async(ctx) { f() }", "kotlinx.coroutines.Deferred")
+)
 suspend fun <A> ForkConnected(ctx: CoroutineContext = ComputationPool, f: suspend () -> A): Fiber<A> {
   val def = CoroutineScope(coroutineContext[Job] ?: Job()).async(ctx) {
     runCatching { f.invoke() }
@@ -80,7 +81,10 @@ suspend fun <A> ForkConnected(ctx: CoroutineContext = ComputationPool, f: suspen
 }
 
 /** @see ForkConnected **/
-@Deprecated("Use Deferred", ReplaceWith("async", "kotlinx.coroutines.Deferred"))
+@Deprecated(
+  "Use Deferred with KotlinX Coroutines Structured Concurrency",
+  ReplaceWith("async(ctx) { invoke() }", "kotlinx.coroutines.Deferred")
+)
 suspend fun <A> (suspend () -> A).forkConnected(ctx: CoroutineContext = ComputationPool): Fiber<A> =
   ForkConnected(ctx, this)
 
@@ -115,7 +119,7 @@ suspend fun <A> (suspend () -> A).forkConnected(ctx: CoroutineContext = Computat
  * }
  * ```
  */
-// TODO replace with SupervisorJob that cancels on interruptWhen
+// TODO provide proper deprecation annotation
 suspend fun <A> ForkScoped(
   ctx: CoroutineContext = ComputationPool,
   interruptWhen: suspend () -> Unit,
@@ -128,6 +132,7 @@ suspend fun <A> ForkScoped(
 }
 
 /** @see ForkScoped */
+// TODO provide proper deprecation annotation
 suspend fun <A> (suspend () -> A).forkScoped(
   ctx: CoroutineContext = ComputationPool,
   interruptWhen: suspend () -> Unit
@@ -142,12 +147,12 @@ suspend fun <A> (suspend () -> A).forkScoped(
  *
  * @see ForkConnected for a fork operation that wires cancellation to its parent in a safe way.
  */
-@Deprecated("Use async with SupervisorJob")
+// TODO provide proper deprecation annotation
 suspend fun <A> ForkAndForget(ctx: CoroutineContext = ComputationPool, f: suspend () -> A): Fiber<A> =
   f.forkAndForget(ctx)
 
 /** @see ForkAndForget */
-@Deprecated("Use async with SupervisorJob")
+// TODO provide proper deprecation annotation
 suspend fun <A> (suspend () -> A).forkAndForget(ctx: CoroutineContext = ComputationPool): Fiber<A> =
   CoroutineScope(ctx).async {
     invoke()

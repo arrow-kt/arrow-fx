@@ -11,10 +11,7 @@ import io.kotest.property.arbitrary.long
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
@@ -25,7 +22,7 @@ class BracketCaseTest : ArrowFxSpec(spec = {
     checkAll(Arb.long(50L..100L), Arb.long(300L..400L)) { a, b ->
       val (n, duration) = measureTimedValue {
         timeOutOrNull(a.milliseconds) {
-          uncancellable { delay(b) }
+          uncancellable { sleep(b.milliseconds) }
         }
       }
 
@@ -313,7 +310,7 @@ class BracketCaseTest : ArrowFxSpec(spec = {
 
   "acquire on bracketCase is not cancellable" {
     checkAll(Arb.int(), Arb.int()) { x, y ->
-      val mVar = Channel<Int>(1).also { it.send(x) }
+      val mVar = Channel<Int>(1).apply { send(x) }
       val latch = CompletableDeferred<Unit>()
       val p = CompletableDeferred<ExitCase>()
 
@@ -343,17 +340,14 @@ class BracketCaseTest : ArrowFxSpec(spec = {
 
   "release on bracketCase is not cancellable" {
     checkAll(Arb.int(), Arb.int()) { x, y ->
-      val mVar = Channel<Int>(1).also { it.send(x) }
+      val mVar = Channel<Int>(1).apply { send(x) }
       val latch = CompletableDeferred<Unit>()
 
       val job = launch {
         bracketCase(
           acquire = { latch.complete(Unit) },
           use = { never<Unit>() },
-          release = { _, _ ->
-            kotlin.coroutines.coroutineContext.ensureActive()
-            mVar.send(y)
-          }
+          release = { _, _ -> mVar.send(y) }
         )
       }
 
@@ -362,7 +356,7 @@ class BracketCaseTest : ArrowFxSpec(spec = {
 
       mVar.receive() shouldBe x
       // If release was cancelled this hangs since the buffer is empty
-      withTimeoutOrNull(10_000) { mVar.receive() } shouldBe y
+      mVar.receive() shouldBe y
     }
   }
 })

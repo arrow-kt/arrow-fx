@@ -8,71 +8,62 @@ import arrow.core.valid
 import arrow.typeclasses.Semigroup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.withPermit
+import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
 suspend fun <A> Iterable<suspend () -> A>.parSequenceN(n: Long): List<A> =
-  parSequenceN(Dispatchers.Default, n)
+  parSequenceN(EmptyCoroutineContext, n)
 
 /**
  * Sequences all tasks in [n] parallel processes and return the result.
- * Cancelling this operation cancels all running tasks.
- *
- * **WARNING**: operations run in parallel depending on the capabilities of the provided [CoroutineContext].
- * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
- *
- * @see parSequence for a function that ensures it runs in parallel on the [ComputationPool].
+ * If the context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
+ * Cancelling this operation cancels all running tasks
  */
 suspend fun <A> Iterable<suspend () -> A>.parSequenceN(ctx: CoroutineContext = EmptyCoroutineContext, n: Long): List<A> {
-  val s = kotlinx.coroutines.sync.Semaphore(n.toInt())
+  val s = Semaphore(n.toInt())
   return parTraverse(ctx) {
     s.withPermit { it.invoke() }
   }
 }
 
 suspend fun <A> Iterable<suspend () -> A>.parSequence(): List<A> =
-  parSequence(Dispatchers.Default)
+  parSequence(EmptyCoroutineContext)
 
 /**
  * Sequences all tasks in parallel and return the result
+ * If the context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
  * Cancelling this operation cancels all running tasks.
- *
- * **WARNING**: operations run in parallel depending on the capabilities of the provided [CoroutineContext].
- * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
- *
- * @see parSequence for a function that ensures it runs in parallel on the [ComputationPool].
  */
 suspend fun <A> Iterable<suspend () -> A>.parSequence(ctx: CoroutineContext = EmptyCoroutineContext): List<A> =
   parTraverse(ctx) { it.invoke() }
 
 suspend fun <A, B> Iterable<A>.parTraverseN(n: Long, f: suspend (A) -> B): List<B> =
-  parTraverseN(Dispatchers.Default, n, f)
+  parTraverseN(EmptyCoroutineContext, n, f)
 
 /**
  * Traverses this [Iterable] and runs [f] in parallel on [ctx].
+ * If the context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
  * Cancelling this operation cancels all running tasks.
- *
- * **WARNING**: operations runs in parallel depending on the capabilities of the provided [CoroutineContext].
- * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
- *
- * @see parTraverseN for a function that ensures it runs in parallel on the [ComputationPool].
  */
 suspend fun <A, B> Iterable<A>.parTraverseN(
   ctx: CoroutineContext = EmptyCoroutineContext,
   n: Long,
   f: suspend (A) -> B
 ): List<B> {
-  val s = Semaphore(n)
-  return parTraverse<A, B>(ctx) { a ->
+  val s = Semaphore(n.toInt())
+  return parTraverse(ctx) { a ->
     s.withPermit { f(a) }
   }
 }
 
 /**
  * Traverses this [Iterable] and runs all mappers [f] on [CoroutineContext].
+ * If the context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
  * Cancelling this operation cancels all running tasks.
  *
  * ```kotlin:ank:playground
@@ -91,12 +82,7 @@ suspend fun <A, B> Iterable<A>.parTraverseN(
  *  println(res)
  * }
  * ```
- *
- * **WARNING**: operations run in parallel depending on the capabilities of the provided [CoroutineContext].
- * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
- *
- * @see parTraverse for a function that ensures it runs in parallel on the [ComputationPool].
- */ // Foldable impl, more performant implementations can be done for other data types
+ */
 suspend fun <A, B> Iterable<A>.parTraverse(
   ctx: CoroutineContext = EmptyCoroutineContext,
   f: suspend (A) -> B
@@ -124,14 +110,14 @@ suspend fun <A, B, E> Iterable<A>.parTraverseValidated(
       .sequence(semigroup)
   }
 
-// TODO should be in Arrow Core
-inline fun <E, A, B> Iterable<A>.traverse(semigroup: Semigroup<E>, f: (A) -> Validated<E, B>): Validated<E, List<B>> =
+@PublishedApi // TODO should be in Arrow Core
+internal inline fun <E, A, B> Iterable<A>.traverse(semigroup: Semigroup<E>, f: (A) -> Validated<E, B>): Validated<E, List<B>> =
   fold(emptyList<B>().valid() as Validated<E, List<B>>) { acc, a ->
     f(a).ap(semigroup, acc.map { bs: List<B> -> { b: B -> bs + b } })
   }
 
-// TODO should be in Arrow Core
-fun <E, A> Iterable<Validated<E, A>>.sequence(semigroup: Semigroup<E>): Validated<E, List<A>> =
+@PublishedApi // TODO should be in Arrow Core
+internal fun <E, A> Iterable<Validated<E, A>>.sequence(semigroup: Semigroup<E>): Validated<E, List<A>> =
   fold(emptyList<A>().valid() as Validated<E, List<A>>) { acc, a ->
     a.ap(semigroup, acc.map { bs: List<A> -> { b: A -> bs + b } })
   }

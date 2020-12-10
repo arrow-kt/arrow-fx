@@ -1,11 +1,14 @@
 package arrow.fx.coroutines
 
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.selects.select
+import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
 sealed class Race3<out A, out B, out C> {
   data class First<A>(val winner: A) : Race3<A, Nothing, Nothing>()
@@ -24,33 +27,32 @@ sealed class Race3<out A, out B, out C> {
 }
 
 /**
- * Races the participants [fa], [fb] & [fc] in parallel on the [ComputationPool].
+ * Races the participants [fa], [fb] & [fc] in parallel on the [Dispatchers.Default].
  * The winner of the race cancels the other participants.
  * Cancelling the operation cancels all participants.
  *
  * @see raceN for the same function that can race on any [CoroutineContext].
  */
-suspend fun <A, B, C> raceN(
-  fa: suspend () -> A,
-  fb: suspend () -> B,
-  fc: suspend () -> C
-): Race3<A, B, C> = raceN(ComputationPool, fa, fb, fc)
+suspend inline fun <A, B, C> raceN(
+  crossinline fa: suspend () -> A,
+  crossinline fb: suspend () -> B,
+  crossinline fc: suspend () -> C
+): Race3<A, B, C> = raceN(EmptyCoroutineContext, fa, fb, fc)
 
 /**
  * Races the participants [fa], [fb] & [fc] on the provided [CoroutineContext].
  * The winner of the race cancels the other participants.
  * Cancelling the operation cancels all participants.
  *
- * **WARNING**: operations run in parallel depending on the capabilities of the provided [CoroutineContext].
- * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
+ * If the context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
  *
- * @see raceN for a function that ensures operations run in parallel on the [ComputationPool].
+ * @see raceN for a function that ensures operations run in parallel on the [Dispatchers.Default].
  */
-suspend fun <A, B, C> raceN(
-  ctx: CoroutineContext,
-  fa: suspend () -> A,
-  fb: suspend () -> B,
-  fc: suspend () -> C
+suspend inline fun <A, B, C> raceN(
+  ctx: CoroutineContext = EmptyCoroutineContext,
+  crossinline fa: suspend () -> A,
+  crossinline fb: suspend () -> B,
+  crossinline fc: suspend () -> C
 ): Race3<A, B, C> =
   coroutineScope {
     val a = async(ctx) { fa() }
@@ -69,7 +71,8 @@ suspend fun <A, B, C> raceN(
     }
   }
 
-private suspend fun cancelAndCompose(first: Deferred<*>, second: Deferred<*>): Unit {
+@PublishedApi
+internal suspend fun cancelAndCompose(first: Deferred<*>, second: Deferred<*>): Unit {
   val e1 = try {
     first.cancelAndJoin()
     null
