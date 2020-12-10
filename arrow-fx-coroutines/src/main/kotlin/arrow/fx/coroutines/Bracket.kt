@@ -48,7 +48,7 @@ suspend inline fun <A> uncancellable(crossinline f: suspend () -> A): A =
  * @see guaranteeCase for registering a handler that executes for any [ExitCase].
  */
 suspend inline fun <A> onCancel(
-  fa: () -> A,
+  fa: suspend () -> A,
   crossinline onCancel: suspend () -> Unit
 ): A = guaranteeCase(fa) { case ->
   when (case) {
@@ -71,7 +71,7 @@ suspend inline fun <A> onCancel(
  * @see guaranteeCase for registering a handler that tracks the [ExitCase] of [fa].
  */
 suspend inline fun <A> guarantee(
-  fa: () -> A,
+  fa: suspend () -> A,
   crossinline finalizer: suspend () -> Unit
 ): A {
   val res = try {
@@ -100,7 +100,7 @@ suspend inline fun <A> guarantee(
  * @see guarantee for registering a handler that ignores the [ExitCase] of [fa].
  */
 suspend inline fun <A> guaranteeCase(
-  fa: () -> A,
+  fa: suspend () -> A,
   crossinline finalizer: suspend (ExitCase) -> Unit
 ): A {
   val res = try {
@@ -155,7 +155,7 @@ suspend inline fun <A> guaranteeCase(
  */
 suspend inline fun <A, B> bracket(
   crossinline acquire: suspend () -> A,
-  use: (A) -> B,
+  use: suspend (A) -> B,
   crossinline release: suspend (A) -> Unit
 ): B {
   val acquired = withContext(NonCancellable) {
