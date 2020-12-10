@@ -71,6 +71,7 @@ import kotlin.coroutines.coroutineContext
  *                       that eventually allows interruption while eval is evaluating.
  *
  */
+@Deprecated("Stream is deprecated in favor of Flow")
 class Scope private constructor(
   internal val id: Token,
   internal val parent: Scope?,

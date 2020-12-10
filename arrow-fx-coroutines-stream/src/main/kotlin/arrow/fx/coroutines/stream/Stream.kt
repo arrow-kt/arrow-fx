@@ -36,6 +36,7 @@ typealias StreamOf<A> = arrow.Kind<ForStream, A>
 inline fun <A> StreamOf<A>.fix(): Stream<A> =
   this as Stream<A>
 
+@Deprecated("Deprecated in favor of Flow")
 /*inline*/ class Stream<out O> internal constructor(internal val asPull: Pull<O, Unit>) : StreamOf<O> {
 
   /**

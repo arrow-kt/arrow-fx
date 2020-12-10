@@ -14,6 +14,7 @@ import arrow.fx.coroutines.stream.Pull.Result.Fail
 import arrow.fx.coroutines.stream.Pull.Result.Interrupted
 import java.util.concurrent.CancellationException
 
+@Deprecated("Deprecated in favor of Flow")
 sealed class Pull<out O, out R> {
 
   abstract fun <P> mapOutput(f: (O) -> P): Pull<P, R>
