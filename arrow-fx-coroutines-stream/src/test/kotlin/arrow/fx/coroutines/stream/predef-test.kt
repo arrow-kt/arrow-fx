@@ -17,7 +17,6 @@ import arrow.fx.coroutines.Environment
 import io.kotest.assertions.fail
 import io.kotest.matchers.Matcher
 import io.kotest.matchers.MatcherResult
-import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.arbitrary.bind
 import io.kotest.property.arbitrary.char

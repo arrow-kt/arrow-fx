@@ -11,10 +11,7 @@ import io.kotest.property.arbitrary.bool
 import io.kotest.property.arbitrary.element
 import io.kotest.property.arbitrary.int
 import io.kotest.property.checkAll
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.util.concurrent.Executors
+§import java.util.concurrent.Executors
 
 class RaceNTest : ArrowFxSpec(spec = {
 
