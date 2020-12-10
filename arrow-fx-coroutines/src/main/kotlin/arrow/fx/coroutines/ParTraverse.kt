@@ -61,6 +61,9 @@ suspend fun <A, B> Iterable<A>.parTraverseN(
   }
 }
 
+suspend fun <A, B> Iterable<A>.parTraverse(f: suspend (A) -> B): List<B> =
+  parTraverse(EmptyCoroutineContext, f)
+
 /**
  * Traverses this [Iterable] and runs all mappers [f] on [CoroutineContext].
  * If the context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.

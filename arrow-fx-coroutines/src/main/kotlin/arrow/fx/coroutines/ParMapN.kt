@@ -73,7 +73,7 @@ suspend inline fun <A, B, C, D> parMapN(
  *     { "First one is on ${Thread.currentThread().name}" },
  *     { "Second one is on ${Thread.currentThread().name}" },
  *     { "Thirf one is on ${Thread.currentThread().name}" }
- *   ) { a, b ->
+ *   ) { a, b, c ->
  *       "$a\n$b\n$c"
  *     }
  *   //sampleEnd
