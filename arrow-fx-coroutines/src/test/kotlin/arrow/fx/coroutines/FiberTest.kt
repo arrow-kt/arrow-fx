@@ -116,7 +116,7 @@ class FiberTest : ArrowFxSpec(spec = {
 
   "ForkConnected error cancel is unit" {
     checkAll(Arb.throwable()) { e ->
-      val f = suspend { throw RuntimeException() }.forkConnected()
+      val f = suspend { throw e }.forkConnected()
       f.cancel() shouldBe Unit
     }
   }

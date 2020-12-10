@@ -4,8 +4,12 @@ import arrow.core.Either
 import arrow.fx.coroutines.ArrowFxSpec
 import arrow.fx.coroutines.Atomic
 import arrow.fx.coroutines.ExitCase
+import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.NamedThreadFactory
+import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.Resource
+import arrow.fx.coroutines.Semaphore
+import arrow.fx.coroutines.evalOn
 import arrow.fx.coroutines.guaranteeCase
 import arrow.fx.coroutines.leftException
 import arrow.fx.coroutines.never
@@ -15,16 +19,13 @@ import arrow.fx.coroutines.singleThreadName
 import arrow.fx.coroutines.suspend
 import arrow.fx.coroutines.threadName
 import arrow.fx.coroutines.throwable
-import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.should
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.element
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.string
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
 
 class ParMap3Test : ArrowFxSpec(spec = {
@@ -34,7 +35,7 @@ class ParMap3Test : ArrowFxSpec(spec = {
 
     checkAll {
       single.zip(mapCtx).use { (_single, _mapCtx) ->
-        withContext(_single) {
+        evalOn(_single) {
           threadName() shouldBe singleThreadName
 
           val (s1, s2, s3) = parMapN(_mapCtx, threadName, threadName, threadName) { a, b, c -> Triple(a, b, c) }
@@ -54,7 +55,7 @@ class ParMap3Test : ArrowFxSpec(spec = {
 
     checkAll(Arb.int(1..3), Arb.throwable()) { choose, e ->
       single.zip(mapCtx).use { (_single, _mapCtx) ->
-        withContext(_single) {
+        evalOn(_single) {
           threadName() shouldBe singleThreadName
 
           Either.catch {
@@ -74,16 +75,16 @@ class ParMap3Test : ArrowFxSpec(spec = {
   "parMapN 3 runs in parallel" {
     checkAll(Arb.int(), Arb.int(), Arb.int()) { a, b, c ->
       val r = Atomic("")
-      val modifyGate1 = CompletableDeferred<Unit>()
-      val modifyGate2 = CompletableDeferred<Unit>()
+      val modifyGate1 = Promise<Unit>()
+      val modifyGate2 = Promise<Unit>()
 
       parMapN(
         {
-          modifyGate2.await()
+          modifyGate2.get()
           r.update { i -> "$i$a" }
         },
         {
-          modifyGate1.await()
+          modifyGate1.get()
           r.update { i -> "$i$b" }
           modifyGate2.complete(Unit)
         },
@@ -109,31 +110,29 @@ class ParMap3Test : ArrowFxSpec(spec = {
 
   "Cancelling parMapN 3 cancels all participants" {
     checkAll(Arb.int(), Arb.int(), Arb.int()) { a, b, c ->
-      val latchA = CompletableDeferred<Unit>()
-      val latchB = CompletableDeferred<Unit>()
-      val latchC = CompletableDeferred<Unit>()
-      val pa = CompletableDeferred<Pair<Int, ExitCase>>()
-      val pb = CompletableDeferred<Pair<Int, ExitCase>>()
-      val pc = CompletableDeferred<Pair<Int, ExitCase>>()
+      val s = Semaphore(0L)
+      val pa = Promise<Pair<Int, ExitCase>>()
+      val pb = Promise<Pair<Int, ExitCase>>()
+      val pc = Promise<Pair<Int, ExitCase>>()
 
-      val loserA = suspend { guaranteeCase({ latchA.complete(Unit); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
-      val loserB = suspend { guaranteeCase({ latchB.complete(Unit); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
-      val loserC = suspend { guaranteeCase({ latchC.complete(Unit); never<Int>() }) { ex -> pc.complete(Pair(c, ex)) } }
+      val loserA = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
+      val loserB = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
+      val loserC = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pc.complete(Pair(c, ex)) } }
 
-      val job = launch { parMapN(loserA, loserB, loserC) { _a, _b, _c -> Triple(_a, _b, _c) } }
+      val f = ForkAndForget { parMapN(loserA, loserB, loserC) { _a, _b, _c -> Triple(_a, _b, _c) } }
 
-      latchA.await(); latchB.await(); latchC.await() // Suspend until all racers started
-      job.cancel()
+      s.acquireN(3) // Suspend until all racers started
+      f.cancel()
 
-      pa.await().let { (res, exit) ->
+      pa.get().let { (res, exit) ->
         res shouldBe a
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
-      pb.await().let { (res, exit) ->
+      pb.get().let { (res, exit) ->
         res shouldBe b
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
-      pc.await().let { (res, exit) ->
+      pc.get().let { (res, exit) ->
         res shouldBe c
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
@@ -147,14 +146,13 @@ class ParMap3Test : ArrowFxSpec(spec = {
       Arb.int(),
       Arb.int()
     ) { e, winningTask, a, b ->
-      val latchA = CompletableDeferred<Unit>()
-      val latchB = CompletableDeferred<Unit>()
-      val pa = CompletableDeferred<Pair<Int, ExitCase>>()
-      val pb = CompletableDeferred<Pair<Int, ExitCase>>()
+      val s = Semaphore(0L)
+      val pa = Promise<Pair<Int, ExitCase>>()
+      val pb = Promise<Pair<Int, ExitCase>>()
 
-      val winner = suspend { latchA.await(); latchB.await(); throw e }
-      val loserA = suspend { guaranteeCase({ latchA.complete(Unit); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
-      val loserB = suspend { guaranteeCase({ latchB.complete(Unit); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
+      val winner = suspend { s.acquireN(2); throw e }
+      val loserA = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
+      val loserB = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
 
       val r = Either.catch {
         when (winningTask) {
@@ -164,11 +162,11 @@ class ParMap3Test : ArrowFxSpec(spec = {
         }
       }
 
-      pa.await().let { (res, exit) ->
+      pa.get().let { (res, exit) ->
         res shouldBe a
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
-      pb.await().let { (res, exit) ->
+      pb.get().let { (res, exit) ->
         res shouldBe b
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
