@@ -1,18 +1,16 @@
 package arrow.fx.coroutines.stream
 
 import arrow.core.Either
-import arrow.fx.coroutines.Fiber
+import arrow.core.Right
 import arrow.fx.coroutines.IQueue
-import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.CancellationException
 
-internal fun <A> Deferred<A>.toSupervisedFiber(): Fiber<A> =
-  object : Fiber<A> {
-    override suspend fun join(): A = await()
-    override suspend fun cancel(): Unit {
-      Either.catch {
-        if (this@toSupervisedFiber.isActive) this@toSupervisedFiber.cancel()
-      }
-    }
+internal fun Either<Throwable, Unit>.ignoreCancellation(): Either<Throwable, Unit> =
+  when (this) {
+    is Either.Left -> if (this.a is CancellationException) {
+      Right(Unit)
+    } else this
+    is Either.Right -> this
   }
 
 internal inline infix fun <A, B, C> ((A) -> B).andThen(crossinline f: (B) -> C): (A) -> C =

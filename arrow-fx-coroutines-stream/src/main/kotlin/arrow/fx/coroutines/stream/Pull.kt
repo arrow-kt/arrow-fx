@@ -4,14 +4,15 @@ import arrow.core.Either
 import arrow.core.identity
 import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.Platform
+import arrow.fx.coroutines.bracketCase
 import arrow.fx.coroutines.nonFatalOrThrow
 import arrow.fx.coroutines.stream.Pull.Eval.CloseScope
 import arrow.fx.coroutines.stream.Pull.Eval.OpenScope
 import arrow.fx.coroutines.stream.Pull.EvalView
 import arrow.fx.coroutines.stream.Pull.Result
-import arrow.fx.coroutines.stream.Pull.Result.Pure
 import arrow.fx.coroutines.stream.Pull.Result.Fail
 import arrow.fx.coroutines.stream.Pull.Result.Interrupted
+import arrow.fx.coroutines.stream.Pull.Result.Pure
 import java.util.concurrent.CancellationException
 
 @Deprecated("Deprecated in favor of Flow")

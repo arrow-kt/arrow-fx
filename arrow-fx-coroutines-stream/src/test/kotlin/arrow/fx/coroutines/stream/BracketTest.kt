@@ -7,9 +7,11 @@ import arrow.fx.coroutines.Atomic
 import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.Promise
+import arrow.fx.coroutines.leftException
 import arrow.fx.coroutines.milliseconds
 import arrow.fx.coroutines.parTupledN
 import arrow.fx.coroutines.sleep
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
@@ -228,7 +230,7 @@ class BracketTest : StreamSpec(spec = {
           Stream.bracket({ Unit }, { throw e })
             .flatMap { s }
             .toList()
-        } shouldBe Either.Left(e)
+        } should leftException(e)
       }
     }
 
