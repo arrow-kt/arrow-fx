@@ -20,21 +20,21 @@ class TVarTest : ArrowFxSpec(spec = {
     val tv = TVar.new(1)
     tv.lock(STMFrame()) shouldBeExactly 1
   }
-  "lock blocks future reads until release is called" {
+  "lock blocks future reads until release is called".config(enabled = false) {
     val tv = TVar.new(5)
     val frame = STMFrame()
     tv.lock(frame) shouldBe 5
 
     val sleepWon = CompletableDeferred<Unit>()
-    val job1 = launch(Dispatchers.Default) {
-      raceN({ sleep(50.milliseconds); sleepWon.complete(Unit) }, { tv.unsafeRead() })
+    val job1 = launch {
+      raceN(Dispatchers.IO, { sleep(50.milliseconds); sleepWon.complete(Unit) }, { tv.unsafeRead() })
         .fold({}, { throw IllegalStateException("Lock did not lock!") })
     }
     sleepWon.await()
 
     val sleepWon2 = CompletableDeferred<Unit>()
-    val job2 = launch(Dispatchers.Default) {
-      raceN({ sleep(50.milliseconds); sleepWon2.complete(Unit) }, { tv.lock(STMFrame()) })
+    val job2 = launch {
+      raceN(Dispatchers.IO, { sleep(50.milliseconds); sleepWon2.complete(Unit) }, { tv.lock(STMFrame()) })
         .fold({}, { throw IllegalStateException("Lock did not lock!") })
     }
     sleepWon2.await()
@@ -45,14 +45,14 @@ class TVarTest : ArrowFxSpec(spec = {
     job1.join() // unsafeRead lost race
     job2.join() // tv.lock lost race
   }
-  "release only unlocks a TVar if it is locked and if the frame matches" {
+  "release only unlocks a TVar if it is locked and if the frame matches".config(enabled = false) {
     val tv = TVar.new(5)
     val frame = STMFrame()
     tv.lock(frame) shouldBe 5
 
     val sleepWon = CompletableDeferred<Unit>()
-    val job1 = launch(Dispatchers.Default) {
-      raceN({ sleep(50.milliseconds); sleepWon.complete(Unit) }, { tv.unsafeRead() })
+    val job1 = launch {
+      raceN(Dispatchers.IO, { sleep(50.milliseconds); sleepWon.complete(Unit) }, { tv.unsafeRead() })
         .fold({}, { throw IllegalStateException("Lock did not lock!") })
     }
     sleepWon.await()
@@ -61,8 +61,8 @@ class TVarTest : ArrowFxSpec(spec = {
     tv.release(STMFrame(), 10)
 
     val sleepWon2 = CompletableDeferred<Unit>()
-    val job2 = launch(Dispatchers.Default) {
-      raceN({ sleep(50.milliseconds); sleepWon2.complete(Unit) }, { tv.unsafeRead() })
+    val job2 = launch {
+      raceN(Dispatchers.IO, { sleep(50.milliseconds); sleepWon2.complete(Unit) }, { tv.unsafeRead() })
         .fold({}, { throw IllegalStateException("Lock did not lock!") })
     }
     sleepWon2.await()
