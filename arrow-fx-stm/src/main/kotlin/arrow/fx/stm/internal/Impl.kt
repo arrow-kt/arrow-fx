@@ -3,10 +3,8 @@ package arrow.fx.stm.internal
 import arrow.fx.stm.STM
 import arrow.fx.stm.TVar
 import kotlinx.atomicfu.atomic
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.Continuation
-import kotlin.coroutines.coroutineContext
+import kotlin.coroutines.suspendCoroutine
 
 /**
  * A STMFrame keeps the reads and writes performed by a transaction.
@@ -38,16 +36,16 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
   private fun readVar(v: TVar<Any?>): Any? =
     accessMap[v]?.getValue() ?: parent?.readVar(v) ?: Entry.NOT_PRESENT
 
-  override suspend fun retry(): Nothing = throw RetryException
+  override fun retry(): Nothing = throw RetryException
 
-  override suspend fun <A> (suspend STM.() -> A).orElse(other: suspend STM.() -> A): A =
+  override fun <A> (STM.() -> A).orElse(other: STM.() -> A): A =
     runLocal(this@orElse, { this@STMFrame.other() }) { throw it }
 
-  override suspend fun <A> catch(f: suspend STM.() -> A, onError: suspend STM.(Throwable) -> A): A =
+  override fun <A> catch(f: STM.() -> A, onError: STM.(Throwable) -> A): A =
     runLocal(f, { this@STMFrame.retry() }) { this@STMFrame.onError(it) }
 
-  private suspend inline fun <A> runLocal(
-    crossinline f: suspend STM.() -> A,
+  private inline fun <A> runLocal(
+    f: STM.() -> A,
     onRetry: () -> A,
     onError: (Throwable) -> A
   ): A {
@@ -80,7 +78,7 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
   /**
    * First checks if we have already read this variable, if not it reads it and stores the result
    */
-  override suspend fun <A> TVar<A>.read(): A =
+  override fun <A> TVar<A>.read(): A =
     when (val r = readVar(this as TVar<Any?>)) {
       Entry.NOT_PRESENT -> readI().also { accessMap[this] = Entry(it, Entry.NO_CHANGE) }
       else -> r as A
@@ -91,7 +89,7 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
    *
    * If we have not seen this variable before we add a read which stores it in the read set as well.
    */
-  override suspend fun <A> TVar<A>.write(a: A): Unit =
+  override fun <A> TVar<A>.write(a: A): Unit =
     accessMap[this as TVar<Any?>]?.update(a) ?: readI().let { accessMap[this] = Entry(it, a) }
 
   internal fun validate(): Boolean =
@@ -159,7 +157,7 @@ internal class STMFrame(val parent: STMFrame? = null) : STM {
 class BlockedIndefinitely : Throwable("Transaction blocked indefinitely")
 
 object RetryException : Throwable("Arrow STM Retry. This should always be caught by arrow internally. Please report this as a bug if that is not the case!") {
-  override fun fillInStackTrace(): Throwable = this
+  override fun fillInStackTrace(): Throwable { return this }
 }
 
 // --------
@@ -168,7 +166,7 @@ object RetryException : Throwable("Arrow STM Retry. This should always be caught
  *
  * Keeps the continuation that [TVar]'s use to resume this transaction.
  */
-internal class STMTransaction<A>(val f: suspend STM.() -> A) {
+internal class STMTransaction<A>(val f: STM.() -> A) {
   private val cont = atomic<Continuation<Unit>?>(null)
 
   /**
@@ -184,19 +182,17 @@ internal class STMTransaction<A>(val f: suspend STM.() -> A) {
   //  "live-locked" transactions are those that are continuously retry due to accessing variables with high contention and
   //   taking longer than the transactions updating those variables.
   suspend fun commit(): A {
-    val ctx = coroutineContext
     loop@ while (true) {
       val frame = STMFrame()
       try {
         val res = frame.f()
-        ctx.ensureActive()
 
         if (frame.validateAndCommit()) return@commit res
       } catch (ignored: RetryException) {
         if (frame.accessMap.isEmpty()) throw BlockedIndefinitely()
 
         val registered = mutableListOf<TVar<Any?>>()
-        suspendCancellableCoroutine<Unit> susp@{ k ->
+        suspendCoroutine<Unit> susp@{ k ->
           cont.value = k
 
           frame.accessMap

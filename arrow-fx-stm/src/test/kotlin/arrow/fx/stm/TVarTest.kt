@@ -7,7 +7,6 @@ import arrow.fx.coroutines.sleep
 import arrow.fx.stm.internal.STMFrame
 import io.kotest.matchers.ints.shouldBeExactly
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.Dispatchers
 
 class TVarTest : ArrowFxSpec(spec = {
   "unsafeRead is consistent with atomically { read }" {
@@ -22,10 +21,10 @@ class TVarTest : ArrowFxSpec(spec = {
     val tv = TVar.new(5)
     val frame = STMFrame()
     tv.lock(frame) shouldBe 5
-    raceN(Dispatchers.Default, { sleep(50.milliseconds) }, { tv.unsafeRead() })
+    raceN({ sleep(50.milliseconds) }, { tv.unsafeRead() })
       .fold({}, { throw IllegalStateException("Lock did not lock!") })
 
-    raceN(Dispatchers.Default, { sleep(50.milliseconds) }, { tv.lock(STMFrame()) })
+    raceN({ sleep(50.milliseconds) }, { tv.lock(STMFrame()) })
       .fold({}, { throw IllegalStateException("Lock did not lock!") })
 
     tv.release(frame, 10)
@@ -35,11 +34,11 @@ class TVarTest : ArrowFxSpec(spec = {
     val tv = TVar.new(5)
     val frame = STMFrame()
     tv.lock(frame) shouldBe 5
-    raceN(Dispatchers.Default, { sleep(50.milliseconds) }, { tv.unsafeRead() })
+    raceN({ sleep(50.milliseconds) }, { tv.unsafeRead() })
       .fold({}, { throw IllegalStateException("Lock did not lock!") })
     // release with an invalid frame
     tv.release(STMFrame(), 10)
-    raceN(Dispatchers.Default, { sleep(50.milliseconds) }, { tv.unsafeRead() })
+    raceN({ sleep(50.milliseconds) }, { tv.unsafeRead() })
       .fold({}, { throw IllegalStateException("Lock did not lock!") })
     // release for real
     tv.release(frame, 10)

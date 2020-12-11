@@ -23,7 +23,7 @@ class TArrayTest : ArrowFxSpec(spec = {
   "write should write to the correct value" {
     val t2 = atomically { newTArray(20) { it } }
     atomically { t2.get(5) } shouldBeExactly 5
-    atomically { t2.set(5, 2) }
+    atomically { t2[5] = 2 }
     atomically { t2.get(5) } shouldBeExactly 2
   }
   "transform should perform an operation on each element" {

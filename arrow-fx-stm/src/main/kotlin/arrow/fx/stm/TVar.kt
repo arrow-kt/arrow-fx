@@ -6,9 +6,6 @@ import kotlinx.atomicfu.AtomicLong
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.ensureActive
-import kotlin.coroutines.coroutineContext
 import kotlin.coroutines.resume
 
 /**
@@ -164,12 +161,11 @@ class TVar<A> internal constructor(a: A) {
    * Internal unsafe (non-suspend) version of read. Used by various other internals and [unsafeRead] to
    *  read the current value respecting its state.
    */
-  internal suspend fun readI(): A {
-    val ctx = coroutineContext[Job]
+  internal fun readI(): A {
     while (true) {
-      val value = ref.value
-      if (value !is STMFrame) return value as A
-      else ctx?.ensureActive()
+      ref.value.let {
+        if (it !is STMFrame) return@readI it as A
+      }
     }
   }
 
@@ -195,12 +191,11 @@ class TVar<A> internal constructor(a: A) {
    * > This is unused atm because locks are only taken conditionally, but is kept because it helps testing and
    *  may be useful in the future.
    */
-  internal suspend fun lock(frame: STMFrame): A {
+  internal fun lock(frame: STMFrame): A {
     var res: A
     do {
       res = this.readI()
     } while (ref.compareAndSet(res as Any?, frame).not())
-
     return res
   }
 
