@@ -3,7 +3,6 @@ package arrow.fx.stm.internal
 import arrow.fx.stm.STM
 import arrow.fx.stm.TVar
 import kotlinx.atomicfu.atomic
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.Continuation
@@ -185,12 +184,12 @@ internal class STMTransaction<A>(val f: suspend STM.() -> A) {
   //  "live-locked" transactions are those that are continuously retry due to accessing variables with high contention and
   //   taking longer than the transactions updating those variables.
   suspend fun commit(): A {
-    val ctx = coroutineContext[Job]
+    val ctx = coroutineContext
     loop@ while (true) {
       val frame = STMFrame()
       try {
-        ctx?.ensureActive()
         val res = frame.f()
+        ctx.ensureActive()
 
         if (frame.validateAndCommit()) return@commit res
       } catch (ignored: RetryException) {
