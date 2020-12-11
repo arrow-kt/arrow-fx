@@ -48,6 +48,7 @@ suspend inline fun <A, B, C> parMapN(
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.*
+ * import kotlinx.coroutines.Dispatchers
  *
  * suspend fun main(): Unit {
  *   //sampleStart
