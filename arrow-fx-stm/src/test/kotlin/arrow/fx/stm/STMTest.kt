@@ -17,6 +17,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.bool
 import io.kotest.property.arbitrary.int
+import kotlinx.coroutines.Dispatchers
 
 class STMTest : ArrowFxSpec(spec = {
   "no-effects" {
@@ -210,7 +211,7 @@ class STMTest : ArrowFxSpec(spec = {
     checkAll {
       val acc1 = TVar.new(100)
       val acc2 = TVar.new(200)
-      parMapN({
+      parMapN(Dispatchers.Default, {
         // transfer acc1 to acc2
         val amount = 50
         atomically {
@@ -233,7 +234,7 @@ class STMTest : ArrowFxSpec(spec = {
       val tq = TQueue.new<Int>()
       parMapN({
         // producers
-        (0..4).parTraverse {
+        (0..4).parTraverse(Dispatchers.Default) {
           for (i in (it * 20 + 1)..(it * 20 + 20)) {
             atomically { tq.write(i) }
           }

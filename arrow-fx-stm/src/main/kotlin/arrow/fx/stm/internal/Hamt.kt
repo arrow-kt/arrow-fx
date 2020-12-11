@@ -14,7 +14,7 @@ data class Hamt<A>(val branches: TVar<Array<Branch<A>?>>) {
   }
 }
 
-inline fun <A> STM.lookupHamtWithHash(hmt: Hamt<A>, hash: Int, test: (A) -> Boolean): A? {
+suspend inline fun <A> STM.lookupHamtWithHash(hmt: Hamt<A>, hash: Int, test: (A) -> Boolean): A? {
   var depth = 0
   var hamt = hmt
   while (true) {
@@ -45,9 +45,9 @@ fun <A> STM.pair(depth: Int, hash1: Int, branch1: Branch<A>, hash2: Int, branch2
   return Hamt(newTVar(branches))
 }
 
-fun <A> STM.clearHamt(hamt: Hamt<A>): Unit = hamt.branches.write(arrayOfNulls(ARR_SIZE))
+suspend fun <A> STM.clearHamt(hamt: Hamt<A>): Unit = hamt.branches.write(arrayOfNulls(ARR_SIZE))
 
-inline fun <reified A> STM.alterHamtWithHash(
+suspend inline fun <reified A> STM.alterHamtWithHash(
   hamt: Hamt<A>,
   hash: Int,
   test: (A) -> Boolean,
