@@ -2,7 +2,6 @@ package arrow.fx.coroutines
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.coroutines.Continuation
@@ -101,12 +100,14 @@ internal class DefaultEnvironment(override val ctx: CoroutineContext) : Environm
 
   override fun <A> unsafeRunAsyncCancellable(fa: suspend () -> A, e: (Throwable) -> Unit, a: (A) -> Unit): Disposable {
     val job = Job()
-    val scope = CoroutineScope(ctx + job)
+    val conn = SuspendConnection()
+    conn.push { job.cancel() }
+    val scope = CoroutineScope(ctx + job + conn)
 
     scope.launch {
       runCatching { fa() }.fold(a, e)
     }
 
-    return { runBlocking { job.cancelAndJoin() } }
+    return { runBlocking { conn.cancel() } }
   }
 }
