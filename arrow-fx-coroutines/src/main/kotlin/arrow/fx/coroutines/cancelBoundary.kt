@@ -36,4 +36,4 @@ suspend fun cancelBoundary(): Unit =
   suspendCoroutineUninterceptedOrReturn { cont ->
     if ((cont.context[SuspendConnection] ?: SuspendConnection.uncancellable).isCancelled()) COROUTINE_SUSPENDED
     else Unit
-  }
+
