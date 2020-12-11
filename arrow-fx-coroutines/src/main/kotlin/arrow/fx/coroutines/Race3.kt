@@ -1,5 +1,6 @@
 package arrow.fx.coroutines
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -37,14 +38,16 @@ suspend inline fun <A, B, C> raceN(
   crossinline fa: suspend () -> A,
   crossinline fb: suspend () -> B,
   crossinline fc: suspend () -> C
-): Race3<A, B, C> = raceN(EmptyCoroutineContext, fa, fb, fc)
+): Race3<A, B, C> = raceN(Dispatchers.Default, fa, fb, fc)
 
 /**
  * Races the participants [fa], [fb] & [fc] on the provided [CoroutineContext].
  * The winner of the race cancels the other participants.
  * Cancelling the operation cancels all participants.
  *
- * If the context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
+ * Coroutine context is inherited from a [CoroutineScope], additional context elements can be specified with [ctx] argument.
+ * If the combined context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
+ * **WARNING** If the combined context has a single threaded [ContinuationInterceptor], this function will not run [fa], [fb] & [fc] in parallel.
  *
  * @see raceN for a function that ensures operations run in parallel on the [Dispatchers.Default].
  */

@@ -3,6 +3,7 @@ package arrow.fx.coroutines
 import arrow.core.Either
 import arrow.core.Left
 import arrow.core.Right
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.Dispatchers
@@ -47,18 +48,21 @@ import kotlin.coroutines.EmptyCoroutineContext
  * @see raceN for the same function that can race on any [CoroutineContext].
  */
 suspend inline fun <A, B> raceN(crossinline fa: suspend () -> A, crossinline fb: suspend () -> B): Either<A, B> =
-  raceN(EmptyCoroutineContext, fa, fb)
+  raceN(Dispatchers.Default, fa, fb)
 
 /**
  * Races the participants [fa], [fb] on the provided [CoroutineContext].
  * The winner of the race cancels the other participants.
  * Cancelling the operation cancels all participants.
  *
- * If the context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
+ * Coroutine context is inherited from a [CoroutineScope], additional context elements can be specified with [ctx] argument.
+ * If the combined context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
+ * **WARNING** If the combined context has a single threaded [ContinuationInterceptor], this function will not run [fa] & [fb] in parallel.
  *
  * ```kotlin:ank:playground
  * import arrow.core.Either
  * import arrow.fx.coroutines.*
+ * import kotlinx.coroutines.Dispatchers
  *
  * suspend fun main(): Unit {
  *   suspend fun loser(): Int =
@@ -67,7 +71,7 @@ suspend inline fun <A, B> raceN(crossinline fa: suspend () -> A, crossinline fb:
  *        CancelToken { println("Never got cancelled for losing.") }
  *     }
  *
- *   val winner = raceN(IOPool, { loser() }, { 5 })
+ *   val winner = raceN(Dispatchers.IO, { loser() }, { 5 })
  *
  *   val res = when(winner) {
  *     is Either.Left -> "Never always loses race"
