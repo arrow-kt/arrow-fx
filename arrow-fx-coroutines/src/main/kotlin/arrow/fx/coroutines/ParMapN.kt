@@ -1,15 +1,15 @@
 package arrow.fx.coroutines
 
-import arrow.core.Either
-import kotlin.coroutines.Continuation
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
-import kotlin.coroutines.intrinsics.intercepted
-import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
+import kotlin.coroutines.EmptyCoroutineContext
 
 /**
- * Runs [fa], [fb] in parallel on [ComputationPool] and combines their results using the provided function.
- * Cancelling this operation cancels both operations running in parallel.
+ * Runs [fa], [fb] in parallel on [Dispatchers.Default] and combines their results using the provided function.
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.*
@@ -30,231 +30,420 @@ import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
  * @param fa value to parallel map
  * @param fb value to parallel map
  * @param f function to map/combine value [A] and [B]
+ *
+ * @see parMapN for a function that can run on any [CoroutineContext]
+ */
+suspend inline fun <A, B, C> parMapN(
+  crossinline fa: suspend () -> A,
+  crossinline fb: suspend () -> B,
+  crossinline f: suspend (A, B) -> C
+): C = parMapN(Dispatchers.Default, fa, fb, f)
+
+/**
+ * Runs [fa], [fb] in parallel on [ctx] and combines their results using the provided function.
+ *
+ * Coroutine context is inherited from a [CoroutineScope], additional context elements can be specified with [ctx] argument.
+ * If the combined context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
+ * **WARNING** If the combined context has a single threaded [ContinuationInterceptor], this function will not run [fa], [fb] in parallel.
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.*
+ * import kotlinx.coroutines.Dispatchers
+ *
+ * suspend fun main(): Unit {
+ *   //sampleStart
+ *   val result = parMapN(
+ *     Dispatchers.IO,
+ *     { "First one is on ${Thread.currentThread().name}" },
+ *     { "Second one is on ${Thread.currentThread().name}" }
+ *   ) { a, b ->
+ *       "$a\n$b"
+ *     }
+ *   //sampleEnd
+ *  println(result)
+ * }
  * ```
  *
- * @see parMapN for the same function that can race on any [CoroutineContext].
+ * @param fa value to parallel map
+ * @param fb value to parallel map
+ * @param f function to map/combine value [A] and [B]
+ *
+ * @see parMapN for a function that ensures operations run in parallel on the [Dispatchers.Default].
  */
-suspend fun <A, B, C> parMapN(fa: suspend () -> A, fb: suspend () -> B, f: (A, B) -> C): C =
-  parMapN(ComputationPool, fa, fb, f)
+suspend inline fun <A, B, C> parMapN(
+  ctx: CoroutineContext = EmptyCoroutineContext,
+  crossinline fa: suspend () -> A,
+  crossinline fb: suspend () -> B,
+  crossinline f: suspend (A, B) -> C
+): C = coroutineScope {
+  val a = async(ctx) { fa() }
+  val b = async(ctx) { fb() }
+  f(a.await(), b.await())
+}
 
 /**
- * Runs [fa], [fb], [fc] in parallel on [ComputationPool] and combines their results using the provided function.
- * Cancelling this operation cancels both operations running in parallel.
+ * Runs [fa], [fb], [fc] in parallel on [Dispatchers.Default] and combines their results using the provided function.
  *
- * @see parMapN for the same function that can run on any [CoroutineContext].
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.*
+ *
+ * suspend fun main(): Unit {
+ *   //sampleStart
+ *   val result = parMapN(
+ *     { "First one is on ${Thread.currentThread().name}" },
+ *     { "Second one is on ${Thread.currentThread().name}" },
+ *     { "Third one is on ${Thread.currentThread().name}" }
+ *   ) { a, b, c ->
+ *       "$a\n$b\n$c"
+ *     }
+ *   //sampleEnd
+ *  println(result)
+ * }
+ * ```
+ *
+ * @param fa value to parallel map
+ * @param fb value to parallel map
+ * @param fc value to parallel map
+ * @param f function to map/combine value [A], [B] and [C]
+ *
+ * @see parMapN for a function that can run on any [CoroutineContext].
  */
-suspend fun <A, B, C, D> parMapN(
-  fa: suspend () -> A,
-  fb: suspend () -> B,
-  fc: suspend () -> C,
-  f: (A, B, C) -> D
-): D = parMapN(ComputationPool, fa, fb, fc, f)
+suspend inline fun <A, B, C, D> parMapN(
+  crossinline fa: suspend () -> A,
+  crossinline fb: suspend () -> B,
+  crossinline fc: suspend () -> C,
+  crossinline f: suspend (A, B, C) -> D
+): D = parMapN(Dispatchers.Default, fa, fb, fc, f)
 
 /**
- * Runs [fa], [fb], [fc], [fd] in parallel on [ComputationPool] and combines their results using the provided function.
- * Cancelling this operation cancels all operations running in parallel.
+ * Runs [fa], [fb], [fc] in parallel on [ctx] and combines their results using the provided function.
  *
- * @see parMapN for the same function that can run on any [CoroutineContext].
+ * Coroutine context is inherited from a [CoroutineScope], additional context elements can be specified with [ctx] argument.
+ * If the combined context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
+ * **WARNING** If the combined context has a single threaded [ContinuationInterceptor], this function will not run [fa], [fb] & [fc] in parallel.
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.*
+ * import kotlinx.coroutines.Dispatchers
+ *
+ * suspend fun main(): Unit {
+ *   //sampleStart
+ *   val result = parMapN(
+ *     Dispatchers.IO,
+ *     { "First one is on ${Thread.currentThread().name}" },
+ *     { "Second one is on ${Thread.currentThread().name}" },
+ *     { "Third one is on ${Thread.currentThread().name}" }
+ *   ) { a, b, c ->
+ *       "$a\n$b\n$c"
+ *     }
+ *   //sampleEnd
+ *  println(result)
+ * }
+ * ```
+ *
+ * @param fa value to parallel map
+ * @param fb value to parallel map
+ * @param fc value to parallel map
+ * @param f function to map/combine value [A], [B] and [C].
+ *
+ * @see parMapN for a function that ensures operations run in parallel on the [Dispatchers.Default].
  */
-suspend fun <A, B, C, D, E> parMapN(
-  fa: suspend () -> A,
-  fb: suspend () -> B,
-  fc: suspend () -> C,
-  fd: suspend () -> D,
-  f: (A, B, C, D) -> E
-): E = parMapN(ComputationPool, fa, fb, fc, fd, f)
+// TODO provide efficient impls like below for N-arity.
+suspend inline fun <A, B, C, D> parMapN(
+  ctx: CoroutineContext = EmptyCoroutineContext,
+  crossinline fa: suspend () -> A,
+  crossinline fb: suspend () -> B,
+  crossinline fc: suspend () -> C,
+  crossinline f: suspend (A, B, C) -> D
+): D = coroutineScope {
+  val a = async(ctx) { fa() }
+  val b = async(ctx) { fb() }
+  val c = async(ctx) { fc() }
+  f(a.await(), b.await(), c.await())
+}
 
 /**
- * Runs [fa], [fb], [fc], [fd], [fe] in parallel on [ComputationPool] and combines their results using the provided function.
- * Cancelling this operation cancels all operations running in parallel.
+ * Runs [fa], [fb], [fc], [fd] in parallel on [Dispatchers.Default] and combines their results using the provided function.
  *
- * @see parMapN for the same function that can run on any [CoroutineContext].
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.*
+ *
+ * suspend fun main(): Unit {
+ *   //sampleStart
+ *   val result = parMapN(
+ *     { "First one is on ${Thread.currentThread().name}" },
+ *     { "Second one is on ${Thread.currentThread().name}" },
+ *     { "Third one is on ${Thread.currentThread().name}" }
+ *     { "Fourth one is on ${Thread.currentThread().name}" }
+ *   ) { a, b, c, d ->
+ *       "$a\n$b\n$c\n$d"
+ *     }
+ *   //sampleEnd
+ *  println(result)
+ * }
+ * ```
+ *
+ * @param fa value to parallel map
+ * @param fb value to parallel map
+ * @param fc value to parallel map
+ * @param fd value to parallel map
+ * @param f function to map/combine value [A], [B], [C] and [D]
+ *
+ * @see parMapN for a function that can run on any [CoroutineContext].
  */
-suspend fun <A, B, C, D, E, F> parMapN(
-  fa: suspend () -> A,
-  fb: suspend () -> B,
-  fc: suspend () -> C,
-  fd: suspend () -> D,
-  fe: suspend () -> E,
-  f: (A, B, C, D, E) -> F
-): F = parMapN(ComputationPool, fa, fb, fc, fd, fe, f)
+suspend inline fun <A, B, C, D, E> parMapN(
+  crossinline fa: suspend () -> A,
+  crossinline fb: suspend () -> B,
+  crossinline fc: suspend () -> C,
+  crossinline fd: suspend () -> D,
+  crossinline f: suspend (A, B, C, D) -> E
+): E = parMapN(Dispatchers.Default, fa, fb, fc, fd, f)
 
 /**
- * Runs [fa], [fb], [fc], [fd], [fe], [ff] in parallel on [ComputationPool] and combines their results using the provided function.
- * Cancelling this operation cancels all operations running in parallel.
+ * Runs [fa], [fb], [fc], [fd] in parallel on [ctx] and combines their results using the provided function.
  *
- * @see parMapN for the same function that can run on any [CoroutineContext].
+ * Coroutine context is inherited from a [CoroutineScope], additional context elements can be specified with [ctx] argument.
+ * If the combined context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
+ * **WARNING** If the combined context has a single threaded [ContinuationInterceptor], this function will not run [fa], [fb], [fc] & [fd]
+ * in parallel.
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.*
+ * import kotlinx.coroutines.Dispatchers
+ *
+ * suspend fun main(): Unit {
+ *   //sampleStart
+ *   val result = parMapN(
+ *     Dispatchers.IO,
+ *     { "First one is on ${Thread.currentThread().name}" },
+ *     { "Second one is on ${Thread.currentThread().name}" },
+ *     { "Third one is on ${Thread.currentThread().name}" }
+ *     { "Fourth one is on ${Thread.currentThread().name}" }
+ *   ) { a, b, c, d ->
+ *       "$a\n$b\n$c\n$d"
+ *     }
+ *   //sampleEnd
+ *  println(result)
+ * }
+ * ```
+ *
+ * @param fa value to parallel map
+ * @param fb value to parallel map
+ * @param fc value to parallel map
+ * @param fd value to parallel map
+ * @param f function to map/combine value [A], [B], [C] and [D].
+ *
+ * @see parMapN for a function that ensures operations run in parallel on the [Dispatchers.Default].
  */
-suspend fun <A, B, C, D, E, F, G> parMapN(
-  fa: suspend () -> A,
-  fb: suspend () -> B,
-  fc: suspend () -> C,
-  fd: suspend () -> D,
-  fe: suspend () -> E,
-  ff: suspend () -> F,
-  f: (A, B, C, D, E, F) -> G
-): G = parMapN(ComputationPool, fa, fb, fc, fd, fe, ff, f)
+suspend inline fun <A, B, C, D, E> parMapN(
+  ctx: CoroutineContext = EmptyCoroutineContext,
+  crossinline fa: suspend () -> A,
+  crossinline fb: suspend () -> B,
+  crossinline fc: suspend () -> C,
+  crossinline fd: suspend () -> D,
+  crossinline f: suspend (A, B, C, D) -> E
+): E = coroutineScope {
+  val a = async(ctx) { fa() }
+  val b = async(ctx) { fb() }
+  val c = async(ctx) { fc() }
+  val d = async(ctx) { fd() }
+  f(a.await(), b.await(), c.await(), d.await())
+}
 
 /**
- * Runs [fa], [fb] on the provided [CoroutineContext] and combines their results using the provided function.
- * Cancelling this operation cancels both tasks running in parallel.
+ * Runs [fa], [fb], [fc], [fd], [fe] in parallel on [Dispatchers.Default] and combines
+ * their results using the provided function.
  *
- * **WARNING** this function forks [fa], [fb] but if they run in parallel depends
- * on the capabilities of the provided [CoroutineContext].
- * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.*
  *
- * @see parMapN for a function that ensures it runs in parallel on the [ComputationPool].
+ * suspend fun main(): Unit {
+ *   //sampleStart
+ *   val result = parMapN(
+ *     { "First one is on ${Thread.currentThread().name}" },
+ *     { "Second one is on ${Thread.currentThread().name}" },
+ *     { "Third one is on ${Thread.currentThread().name}" }
+ *     { "Fourth one is on ${Thread.currentThread().name}" }
+ *     { "Fifth one is on ${Thread.currentThread().name}" }
+ *   ) { a, b, c, d, e ->
+ *       "$a\n$b\n$c\n$d\n$e"
+ *     }
+ *   //sampleEnd
+ *  println(result)
+ * }
+ * ```
+ *
+ * @param fa value to parallel map
+ * @param fb value to parallel map
+ * @param fc value to parallel map
+ * @param fd value to parallel map
+ * @param fe value to parallel map
+ * @param f function to map/combine value [A], [B], [C] [D] and [E]
+ *
+ * @see parMapN for a function that can run on any [CoroutineContext].
  */
-@Suppress("UNCHECKED_CAST")
-suspend fun <A, B, C> parMapN(
-  ctx: CoroutineContext,
-  fa: suspend () -> A,
-  fb: suspend () -> B,
-  f: (A, B) -> C
-): C =
-  suspendCoroutineUninterceptedOrReturn { _cont ->
-    val conn = _cont.context[SuspendConnection] ?: SuspendConnection.uncancellable
-    val cont = _cont.intercepted()
-    val cb = cont::resumeWith
-
-    // Used to store Throwable, Either<A, B> or empty (null). (No sealed class used for a slightly better performing ParMap2)
-    val state = AtomicRefW<Any?>(null)
-
-    val connA = SuspendConnection()
-    val connB = SuspendConnection()
-
-    conn.pushPair(connA, connB)
-
-    fun complete(a: A, b: B) {
-      conn.pop()
-      cb(
-        try {
-          Result.success(f(a, b))
-        } catch (e: Throwable) {
-          Result.failure<C>(e.nonFatalOrThrow())
-        }
-      )
-    }
-
-    fun sendException(other: SuspendConnection, e: Throwable) = when (state.getAndSet(e)) {
-      is Throwable -> Unit // Do nothing we already finished
-      else -> suspend { other.cancel() }.startCoroutineUnintercepted(Continuation(ctx + SuspendConnection.uncancellable) { r ->
-        conn.pop()
-        cb(Result.failure(r.fold({ e }, { e2 -> Platform.composeErrors(e, e2) })))
-      })
-    }
-
-    fa.startCoroutineCancellable(CancellableContinuation(ctx, connA) { resA ->
-      resA.fold({ a ->
-        when (val oldState = state.getAndSet(Either.Left(a))) {
-          null -> Unit // Wait for B
-          is Throwable -> Unit // ParMapN already failed and A was cancelled.
-          is Either.Left<*> -> Unit // Already state.getAndSet
-          is Either.Right<*> -> complete(a, (oldState as Either.Right<B>).b)
-        }
-      }, { e ->
-        sendException(connB, e)
-      })
-    })
-
-    fb.startCoroutineCancellable(CancellableContinuation(ctx, connB) { resB ->
-      resB.fold({ b ->
-        when (val oldState = state.getAndSet(Either.Right(b))) {
-          null -> Unit // Wait for A
-          is Throwable -> Unit // ParMapN already failed and B was cancelled.
-          is Either.Right<*> -> Unit // IO cannot finish twice
-          is Either.Left<*> -> complete((oldState as Either.Left<A>).a, b)
-        }
-      }, { e ->
-        sendException(connA, e)
-      })
-    })
-
-    COROUTINE_SUSPENDED
-  }
+suspend inline fun <A, B, C, D, E, F> parMapN(
+  crossinline fa: suspend () -> A,
+  crossinline fb: suspend () -> B,
+  crossinline fc: suspend () -> C,
+  crossinline fd: suspend () -> D,
+  crossinline fe: suspend () -> E,
+  crossinline f: suspend (A, B, C, D, E) -> F
+): F = parMapN(Dispatchers.Default, fa, fb, fc, fd, fe, f)
 
 /**
- * Runs [fa], [fb], [fc] on the provided [CoroutineContext] and combines their results using the provided function.
- * Cancelling this operation cancels both tasks running in parallel.
+ * Runs [fa], [fb], [fc], [fd], [fe] in parallel on [ctx] and combines their results using the provided function.
  *
- * **WARNING**: this function forks [fa], [fb], [fc] but if they run in parallel depends
- * on the capabilities of the provided [CoroutineContext].
- * We ensure they start in sequence so it's guaranteed to finish on a single threaded context.
+ * Coroutine context is inherited from a [CoroutineScope], additional context elements can be specified with [ctx] argument.
+ * If the combined context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
+ * **WARNING** If the combined context has a single threaded [ContinuationInterceptor], this function will not run [fa], [fb], [fc], [fd] & [fe]
+ * in parallel.
  *
- * @see parMapN for a function that ensures it runs in parallel on the [ComputationPool].
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.*
+ * import kotlinx.coroutines.Dispatchers
+ *
+ * suspend fun main(): Unit {
+ *   //sampleStart
+ *   val result = parMapN(
+ *     Dispatchers.IO,
+ *     { "First one is on ${Thread.currentThread().name}" },
+ *     { "Second one is on ${Thread.currentThread().name}" },
+ *     { "Third one is on ${Thread.currentThread().name}" }
+ *     { "Fourth one is on ${Thread.currentThread().name}" }
+ *     { "Fifth one is on ${Thread.currentThread().name}" }
+ *   ) { a, b, c, d, e ->
+ *       "$a\n$b\n$c\n$d\n$e"
+ *     }
+ *   //sampleEnd
+ *  println(result)
+ * }
+ * ```
+ *
+ * @param fa value to parallel map
+ * @param fb value to parallel map
+ * @param fc value to parallel map
+ * @param fd value to parallel map
+ * @param fe value to parallel map
+ * @param f function to map/combine value [A], [B], [C], [D], and [E].
+ *
+ * @see parMapN for a function that ensures operations run in parallel on the [Dispatchers.Default].
  */
-suspend fun <A, B, C, D> parMapN(
-  ctx: CoroutineContext,
-  fa: suspend () -> A,
-  fb: suspend () -> B,
-  fc: suspend () -> C,
-  f: (A, B, C) -> D
-): D =
-  parMapN(
-    ctx,
-    suspend { parMapN(ctx, fa, fb, ::Pair) },
-    fc
-  ) { ab, c ->
-    val (a, b) = ab
-    f(a, b, c)
-  }
+suspend inline fun <A, B, C, D, E, F> parMapN(
+  ctx: CoroutineContext = EmptyCoroutineContext,
+  crossinline fa: suspend () -> A,
+  crossinline fb: suspend () -> B,
+  crossinline fc: suspend () -> C,
+  crossinline fd: suspend () -> D,
+  crossinline fe: suspend () -> E,
+  crossinline f: suspend (A, B, C, D, E) -> F
+): F = coroutineScope {
+  val a = async(ctx) { fa() }
+  val b = async(ctx) { fb() }
+  val c = async(ctx) { fc() }
+  val d = async(ctx) { fd() }
+  val e = async(ctx) { fe() }
+  f(a.await(), b.await(), c.await(), d.await(), e.await())
+}
 
-suspend fun <A, B, C, D, F> parMapN(
-  ctx: CoroutineContext,
-  fa: suspend () -> A,
-  fb: suspend () -> B,
-  fc: suspend () -> C,
-  fd: suspend () -> D,
-  f: (A, B, C, D) -> F
-): F =
-  parMapN(
-    ctx,
-    suspend { parMapN(ctx, fa, fb, ::Pair) },
-    suspend { parMapN(ctx, fc, fd, ::Pair) }
-  ) { ab, cd ->
-    val (a, b) = ab
-    val (c, d) = cd
-    f(a, b, c, d)
-  }
+/**
+ * Runs [fa], [fb], [fc], [fd], [fe], [ff] in parallel on [Dispatchers.Default] and combines
+ * their results using the provided function.
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.*
+ *
+ * suspend fun main(): Unit {
+ *   //sampleStart
+ *   val result = parMapN(
+ *     { "First one is on ${Thread.currentThread().name}" },
+ *     { "Second one is on ${Thread.currentThread().name}" },
+ *     { "Third one is on ${Thread.currentThread().name}" }
+ *     { "Fourth one is on ${Thread.currentThread().name}" }
+ *     { "Fifth one is on ${Thread.currentThread().name}" }
+ *     { "Sixth one is on ${Thread.currentThread().name}" }
+ *   ) { a, b, c, d, e, f ->
+ *       "$a\n$b\n$c\n$d\n$e\n$f"
+ *     }
+ *   //sampleEnd
+ *  println(result)
+ * }
+ * ```
+ *
+ * @param fa value to parallel map
+ * @param fb value to parallel map
+ * @param fc value to parallel map
+ * @param fd value to parallel map
+ * @param fe value to parallel map
+ * @param ff value to parallel map
+ * @param f function to map/combine value [A], [B], [C] [D], [E] and [F]
+ *
+ * @see parMapN for a function that can run on any [CoroutineContext].
+ */
+suspend inline fun <A, B, C, D, E, G, H> parMapN(
+  crossinline fa: suspend () -> A,
+  crossinline fb: suspend () -> B,
+  crossinline fc: suspend () -> C,
+  crossinline fd: suspend () -> D,
+  crossinline fe: suspend () -> E,
+  crossinline fg: suspend () -> G,
+  crossinline f: suspend (A, B, C, D, E, G) -> H
+): H = parMapN(Dispatchers.Default, fa, fb, fc, fd, fe, fg, f)
 
-suspend fun <A, B, C, D, F, E> parMapN(
-  ctx: CoroutineContext,
-  fa: suspend () -> A,
-  fb: suspend () -> B,
-  fc: suspend () -> C,
-  fd: suspend () -> D,
-  fe: suspend () -> E,
-  f: (A, B, C, D, E) -> F
-): F =
-  parMapN(
-    ctx,
-    suspend { parMapN(ctx, fa, fb, ::Pair) },
-    suspend { parMapN(ctx, fc, fd, ::Pair) },
-    fe
-  ) { ab, cd, e ->
-    val (a, b) = ab
-    val (c, d) = cd
-    f(a, b, c, d, e)
-  }
-
-suspend fun <A, B, C, D, E, F, G> parMapN(
-  ctx: CoroutineContext,
-  fa: suspend () -> A,
-  fb: suspend () -> B,
-  fc: suspend () -> C,
-  fd: suspend () -> D,
-  fe: suspend () -> E,
-  ff: suspend () -> F,
-  f: (A, B, C, D, E, F) -> G
-): G =
-  parMapN(
-    ctx,
-    suspend { parMapN(ctx, fa, fb, ::Pair) },
-    suspend { parMapN(ctx, fc, fd, ::Pair) },
-    suspend { parMapN(ctx, fe, ff, ::Pair) }
-  ) { ab, cd, ef ->
-    val (a, b) = ab
-    val (c, d) = cd
-    val (e, f) = ef
-    f(a, b, c, d, e, f)
-  }
+/**
+ * Runs [fa], [fb], [fc], [fd], [fe] in parallel on [ctx] and combines their results using the provided function.
+ *
+ * Coroutine context is inherited from a [CoroutineScope], additional context elements can be specified with [ctx] argument.
+ * If the combined context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
+ * **WARNING** If the combined context has a single threaded [ContinuationInterceptor], this function will not run [fa], [fb], [fc], [fd], [fe] & [ff]
+ * in parallel.
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.*
+ * import kotlinx.coroutines.Dispatchers
+ *
+ * suspend fun main(): Unit {
+ *   //sampleStart
+ *   val result = parMapN(
+ *     Dispatchers.IO,
+ *     { "First one is on ${Thread.currentThread().name}" },
+ *     { "Second one is on ${Thread.currentThread().name}" },
+ *     { "Third one is on ${Thread.currentThread().name}" }
+ *     { "Fourth one is on ${Thread.currentThread().name}" }
+ *     { "Fifth one is on ${Thread.currentThread().name}" }
+ *     { "Sixth one is on ${Thread.currentThread().name}" }
+ *   ) { a, b, c, d, e, f ->
+ *       "$a\n$b\n$c\n$d\n$e\n$f"
+ *     }
+ *   //sampleEnd
+ *  println(result)
+ * }
+ * ```
+ *
+ * @param fa value to parallel map
+ * @param fb value to parallel map
+ * @param fc value to parallel map
+ * @param fd value to parallel map
+ * @param fe value to parallel map
+ * @param f function to map/combine value [A], [B], [C], [D], and [E].
+ *
+ * @see parMapN for a function that ensures operations run in parallel on the [Dispatchers.Default].
+ */
+suspend inline fun <A, B, C, D, E, H, G> parMapN(
+  ctx: CoroutineContext = EmptyCoroutineContext,
+  crossinline fa: suspend () -> A,
+  crossinline fb: suspend () -> B,
+  crossinline fc: suspend () -> C,
+  crossinline fd: suspend () -> D,
+  crossinline fe: suspend () -> E,
+  crossinline fg: suspend () -> G,
+  crossinline f: suspend (A, B, C, D, E, G) -> H
+): H = coroutineScope {
+  val a = async(ctx) { fa() }
+  val b = async(ctx) { fb() }
+  val c = async(ctx) { fc() }
+  val d = async(ctx) { fd() }
+  val e = async(ctx) { fe() }
+  val g = async(ctx) { fg() }
+  f(a.await(), b.await(), c.await(), d.await(), e.await(), g.await())
+}

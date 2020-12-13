@@ -12,6 +12,7 @@ import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.Semaphore
 import arrow.fx.coroutines.evalOn
 import arrow.fx.coroutines.guaranteeCase
+import arrow.fx.coroutines.leftException
 import arrow.fx.coroutines.never
 import arrow.fx.coroutines.parMapN
 import arrow.fx.coroutines.single
@@ -19,10 +20,13 @@ import arrow.fx.coroutines.singleThreadName
 import arrow.fx.coroutines.suspend
 import arrow.fx.coroutines.threadName
 import arrow.fx.coroutines.throwable
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.element
 import io.kotest.property.arbitrary.int
+import io.kotest.property.arbitrary.next
 import io.kotest.property.arbitrary.string
 import java.util.concurrent.Executors
 
@@ -112,7 +116,7 @@ class ParMap6Test : ArrowFxSpec(spec = {
                 suspend { never<Nothing>() },
                 suspend { e.suspend() }) { _, _, _, _, _, _ -> Unit }
             }
-          } shouldBe Either.Left(e)
+          } should leftException(e)
           threadName() shouldBe singleThreadName
         }
       }
@@ -201,24 +205,46 @@ class ParMap6Test : ArrowFxSpec(spec = {
       s.acquireN(6) // Suspend until all racers started
       fork.cancel()
 
-      pa.get() shouldBe Pair(a, ExitCase.Cancelled)
-      pb.get() shouldBe Pair(b, ExitCase.Cancelled)
-      pc.get() shouldBe Pair(c, ExitCase.Cancelled)
-      pd.get() shouldBe Pair(d, ExitCase.Cancelled)
-      pe.get() shouldBe Pair(e, ExitCase.Cancelled)
-      pf.get() shouldBe Pair(f, ExitCase.Cancelled)
+      pa.get().let { (res, exit) ->
+        res shouldBe a
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pb.get().let { (res, exit) ->
+        res shouldBe b
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pc.get().let { (res, exit) ->
+        res shouldBe c
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pd.get().let { (res, exit) ->
+        res shouldBe d
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pe.get().let { (res, exit) ->
+        res shouldBe e
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pf.get().let { (res, exit) ->
+        res shouldBe f
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
     }
   }
 
   "parMapN 6 cancels losers if a failure occurs in one of the tasks" {
     checkAll(
       Arb.throwable(),
-      Arb.element(listOf(1, 2, 3, 4, 5, 6)),
-      Arb.int(),
-      Arb.int(),
-      Arb.int(),
-      Arb.int()
-    ) { e, winningTask, a, b, c, d ->
+      Arb.element(listOf(1, 2, 3, 4, 5, 6))
+    ) { e, winningTask ->
+
+      val intGen = Arb.int()
+      val a = intGen.next()
+      val b = intGen.next()
+      val c = intGen.next()
+      val d = intGen.next()
+      val f = intGen.next()
+
       val s = Semaphore(0L)
       val pa = Promise<Pair<Int, ExitCase>>()
       val pb = Promise<Pair<Int, ExitCase>>()
@@ -231,7 +257,7 @@ class ParMap6Test : ArrowFxSpec(spec = {
       val loserB = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
       val loserC = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pc.complete(Pair(c, ex)) } }
       val loserD = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pd.complete(Pair(d, ex)) } }
-      val loserF = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pf.complete(Pair(d, ex)) } }
+      val loserF = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pf.complete(Pair(f, ex)) } }
 
       val r = Either.catch {
         when (winningTask) {
@@ -244,12 +270,27 @@ class ParMap6Test : ArrowFxSpec(spec = {
         }
       }
 
-      pa.get() shouldBe Pair(a, ExitCase.Cancelled)
-      pb.get() shouldBe Pair(b, ExitCase.Cancelled)
-      pc.get() shouldBe Pair(c, ExitCase.Cancelled)
-      pd.get() shouldBe Pair(d, ExitCase.Cancelled)
-      pf.get() shouldBe Pair(d, ExitCase.Cancelled)
-      r shouldBe Either.Left(e)
+      pa.get().let { (res, exit) ->
+        res shouldBe a
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pb.get().let { (res, exit) ->
+        res shouldBe b
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pc.get().let { (res, exit) ->
+        res shouldBe c
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pd.get().let { (res, exit) ->
+        res shouldBe d
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pf.get().let { (res, exit) ->
+        res shouldBe f
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      r should leftException(e)
     }
   }
 })
