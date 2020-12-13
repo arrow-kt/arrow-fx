@@ -173,7 +173,7 @@ suspend inline fun <A, B, C, D> parMapN(
  *   val result = parMapN(
  *     { "First one is on ${Thread.currentThread().name}" },
  *     { "Second one is on ${Thread.currentThread().name}" },
- *     { "Third one is on ${Thread.currentThread().name}" }
+ *     { "Third one is on ${Thread.currentThread().name}" },
  *     { "Fourth one is on ${Thread.currentThread().name}" }
  *   ) { a, b, c, d ->
  *       "$a\n$b\n$c\n$d"
@@ -217,7 +217,7 @@ suspend inline fun <A, B, C, D, E> parMapN(
  *     Dispatchers.IO,
  *     { "First one is on ${Thread.currentThread().name}" },
  *     { "Second one is on ${Thread.currentThread().name}" },
- *     { "Third one is on ${Thread.currentThread().name}" }
+ *     { "Third one is on ${Thread.currentThread().name}" },
  *     { "Fourth one is on ${Thread.currentThread().name}" }
  *   ) { a, b, c, d ->
  *       "$a\n$b\n$c\n$d"
@@ -262,8 +262,8 @@ suspend inline fun <A, B, C, D, E> parMapN(
  *   val result = parMapN(
  *     { "First one is on ${Thread.currentThread().name}" },
  *     { "Second one is on ${Thread.currentThread().name}" },
- *     { "Third one is on ${Thread.currentThread().name}" }
- *     { "Fourth one is on ${Thread.currentThread().name}" }
+ *     { "Third one is on ${Thread.currentThread().name}" },
+ *     { "Fourth one is on ${Thread.currentThread().name}" },
  *     { "Fifth one is on ${Thread.currentThread().name}" }
  *   ) { a, b, c, d, e ->
  *       "$a\n$b\n$c\n$d\n$e"
@@ -309,8 +309,8 @@ suspend inline fun <A, B, C, D, E, F> parMapN(
  *     Dispatchers.IO,
  *     { "First one is on ${Thread.currentThread().name}" },
  *     { "Second one is on ${Thread.currentThread().name}" },
- *     { "Third one is on ${Thread.currentThread().name}" }
- *     { "Fourth one is on ${Thread.currentThread().name}" }
+ *     { "Third one is on ${Thread.currentThread().name}" },
+ *     { "Fourth one is on ${Thread.currentThread().name}" },
  *     { "Fifth one is on ${Thread.currentThread().name}" }
  *   ) { a, b, c, d, e ->
  *       "$a\n$b\n$c\n$d\n$e"
@@ -358,9 +358,9 @@ suspend inline fun <A, B, C, D, E, F> parMapN(
  *   val result = parMapN(
  *     { "First one is on ${Thread.currentThread().name}" },
  *     { "Second one is on ${Thread.currentThread().name}" },
- *     { "Third one is on ${Thread.currentThread().name}" }
- *     { "Fourth one is on ${Thread.currentThread().name}" }
- *     { "Fifth one is on ${Thread.currentThread().name}" }
+ *     { "Third one is on ${Thread.currentThread().name}" },
+ *     { "Fourth one is on ${Thread.currentThread().name}" },
+ *     { "Fifth one is on ${Thread.currentThread().name}" },
  *     { "Sixth one is on ${Thread.currentThread().name}" }
  *   ) { a, b, c, d, e, g ->
  *       "$a\n$b\n$c\n$d\n$e\n$g"
@@ -408,9 +408,9 @@ suspend inline fun <A, B, C, D, E, G, H> parMapN(
  *     Dispatchers.IO,
  *     { "First one is on ${Thread.currentThread().name}" },
  *     { "Second one is on ${Thread.currentThread().name}" },
- *     { "Third one is on ${Thread.currentThread().name}" }
- *     { "Fourth one is on ${Thread.currentThread().name}" }
- *     { "Fifth one is on ${Thread.currentThread().name}" }
+ *     { "Third one is on ${Thread.currentThread().name}" },
+ *     { "Fourth one is on ${Thread.currentThread().name}" },
+ *     { "Fifth one is on ${Thread.currentThread().name}" },
  *     { "Sixth one is on ${Thread.currentThread().name}" }
  *   ) { a, b, c, d, e, g ->
  *       "$a\n$b\n$c\n$d\n$e\n$g"
