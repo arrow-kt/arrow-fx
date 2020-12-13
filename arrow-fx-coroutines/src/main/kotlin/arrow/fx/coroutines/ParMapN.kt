@@ -278,7 +278,7 @@ suspend inline fun <A, B, C, D, E> parMapN(
  * @param fc value to parallel map
  * @param fd value to parallel map
  * @param fe value to parallel map
- * @param f function to map/combine value [A], [B], [C] [D] and [E]
+ * @param f function to map/combine value [A], [B], [C], [D] and [E]
  *
  * @see parMapN for a function that can run on any [CoroutineContext].
  */
@@ -347,7 +347,7 @@ suspend inline fun <A, B, C, D, E, F> parMapN(
 }
 
 /**
- * Runs [fa], [fb], [fc], [fd], [fe], [ff] in parallel on [Dispatchers.Default] and combines
+ * Runs [fa], [fb], [fc], [fd], [fe], [fg] in parallel on [Dispatchers.Default] and combines
  * their results using the provided function.
  *
  * ```kotlin:ank:playground
@@ -362,8 +362,8 @@ suspend inline fun <A, B, C, D, E, F> parMapN(
  *     { "Fourth one is on ${Thread.currentThread().name}" }
  *     { "Fifth one is on ${Thread.currentThread().name}" }
  *     { "Sixth one is on ${Thread.currentThread().name}" }
- *   ) { a, b, c, d, e, f ->
- *       "$a\n$b\n$c\n$d\n$e\n$f"
+ *   ) { a, b, c, d, e, g ->
+ *       "$a\n$b\n$c\n$d\n$e\n$g"
  *     }
  *   //sampleEnd
  *  println(result)
@@ -375,8 +375,8 @@ suspend inline fun <A, B, C, D, E, F> parMapN(
  * @param fc value to parallel map
  * @param fd value to parallel map
  * @param fe value to parallel map
- * @param ff value to parallel map
- * @param f function to map/combine value [A], [B], [C] [D], [E] and [F]
+ * @param fg value to parallel map
+ * @param f function to map/combine value [A], [B], [C], [D], [E] and [G]
  *
  * @see parMapN for a function that can run on any [CoroutineContext].
  */
@@ -391,11 +391,11 @@ suspend inline fun <A, B, C, D, E, G, H> parMapN(
 ): H = parMapN(Dispatchers.Default, fa, fb, fc, fd, fe, fg, f)
 
 /**
- * Runs [fa], [fb], [fc], [fd], [fe] in parallel on [ctx] and combines their results using the provided function.
+ * Runs [fa], [fb], [fc], [fd], [fe], [fg] in parallel on [ctx] and combines their results using the provided function.
  *
  * Coroutine context is inherited from a [CoroutineScope], additional context elements can be specified with [ctx] argument.
  * If the combined context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
- * **WARNING** If the combined context has a single threaded [ContinuationInterceptor], this function will not run [fa], [fb], [fc], [fd], [fe] & [ff]
+ * **WARNING** If the combined context has a single threaded [ContinuationInterceptor], this function will not run [fa], [fb], [fc], [fd], [fe] & [fg]
  * in parallel.
  *
  * ```kotlin:ank:playground
@@ -412,8 +412,8 @@ suspend inline fun <A, B, C, D, E, G, H> parMapN(
  *     { "Fourth one is on ${Thread.currentThread().name}" }
  *     { "Fifth one is on ${Thread.currentThread().name}" }
  *     { "Sixth one is on ${Thread.currentThread().name}" }
- *   ) { a, b, c, d, e, f ->
- *       "$a\n$b\n$c\n$d\n$e\n$f"
+ *   ) { a, b, c, d, e, g ->
+ *       "$a\n$b\n$c\n$d\n$e\n$g"
  *     }
  *   //sampleEnd
  *  println(result)
@@ -425,7 +425,8 @@ suspend inline fun <A, B, C, D, E, G, H> parMapN(
  * @param fc value to parallel map
  * @param fd value to parallel map
  * @param fe value to parallel map
- * @param f function to map/combine value [A], [B], [C], [D], and [E].
+ * @param fg value to parallel map
+ * @param f function to map/combine value [A], [B], [C], [D], [E] and [G]
  *
  * @see parMapN for a function that ensures operations run in parallel on the [Dispatchers.Default].
  */
