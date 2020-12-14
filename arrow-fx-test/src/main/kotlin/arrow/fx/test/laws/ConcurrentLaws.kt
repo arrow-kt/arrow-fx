@@ -684,7 +684,7 @@ object ConcurrentLaws {
           promiseA.get().bracket(use = { promiseC.complete(Unit) }, release = { unit() }),
           promiseB.get().followedBy(promiseA.complete(Unit)).bracket(use = { unit() }, release = { unit() }),
           promiseB.complete(Unit).followedBy(promiseC.get()).bracket(use = { unit() }, release = { unit() })
-        )).parTraverse(ListK.traverse(), ::identity).unit()
+        )).parTraverse(ListK.traverse(), ::identity).void()
       }.equalUnderTheLaw(unit(), EQ)
     }
 
@@ -695,7 +695,7 @@ object ConcurrentLaws {
       (10 downTo 0).toList().k().parTraverse(ListK.traverse()) { i ->
           if (i == killOn) raiseError(TestError)
           else unit()
-        }.unit().attempt()
+        }.void().attempt()
         .map { it shouldBe Left(TestError) }
         .equalUnderTheLaw(unit(), EQ)
     }
@@ -710,7 +710,7 @@ object ConcurrentLaws {
           promiseA.get().bracket(use = { promiseC.complete(Unit) }, release = { unit() }),
           promiseB.get().followedBy(promiseA.complete(Unit)).bracket(use = { unit() }, release = { unit() }),
           promiseB.complete(Unit).followedBy(promiseC.get()).bracket(use = { unit() }, release = { unit() })
-        )).parSequence(ListK.traverse()).unit()
+        )).parSequence(ListK.traverse()).void()
       }.equalUnderTheLaw(unit(), EQ)
     }
 
