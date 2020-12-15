@@ -11,7 +11,6 @@ import io.kotest.property.arbitrary.long
 import io.kotest.property.checkAll
 import kotlinx.coroutines.test.runBlockingTest
 import kotlin.time.ExperimentalTime
-import kotlin.time.measureTimedValue
 
 @ExperimentalTime
 class BracketCaseTest : ArrowFxSpec(spec = {
