@@ -6,12 +6,18 @@ import arrow.core.identity
 import arrow.core.left
 import arrow.core.right
 import arrow.fx.coroutines.Schedule.ScheduleImpl
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
+import kotlin.coroutines.coroutineContext
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 import kotlin.random.Random
+import kotlin.time.Duration
+import kotlin.time.nanoseconds
+import kotlin.time.seconds
 
 /**
  * # Retrying and repeating effects
@@ -296,13 +302,13 @@ sealed class Schedule<Input, Output> {
    * Combines two schedules. Continues only when both continue and chooses the maximum delay.
    */
   infix fun <A : Input, B> and(other: Schedule<A, B>): Schedule<A, Pair<Output, B>> =
-    combineWith(other, { a, b -> a && b }, { a, b -> max(a.nanoseconds, b.nanoseconds).nanoseconds })
+    combineWith(other, { a, b -> a && b }, { a, b -> max(a.inNanoseconds, b.inNanoseconds).nanoseconds })
 
   /**
    * Combines two schedules. Continues if one continues and chooses the minimum delay.
    */
   infix fun <A : Input, B> or(other: Schedule<A, B>): Schedule<A, Pair<Output, B>> =
-    combineWith(other, { a, b -> a || b }, { a, b -> min(a.nanoseconds, b.nanoseconds).nanoseconds })
+    combineWith(other, { a, b -> a || b }, { a, b -> min(a.inNanoseconds, b.inNanoseconds).nanoseconds })
 
   /**
    * Combines two schedules with [and] but throws away the left schedule's result.
@@ -335,7 +341,7 @@ sealed class Schedule<Input, Output> {
   fun jittered(genRand: suspend () -> Double): Schedule<Input, Output> =
     modifyDelay { _, duration ->
       val n = genRand.invoke()
-      (duration.nanoseconds * n).roundToLong().nanoseconds
+      (duration.inNanoseconds * n).roundToLong().nanoseconds
     }
 
   fun jittered(): Schedule<Input, Output> =
@@ -469,7 +475,7 @@ sealed class Schedule<Input, Output> {
         ScheduleImpl(suspend { Pair(initialState.invoke(), other.initialState.invoke()) }) { i, s ->
           val dec1 = update(i.first, s.first)
           val dec2 = other.update(i.second, s.second)
-          dec1.combineWith(dec2, { a, b -> a && b }, { a, b -> max(a.nanoseconds, b.nanoseconds).nanoseconds })
+          dec1.combineWith(dec2, { a, b -> a && b }, { a, b -> max(a.inNanoseconds, b.inNanoseconds).nanoseconds })
         }
       }
 
@@ -547,7 +553,7 @@ sealed class Schedule<Input, Output> {
       if (other !is Decision<*, *>) false
       else cont == other.cont &&
         state == other.state &&
-        delay.nanoseconds == other.delay.nanoseconds &&
+        delay.inNanoseconds == other.delay.inNanoseconds &&
         finish.value() == other.finish.value()
 
     companion object {
@@ -769,13 +775,42 @@ suspend fun <A, B, C> repeatOrElseEither(
   var state: Any? = schedule.initialState.invoke()
 
   while (true) {
-    cancelBoundary()
+    /**
+     * Inserts a cancellable boundary.
+     *
+     * In a cancellable environment, we need to add mechanisms to react when cancellation is triggered.
+     * In a coroutine, a cancel boundary checks for the cancellation status; it does not allow the coroutine to keep executing in the case cancellation was triggered.
+     * It is useful, for example, to cancel the continuation of a loop, as shown in this code snippet:
+     *
+     * ```kotlin:ank:playground
+     * import arrow.fx.coroutines.*
+     *
+     * //sampleStart
+     * suspend fun forever(): Unit {
+     *   while(true) {
+     *     println("I am getting dizzy...")
+     *     cancelBoundary() // cancellable computation loop
+     *   }
+     * }
+     *
+     * suspend fun main(): Unit {
+     *   val fiber = ForkConnected {
+     *     guaranteeCase({ forever() }) { exitCase ->
+     *       println("forever finished with $exitCase")
+     *     }
+     *   }
+     *   sleep(10.milliseconds)
+     *   fiber.cancel()
+     * }
+     * ```
+     */
+    coroutineContext.ensureActive()
     try {
       val a = fa.invoke()
       val step = schedule.update(a, state)
       if (!step.cont) return Either.Right(step.finish.value())
       else {
-        sleep(step.delay)
+        delay(step.delay)
 
         // Set state before looping again
         last = { step.finish.value() }
@@ -822,14 +857,43 @@ suspend fun <A, B, C> retryOrElseEither(
   var state: Any? = schedule.initialState.invoke()
 
   while (true) {
-    cancelBoundary()
+    /**
+     * Inserts a cancellable boundary.
+     *
+     * In a cancellable environment, we need to add mechanisms to react when cancellation is triggered.
+     * In a coroutine, a cancel boundary checks for the cancellation status; it does not allow the coroutine to keep executing in the case cancellation was triggered.
+     * It is useful, for example, to cancel the continuation of a loop, as shown in this code snippet:
+     *
+     * ```kotlin:ank:playground
+     * import arrow.fx.coroutines.*
+     *
+     * //sampleStart
+     * suspend fun forever(): Unit {
+     *   while(true) {
+     *     println("I am getting dizzy...")
+     *     cancelBoundary() // cancellable computation loop
+     *   }
+     * }
+     *
+     * suspend fun main(): Unit {
+     *   val fiber = ForkConnected {
+     *     guaranteeCase({ forever() }) { exitCase ->
+     *       println("forever finished with $exitCase")
+     *     }
+     *   }
+     *   sleep(10.milliseconds)
+     *   fiber.cancel()
+     * }
+     * ```
+     */
+    coroutineContext.ensureActive()
     try {
       return Either.Right(fa.invoke())
     } catch (e: Throwable) {
       dec = schedule.update(e, state)
       state = dec.state
 
-      if (dec.cont) sleep(dec.delay)
+      if (dec.cont) delay(dec.delay)
       else return Either.Left(orElse(e.nonFatalOrThrow(), dec.finish.value()))
     }
   }

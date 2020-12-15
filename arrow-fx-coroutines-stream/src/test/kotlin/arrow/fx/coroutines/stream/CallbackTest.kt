@@ -8,16 +8,13 @@ import arrow.fx.coroutines.ForkConnected
 import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.Schedule
 import arrow.fx.coroutines.UnsafePromise
-import arrow.fx.coroutines.cancelBoundary
 import arrow.fx.coroutines.milliseconds
 import arrow.fx.coroutines.parTupledN
 import arrow.fx.coroutines.sleep
 import arrow.fx.coroutines.startCoroutineCancellable
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
-import io.kotest.property.arbitrary.int
-import io.kotest.property.arbitrary.list
-import io.kotest.property.arbitrary.map
+import kotlinx.coroutines.ensureActive
 
 class CallbackTest : StreamSpec(iterations = 250, spec = {
 
@@ -163,7 +160,36 @@ class CallbackTest : StreamSpec(iterations = 250, spec = {
         Stream.cancellable {
           latch.complete(Unit)
           start.get()
-          cancelBoundary()
+          /**
+           * Inserts a cancellable boundary.
+           *
+           * In a cancellable environment, we need to add mechanisms to react when cancellation is triggered.
+           * In a coroutine, a cancel boundary checks for the cancellation status; it does not allow the coroutine to keep executing in the case cancellation was triggered.
+           * It is useful, for example, to cancel the continuation of a loop, as shown in this code snippet:
+           *
+           * ```kotlin:ank:playground
+           * import arrow.fx.coroutines.*
+           *
+           * //sampleStart
+           * suspend fun forever(): Unit {
+           *   while(true) {
+           *     println("I am getting dizzy...")
+           *     cancelBoundary() // cancellable computation loop
+           *   }
+           * }
+           *
+           * suspend fun main(): Unit {
+           *   val fiber = ForkConnected {
+           *     guaranteeCase({ forever() }) { exitCase ->
+           *       println("forever finished with $exitCase")
+           *     }
+           *   }
+           *   sleep(10.milliseconds)
+           *   fiber.cancel()
+           * }
+           * ```
+           */
+          coroutineContext.ensureActive()
           emit(Unit)
           done.complete(i)
           CancelToken.unit
