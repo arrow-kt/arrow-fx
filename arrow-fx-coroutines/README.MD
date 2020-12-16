@@ -454,8 +454,8 @@ So how do we start a Coroutine with `SuspendConnection`, so we can start `suspen
 ```kotlin
 import arrow.fx.coroutines.CancelToken
 import arrow.fx.coroutines.SuspendConnection
-import arrow.fx.coroutines.seconds
-import arrow.fx.coroutines.sleep
+import kotlin.time.seconds
+import kotlinx.coroutines.delay
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.startCoroutine
 

@@ -9,6 +9,7 @@ import io.kotest.property.arbitrary.int
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.withContext
 import java.util.concurrent.locks.AbstractQueuedSynchronizer
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.Continuation
@@ -36,7 +37,7 @@ class EvalOnTests : ArrowFxSpec(spec = {
 
   "evalOn on the same context doesn't dispatch" {
     suspend fun onSameContext(): String =
-      evalOn(ComputationPool) {
+      withContext(ComputationPool) {
         Thread.currentThread().name
       }
 
@@ -51,7 +52,7 @@ class EvalOnTests : ArrowFxSpec(spec = {
 
   "evalOn on the same context doesn't intercept" {
     suspend fun onComputation(ctx: CoroutineContext): String =
-      evalOn(ctx) {
+      withContext(ctx) {
         Thread.currentThread().name
       }
 
@@ -69,7 +70,7 @@ class EvalOnTests : ArrowFxSpec(spec = {
 
   "evalOn on a different context with the same ContinuationInterceptor doesn't intercept" {
     suspend fun onComputation(ctx: CoroutineContext): String =
-      evalOn(ctx + CoroutineName("Different coroutine")) {
+      withContext(ctx + CoroutineName("Different coroutine")) {
         Thread.currentThread().name
       }
 
@@ -87,7 +88,7 @@ class EvalOnTests : ArrowFxSpec(spec = {
 
   "evalOn on a different context with a different ContinuationInterceptor does intercept" {
     suspend fun onComputation(): String =
-      evalOn(IOPool) {
+      withContext(IOPool) {
         Thread.currentThread().name
       }
 
@@ -105,7 +106,7 @@ class EvalOnTests : ArrowFxSpec(spec = {
   "immediate exception on KotlinX Dispatchers" {
     checkAll(Arb.int(), Arb.throwable()) { i, e ->
       val r = try {
-        evalOn<Int>(coroutineContext) {
+        withContext(coroutineContext) {
           throw e
         }
         fail("Should never reach this point")
@@ -137,7 +138,7 @@ class EvalOnTests : ArrowFxSpec(spec = {
   "immediate exception from wrapped KotlinX Dispatcher" {
     checkAll(Arb.int(), Arb.throwable()) { i, e ->
       val r = try {
-        evalOn<Int>(wrapperKotlinXDispatcher(coroutineContext)) {
+        withContext(wrapperKotlinXDispatcher(coroutineContext)) {
           throw e
         }
         fail("Should never reach this point")
@@ -169,7 +170,7 @@ class EvalOnTests : ArrowFxSpec(spec = {
   "immediate exception from Arrow Fx Pool" {
     checkAll(Arb.int(), Arb.throwable()) { i, e ->
       val r = try {
-        evalOn<Int>(IOPool) {
+        withContext(IOPool) {
           throw e
         }
         fail("Should never reach this point")

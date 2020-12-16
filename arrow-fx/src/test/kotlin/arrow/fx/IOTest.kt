@@ -14,8 +14,8 @@ import arrow.core.test.concurrency.SideEffect
 import arrow.core.test.laws.SemigroupKLaws
 import arrow.fx.IO.Companion.just
 import arrow.fx.coroutines.Environment
-import arrow.fx.coroutines.timeOutOrNull
-import arrow.fx.coroutines.seconds as cSeconds
+import kotlin.time.seconds as kSeconds
+import arrow.fx.typeclasses.seconds
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.applicative.applicative
 import arrow.fx.extensions.io.async.async
@@ -31,7 +31,6 @@ import arrow.fx.internal.parMap2
 import arrow.fx.internal.parMap3
 import arrow.fx.typeclasses.ExitCase
 import arrow.fx.typeclasses.milliseconds
-import arrow.fx.typeclasses.seconds
 import arrow.fx.test.eq.eqK
 import arrow.fx.test.generators.genK
 import arrow.fx.test.laws.ConcurrentLaws
@@ -40,10 +39,14 @@ import io.kotlintest.matchers.types.shouldBeInstanceOf
 import io.kotlintest.properties.Gen
 import io.kotlintest.shouldBe
 import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.newSingleThreadContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.time.ExperimentalTime
 
+@ExperimentalTime
 @kotlinx.coroutines.ObsoleteCoroutinesApi
 class IOTest : ArrowFxSpec() {
 
@@ -791,9 +794,9 @@ class IOTest : ArrowFxSpec() {
           use = { IO.never }
         ).suspended()
       }
-      arrow.fx.coroutines.sleep(2.cSeconds)
+      delay(2.kSeconds)
       disp.invoke()
-      timeOutOrNull(5.cSeconds) { p.get() } shouldBe ExitCase.Cancelled
+      withTimeoutOrNull(5.kSeconds) { p.get() } shouldBe ExitCase.Cancelled
     }
   }
 }

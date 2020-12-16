@@ -8,9 +8,9 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
-import kotlin.coroutines.intrinsics.intercepted
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
+import kotlin.coroutines.intrinsics.intercepted
+import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 
 typealias RacePair<A, B> = Either<Pair<A, Fiber<B>>, Pair<Fiber<A>, B>>
 

@@ -3,11 +3,8 @@ package arrow.fx.stm
 import arrow.fx.coroutines.ArrowFxSpec
 import arrow.fx.coroutines.Fiber
 import arrow.fx.coroutines.ForkConnected
-import arrow.fx.coroutines.microseconds
-import arrow.fx.coroutines.milliseconds
 import arrow.fx.coroutines.parMapN
 import arrow.fx.coroutines.parTraverse
-import arrow.fx.coroutines.sleep
 import arrow.fx.coroutines.timeOutOrNull
 import arrow.fx.stm.internal.BlockedIndefinitely
 import io.kotest.assertions.throwables.shouldThrow
@@ -17,6 +14,8 @@ import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.bool
 import io.kotest.property.arbitrary.int
+import kotlinx.coroutines.delay
+import kotlin.time.milliseconds
 
 class STMTest : ArrowFxSpec(spec = {
   "no-effects" {
@@ -85,7 +84,7 @@ class STMTest : ArrowFxSpec(spec = {
   "a suspended transaction will resume if a variable changes" {
     val tv = TVar.new(0)
     val f = ForkConnected {
-      sleep(500.milliseconds)
+      delay(500.milliseconds)
       atomically { tv.modify { it + 1 } }
     }
     atomically {
@@ -101,11 +100,11 @@ class STMTest : ArrowFxSpec(spec = {
     val v2 = TVar.new(0)
     val v3 = TVar.new(0)
     val f = ForkConnected {
-      sleep(500.milliseconds)
+      delay(500.milliseconds)
       atomically { v1.modify { it + 1 } }
-      sleep(500.milliseconds)
+      delay(500.milliseconds)
       atomically { v2.modify { it + 1 } }
-      sleep(500.milliseconds)
+      delay(500.milliseconds)
       atomically { v3.modify { it + 1 } }
     }
     atomically {
@@ -150,7 +149,7 @@ class STMTest : ArrowFxSpec(spec = {
     checkAll {
       val tv = TVar.new(0)
       val f = ForkConnected {
-        sleep(10.microseconds)
+        delay(10.milliseconds)
         atomically { tv.modify { it + 1 } }
       }
       atomically {
@@ -221,7 +220,7 @@ class STMTest : ArrowFxSpec(spec = {
         }
       }, {
         atomically { acc1.modify { it - 60 } }
-        sleep(20.milliseconds)
+        delay(20.milliseconds)
         atomically { acc1.modify { it + 60 } }
       }, { _, _ -> Unit })
       acc1.unsafeRead() shouldBeExactly 50

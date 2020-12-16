@@ -8,8 +8,8 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
-import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlin.coroutines.intrinsics.intercepted
+import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 
 sealed class RaceTriple<A, B, C> {
   data class First<A, B, C>(val winner: A, val fiberB: Fiber<B>, val fiberC: Fiber<C>) : RaceTriple<A, B, C>()

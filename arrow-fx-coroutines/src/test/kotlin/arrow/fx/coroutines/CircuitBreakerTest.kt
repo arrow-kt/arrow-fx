@@ -4,7 +4,12 @@ import arrow.core.Either
 import io.kotest.assertions.fail
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import java.lang.RuntimeException
+import kotlin.time.milliseconds
+import kotlin.time.minutes
 
 class CircuitBreakerTest : ArrowFxSpec(spec = {
 
@@ -18,7 +23,7 @@ class CircuitBreakerTest : ArrowFxSpec(spec = {
     val cb = CircuitBreaker.of(maxFailures = maxFailures, resetTimeout = resetTimeout)!!
     var effect = 0
     repeat(Schedule.recurs(10_000)) {
-      cb.protect { evalOn(ComputationPool) { effect += 1 } }
+      cb.protect { withContext(Dispatchers.Default) { effect += 1 } }
     }
     effect shouldBe 10_001
   }
@@ -107,7 +112,7 @@ class CircuitBreakerTest : ArrowFxSpec(spec = {
     }
 
     // After resetTimeout passes, CB should still be Open, and we should be able to reset to Closed.
-    sleep(resetTimeout + 10.milliseconds)
+    delay(resetTimeout + 10.milliseconds)
 
     when (val s = cb.state()) {
       is CircuitBreaker.State.Open -> {
@@ -186,7 +191,7 @@ class CircuitBreakerTest : ArrowFxSpec(spec = {
     }
 
     // After resetTimeout passes, CB should still be Open, and we should be able to reset to Closed.
-    sleep(resetTimeout + 10.milliseconds)
+    delay(resetTimeout + 10.milliseconds)
 
     when (val s = cb.state()) {
       is CircuitBreaker.State.Open -> {
@@ -265,7 +270,7 @@ fun <A> recurAndCollect(n: Int): Schedule<A, List<A>> =
 
 tailrec suspend fun stackSafeSuspend(cb: CircuitBreaker, n: Int, acc: Int): Int =
   if (n > 0) {
-    val s = cb.protect { evalOn(ComputationPool) { acc + 1 } }
+    val s = cb.protect { withContext(Dispatchers.Default) { acc + 1 } }
     stackSafeSuspend(cb, n - 1, s)
   } else acc
 

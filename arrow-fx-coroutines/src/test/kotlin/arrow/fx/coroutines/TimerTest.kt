@@ -13,6 +13,11 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CompletionHandlerException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
+import kotlin.time.milliseconds
+import kotlin.time.minutes
+import kotlin.time.nanoseconds
 
 @OptIn(InternalCoroutinesApi::class)
 class TimerTest : ArrowFxSpec(spec = {
@@ -23,12 +28,12 @@ class TimerTest : ArrowFxSpec(spec = {
   suspend fun timeMilis(): Long =
     System.currentTimeMillis()
 
-  "sleep returns on the original context" {
+  "delay returns on the original context" {
     single.use { ctx ->
       checkAll(Arb.int()) {
-        evalOn(ctx) {
+        withContext(ctx) {
           val n0 = threadName.invoke()
-          sleep(10.milliseconds)
+          delay(10.milliseconds)
           val n = threadName.invoke()
 
           n0 shouldBe n
@@ -41,7 +46,7 @@ class TimerTest : ArrowFxSpec(spec = {
     "returns to original context without timing out" {
       Resource.singleThreadContext("1").zip(single).use { (one, single) ->
         checkAll {
-          evalOn(single) {
+          withContext(single) {
             val n0 = threadName.invoke()
 
             timeOutOrNull(1.minutes) {
@@ -59,7 +64,7 @@ class TimerTest : ArrowFxSpec(spec = {
     "returns to original context when timing out" {
       Resource.singleThreadContext("1").zip(single).use { (one, single) ->
         checkAll {
-          evalOn(single) {
+          withContext(single) {
             val n0 = threadName.invoke()
 
             timeOutOrNull(50.milliseconds) {
@@ -77,7 +82,7 @@ class TimerTest : ArrowFxSpec(spec = {
     "returns to original context on failure" {
       Resource.singleThreadContext("1").zip(single).use { (one, single) ->
         checkAll(Arb.throwable()) { e ->
-          evalOn(single) {
+          withContext(single) {
             val n0 = threadName.invoke()
 
             Either.catch {
@@ -101,7 +106,7 @@ class TimerTest : ArrowFxSpec(spec = {
           val handler = CoroutineExceptionHandler { _, e ->
             promised.complete(e)
           }
-          evalOn(single + handler) {
+          withContext(single + handler) {
             val n0 = threadName.invoke()
 
             Either.catch {
@@ -130,31 +135,31 @@ class TimerTest : ArrowFxSpec(spec = {
     checkAll(Arb.positiveInts(max = 50)) { i ->
       val length = i.toLong()
       val start = timeNano()
-      sleep(length.milliseconds)
+      delay(length.milliseconds)
       val end = timeNano()
       require((end - start) >= length) { "Expected (end - start) >= length but found ($end - $start) <= $length" }
     }
   }
 
-  "negative sleep should be immediate" {
+  "negative delay should be immediate" {
     checkAll(Arb.int(Int.MIN_VALUE, -1)) { i ->
       val start = timeNano()
-      sleep(i.nanoseconds)
+      delay(i.nanoseconds)
       val end = timeNano()
       require((start - end) <= 0L) { "Expected (end - start) <= 0L but found (${start - end}) <= 0L" }
     }
   }
 
-  "sleep can be cancelled" {
+  "delay can be cancelled" {
     checkAll(Arb.int(100, 500)) { d ->
-      assertCancellable { sleep(d.milliseconds) }
+      assertCancellable { delay(d.milliseconds) }
     }
   }
 
   "timeout can lose" {
     checkAll(Arb.int()) { i ->
       timeOutOrNull(1.milliseconds) {
-        sleep(100.milliseconds)
+        delay(100.milliseconds)
         i
       } shouldBe null
     }

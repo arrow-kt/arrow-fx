@@ -9,6 +9,7 @@ import io.kotest.property.arbitrary.map
 import io.kotest.property.arbitrary.positiveInts
 import io.kotest.property.arbitrary.string
 import io.kotest.property.checkAll
+import kotlin.time.milliseconds
 
 class SemaphoreTest : ArrowFxSpec(spec = {
 

@@ -8,6 +8,7 @@ import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.list
 import io.kotest.property.checkAll
+import kotlin.time.milliseconds
 
 class ParTraverseTest : ArrowFxSpec(spec = {
 

@@ -101,6 +101,8 @@ suspend fun main(): Unit {
 Once the function specifies a valid return, we can observe how the returned non-blocking value is bound on the left-hand side.
 
 ```kotlin:ank:playground
+import kotlin.time.milliseconds
+import kotlinx.coroutines.delay
 import arrow.fx.coroutines.*
 
 //sampleStart
@@ -108,7 +110,7 @@ suspend fun loser(): Unit =
   never<Unit>() // Never wins
 
 suspend fun winner(): Int {
-  sleep(5.milliseconds)
+  delay(5.milliseconds)
   return 5
 }
 
@@ -160,7 +162,7 @@ All operators found in Arrow Fx check for cancellation. In the small example of 
 ```kotlin:ank
 tailrec suspend fun sleeper(): Unit {
   println("I am sleepy. I'm going to nap")
-  sleep(1.seconds)                                     // <-- cancellation check-point
+  delay(1.seconds)                                     // <-- cancellation check-point
   println("1 second nap.. Going to sleep some more")
   sleeper()
 }
@@ -198,7 +200,7 @@ So how can you execute of `suspend fun` with guarantee that it cannot be cancell
 
 ```kotlin:ank
 suspend fun uncancellableSleep(duration: Duration): Unit =
-  uncancellable { sleep(duration) }
+  uncancellable { delay(duration) }
 ```
 
 If we now re-implement our previous `sleeper`, than it will behave a little different from before. The cancellation check before and after `uncancellableSleep` but note that the `sleep` istelf will not be cancelled.
@@ -221,7 +223,7 @@ import arrow.fx.coroutines.*
 
 suspend fun main(): Unit {
   val r = timeOutOrNull(1.seconds) {
-    uncancellable { sleep(2.seconds) }
+    uncancellable { delay(2.seconds) }
   } // r is null, but took 2 seconds.
 }
 ```

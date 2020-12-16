@@ -5,7 +5,6 @@ import arrow.core.Eval
 import io.kotest.assertions.fail
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import java.util.concurrent.TimeUnit
 import kotlin.math.pow
 import kotlin.time.milliseconds
 import kotlin.time.nanoseconds
@@ -123,10 +122,10 @@ class ScheduleTest : ArrowFxSpec(spec = {
   "Schedule.fibonacci()" {
     val i = 10L
     val n = 10
-    val res = Schedule.fibonacci<Any?>(i.seconds).calculateSchedule(0, n)
+    val res = Schedule.fibonacci<Any?>(i.milliseconds).calculateSchedule(0, n)
 
     val sum = res.fold(0L) { acc, v ->
-      acc + v.delay.toLongSeconds
+      acc + v.delay.toLongMilliseconds()
     }
     val fib = fibs(i).drop(1).take(n)
 
@@ -137,9 +136,9 @@ class ScheduleTest : ArrowFxSpec(spec = {
   "Schedule.linear()" {
     val i = 10L
     val n = 10
-    val res = Schedule.linear<Any?>(i.seconds).calculateSchedule(0, n)
+    val res = Schedule.linear<Any?>(i.milliseconds).calculateSchedule(0, n)
 
-    val sum = res.fold(0L) { acc, v -> acc + v.delay.toLongSeconds }
+    val sum = res.fold(0L) { acc, v -> acc + v.delay.toLongMilliseconds()}
     val exp = linear(i).drop(1).take(n)
 
     res.all { it.cont } shouldBe true
@@ -149,9 +148,9 @@ class ScheduleTest : ArrowFxSpec(spec = {
   "Schedule.exponential()" {
     val i = 10L
     val n = 10
-    val res = Schedule.exponential<Any?>(i.seconds).calculateSchedule(0, n)
+    val res = Schedule.exponential<Any?>(i.milliseconds).calculateSchedule(0, n)
 
-    val sum = res.fold(0L) { acc, v -> acc + v.delay.toLongSeconds }
+    val sum = res.fold(0L) { acc, v -> acc + v.delay.toLongMilliseconds() }
     val expSum = exp(i).drop(1).take(n).sum()
 
     res.all { it.cont } shouldBe true
@@ -273,6 +272,3 @@ private infix fun <A> Schedule.Decision<Any?, A>.eqv(other: Schedule.Decision<An
     require(lh == rh) { "Decision#cont: $lh shouldBe $rh" }
   }
 }
-
-private val kotlin.time.Duration.toLongSeconds: Long
-  get() = toLong(TimeUnit.SECONDS)

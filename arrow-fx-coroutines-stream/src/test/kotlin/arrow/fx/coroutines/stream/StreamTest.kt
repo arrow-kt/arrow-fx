@@ -6,7 +6,7 @@ import arrow.core.extensions.list.foldable.combineAll
 import arrow.core.extensions.list.foldable.foldMap
 import arrow.core.extensions.monoid
 import arrow.core.extensions.semigroup
-import arrow.fx.coroutines.milliseconds
+import kotlin.time.milliseconds
 import arrow.fx.coroutines.timeOutOrNull
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb

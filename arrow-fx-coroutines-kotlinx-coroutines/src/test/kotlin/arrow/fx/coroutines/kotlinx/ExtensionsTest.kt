@@ -4,7 +4,6 @@ import arrow.fx.coroutines.AtomicRefW
 import arrow.fx.coroutines.CancelToken
 import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.Promise
-import arrow.fx.coroutines.cancelBoundary
 import arrow.fx.coroutines.cancellable
 import arrow.fx.coroutines.cancellableF
 import arrow.fx.coroutines.guaranteeCase
@@ -32,7 +31,8 @@ import kotlinx.coroutines.test.TestCoroutineScope
 @Suppress("IMPLICIT_NOTHING_AS_TYPE_PARAMETER")
 class ExtensionsTest : StringSpec({
 
-
+  fun Arb.Companion.throwable(): Arb<Throwable> =
+    string().map(::RuntimeException)
 
   // --------------- suspendCancellable ---------------
 
@@ -44,97 +44,10 @@ class ExtensionsTest : StringSpec({
       scope.launch {
         suspendCancellable {
           val first = i + 1
-          /**
-           * Inserts a cancellable boundary.
-           *
-           * In a cancellable environment, we need to add mechanisms to react when cancellation is triggered.
-           * In a coroutine, a cancel boundary checks for the cancellation status; it does not allow the coroutine to keep executing in the case cancellation was triggered.
-           * It is useful, for example, to cancel the continuation of a loop, as shown in this code snippet:
-           *
-           * ```kotlin:ank:playground
-           * import arrow.fx.coroutines.*
-           *
-           * //sampleStart
-           * suspend fun forever(): Unit {
-           *   while(true) {
-           *     println("I am getting dizzy...")
-           *     cancelBoundary() // cancellable computation loop
-           *   }
-           * }
-           *
-           * suspend fun main(): Unit {
-           *   val fiber = ForkConnected {
-           *     guaranteeCase({ forever() }) { exitCase ->
-           *       println("forever finished with $exitCase")
-           *     }
-           *   }
-           *   sleep(10.milliseconds)
-           *   fiber.cancel()
-           * }
-           * ```
-           */
           coroutineContext.ensureActive()
           val second = first + 1
-          /**
-           * Inserts a cancellable boundary.
-           *
-           * In a cancellable environment, we need to add mechanisms to react when cancellation is triggered.
-           * In a coroutine, a cancel boundary checks for the cancellation status; it does not allow the coroutine to keep executing in the case cancellation was triggered.
-           * It is useful, for example, to cancel the continuation of a loop, as shown in this code snippet:
-           *
-           * ```kotlin:ank:playground
-           * import arrow.fx.coroutines.*
-           *
-           * //sampleStart
-           * suspend fun forever(): Unit {
-           *   while(true) {
-           *     println("I am getting dizzy...")
-           *     cancelBoundary() // cancellable computation loop
-           *   }
-           * }
-           *
-           * suspend fun main(): Unit {
-           *   val fiber = ForkConnected {
-           *     guaranteeCase({ forever() }) { exitCase ->
-           *       println("forever finished with $exitCase")
-           *     }
-           *   }
-           *   sleep(10.milliseconds)
-           *   fiber.cancel()
-           * }
-           * ```
-           */
           coroutineContext.ensureActive()
           val third = second + 1
-          /**
-           * Inserts a cancellable boundary.
-           *
-           * In a cancellable environment, we need to add mechanisms to react when cancellation is triggered.
-           * In a coroutine, a cancel boundary checks for the cancellation status; it does not allow the coroutine to keep executing in the case cancellation was triggered.
-           * It is useful, for example, to cancel the continuation of a loop, as shown in this code snippet:
-           *
-           * ```kotlin:ank:playground
-           * import arrow.fx.coroutines.*
-           *
-           * //sampleStart
-           * suspend fun forever(): Unit {
-           *   while(true) {
-           *     println("I am getting dizzy...")
-           *     cancelBoundary() // cancellable computation loop
-           *   }
-           * }
-           *
-           * suspend fun main(): Unit {
-           *   val fiber = ForkConnected {
-           *     guaranteeCase({ forever() }) { exitCase ->
-           *       println("forever finished with $exitCase")
-           *     }
-           *   }
-           *   sleep(10.milliseconds)
-           *   fiber.cancel()
-           * }
-           * ```
-           */
           coroutineContext.ensureActive()
           third
         } shouldBe i + 3
@@ -161,40 +74,11 @@ class ExtensionsTest : StringSpec({
   }
 
   "suspendCancellable doesn't start if scope already cancelled" {
-    checkAll(Arb.int(Int.MAX_VALUE..Int.MIN_VALUE)) { i ->
+    checkAll(Arb.int()) { i ->
       val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
       val ref = AtomicRefW<Int?>(i)
       scope.cancel()
       scope.launch {
-        /**
-         * Inserts a cancellable boundary.
-         *
-         * In a cancellable environment, we need to add mechanisms to react when cancellation is triggered.
-         * In a coroutine, a cancel boundary checks for the cancellation status; it does not allow the coroutine to keep executing in the case cancellation was triggered.
-         * It is useful, for example, to cancel the continuation of a loop, as shown in this code snippet:
-         *
-         * ```kotlin:ank:playground
-         * import arrow.fx.coroutines.*
-         *
-         * //sampleStart
-         * suspend fun forever(): Unit {
-         *   while(true) {
-         *     println("I am getting dizzy...")
-         *     cancelBoundary() // cancellable computation loop
-         *   }
-         * }
-         *
-         * suspend fun main(): Unit {
-         *   val fiber = ForkConnected {
-         *     guaranteeCase({ forever() }) { exitCase ->
-         *       println("forever finished with $exitCase")
-         *     }
-         *   }
-         *   sleep(10.milliseconds)
-         *   fiber.cancel()
-         * }
-         * ```
-         */
         coroutineContext.ensureActive()
         ref.value = null
       }
@@ -374,6 +258,3 @@ class ExtensionsTest : StringSpec({
     }
   }
 })
-
-private fun Arb.Companion.throwable(): Arb<Throwable> =
-  string().map(::RuntimeException)

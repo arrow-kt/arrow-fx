@@ -50,11 +50,13 @@ suspend fun <A> timeOutOrNull(duration: Duration, fa: suspend () -> A): A? =
  * Convenience function that returns the result of [fa] within the specified [duration] or returns null.
  *
  * ```kotlin:ank:playground
+ * import kotlin.time.seconds
+ * import kotlinx.coroutines.delay
  * import arrow.fx.coroutines.*
  *
  * suspend fun main(): Unit {
  *   timeOutOrNull(2.seconds) {
- *     sleep(5.seconds)
+ *     delay(5.seconds)
  *     "Message from lazy task"
  *   }.also(::println)
  *

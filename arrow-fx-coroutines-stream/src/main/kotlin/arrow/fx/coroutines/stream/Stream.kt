@@ -594,6 +594,8 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * Like [mapAccumulate], but accepts a function returning an suspend fun.
    *
    * ```kotlin:ank:playground
+   * import kotlin.time.milliseconds
+   * import kotlinx.coroutines.delay
    * import arrow.fx.coroutines.*
    * import arrow.fx.coroutines.stream.*
    *
@@ -601,7 +603,7 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * suspend fun main(): Unit =
    *   Stream(1,2,3,4)
    *     .effectMapAccumulate(0) { acc, i ->
-   *       sleep((i * 10).milliseconds)
+   *       delay(i * 10).milliseconds)
    *       Pair(i, acc + i)
    *     }
    *     .toList()

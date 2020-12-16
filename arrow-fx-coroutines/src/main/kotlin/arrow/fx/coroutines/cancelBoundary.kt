@@ -11,6 +11,7 @@ import kotlin.coroutines.coroutineContext
  * It is useful, for example, to cancel the continuation of a loop, as shown in this code snippet:
  *
  * ```kotlin:ank:playground
+ * import kotlin.time.Duration
  * import arrow.fx.coroutines.*
  *
  * //sampleStart
@@ -27,7 +28,7 @@ import kotlin.coroutines.coroutineContext
  *       println("forever finished with $exitCase")
  *     }
  *   }
- *   sleep(10.milliseconds)
+ *   delay(10.milliseconds)
  *   fiber.cancel()
  * }
  * ```

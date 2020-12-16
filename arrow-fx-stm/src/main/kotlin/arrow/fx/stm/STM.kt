@@ -96,8 +96,8 @@ import arrow.fx.stm.internal.lookupHamtWithHash
  * import arrow.fx.stm.STM
  * import arrow.fx.coroutines.Environment
  * import arrow.fx.coroutines.ForkConnected
- * import arrow.fx.coroutines.seconds
- * import arrow.fx.coroutines.sleep
+ * import kotlin.time.seconds
+ * import kotlinx.coroutines.delay
  *
  * //sampleStart
  * fun STM.transfer(from: TVar<Int>, to: TVar<Int>, amount: Int): Unit {

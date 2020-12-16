@@ -4,9 +4,9 @@ import arrow.core.Either
 import arrow.core.Left
 import arrow.core.Right
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.selects.select
 import kotlin.coroutines.ContinuationInterceptor

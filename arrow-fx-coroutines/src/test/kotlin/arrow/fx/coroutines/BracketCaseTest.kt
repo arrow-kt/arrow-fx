@@ -8,9 +8,10 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.long
-import io.kotest.property.checkAll
+import kotlinx.coroutines.delay
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
+import kotlin.time.milliseconds
 
 @ExperimentalTime
 class BracketCaseTest : ArrowFxSpec(spec = {
@@ -19,7 +20,7 @@ class BracketCaseTest : ArrowFxSpec(spec = {
     checkAll(Arb.long(50, 100), Arb.long(300, 400)) { a, b ->
       val (n, duration) = measureTimedValue {
         timeOutOrNull(a.milliseconds) {
-          uncancellable { sleep(b.milliseconds) }
+          uncancellable { delay(b.milliseconds) }
         }
       }
 

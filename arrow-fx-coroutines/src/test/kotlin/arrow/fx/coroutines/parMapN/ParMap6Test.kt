@@ -10,7 +10,6 @@ import arrow.fx.coroutines.NamedThreadFactory
 import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.Semaphore
-import arrow.fx.coroutines.evalOn
 import arrow.fx.coroutines.guaranteeCase
 import arrow.fx.coroutines.leftException
 import arrow.fx.coroutines.never
@@ -28,6 +27,7 @@ import io.kotest.property.arbitrary.element
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.next
 import io.kotest.property.arbitrary.string
+import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
 
 class ParMap6Test : ArrowFxSpec(spec = {
@@ -36,11 +36,12 @@ class ParMap6Test : ArrowFxSpec(spec = {
     val mapCtx = Resource.fromExecutor { Executors.newFixedThreadPool(6, NamedThreadFactory { mapCtxName }) }
     checkAll {
       single.zip(mapCtx).use { (_single, _mapCtx) ->
-        evalOn(_single) {
+        withContext(_single) {
           threadName() shouldBe singleThreadName
 
           val (s1, s2, s3, s4, s5, s6) = parMapN(
-            _mapCtx, threadName, threadName, threadName, threadName, threadName, threadName) { a, b, c, d, e, f ->
+            _mapCtx, threadName, threadName, threadName, threadName, threadName, threadName
+          ) { a, b, c, d, e, f ->
             Tuple6(a, b, c, d, e, f)
           }
 
@@ -62,7 +63,7 @@ class ParMap6Test : ArrowFxSpec(spec = {
 
     checkAll(Arb.int(1..6), Arb.throwable()) { choose, e ->
       single.zip(mapCtx).use { (_single, _mapCtx) ->
-        evalOn(_single) {
+        withContext(_single) {
           threadName() shouldBe singleThreadName
 
           Either.catch {
@@ -74,7 +75,7 @@ class ParMap6Test : ArrowFxSpec(spec = {
                 suspend { never<Nothing>() },
                 suspend { never<Nothing>() },
                 suspend { never<Nothing>() },
-                suspend { never<Nothing>() }) { _, _, _, _, _, _ -> Unit }
+                suspend { never<Nothing>() }) { _, _, _, _, _, _ -> }
               2 -> parMapN(
                 _mapCtx,
                 suspend { never<Nothing>() },
@@ -82,7 +83,7 @@ class ParMap6Test : ArrowFxSpec(spec = {
                 suspend { never<Nothing>() },
                 suspend { never<Nothing>() },
                 suspend { never<Nothing>() },
-                suspend { never<Nothing>() }) { _, _, _, _, _, _ -> Unit }
+                suspend { never<Nothing>() }) { _, _, _, _, _, _ -> }
               3 -> parMapN(
                 _mapCtx,
                 suspend { never<Nothing>() },
@@ -90,7 +91,7 @@ class ParMap6Test : ArrowFxSpec(spec = {
                 suspend { e.suspend() },
                 suspend { never<Nothing>() },
                 suspend { never<Nothing>() },
-                suspend { never<Nothing>() }) { _, _, _, _, _, _ -> Unit }
+                suspend { never<Nothing>() }) { _, _, _, _, _, _ -> }
               4 -> parMapN(
                 _mapCtx,
                 suspend { never<Nothing>() },
@@ -98,7 +99,7 @@ class ParMap6Test : ArrowFxSpec(spec = {
                 suspend { never<Nothing>() },
                 suspend { e.suspend() },
                 suspend { never<Nothing>() },
-                suspend { never<Nothing>() }) { _, _, _, _, _, _ -> Unit }
+                suspend { never<Nothing>() }) { _, _, _, _, _, _ -> }
               5 -> parMapN(
                 _mapCtx,
                 suspend { never<Nothing>() },
@@ -106,7 +107,7 @@ class ParMap6Test : ArrowFxSpec(spec = {
                 suspend { never<Nothing>() },
                 suspend { never<Nothing>() },
                 suspend { e.suspend() },
-                suspend { never<Nothing>() }) { _, _, _, _, _, _ -> Unit }
+                suspend { never<Nothing>() }) { _, _, _, _, _, _ -> }
               else -> parMapN(
                 _mapCtx,
                 suspend { never<Nothing>() },
@@ -114,7 +115,7 @@ class ParMap6Test : ArrowFxSpec(spec = {
                 suspend { never<Nothing>() },
                 suspend { never<Nothing>() },
                 suspend { never<Nothing>() },
-                suspend { e.suspend() }) { _, _, _, _, _, _ -> Unit }
+                suspend { e.suspend() }) { _, _, _, _, _, _ -> }
             }
           } should leftException(e)
           threadName() shouldBe singleThreadName

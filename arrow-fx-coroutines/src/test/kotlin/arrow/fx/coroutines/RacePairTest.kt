@@ -8,6 +8,7 @@ import io.kotest.property.Arb
 import io.kotest.property.arbitrary.bool
 import io.kotest.property.arbitrary.int
 import io.kotest.property.checkAll
+import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
 
 class RacePairTest : ArrowFxSpec(spec = {
@@ -18,7 +19,7 @@ class RacePairTest : ArrowFxSpec(spec = {
 
     checkAll(Arb.int(1..2)) { choose ->
       single.zip(racer).use { (single, raceCtx) ->
-        evalOn(single) {
+        withContext(single) {
           threadName() shouldBe singleThreadName
 
           val racedOn = when (choose) {
@@ -41,7 +42,7 @@ class RacePairTest : ArrowFxSpec(spec = {
 
     checkAll(Arb.int(1..2), Arb.throwable()) { choose, e ->
       single.zip(racer).use { (single, raceCtx) ->
-        evalOn(single) {
+        withContext(single) {
           threadName() shouldBe singleThreadName
 
           Either.catch {

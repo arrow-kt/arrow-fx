@@ -7,8 +7,8 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.suspendCoroutine
 import kotlin.coroutines.startCoroutine
+import kotlin.coroutines.suspendCoroutine
 
 /**
  * Creates a cancellable `suspend` function that executes an asynchronous process on evaluation.

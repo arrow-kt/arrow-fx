@@ -55,11 +55,13 @@ import kotlin.coroutines.coroutineContext
  * You can also use it to limit amount of parallel tasks, for example when using `parTraverse` we might want to limit how many tasks are running effectively in parallel.
  *
  * ```kotlin:ank:playground
+ * import kotlin.time.seconds
+ * import kotlinx.coroutines.delay
  * import arrow.fx.coroutines.*
  *
  * suspend fun heavyProcess(i: Int): Unit {
  *   println("Started job $i")
- *   sleep(250.milliseconds)
+ *   delay(250.milliseconds)
  *   println("Finished job $i")
  * }
  *
@@ -352,35 +354,6 @@ private class SemaphoreDefault(private val state: Atomic<SemaphoreState>) : Sema
 
         Pair(update, Pair(old, update))
       }
-      /**
-       * Inserts a cancellable boundary.
-       *
-       * In a cancellable environment, we need to add mechanisms to react when cancellation is triggered.
-       * In a coroutine, a cancel boundary checks for the cancellation status; it does not allow the coroutine to keep executing in the case cancellation was triggered.
-       * It is useful, for example, to cancel the continuation of a loop, as shown in this code snippet:
-       *
-       * ```kotlin:ank:playground
-       * import arrow.fx.coroutines.*
-       *
-       * //sampleStart
-       * suspend fun forever(): Unit {
-       *   while(true) {
-       *     println("I am getting dizzy...")
-       *     cancelBoundary() // cancellable computation loop
-       *   }
-       * }
-       *
-       * suspend fun main(): Unit {
-       *   val fiber = ForkConnected {
-       *     guaranteeCase({ forever() }) { exitCase ->
-       *       println("forever finished with $exitCase")
-       *     }
-       *   }
-       *   sleep(10.milliseconds)
-       *   fiber.cancel()
-       * }
-       * ```
-       */
       coroutineContext.ensureActive()
       when (now) {
         is Either.Left -> false

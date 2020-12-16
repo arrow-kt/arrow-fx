@@ -149,8 +149,8 @@ internal suspend fun signalResult(done: SignallingAtomic<Option<Option<Throwable
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.IOPool
- * import arrow.fx.coroutines.milliseconds
- * import arrow.fx.coroutines.sleep
+ * import kotlin.time.milliseconds
+ * import kotlinx.coroutines.delay
  * import arrow.fx.coroutines.stream.*
  *
  * //sampleStart

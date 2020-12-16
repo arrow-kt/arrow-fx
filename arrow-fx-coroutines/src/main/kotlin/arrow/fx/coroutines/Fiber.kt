@@ -46,6 +46,8 @@ internal fun <A> Fiber(promise: UnsafePromise<A>, conn: SuspendConnection): Fibe
  * If the caller of `ForkConnected` gets cancelled, then this [Fiber] will also get cancelled.
  *
  * ```kotlin:ank:playground
+ * import kotlin.time.seconds
+ * import kotlinx.coroutines.delay
  * import arrow.fx.coroutines.*
  *
  * suspend fun main(): Unit {
@@ -56,7 +58,7 @@ internal fun <A> Fiber(promise: UnsafePromise<A>, conn: SuspendConnection): Fibe
  *        }
  *     }
  *   }
- *   sleep(1.seconds)
+ *   delay(1.seconds)
  *   parent.cancel()
  * }
  * ```
@@ -98,18 +100,20 @@ suspend fun <A> (suspend () -> A).forkConnected(ctx: CoroutineContext = Computat
  * This function is meant to integrate with 3rd party cancellation system such as Android.
  *
  * ```kotlin:ank:playground
+ * import kotlin.time.seconds
+ * import kotlinx.coroutines.delay
  * import arrow.fx.coroutines.*
  *
  * tailrec suspend fun parallelProcess(): Unit {
  *   println(System.currentTimeMillis())
- *   sleep(1.seconds)
+ *   delay(1.seconds)
  *   parallelProcess()
  * }
  *
  * suspend fun main(): Unit {
  *   val switch = Promise<Unit>()
  *   val switcher = suspend {
- *     sleep(5.seconds)
+ *     delay(5.seconds)
  *     switch.complete(Unit)
  *   }
  *
