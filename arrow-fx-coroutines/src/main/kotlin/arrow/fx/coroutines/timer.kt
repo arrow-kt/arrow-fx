@@ -17,7 +17,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  * }
  * ```
  **/
-@Deprecated("Use delay", ReplaceWith("delay(duration.millis)", "kotlinx.coroutines.delay"), DeprecationLevel.ERROR)
+@Deprecated("Use delay", ReplaceWith("delay(duration.millis)", "kotlinx.coroutines.delay"))
 suspend fun sleep(duration: Duration): Unit =
   delay(duration.millis)
 
