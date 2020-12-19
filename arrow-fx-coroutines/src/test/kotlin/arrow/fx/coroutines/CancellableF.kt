@@ -40,17 +40,21 @@ class CancellableF : ArrowFxSpec(spec = {
 
   "cancelableF works for immediate values" {
     checkAll(Arb.either(Arb.throwable(), Arb.int())) { res ->
-      Either.catch {
+      val res = Either.catch {
         immediateValues(res)
-      } should either(res)
+      }
+      res.mapLeft { it.printStackTrace() }
+      res should either(res)
     }
   }
 
   "cancelableF works for async values" {
     checkAll(Arb.either(Arb.throwable(), Arb.int())) { res ->
-      Either.catch {
+      val res = Either.catch {
         asyncValues(res)
-      } should either(res)
+      }
+      res.mapLeft { it.printStackTrace() }
+      res should either(res)
     }
   }
 
