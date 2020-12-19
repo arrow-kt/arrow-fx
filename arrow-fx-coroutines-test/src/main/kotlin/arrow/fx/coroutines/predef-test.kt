@@ -31,7 +31,6 @@ import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlin.coroutines.intrinsics.intercepted
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
 import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.startCoroutine
 
 data class SideEffect(var counter: Int = 0) {
@@ -168,26 +167,6 @@ suspend fun <A> A.suspend(): A =
   }
 
 fun <A> A.suspended(): suspend () -> A =
-  suspend { suspend() }
-
-suspend fun <A> Either<Throwable, A>.suspend(): A =
-  suspendCoroutineUninterceptedOrReturn { cont ->
-    suspend { this }.startCoroutine(Continuation(ComputationPool) {
-      it.fold(
-        {
-          it.fold(
-            { e -> cont.intercepted().resumeWithException(e) },
-            { a -> cont.intercepted().resume(a) }
-          )
-        },
-        { e -> cont.intercepted().resumeWithException(e) }
-      )
-    })
-
-    COROUTINE_SUSPENDED
-  }
-
-fun <A> Either<Throwable, A>.suspended(): suspend () -> A =
   suspend { suspend() }
 
 /**
