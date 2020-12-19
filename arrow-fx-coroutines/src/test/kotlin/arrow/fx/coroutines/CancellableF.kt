@@ -41,13 +41,7 @@ class CancellableF : ArrowFxSpec(spec = {
   "cancelableF works for immediate values" {
     checkAll(Arb.either(Arb.throwable(), Arb.int())) { res ->
       Either.catch {
-        cancellableF<Int> { cb ->
-          res.fold(
-            { e -> cb(Result.failure(e)) },
-            { i -> cb(Result.success(i)) }
-          )
-          CancelToken.unit
-        }
+        immediateValues(res)
       } should either(res)
     }
   }
@@ -55,14 +49,7 @@ class CancellableF : ArrowFxSpec(spec = {
   "cancelableF works for async values" {
     checkAll(Arb.either(Arb.throwable(), Arb.int())) { res ->
       Either.catch {
-        cancellableF<Int> { cb ->
-          val res = res.suspend()
-          res.fold(
-            { e -> cb(Result.failure(e)) },
-            { i -> cb(Result.success(i)) }
-          )
-          CancelToken.unit
-        }
+        asyncValues(res)
       } should either(res)
     }
   }
@@ -120,3 +107,22 @@ class CancellableF : ArrowFxSpec(spec = {
     }
   }
 })
+
+suspend fun immediateValues(e: Either<Throwable, Int>): Int =
+  cancellableF { cb ->
+    e.fold(
+      { e -> cb(Result.failure(e)) },
+      { i -> cb(Result.success(i)) }
+    )
+    CancelToken.unit
+  }
+
+suspend fun asyncValues(e: Either<Throwable, Int>): Int =
+  cancellableF { cb ->
+    val res = e.suspend()
+    res.fold(
+      { e -> cb(Result.failure(e)) },
+      { i -> cb(Result.success(i)) }
+    )
+    CancelToken.unit
+  }
