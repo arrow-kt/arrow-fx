@@ -100,19 +100,21 @@ suspend fun <E, A> Iterable<suspend () -> Validated<E, A>>.parSequenceEither(sem
  * Cancelling this operation cancels all running tasks.
  *
  * ```kotlin:ank:playground
+ * import arrow.core.*
  * import arrow.fx.coroutines.*
+ * import arrow.core.extensions.nonemptylist.semigroup.semigroup
  * import kotlinx.coroutines.Dispatchers
  *
- * typealias Task = suspend () -> Unit
+ * typealias Task = suspend () -> ValidatedNel<Throwable, Unit>
  *
  * suspend fun main(): Unit {
  *   //sampleStart
  *   fun getTask(id: Int): Task =
- *     suspend { println("Working on task $id on ${Thread.currentThread().name}") }
+ *     suspend { Validated.catchNel { println("Working on task $id on ${Thread.currentThread().name}") } }
  *
  *   val res = listOf(1, 2, 3)
  *     .map(::getTask)
- *     .parSequenceEither(Dispatchers.IO)
+ *     .parSequenceValidated(Dispatchers.IO, NonEmptyList.semigroup())
  *   //sampleEnd
  *   println(res)
  * }
@@ -148,6 +150,7 @@ suspend fun <E, A, B> Iterable<A>.parTraverseValidated(
  *
  * ```kotlin:ank:playground
  * import arrow.core.*
+ * import arrow.core.extensions.nonemptylist.semigroup.semigroup
  * import arrow.fx.coroutines.*
  * import kotlinx.coroutines.Dispatchers
  *
@@ -156,14 +159,18 @@ suspend fun <E, A, B> Iterable<A>.parTraverseValidated(
  *
  * suspend fun main(): Unit {
  *   //sampleStart
- *   suspend fun getUserById(id: Int): Either<Error, User> =
- *     if(id == 2) Error.left()
- *     else User(id, Thread.currentThread().name).right()
+ *   suspend fun getUserById(id: Int): ValidatedNel<Error, User> =
+ *     if(id % 2 == 0) Error.invalidNel()
+ *     else User(id, Thread.currentThread().name).validNel()
  *
- *   val res = listOf(1, 2, 3)
- *     .parTraverseValidated(Dispatchers.IO, ::getUserById)
+ *   val res = listOf(1, 3, 5)
+ *     .parTraverseValidated(Dispatchers.IO, NonEmptyList.semigroup(), ::getUserById)
+ *
+ *   val res2 = listOf(1, 2, 3, 4, 5)
+ *     .parTraverseValidated(Dispatchers.IO, NonEmptyList.semigroup(), ::getUserById)
  *  //sampleEnd
  *  println(res)
+ *  println(res2)
  * }
  * ```
  */

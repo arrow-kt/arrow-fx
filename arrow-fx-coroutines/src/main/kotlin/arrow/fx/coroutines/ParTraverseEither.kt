@@ -60,15 +60,17 @@ suspend fun <A, B> Iterable<suspend () -> Either<A, B>>.parSequenceEither(): Eit
  * Cancelling this operation cancels all running tasks.
  *
  * ```kotlin:ank:playground
+ * import arrow.core.*
  * import arrow.fx.coroutines.*
  * import kotlinx.coroutines.Dispatchers
  *
- * typealias Task = suspend () -> Unit
+ * object Error
+ * typealias Task = suspend () -> Either<Throwable, Unit>
  *
  * suspend fun main(): Unit {
  *   //sampleStart
  *   fun getTask(id: Int): Task =
- *     suspend { println("Working on task $id on ${Thread.currentThread().name}") }
+ *     suspend { Either.catch { println("Working on task $id on ${Thread.currentThread().name}") } }
  *
  *   val res = listOf(1, 2, 3)
  *     .map(::getTask)
@@ -152,13 +154,17 @@ suspend fun <A, B, E> Iterable<A>.parTraverseEither(
  * suspend fun main(): Unit {
  *   //sampleStart
  *   suspend fun getUserById(id: Int): Either<Error, User> =
- *     if(id == 2) Error.left()
+ *     if(id == 4) Error.left()
  *     else User(id, Thread.currentThread().name).right()
  *
  *   val res = listOf(1, 2, 3)
  *     .parTraverseEither(Dispatchers.IO, ::getUserById)
+ *
+ *   val res2 = listOf(1, 4, 2, 3)
+ *     .parTraverseEither(Dispatchers.IO, ::getUserById)
  *  //sampleEnd
  *  println(res)
+ *  println(res2)
  * }
  * ```
  */
