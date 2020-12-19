@@ -1,6 +1,7 @@
 package arrow.fx.coroutines
 
 import arrow.core.Either
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
@@ -47,7 +48,7 @@ class CancellableF : ArrowFxSpec(spec = {
           )
           CancelToken.unit
         }
-      } shouldBe res
+      } should either(res)
     }
   }
 
@@ -62,7 +63,7 @@ class CancellableF : ArrowFxSpec(spec = {
           )
           CancelToken.unit
         }
-      } shouldBe res
+      } should either(res)
     }
   }
 
