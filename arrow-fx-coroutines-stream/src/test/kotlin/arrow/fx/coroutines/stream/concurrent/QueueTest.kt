@@ -4,25 +4,25 @@ import arrow.core.Option
 import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.ForkConnected
 import arrow.fx.coroutines.Promise
-import arrow.fx.coroutines.stream.StreamSpec
-import kotlin.time.milliseconds
-import kotlin.time.seconds
-import kotlinx.coroutines.delay
 import arrow.fx.coroutines.stream.Stream
+import arrow.fx.coroutines.stream.StreamSpec
 import arrow.fx.coroutines.stream.append
 import arrow.fx.coroutines.stream.drain
 import arrow.fx.coroutines.stream.noneTerminate
 import arrow.fx.coroutines.stream.parJoinUnbounded
 import arrow.fx.coroutines.stream.terminateOnNone
 import arrow.fx.coroutines.stream.toList
-import arrow.fx.coroutines.timeOutOrNull
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.ints.shouldBeLessThan
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.positiveInts
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.max
+import kotlin.time.milliseconds
+import kotlin.time.seconds
 
 class QueueTest : StreamSpec(spec = {
 
@@ -185,7 +185,7 @@ class QueueTest : StreamSpec(spec = {
 
     "cancel" {
       val q = Queue.unbounded<Int>()
-      timeOutOrNull(100.milliseconds) {
+      withTimeoutOrNull(100.milliseconds) {
         q.dequeue1()
       } shouldBe null
       q.enqueue1(1)

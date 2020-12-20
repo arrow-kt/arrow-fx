@@ -5,7 +5,9 @@ import arrow.core.Eval
 import io.kotest.assertions.fail
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.pow
+import kotlin.time.Duration
 import kotlin.time.milliseconds
 import kotlin.time.nanoseconds
 import kotlin.time.seconds
@@ -24,15 +26,15 @@ class ScheduleTest : ArrowFxSpec(spec = {
   }
 
   "Schedule.unfold()" {
-    val dec = Schedule.unfold<Any?, Int>(0) { it + 1 }.calculateSchedule1(0)
+    val dec = Schedule.unfold<Number, Int>(0) { it + 1 }.calculateSchedule1(0)
     val expected = Schedule.Decision<Any?, Int>(true, 0.nanoseconds, 1, Eval.now(1))
 
     dec eqv expected
   }
 
   "Schedule.forever() == Schedule.unfold(0) { it + 1 }" {
-    val foreverDesc = Schedule.forever<Any?>().calculateSchedule1(0)
-    val unfoldDesc = Schedule.unfold<Any?, Int>(0) { it + 1 }.calculateSchedule1(0)
+    val foreverDesc = Schedule.forever<Number>().calculateSchedule1(0)
+    val unfoldDesc = Schedule.unfold<Number, Int>(0) { it + 1 }.calculateSchedule1(0)
 
     foreverDesc eqv unfoldDesc
   }
@@ -53,7 +55,7 @@ class ScheduleTest : ArrowFxSpec(spec = {
     val n = 500
     val res = Schedule.recurs<Int>(n).calculateSchedule(0, n + 1)
 
-    res.dropLast(1).map { it.delay.inNanoseconds } shouldBe res.dropLast(1).map { 0L }
+    res.dropLast(1).map { it.delay.inNanoseconds } shouldBe res.dropLast(1).map { 0.0 }
     res.dropLast(1).map { it.cont } shouldBe res.dropLast(1).map { true }
 
     res.last() eqv Schedule.Decision(false, 0.nanoseconds, n + 1, Eval.now(n + 1))
@@ -104,7 +106,7 @@ class ScheduleTest : ArrowFxSpec(spec = {
   }
 
   "Schedule.never() times out" {
-    timeOutOrNull(10.milliseconds) {
+    withTimeoutOrNull(10.milliseconds) {
       val a: Nothing = repeat(Schedule.never()) {
         1
       }
@@ -113,16 +115,16 @@ class ScheduleTest : ArrowFxSpec(spec = {
 
   "Schedule.spaced()" {
     val duration = 5.seconds
-    val res = Schedule.spaced<Any>(duration).calculateSchedule(0, 500)
+    val res = Schedule.spaced<Int>(duration).calculateSchedule(0, 500)
 
     res.map { it.cont } shouldBe res.map { true }
     res.map { it.delay.inNanoseconds } shouldBe res.map { duration.inNanoseconds }
   }
 
   "Schedule.fibonacci()" {
-    val i = 10L
-    val n = 10
-    val res = Schedule.fibonacci<Any?>(i.milliseconds).calculateSchedule(0, n)
+    val i: Long = 10L
+    val n: Int = 10
+    val res = Schedule.fibonacci<Int>(i.milliseconds).calculateSchedule(0, n)
 
     val sum = res.fold(0L) { acc, v ->
       acc + v.delay.toLongMilliseconds()
@@ -136,10 +138,10 @@ class ScheduleTest : ArrowFxSpec(spec = {
   "Schedule.linear()" {
     val i = 10L
     val n = 10
-    val res = Schedule.linear<Any?>(i.milliseconds).calculateSchedule(0, n)
+    val res: List<Schedule.Decision<Int?, Duration>> = Schedule.linear<Int>(i.milliseconds).calculateSchedule(0, n)
 
-    val sum = res.fold(0L) { acc, v -> acc + v.delay.toLongMilliseconds()}
-    val exp = linear(i).drop(1).take(n)
+    val sum: Long = res.fold(0L) { acc: Long, v: Schedule.Decision<Int?, Duration> -> acc + v.delay.toLongMilliseconds() }
+    val exp: Sequence<Long> = linear(i).drop(1).take(n)
 
     res.all { it.cont } shouldBe true
     sum shouldBe exp.sum()
@@ -148,7 +150,7 @@ class ScheduleTest : ArrowFxSpec(spec = {
   "Schedule.exponential()" {
     val i = 10L
     val n = 10
-    val res = Schedule.exponential<Any?>(i.milliseconds).calculateSchedule(0, n)
+    val res = Schedule.exponential<Int>(i.milliseconds).calculateSchedule(0, n)
 
     val sum = res.fold(0L) { acc, v -> acc + v.delay.toLongMilliseconds() }
     val expSum = exp(i).drop(1).take(n).sum()
@@ -229,7 +231,7 @@ private fun linear(base: Long): Sequence<Long> = generateSequence(Pair(base, 1L)
   Pair((base * n), (n + 1))
 }.map { it.first }
 
-private suspend fun <I, A> Schedule<I, A>.calculateSchedule1(input: I): Schedule.Decision<Any?, A> =
+private suspend inline fun <I, A> Schedule<I, A>.calculateSchedule1(input: I): Schedule.Decision<I?, A> =
   calculateSchedule(input, 1).first()
 
 /**
@@ -237,19 +239,22 @@ private suspend fun <I, A> Schedule<I, A>.calculateSchedule1(input: I): Schedule
  * This allows to calculate the resulting [Schedule.Decision] state and make assertions.
  */
 @Suppress("UNCHECKED_CAST")
-private suspend fun <I, A> Schedule<I, A>.calculateSchedule(input: I, n: Int): List<Schedule.Decision<Any?, A>> {
-  (this as Schedule.ScheduleImpl<Any?, I, A>)
+private suspend inline fun <I, A> Schedule<I, A>.calculateSchedule(
+  input: I,
+  n: Int
+): List<Schedule.Decision<I?, A>> {
+  (this as Schedule.ScheduleImpl<I?, I, A>)
   val state = initialState.invoke()
   return go(this, input, state, n, emptyList())
 }
 
 private tailrec suspend fun <I, A> go(
-  schedule: Schedule.ScheduleImpl<Any?, I, A>,
+  schedule: Schedule.ScheduleImpl<I?, I, A>,
   input: I,
-  s: Any?,
+  s: I?,
   rem: Int,
-  acc: List<Schedule.Decision<Any?, A>>
-): List<Schedule.Decision<Any?, A>> =
+  acc: List<Schedule.Decision<I?, A>>
+): List<Schedule.Decision<I?, A>> =
   if (rem <= 0) acc
   else {
     val res = schedule.update(input, s) // Calculate new decision

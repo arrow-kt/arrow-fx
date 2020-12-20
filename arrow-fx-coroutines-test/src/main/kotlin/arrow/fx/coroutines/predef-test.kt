@@ -19,6 +19,7 @@ import io.kotest.property.arbitrary.long
 import io.kotest.property.arbitrary.map
 import io.kotest.property.arbitrary.string
 import kotlinx.atomicfu.atomic
+import kotlinx.coroutines.Dispatchers
 import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 import java.io.PrintStream
@@ -151,7 +152,7 @@ fun <A> Result<A>.toEither(): Either<Throwable, A> =
 
 suspend fun Throwable.suspend(): Nothing =
   suspendCoroutineUninterceptedOrReturn { cont ->
-    suspend { throw this }.startCoroutine(Continuation(ComputationPool) {
+    suspend { throw this }.startCoroutine(Continuation(Dispatchers.Default) {
       cont.intercepted().resumeWith(it)
     })
 
@@ -160,7 +161,7 @@ suspend fun Throwable.suspend(): Nothing =
 
 suspend fun <A> A.suspend(): A =
   suspendCoroutineUninterceptedOrReturn { cont ->
-    suspend { this }.startCoroutine(Continuation(ComputationPool) {
+    suspend { this }.startCoroutine(Continuation(Dispatchers.Default) {
       cont.intercepted().resumeWith(it)
     })
 
@@ -172,7 +173,7 @@ fun <A> A.suspended(): suspend () -> A =
 
 suspend fun <A> Either<Throwable, A>.suspend(): A =
   suspendCoroutineUninterceptedOrReturn { cont ->
-    suspend { this }.startCoroutine(Continuation(ComputationPool) {
+    suspend { this }.startCoroutine(Continuation(Dispatchers.Default) {
       it.fold(
         {
           it.fold(

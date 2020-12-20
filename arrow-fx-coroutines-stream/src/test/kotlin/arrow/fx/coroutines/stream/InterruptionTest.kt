@@ -9,7 +9,6 @@ import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.guaranteeCase
 import arrow.fx.coroutines.guarantee
-import arrow.fx.coroutines.timeOutOrNull
 import arrow.fx.coroutines.Semaphore
 import arrow.fx.coroutines.ExitCase
 import kotlin.time.milliseconds
@@ -20,6 +19,7 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
+import kotlinx.coroutines.withTimeoutOrNull
 
 class InterruptionTest : StreamSpec(spec = {
   "can cancel a hung effect" - {
@@ -276,13 +276,13 @@ class InterruptionTest : StreamSpec(spec = {
   "interrupted effect is cancelled" - {
     val latch = Promise<Unit>()
 
-    timeOutOrNull(500.milliseconds) {
-      Stream.effect { guarantee({ latch.get() }) { latch.complete(Unit) } }
-        .interruptAfter(50.milliseconds)
-        .drain()
+    withTimeoutOrNull(500.milliseconds) {
+        Stream.effect { guarantee({ latch.get() }) { latch.complete(Unit) } }
+          .interruptAfter(50.milliseconds)
+          .drain()
 
-      latch.get()
-      true
+        latch.get()
+        true
     } shouldBe true
   }
 

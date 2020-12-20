@@ -1,18 +1,20 @@
 package arrow.fx.coroutines
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.startCoroutine
+import kotlinx.coroutines.delay
 
 /**
  * An [Environment] can run [suspend] programs using [startCoroutine] and [startCoroutineCancellable].
  *
  * An [Environment] runs on a certain [CoroutineContext] which is used to start the programs on.
- * Since coroutines always return where they were started, this [CoroutineContext] also defines where you return after operators like [sleep] or [evalOn].
+ * Since coroutines always return where they were started, this [CoroutineContext] also defines where you return after operators like [delay] or [evalOn].
  * Therefore it's advised to always run on [ComputationPool] which is the default setting.
  *
  * [Environment] also has an [asyncErrorHandler], which by default redirects to [Throwable.printStackTrace].
@@ -82,7 +84,7 @@ interface Environment {
   fun <A> unsafeRunAsyncCancellable(fa: suspend () -> A, e: (Throwable) -> Unit, a: (A) -> Unit): Disposable
 
   companion object {
-    operator fun invoke(ctx: CoroutineContext = ComputationPool): Environment =
+    operator fun invoke(ctx: CoroutineContext = Dispatchers.Default): Environment =
       DefaultEnvironment(ctx)
   }
 }

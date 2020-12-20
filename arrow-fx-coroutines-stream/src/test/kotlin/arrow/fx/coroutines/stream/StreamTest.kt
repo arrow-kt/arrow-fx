@@ -6,8 +6,6 @@ import arrow.core.extensions.list.foldable.combineAll
 import arrow.core.extensions.list.foldable.foldMap
 import arrow.core.extensions.monoid
 import arrow.core.extensions.semigroup
-import kotlin.time.milliseconds
-import arrow.fx.coroutines.timeOutOrNull
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
@@ -15,9 +13,11 @@ import io.kotest.property.arbitrary.list
 import io.kotest.property.arbitrary.orNull
 import io.kotest.property.arbitrary.positiveInts
 import io.kotest.property.arbitrary.set
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.random.Random
+import kotlin.time.milliseconds
 
 class StreamTest : StreamSpec(spec = {
   "constructors" - {
@@ -32,7 +32,7 @@ class StreamTest : StreamSpec(spec = {
     }
 
     "never() should timeout" {
-      timeOutOrNull(10.milliseconds) {
+      withTimeoutOrNull(10.milliseconds) {
         Stream.never<Int>().toList()
       } shouldBe null
     }

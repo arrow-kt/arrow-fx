@@ -9,7 +9,6 @@ import arrow.core.Option
 import arrow.core.Some
 import arrow.core.extensions.list.foldable.foldLeft
 import arrow.core.identity
-import arrow.fx.coroutines.ComputationPool
 import kotlin.time.Duration
 import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.Fiber
@@ -21,6 +20,7 @@ import arrow.fx.coroutines.guaranteeCase
 import arrow.fx.coroutines.stream.concurrent.Signal
 import arrow.typeclasses.Monoid
 import arrow.typeclasses.Semigroup
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import java.util.concurrent.TimeoutException
 import kotlin.coroutines.CoroutineContext
@@ -1307,7 +1307,7 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * //sampleEnd
    * ```
    */
-  fun <O2> concurrently(other: Stream<O2>, ctx: CoroutineContext = ComputationPool): Stream<O> =
+  fun <O2> concurrently(other: Stream<O2>, ctx: CoroutineContext = Dispatchers.Default): Stream<O> =
     effect { Pair(Promise<Unit>(), Promise<Either<Throwable, Unit>>()) }
       .flatMap { (interrupt, doneR) ->
         bracket(
@@ -1342,14 +1342,14 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
    * Merges both Streams into an Stream of A and B represented by Either<A, B>.
    * This operation is equivalent to a normal merge but for different types.
    */
-  fun <B> either(ctx: CoroutineContext = ComputationPool, other: Stream<B>): Stream<Either<O, B>> =
+  fun <B> either(ctx: CoroutineContext = Dispatchers.Default, other: Stream<B>): Stream<Either<O, B>> =
     Stream(this.map { Left(it) }, other.map { Right(it) })
       .parJoin(2, ctx)
 
   /**
    * Starts this stream and cancels it as finalization of the returned stream.
    */
-  fun spawn(ctx: CoroutineContext = ComputationPool): Stream<Fiber<Unit>> =
+  fun spawn(ctx: CoroutineContext = Dispatchers.Default): Stream<Fiber<Unit>> =
     supervise(ctx) { drain() }
 
   /**
@@ -1774,7 +1774,7 @@ inline fun <A> StreamOf<A>.fix(): Stream<A> =
     /**
      * Starts the supplied task and cancels it as finalization of the returned stream.
      */
-    fun <A> supervise(ctx: CoroutineContext = ComputationPool, fa: suspend () -> A): Stream<Fiber<A>> =
+    fun <A> supervise(ctx: CoroutineContext = Dispatchers.Default, fa: suspend () -> A): Stream<Fiber<A>> =
       bracket(acquire = { fa.forkAndForget(ctx) }, release = { it.cancel() })
 
     /**

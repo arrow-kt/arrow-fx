@@ -9,8 +9,8 @@ import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.long
 import kotlinx.coroutines.delay
-import io.kotest.property.checkAll
 import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
 
@@ -22,7 +22,7 @@ class BracketCaseTest : ArrowFxSpec(spec = {
       checkAll(Arb.long(50, 100), Arb.long(300, 400)) { a, b ->
         val start = currentTime
 
-        val n = timeOutOrNull(a.milliseconds) {
+        val n = withTimeoutOrNull(a.milliseconds) {
           uncancellable { delay(b.milliseconds) }
         }
 

@@ -5,7 +5,6 @@ import arrow.fx.coroutines.Fiber
 import arrow.fx.coroutines.ForkConnected
 import arrow.fx.coroutines.parMapN
 import arrow.fx.coroutines.parTraverse
-import arrow.fx.coroutines.timeOutOrNull
 import arrow.fx.stm.internal.BlockedIndefinitely
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.ints.shouldBeExactly
@@ -15,6 +14,7 @@ import io.kotest.property.Arb
 import io.kotest.property.arbitrary.bool
 import io.kotest.property.arbitrary.int
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.milliseconds
 
 class STMTest : ArrowFxSpec(spec = {
@@ -73,7 +73,7 @@ class STMTest : ArrowFxSpec(spec = {
     shouldThrow<BlockedIndefinitely> { atomically { retry() } }
   }
   "retry should suspend forever if no read variable changes" {
-    timeOutOrNull(500.milliseconds) {
+    withTimeoutOrNull(500.milliseconds) {
       val tv = TVar.new(0)
       atomically {
         if (tv.read() == 0) retry()
