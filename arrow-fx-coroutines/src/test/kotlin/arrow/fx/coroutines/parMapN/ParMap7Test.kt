@@ -3,7 +3,9 @@ package arrow.fx.coroutines.parMapN
 import arrow.core.Either
 import arrow.core.Tuple7
 import arrow.fx.coroutines.ArrowFxSpec
+import arrow.fx.coroutines.Atomic
 import arrow.fx.coroutines.ExitCase
+import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.NamedThreadFactory
 import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.Resource
@@ -136,8 +138,56 @@ class ParMap7Test : ArrowFxSpec(spec = {
     }
   }
 
-  "parMapN 7 runs in parallel".config(enabled = false) {
-    TODO("kotest supports up to 6 gen")
+  "parMapN 7 runs in parallel" {
+    checkAll(Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int()) { a, b, c, d, e, f, g ->
+      val r = Atomic("")
+      val modifyGate1 = Promise<Unit>()
+      val modifyGate2 = Promise<Unit>()
+      val modifyGate3 = Promise<Unit>()
+      val modifyGate4 = Promise<Unit>()
+      val modifyGate5 = Promise<Unit>()
+      val modifyGate6 = Promise<Unit>()
+
+      parMapN(
+        {
+          modifyGate2.get()
+          r.update { i -> "$i$a" }
+        },
+        {
+          modifyGate3.get()
+          r.update { i -> "$i$b" }
+          modifyGate2.complete(Unit)
+        },
+        {
+          modifyGate4.get()
+          r.update { i -> "$i$c" }
+          modifyGate3.complete(Unit)
+        },
+        {
+          modifyGate5.get()
+          r.update { i -> "$i$d" }
+          modifyGate4.complete(Unit)
+        },
+        {
+          modifyGate6.get()
+          r.update { i -> "$i$e" }
+          modifyGate5.complete(Unit)
+        },
+        {
+          modifyGate1.get()
+          r.update { i -> "$i$f" }
+          modifyGate6.complete(Unit)
+        },
+        {
+          r.set("$g")
+          modifyGate1.complete(Unit)
+        }
+      ) { _a, _b, _c, _d, _e, _f, _g ->
+        Tuple7(_a, _b, _c, _d, _e, _f, _g)
+      }
+
+      r.get() shouldBe "$g$f$e$d$c$b$a"
+    }
   }
 
   "parMapN 7 finishes on single thread" {
@@ -150,8 +200,61 @@ class ParMap7Test : ArrowFxSpec(spec = {
     }
   }
 
-  "Cancelling parMapN 7 cancels all participants".config(enabled = false) {
-    TODO("kotest supports up to 6 gen")
+  "Cancelling parMapN 7 cancels all participants" {
+    checkAll(Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int()) { a, b, c, d, e, f, g ->
+      val s = Semaphore(0L)
+      val pa = Promise<Pair<Int, ExitCase>>()
+      val pb = Promise<Pair<Int, ExitCase>>()
+      val pc = Promise<Pair<Int, ExitCase>>()
+      val pd = Promise<Pair<Int, ExitCase>>()
+      val pe = Promise<Pair<Int, ExitCase>>()
+      val pf = Promise<Pair<Int, ExitCase>>()
+      val pg = Promise<Pair<Int, ExitCase>>()
+
+      val loserA = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
+      val loserB = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
+      val loserC = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pc.complete(Pair(c, ex)) } }
+      val loserD = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pd.complete(Pair(d, ex)) } }
+      val loserE = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pe.complete(Pair(e, ex)) } }
+      val loserF = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pf.complete(Pair(f, ex)) } }
+      val loserG = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pg.complete(Pair(g, ex)) } }
+
+      val fork = ForkAndForget {
+        parMapN(loserA, loserB, loserC, loserD, loserE, loserF, loserG, ::Tuple7)
+      }
+
+      s.acquireN(7) // Suspend until all racers started
+      fork.cancel()
+
+      pa.get().let { (res, exit) ->
+        res shouldBe a
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pb.get().let { (res, exit) ->
+        res shouldBe b
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pc.get().let { (res, exit) ->
+        res shouldBe c
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pd.get().let { (res, exit) ->
+        res shouldBe d
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pe.get().let { (res, exit) ->
+        res shouldBe e
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pf.get().let { (res, exit) ->
+        res shouldBe f
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pg.get().let { (res, exit) ->
+        res shouldBe g
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+    }
   }
 
   "parMapN 7 cancels losers if a failure occurs in one of the tasks" {
