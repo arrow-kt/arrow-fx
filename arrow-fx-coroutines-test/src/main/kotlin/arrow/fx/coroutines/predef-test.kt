@@ -108,12 +108,6 @@ fun <A> catchSystemErrInto(outStream: OutputStream, thunk: () -> A): A {
 fun Arb.Companion.throwable(): Arb<Throwable> =
   Arb.string().map(::RuntimeException)
 
-fun <A> Arb.Companion.result(right: Arb<A>): Arb<Result<A>> {
-  val failure: Arb<Result<A>> = Arb.throwable().map { e -> Result.failure<A>(e) }
-  val success: Arb<Result<A>> = right.map { a -> Result.success(a) }
-  return Arb.choice(failure, success)
-}
-
 fun <L, R> Arb.Companion.either(left: Arb<L>, right: Arb<R>): Arb<Either<L, R>> {
   val failure: Arb<Either<L, R>> = left.map { l -> l.left() }
   val success: Arb<Either<L, R>> = right.map { r -> r.right() }

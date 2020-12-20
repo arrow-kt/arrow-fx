@@ -11,13 +11,16 @@ import kotlinx.coroutines.launch
 class CancellableF : ArrowFxSpec(spec = {
 
   "cancelable works for immediate values" {
-    checkAll(Arb.result(Arb.int())) { res ->
+    checkAll(Arb.either(Arb.throwable(), Arb.int())) { res ->
       Either.catch {
         cancellable<Int> { cb ->
-          cb(res)
+          res.fold(
+            { e -> cb(Result.failure(e)) },
+            { a -> cb(Result.success(a)) }
+          )
           CancelToken.unit
         }
-      } shouldBe res.toEither()
+      } should either(res)
     }
   }
 
@@ -43,7 +46,6 @@ class CancellableF : ArrowFxSpec(spec = {
       val res = Either.catch {
         immediateValues(res)
       }
-      res.mapLeft { it.printStackTrace() }
       res should either(res)
     }
   }
@@ -53,7 +55,6 @@ class CancellableF : ArrowFxSpec(spec = {
       val res = Either.catch {
         asyncValues(res)
       }
-      res.mapLeft { it.printStackTrace() }
       res should either(res)
     }
   }
