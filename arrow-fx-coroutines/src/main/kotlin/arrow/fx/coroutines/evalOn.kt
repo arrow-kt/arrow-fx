@@ -3,7 +3,7 @@ package arrow.fx.coroutines
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
-@Deprecated("Use withContext", replaceWith = ReplaceWith("withContext(ctx, block)", "kotlinx.coroutines.withContext"))
+@Deprecated("Use withContext", replaceWith = ReplaceWith("withContext<T>(ctx) { this@evalOn.invoke() }", "kotlinx.coroutines.withContext"))
 suspend fun <T> (suspend () -> T).evalOn(ctx: CoroutineContext): T =
   withContext<T>(ctx) { this@evalOn.invoke() }
 
