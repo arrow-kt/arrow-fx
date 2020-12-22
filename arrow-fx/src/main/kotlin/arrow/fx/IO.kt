@@ -66,8 +66,7 @@ typealias IOProc<A> = ((Either<Throwable, A>) -> Unit) -> Unit
 typealias IOProcF<A> = ((Either<Throwable, A>) -> Unit) -> IOOf<Unit>
 
 const val IODeprecation =
-  "The IO datatype will disappear in Arrow 0.13.0. All useful operations are offered directly over suspend functions by Arrow Fx Coroutines. https://arrow-kt.io/docs/fx/async/"
-
+  "The IO datatype and it's related type classes will disappear in Arrow 0.13.0. All useful operations are offered directly over suspend functions by Arrow Fx Coroutines. https://arrow-kt.io/docs/fx/async/"
 
 @Suppress("StringLiteralDuplication")
 @Deprecated(IODeprecation)
