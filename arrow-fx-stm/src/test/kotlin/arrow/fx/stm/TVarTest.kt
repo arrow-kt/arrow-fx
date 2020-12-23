@@ -1,7 +1,7 @@
 package arrow.fx.stm
 
 import arrow.fx.coroutines.ArrowFxSpec
-import arrow.fx.coroutines.milliseconds
+import kotlin.time.milliseconds
 import arrow.fx.coroutines.raceN
 import arrow.fx.stm.internal.STMFrame
 import io.kotest.matchers.ints.shouldBeExactly
@@ -27,14 +27,14 @@ class TVarTest : ArrowFxSpec(spec = {
 
     val sleepWon = CompletableDeferred<Unit>()
     val job1 = launch {
-      raceN(Dispatchers.IO, { delay(50.milliseconds.millis); sleepWon.complete(Unit) }, { tv.unsafeRead() })
+      raceN(Dispatchers.IO, { delay(50.milliseconds); sleepWon.complete(Unit) }, { tv.unsafeRead() })
         .fold({}, { throw IllegalStateException("Lock did not lock!") })
     }
     sleepWon.await()
 
     val sleepWon2 = CompletableDeferred<Unit>()
     val job2 = launch {
-      raceN(Dispatchers.IO, { delay(50.milliseconds.millis); sleepWon2.complete(Unit) }, { tv.lock(STMFrame()) })
+      raceN(Dispatchers.IO, { delay(50.milliseconds); sleepWon2.complete(Unit) }, { tv.lock(STMFrame()) })
         .fold({}, { throw IllegalStateException("Lock did not lock!") })
     }
     sleepWon2.await()
@@ -52,7 +52,7 @@ class TVarTest : ArrowFxSpec(spec = {
 
     val sleepWon = CompletableDeferred<Unit>()
     val job1 = launch {
-      raceN(Dispatchers.IO, { delay(50.milliseconds.millis); sleepWon.complete(Unit) }, { tv.unsafeRead() })
+      raceN(Dispatchers.IO, { delay(50.milliseconds); sleepWon.complete(Unit) }, { tv.unsafeRead() })
         .fold({}, { throw IllegalStateException("Lock did not lock!") })
     }
     sleepWon.await()
@@ -62,7 +62,7 @@ class TVarTest : ArrowFxSpec(spec = {
 
     val sleepWon2 = CompletableDeferred<Unit>()
     val job2 = launch {
-      raceN(Dispatchers.IO, { delay(50.milliseconds.millis); sleepWon2.complete(Unit) }, { tv.unsafeRead() })
+      raceN(Dispatchers.IO, { delay(50.milliseconds); sleepWon2.complete(Unit) }, { tv.unsafeRead() })
         .fold({}, { throw IllegalStateException("Lock did not lock!") })
     }
     sleepWon2.await()

@@ -3,6 +3,7 @@ package arrow.fx.coroutines
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.delay
+import kotlin.time.seconds
 
 class CancelBoundary : StringSpec({
 
@@ -24,6 +25,6 @@ class CancelBoundary : StringSpec({
     latch.get()
     f.cancel()
     exit.get().shouldBeInstanceOf<ExitCase.Cancelled>()
-    delay(1.seconds.millis)
+    delay(1.seconds)
   }
 })
