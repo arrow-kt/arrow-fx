@@ -40,10 +40,12 @@ import kotlin.random.Random
  * A more complex schedule
  *
  * ```kotlin:ank
+ * import kotlin.time.seconds
+ * import kotlin.time.milliseconds
  * import arrow.fx.coroutines.*
  *
  * fun <A> complexPolicy(): Schedule<A, List<A>> =
- *   Schedule.exponential<A>(10.milliseconds).whileOutput { it.nanoseconds < 60.seconds.nanoseconds }
+ *   Schedule.exponential<A>(10.milliseconds).whileOutput { it.inNanoseconds < 60.seconds.inNanoseconds }
  *     .andThen(Schedule.spaced<A>(60.seconds) and Schedule.recurs(100)).jittered()
  *     .zipRight(Schedule.identity<A>().collect())
  * ```
