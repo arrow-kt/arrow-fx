@@ -6,6 +6,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
 import io.kotest.property.checkAll
+import kotlinx.coroutines.delay
 
 class EnvironmentTest : StringSpec({
 
@@ -73,7 +74,7 @@ class EnvironmentTest : StringSpec({
   }
 
   tailrec suspend fun sleeper(): Unit {
-    sleep(1.milliseconds)
+    delay(1.milliseconds.millis)
     sleeper()
   }
 
