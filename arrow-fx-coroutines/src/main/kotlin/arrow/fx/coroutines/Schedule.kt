@@ -6,11 +6,13 @@ import arrow.core.identity
 import arrow.core.left
 import arrow.core.right
 import arrow.fx.coroutines.Schedule.ScheduleImpl
+import kotlinx.coroutines.delay
+import kotlin.time.Duration
+import kotlin.time.seconds
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
-import kotlin.math.roundToInt
-import kotlin.math.roundToLong
+import kotlin.time.nanoseconds
 import kotlin.random.Random
 
 /**
@@ -296,13 +298,13 @@ sealed class Schedule<Input, Output> {
    * Combines two schedules. Continues only when both continue and chooses the maximum delay.
    */
   infix fun <A : Input, B> and(other: Schedule<A, B>): Schedule<A, Pair<Output, B>> =
-    combineWith(other, { a, b -> a && b }, { a, b -> max(a.nanoseconds, b.nanoseconds).nanoseconds })
+    combineWith(other, { a, b -> a && b }, { a, b -> max(a.inNanoseconds, b.inNanoseconds).nanoseconds })
 
   /**
    * Combines two schedules. Continues if one continues and chooses the minimum delay.
    */
   infix fun <A : Input, B> or(other: Schedule<A, B>): Schedule<A, Pair<Output, B>> =
-    combineWith(other, { a, b -> a || b }, { a, b -> min(a.nanoseconds, b.nanoseconds).nanoseconds })
+    combineWith(other, { a, b -> a || b }, { a, b -> min(a.inNanoseconds, b.inNanoseconds).nanoseconds })
 
   /**
    * Combines two schedules with [and] but throws away the left schedule's result.
@@ -335,7 +337,7 @@ sealed class Schedule<Input, Output> {
   fun jittered(genRand: suspend () -> Double): Schedule<Input, Output> =
     modifyDelay { _, duration ->
       val n = genRand.invoke()
-      (duration.nanoseconds * n).roundToLong().nanoseconds
+      (duration.inNanoseconds * n).nanoseconds
     }
 
   fun jittered(): Schedule<Input, Output> =
@@ -429,7 +431,9 @@ sealed class Schedule<Input, Output> {
       updated { update ->
         { a: Input, s: State ->
           val step = update(a, s)
-          val d = f(step.finish.value(), step.delay)
+          val value = step.finish.value()
+          val del = step.delay
+          val d = f(value,del)
           step.copy(delay = d)
         }
       }
@@ -469,7 +473,7 @@ sealed class Schedule<Input, Output> {
         ScheduleImpl(suspend { Pair(initialState.invoke(), other.initialState.invoke()) }) { i, s ->
           val dec1 = update(i.first, s.first)
           val dec2 = other.update(i.second, s.second)
-          dec1.combineWith(dec2, { a, b -> a && b }, { a, b -> max(a.nanoseconds, b.nanoseconds).nanoseconds })
+          dec1.combineWith(dec2, { a, b -> a && b }, { a, b -> max(a.inNanoseconds, b.inNanoseconds).nanoseconds })
         }
       }
 
@@ -547,7 +551,7 @@ sealed class Schedule<Input, Output> {
       if (other !is Decision<*, *>) false
       else cont == other.cont &&
         state == other.state &&
-        delay.nanoseconds == other.delay.nanoseconds &&
+        delay.inNanoseconds == other.delay.inNanoseconds &&
         finish.value() == other.finish.value()
 
     companion object {
@@ -730,7 +734,7 @@ sealed class Schedule<Input, Output> {
      */
     fun <A> exponential(base: Duration, factor: Double = 2.0): Schedule<A, Duration> =
       delayed(
-        forever<A>().map { base * factor.pow(it).roundToInt() }
+        forever<A>().map { base * factor.pow(it) }
       )
   }
 }
@@ -775,7 +779,7 @@ suspend fun <A, B, C> repeatOrElseEither(
       val step = schedule.update(a, state)
       if (!step.cont) return Either.Right(step.finish.value())
       else {
-        sleep(step.delay)
+        delay(step.delay)
 
         // Set state before looping again
         last = { step.finish.value() }
@@ -829,7 +833,7 @@ suspend fun <A, B, C> retryOrElseEither(
       dec = schedule.update(e, state)
       state = dec.state
 
-      if (dec.cont) sleep(dec.delay)
+      if (dec.cont) delay(dec.delay)
       else return Either.Left(orElse(e.nonFatalOrThrow(), dec.finish.value()))
     }
   }

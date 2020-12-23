@@ -4,6 +4,7 @@ import arrow.core.Either
 import io.kotest.assertions.fail
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.delay
 import java.lang.RuntimeException
 
 class CircuitBreakerTest : ArrowFxSpec(spec = {
@@ -107,7 +108,7 @@ class CircuitBreakerTest : ArrowFxSpec(spec = {
     }
 
     // After resetTimeout passes, CB should still be Open, and we should be able to reset to Closed.
-    sleep(resetTimeout + 10.milliseconds)
+    delay((resetTimeout + 10.milliseconds).millis)
 
     when (val s = cb.state()) {
       is CircuitBreaker.State.Open -> {
@@ -186,7 +187,7 @@ class CircuitBreakerTest : ArrowFxSpec(spec = {
     }
 
     // After resetTimeout passes, CB should still be Open, and we should be able to reset to Closed.
-    sleep(resetTimeout + 10.milliseconds)
+    delay((resetTimeout + 10.milliseconds).millis)
 
     when (val s = cb.state()) {
       is CircuitBreaker.State.Open -> {
