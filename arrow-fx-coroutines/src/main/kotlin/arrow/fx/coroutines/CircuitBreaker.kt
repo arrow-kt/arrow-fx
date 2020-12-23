@@ -2,8 +2,11 @@ package arrow.fx.coroutines
 
 import arrow.core.Either
 import arrow.core.identity
+import kotlin.time.Duration
+import kotlin.time.nanoseconds
 import arrow.fx.coroutines.CircuitBreaker.State.Closed
 import arrow.fx.coroutines.CircuitBreaker.State.Open
+import kotlin.time.milliseconds
 
 class CircuitBreaker constructor(
   private val state: AtomicRefW<State>,
@@ -50,7 +53,7 @@ class CircuitBreaker constructor(
         markOrResetFailures(attempt)
       }
       is Open -> {
-        val now = System.currentTimeMillis()
+        val now = System.currentTimeMillis().milliseconds
         if (now >= curr.expiresAt) {
           // The Open state has expired, so we are letting just one
           // task to execute, while transitioning into HalfOpen
@@ -157,9 +160,9 @@ class CircuitBreaker constructor(
           }
           is ExitCase.Failure -> {
             // Failed reset, which means we go back in the Open state with new expiry val nextTimeout
-            val value = (resetTimeout.millis * exponentialBackoffFactor).toLong().milliseconds
-            val nextTimeout =
-              if (/*maxResetTimeout.isFinite &&*/ value.nanoseconds > maxResetTimeout.nanoseconds) maxResetTimeout
+            val value: Duration = (resetTimeout * exponentialBackoffFactor)
+            val nextTimeout: Duration =
+              if (/*maxResetTimeout.isFinite &&*/ value > maxResetTimeout) maxResetTimeout
               else value
             val ts = System.currentTimeMillis()
             state.value = Open(ts, nextTimeout, awaitClose)
@@ -335,7 +338,7 @@ class CircuitBreaker constructor(
        * It is calculated as:
        * `startedAt + resetTimeout.millis`
        */
-      val expiresAt: Long = startedAt + resetTimeout.millis
+      val expiresAt: Duration = startedAt.milliseconds + resetTimeout
 
       override fun equals(other: Any?): Boolean =
         if (other is Open) this.startedAt == startedAt &&
@@ -434,8 +437,8 @@ class CircuitBreaker constructor(
       onHalfOpen: suspend () -> Unit = suspend { Unit },
       onOpen: suspend () -> Unit = suspend { Unit }
     ): CircuitBreaker? =
-      if (maxFailures >= 0 && resetTimeout.amount > 0 &&
-        exponentialBackoffFactor > 0 && maxResetTimeout.amount > 0
+      if (maxFailures >= 0 && resetTimeout > 0.nanoseconds &&
+        exponentialBackoffFactor > 0 && maxResetTimeout > 0.nanoseconds
       ) {
         CircuitBreaker(
           state = AtomicRefW(Closed(0)),
