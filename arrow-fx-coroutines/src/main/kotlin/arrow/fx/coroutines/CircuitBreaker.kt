@@ -47,7 +47,7 @@ class CircuitBreaker constructor(
         } catch (e: Throwable) {
           Either.Left(e)
         }
-        markOrResetFailures(attempt)
+        markOrResetFailures(attempt).fold({throw it}, ::identity)
       }
       is Open -> {
         val now = System.currentTimeMillis()
@@ -78,19 +78,21 @@ class CircuitBreaker constructor(
       }
     }
 
+
+
   /** Function for counting failures in the `Closed` state,
    * triggering the `Open` state if necessary.
    */
-  private tailrec suspend fun <A> markOrResetFailures(result: Either<Throwable, A>): A =
+  private tailrec suspend fun <A> markOrResetFailures(result: Either<Throwable, A>): Either<Throwable, A> =
     when (val curr = state.value) {
       is Closed -> {
         when (result) {
           is Either.Right -> {
-            if (curr.failures == 0) result.b
+            if (curr.failures == 0) result
             else { // In case of success, must reset the failures counter!
               val update = Closed(0)
               if (!state.compareAndSet(curr, update)) markOrResetFailures(result) // retry?
-              else result.b
+              else result
             }
           }
           is Either.Left -> {
@@ -100,7 +102,7 @@ class CircuitBreaker constructor(
               // It's fine, just increment the failures count
               val update = Closed(curr.failures + 1)
               if (!state.compareAndSet(curr, update)) markOrResetFailures(result) // retry?
-              else throw result.a
+              else result
             } else {
               // N.B. this could be canceled, however we don't care
               val now = System.currentTimeMillis()
@@ -110,13 +112,13 @@ class CircuitBreaker constructor(
               if (!state.compareAndSet(curr, update)) markOrResetFailures(result) // retry
               else {
                 onOpen.invoke()
-                throw result.a
+                result
               }
             }
           }
         }
       }
-      else -> result.fold({ throw it }, ::identity)
+      else -> result
     }
 
   /** Internal function that is the handler for the reset attempt when
