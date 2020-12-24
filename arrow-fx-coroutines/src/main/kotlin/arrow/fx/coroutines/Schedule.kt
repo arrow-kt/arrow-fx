@@ -42,8 +42,10 @@ import kotlin.random.Random
  * ```kotlin:ank
  * import kotlin.time.seconds
  * import kotlin.time.milliseconds
+ * import kotlin.time.ExperimentalTime
  * import arrow.fx.coroutines.*
  *
+ * @ExperimentalTime
  * fun <A> complexPolicy(): Schedule<A, List<A>> =
  *   Schedule.exponential<A>(10.milliseconds).whileOutput { it.inNanoseconds < 60.seconds.inNanoseconds }
  *     .andThen(Schedule.spaced<A>(60.seconds) and Schedule.recurs(100)).jittered()
@@ -175,8 +177,11 @@ import kotlin.random.Random
  * A common algorithm to retry effectful operations, as network requests, is the exponential backoff algorithm. There is a scheduling policy that implements this algorithm and can be used as:
  *
  * ```kotlin:ank
+ * import kotlin.time.milliseconds
+ * import kotlin.time.ExperimentalTime
  * import arrow.fx.coroutines.*
  *
+ * @ExperimentalTime
  * val exponential = Schedule.exponential<Unit>(250.milliseconds)
  * ```
  */
@@ -435,7 +440,7 @@ sealed class Schedule<Input, Output> {
           val step = update(a, s)
           val value = step.finish.value()
           val del = step.delay
-          val d = f(value,del)
+          val d = f(value, del)
           step.copy(delay = d)
         }
       }
