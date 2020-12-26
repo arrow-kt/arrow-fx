@@ -2,7 +2,10 @@ package arrow.fx.coroutines
 
 import arrow.core.Either
 import arrow.core.identity
+import arrow.core.left
+import arrow.core.right
 import arrow.fx.coroutines.CircuitBreaker.State.Closed
+import arrow.fx.coroutines.CircuitBreaker.State.HalfOpen
 import arrow.fx.coroutines.CircuitBreaker.State.Open
 
 class CircuitBreaker constructor(
@@ -36,10 +39,26 @@ class CircuitBreaker constructor(
       is State.HalfOpen -> curr.awaitClose.get()
     }
 
-  /** Returns a new task that upon execution will execute the given
+  /**
+   * Returns a new task that upon execution will execute the given
    * task, but with the protection of this circuit breaker.
    */
-  tailrec suspend fun <A> protect(fa: suspend () -> A): A =
+  @Deprecated("#protect is deprecated in favor of protectOrThrow", ReplaceWith("protectOrThrow"))
+  suspend fun <A> protect(fa: suspend () -> A): A =
+    protectOrThrow(fa)
+
+  /**
+   * Returns a new task that upon execution will execute the given
+   * task, but with the protection of this circuit breaker.
+   * If an exception in [fa] occurs it will be rethrown
+   */
+  suspend fun <A> protectOrThrow(fa: suspend () -> A): A =
+    protectEither(fa).fold({ throw it }, ::identity)
+
+  suspend fun <A> protectOrNull(fa: suspend () -> A): A? =
+    protectEither(fa).fold({ null }, ::identity)
+
+  tailrec suspend fun <A> protectEither(fa: suspend () -> A): Either<Throwable, A> =
     when (val curr = state.value) {
       is Closed -> {
         val attempt = try {
@@ -47,7 +66,7 @@ class CircuitBreaker constructor(
         } catch (e: Throwable) {
           Either.Left(e)
         }
-        markOrResetFailures(attempt).fold({throw it}, ::identity)
+        markOrResetFailures(attempt)
       }
       is Open -> {
         val now = System.currentTimeMillis()
@@ -58,27 +77,25 @@ class CircuitBreaker constructor(
               curr,
               State.HalfOpen(curr.resetTimeout, curr.awaitClose)
             )
-          ) protect(fa) // retry!
-          else attemptReset(fa, curr.resetTimeout, curr.awaitClose, curr.startedAt)
+          ) protectEither(fa) // retry!
+          else attemptReset(fa, curr.resetTimeout, curr.awaitClose, curr.startedAt).right()
         } else {
           // Open isn't expired, so we need to fail
           val expiresInMillis = curr.expiresAt - now
           onRejected.invoke()
-          throw ExecutionRejected(
+          ExecutionRejected(
             "Rejected because the CircuitBreaker is in the Open state, attempting to close in $expiresInMillis millis",
             curr
-          )
+          ).left()
         }
       }
       is State.HalfOpen -> {
         // CircuitBreaker is in HalfOpen state, which means we still reject all
         // tasks, while waiting to see if our reset attempt succeeds or fails
         onRejected.invoke()
-        throw ExecutionRejected("Rejected because the CircuitBreaker is in the HalfOpen state", curr)
+        ExecutionRejected("Rejected because the CircuitBreaker is in the HalfOpen state", curr).left()
       }
     }
-
-
 
   /** Function for counting failures in the `Closed` state,
    * triggering the `Open` state if necessary.
