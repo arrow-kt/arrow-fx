@@ -5,6 +5,7 @@ import arrow.core.identity
 import kotlin.time.Duration
 import kotlin.time.nanoseconds
 import arrow.fx.coroutines.CircuitBreaker.State.Closed
+import arrow.fx.coroutines.CircuitBreaker.State.HalfOpen
 import arrow.fx.coroutines.CircuitBreaker.State.Open
 import kotlin.time.milliseconds
 
