@@ -81,7 +81,7 @@ suspend fun <E, A, B> Iterable<A>.parTraverseValidatedN(
 }
 
 /**
- * Sequences all tasks in parallel on [Dispatchers.Default] and return the result.
+ * Sequences all tasks in parallel on [Dispatchers.Default] and returns the result.
  * If one or more of the tasks returns [Validated.Invalid] then all the [Validated.Invalid] results will be combined using [semigroup].
  *
  * Cancelling this operation cancels all running tasks.
@@ -90,7 +90,7 @@ suspend fun <E, A> Iterable<suspend () -> Validated<E, A>>.parSequenceEither(sem
   parTraverseValidated(Dispatchers.Default, semigroup) { it() }
 
 /**
- * Sequences all tasks in parallel on [ctx] and return the result.
+ * Sequences all tasks in parallel on [ctx] and returns the result.
  * If one or more of the tasks returns [Validated.Invalid] then all the [Validated.Invalid] results will be combined using [semigroup].
  *
  * Coroutine context is inherited from a [CoroutineScope], additional context elements can be specified with [ctx] argument.
