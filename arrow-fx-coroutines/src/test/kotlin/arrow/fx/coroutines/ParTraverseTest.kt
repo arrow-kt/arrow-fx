@@ -7,7 +7,10 @@ import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.list
+import kotlinx.coroutines.Dispatchers
 import io.kotest.property.checkAll
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.time.milliseconds
 
 class ParTraverseTest : ArrowFxSpec(spec = {
 
@@ -47,7 +50,7 @@ class ParTraverseTest : ArrowFxSpec(spec = {
       Arb.throwable()
     ) { n, killOn, e ->
       Either.catch {
-        (0 until n).parTraverse(IOPool) { i ->
+        (0 until n).parTraverse(Dispatchers.IO) { i ->
           if (i == killOn) throw e else unit()
         }
       } should leftException(e)
@@ -129,7 +132,7 @@ class ParTraverseTest : ArrowFxSpec(spec = {
     val promiseB = Promise<Unit>()
     val promiseC = Promise<Unit>()
 
-    timeOutOrNull(10.milliseconds) {
+    withTimeoutOrNull(10.milliseconds) {
       listOf(
         suspend {
           promiseA.get()
@@ -160,7 +163,7 @@ class ParTraverseTest : ArrowFxSpec(spec = {
       Arb.throwable()
     ) { n, killOn, e ->
       Either.catch {
-        (0 until n).parTraverseN(IOPool, 3) { i ->
+        (0 until n).parTraverseN(Dispatchers.IO, 3) { i ->
           if (i == killOn) throw e else unit()
         }
       } should leftException(e)
