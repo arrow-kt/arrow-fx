@@ -77,7 +77,8 @@ class ParMap8Test : ArrowFxSpec(spec = {
                 suspend { never<Nothing>() },
                 suspend { never<Nothing>() },
                 suspend { never<Nothing>() },
-                suspend { never<Nothing>() }) { _, _, _, _, _, _, _ -> Unit }
+                suspend { never<Nothing>() },
+                suspend { never<Nothing>() }) { _, _, _, _, _, _, _, _ -> Unit }
               2 -> parMapN(
                 _mapCtx,
                 suspend { never<Nothing>() },
@@ -86,7 +87,8 @@ class ParMap8Test : ArrowFxSpec(spec = {
                 suspend { never<Nothing>() },
                 suspend { never<Nothing>() },
                 suspend { never<Nothing>() },
-                suspend { never<Nothing>() }) { _, _, _, _, _, _, _ -> Unit }
+                suspend { never<Nothing>() },
+                suspend { never<Nothing>() }) { _, _, _, _, _, _, _, _ -> Unit }
               3 -> parMapN(
                 _mapCtx,
                 suspend { never<Nothing>() },
@@ -94,7 +96,8 @@ class ParMap8Test : ArrowFxSpec(spec = {
                 suspend { e.suspend() },
                 suspend { never<Nothing>() },
                 suspend { never<Nothing>() },
-                suspend { never<Nothing>() }) { _, _, _, _, _, _ -> Unit }
+                suspend { never<Nothing>() },
+                suspend { never<Nothing>() }) { _, _, _, _, _, _, _ -> Unit }
               4 -> parMapN(
                 _mapCtx,
                 suspend { never<Nothing>() },
@@ -103,7 +106,8 @@ class ParMap8Test : ArrowFxSpec(spec = {
                 suspend { e.suspend() },
                 suspend { never<Nothing>() },
                 suspend { never<Nothing>() },
-                suspend { never<Nothing>() }) { _, _, _, _, _, _, _ -> Unit }
+                suspend { never<Nothing>() },
+                suspend { never<Nothing>() }) { _, _, _, _, _, _, _, _ -> Unit }
               5 -> parMapN(
                 _mapCtx,
                 suspend { never<Nothing>() },
@@ -112,7 +116,8 @@ class ParMap8Test : ArrowFxSpec(spec = {
                 suspend { never<Nothing>() },
                 suspend { e.suspend() },
                 suspend { never<Nothing>() },
-                suspend { never<Nothing>() }) { _, _, _, _, _, _, _ -> Unit }
+                suspend { never<Nothing>() },
+                suspend { never<Nothing>() }) { _, _, _, _, _, _, _, _ -> Unit }
               6 -> parMapN(
                 _mapCtx,
                 suspend { never<Nothing>() },
@@ -121,7 +126,18 @@ class ParMap8Test : ArrowFxSpec(spec = {
                 suspend { never<Nothing>() },
                 suspend { never<Nothing>() },
                 suspend { e.suspend() },
-                suspend { never<Nothing>() }) { _, _, _, _, _, _, _ -> Unit }
+                suspend { never<Nothing>() },
+                suspend { never<Nothing>() }) { _, _, _, _, _, _, _, _ -> Unit }
+              7 -> parMapN(
+                _mapCtx,
+                suspend { never<Nothing>() },
+                suspend { never<Nothing>() },
+                suspend { never<Nothing>() },
+                suspend { never<Nothing>() },
+                suspend { never<Nothing>() },
+                suspend { never<Nothing>() },
+                suspend { e.suspend() },
+                suspend { never<Nothing>() }) { _, _, _, _, _, _, _, _ -> Unit }
               else -> parMapN(
                 _mapCtx,
                 suspend { never<Nothing>() },
@@ -130,7 +146,8 @@ class ParMap8Test : ArrowFxSpec(spec = {
                 suspend { never<Nothing>() },
                 suspend { never<Nothing>() },
                 suspend { never<Nothing>() },
-                suspend { e.suspend() }) { _, _, _, _, _, _, _ -> Unit }
+                suspend { never<Nothing>() },
+                suspend { e.suspend() }) { _, _, _, _, _, _, _, _ -> Unit }
             }
           } should leftException(e)
           threadName() shouldBe singleThreadName
@@ -140,7 +157,7 @@ class ParMap8Test : ArrowFxSpec(spec = {
   }
 
   "parMapN 8 runs in parallel" {
-    checkAll(Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int()) { a, b, c, d, e, f, g ->
+    checkAll(Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int()) { a, b, c, d, e, f, g, h ->
       val r = Atomic("")
       val modifyGate1 = Promise<Unit>()
       val modifyGate2 = Promise<Unit>()
@@ -148,6 +165,7 @@ class ParMap8Test : ArrowFxSpec(spec = {
       val modifyGate4 = Promise<Unit>()
       val modifyGate5 = Promise<Unit>()
       val modifyGate6 = Promise<Unit>()
+      val modifyGate7 = Promise<Unit>()
 
       parMapN(
         {
@@ -182,9 +200,13 @@ class ParMap8Test : ArrowFxSpec(spec = {
         {
           r.set("$g")
           modifyGate1.complete(Unit)
+        },
+        {
+          r.set("$g")
+          modifyGate1.complete(Unit)
         }
       ) { _a, _b, _c, _d, _e, _f, _g ->
-        Tuple7(_a, _b, _c, _d, _e, _f, _g)
+        Tuple8(_a, _b, _c, _d, _e, _f, _g)
       }
 
       r.get() shouldBe "$g$f$e$d$c$b$a"
@@ -195,14 +217,14 @@ class ParMap8Test : ArrowFxSpec(spec = {
     checkAll(Arb.string()) {
       single.use { ctx ->
         parMapN(ctx, threadName, threadName, threadName, threadName, threadName, threadName, threadName) { a, b, c, d, e, f, g ->
-          Tuple7(a, b, c, d, e, f, g)
+          Tuple8(a, b, c, d, e, f, g)
         }
-      } shouldBe Tuple7("single", "single", "single", "single", "single", "single", "single")
+      } shouldBe Tuple8("single", "single", "single", "single", "single", "single", "single")
     }
   }
 
   "Cancelling parMapN 7 cancels all participants" {
-    checkAll(Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int()) { a, b, c, d, e, f, g ->
+    checkAll(Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int()) { a, b, c, d, e, f, g, h ->
       val s = Semaphore(0L)
       val pa = Promise<Pair<Int, ExitCase>>()
       val pb = Promise<Pair<Int, ExitCase>>()
@@ -211,6 +233,7 @@ class ParMap8Test : ArrowFxSpec(spec = {
       val pe = Promise<Pair<Int, ExitCase>>()
       val pf = Promise<Pair<Int, ExitCase>>()
       val pg = Promise<Pair<Int, ExitCase>>()
+      val ph = Promise<Pair<Int, ExitCase>>()
 
       val loserA = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
       val loserB = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
@@ -219,9 +242,10 @@ class ParMap8Test : ArrowFxSpec(spec = {
       val loserE = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pe.complete(Pair(e, ex)) } }
       val loserF = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pf.complete(Pair(f, ex)) } }
       val loserG = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pg.complete(Pair(g, ex)) } }
+      val loserH = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> ph.complete(Pair(h, ex)) } }
 
       val fork = ForkAndForget {
-        parMapN(loserA, loserB, loserC, loserD, loserE, loserF, loserG, ::Tuple7)
+        parMapN(loserA, loserB, loserC, loserD, loserE, loserF, loserG,loserH, ::Tuple8)
       }
 
       s.acquireN(7) // Suspend until all racers started
