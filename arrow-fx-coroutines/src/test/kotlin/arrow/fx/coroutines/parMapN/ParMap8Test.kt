@@ -204,7 +204,13 @@ class ParMap8Test : ArrowFxSpec(spec = {
         {
           r.set("$g")
           modifyGate1.complete(Unit)
-        }
+        },
+        {
+          r.set("$g")
+          modifyGate1.complete(Unit)
+        }{
+          r.set("$g")
+          modifyGate1.complete(Unit)
       ) { _a, _b, _c, _d, _e, _f, _g ->
         Tuple8(_a, _b, _c, _d, _e, _f, _g)
       }
