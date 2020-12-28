@@ -234,7 +234,7 @@ class CircuitBreakerTest : ArrowFxSpec(spec = {
     // resetTimeout should've applied
     when (val s = cb.state()) {
       is CircuitBreaker.State.Open -> {
-        s.resetTimeout shouldBe (resetTimeout * exponentialBackoffFactor.toInt())
+        s.resetTimeout shouldBe (resetTimeout * exponentialBackoffFactor)
       }
       else -> fail("Invalid state: Expect CircuitBreaker.State.Open but found $s")
     }

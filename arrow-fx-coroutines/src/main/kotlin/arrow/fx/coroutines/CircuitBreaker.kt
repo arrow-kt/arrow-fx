@@ -3,7 +3,6 @@ package arrow.fx.coroutines
 import arrow.core.Either
 import arrow.core.identity
 import arrow.core.left
-import arrow.core.right
 import arrow.fx.coroutines.CircuitBreaker.State.Closed
 import arrow.fx.coroutines.CircuitBreaker.State.HalfOpen
 import arrow.fx.coroutines.CircuitBreaker.State.Open
@@ -81,7 +80,7 @@ class CircuitBreaker constructor(
               State.HalfOpen(curr.resetTimeout, curr.awaitClose)
             )
           ) protectEither(fa) // retry!
-          else attemptReset(fa, curr.resetTimeout, curr.awaitClose, curr.startedAt).right()
+          else attemptReset(fa, curr.resetTimeout, curr.awaitClose, curr.startedAt)
         } else {
           // Open isn't expired, so we need to fail
           val expiresInMillis = curr.expiresAt - now
@@ -158,10 +157,10 @@ class CircuitBreaker constructor(
     resetTimeout: Duration,
     awaitClose: Promise<Unit>,
     lastStartedAt: Long
-  ): A =
+  ): Either<Throwable, A> =
     bracketCase(
       acquire = onHalfOpen,
-      use = { task.invoke() },
+      use = { Either.catch { task.invoke() } },
       release = { _, exit ->
         when (exit) {
           is ExitCase.Cancelled -> {
