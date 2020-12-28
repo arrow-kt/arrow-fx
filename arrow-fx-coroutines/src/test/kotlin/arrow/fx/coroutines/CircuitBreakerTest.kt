@@ -5,9 +5,11 @@ import io.kotest.assertions.fail
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
 import kotlin.time.milliseconds
+import kotlin.time.minutes
+import java.lang.RuntimeException
 
 class CircuitBreakerTest : ArrowFxSpec(spec = {
 
