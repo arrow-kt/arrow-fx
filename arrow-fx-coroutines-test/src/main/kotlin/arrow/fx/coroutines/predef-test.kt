@@ -1,9 +1,15 @@
 package arrow.fx.coroutines
 
 import arrow.core.Either
+import arrow.core.Validated
+import arrow.core.ValidatedNel
 import arrow.core.identity
+import arrow.core.invalid
+import arrow.core.invalidNel
 import arrow.core.left
 import arrow.core.right
+import arrow.core.valid
+import arrow.core.validNel
 import io.kotest.assertions.fail
 import io.kotest.matchers.Matcher
 import io.kotest.matchers.MatcherResult
@@ -19,6 +25,7 @@ import io.kotest.property.arbitrary.long
 import io.kotest.property.arbitrary.map
 import io.kotest.property.arbitrary.string
 import kotlinx.atomicfu.atomic
+import kotlinx.coroutines.Dispatchers
 import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 import java.io.PrintStream
@@ -114,6 +121,18 @@ fun <L, R> Arb.Companion.either(left: Arb<L>, right: Arb<R>): Arb<Either<L, R>> 
   return Arb.choice(failure, success)
 }
 
+fun <L, R> Arb.Companion.validated(left: Arb<L>, right: Arb<R>): Arb<Validated<L, R>> {
+  val failure: Arb<Validated<L, R>> = left.map { l -> l.invalid() }
+  val success: Arb<Validated<L, R>> = right.map { r -> r.valid() }
+  return Arb.choice(failure, success)
+}
+
+fun <L, R> Arb.Companion.validatedNel(left: Arb<L>, right: Arb<R>): Arb<ValidatedNel<L, R>> {
+  val failure: Arb<ValidatedNel<L, R>> = left.map { l -> l.invalidNel() }
+  val success: Arb<ValidatedNel<L, R>> = right.map { r -> r.validNel() }
+  return Arb.choice(failure, success)
+}
+
 fun Arb.Companion.intRange(min: Int = Int.MIN_VALUE, max: Int = Int.MAX_VALUE): Arb<IntRange> =
   Arb.bind(Arb.int(min, max), Arb.int(min, max)) { a, b ->
     if (a < b) a..b else b..a
@@ -144,7 +163,7 @@ fun <A> Result<A>.toEither(): Either<Throwable, A> =
 
 suspend fun Throwable.suspend(): Nothing =
   suspendCoroutineUninterceptedOrReturn { cont ->
-    suspend { throw this }.startCoroutine(Continuation(ComputationPool) {
+    suspend { throw this }.startCoroutine(Continuation(Dispatchers.Default) {
       cont.intercepted().resumeWith(it)
     })
 
@@ -153,7 +172,7 @@ suspend fun Throwable.suspend(): Nothing =
 
 suspend fun <A> A.suspend(): A =
   suspendCoroutineUninterceptedOrReturn { cont ->
-    suspend { this }.startCoroutine(Continuation(ComputationPool) {
+    suspend { this }.startCoroutine(Continuation(Dispatchers.Default) {
       cont.intercepted().resumeWith(it)
     })
 
