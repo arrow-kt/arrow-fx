@@ -193,43 +193,38 @@ class ParMap8Test : ArrowFxSpec(spec = {
           modifyGate5.complete(Unit)
         },
         {
-          modifyGate1.get()
+          modifyGate7.get()
           r.update { i -> "$i$f" }
           modifyGate6.complete(Unit)
         },
         {
-          r.set("$g")
-          modifyGate1.complete(Unit)
+          modifyGate1.get()
+          r.update { i -> "$i$g" }
+          modifyGate7.complete(Unit)
         },
         {
-          r.set("$g")
+          r.set("$h")
           modifyGate1.complete(Unit)
-        },
-        {
-          r.set("$g")
-          modifyGate1.complete(Unit)
-        }{
-          r.set("$g")
-          modifyGate1.complete(Unit)
-      ) { _a, _b, _c, _d, _e, _f, _g ->
-        Tuple8(_a, _b, _c, _d, _e, _f, _g)
-      }
+        }
+     ) { _a, _b, _c, _d, _e, _f, _g, _h ->
+       Tuple8(_a, _b, _c, _d, _e, _f, _g, _h)
+     }
 
-      r.get() shouldBe "$g$f$e$d$c$b$a"
+      r.get() shouldBe "$h$g$f$e$d$c$b$a"
     }
   }
 
   "parMapN 7 finishes on single thread" {
     checkAll(Arb.string()) {
       single.use { ctx ->
-        parMapN(ctx, threadName, threadName, threadName, threadName, threadName, threadName, threadName) { a, b, c, d, e, f, g ->
-          Tuple8(a, b, c, d, e, f, g)
+        parMapN(ctx, threadName, threadName, threadName, threadName, threadName, threadName, threadName, threadName) { a, b, c, d, e, f, g, h ->
+          Tuple8(a, b, c, d, e, f, g, h)
         }
-      } shouldBe Tuple8("single", "single", "single", "single", "single", "single", "single")
+      } shouldBe Tuple8("single", "single", "single", "single", "single", "single", "single", "single")
     }
   }
 
-  "Cancelling parMapN 7 cancels all participants" {
+  "Cancelling parMapN 8 cancels all participants" {
     checkAll(Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int(), Arb.int()) { a, b, c, d, e, f, g, h ->
       val s = Semaphore(0L)
       val pa = Promise<Pair<Int, ExitCase>>()
@@ -251,10 +246,10 @@ class ParMap8Test : ArrowFxSpec(spec = {
       val loserH = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> ph.complete(Pair(h, ex)) } }
 
       val fork = ForkAndForget {
-        parMapN(loserA, loserB, loserC, loserD, loserE, loserF, loserG,loserH, ::Tuple8)
+        parMapN(loserA, loserB, loserC, loserD, loserE, loserF, loserG, loserH, ::Tuple8)
       }
 
-      s.acquireN(7) // Suspend until all racers started
+      s.acquireN(8) // Suspend until all racers started
       fork.cancel()
 
       pa.get().let { (res, exit) ->
@@ -285,13 +280,17 @@ class ParMap8Test : ArrowFxSpec(spec = {
         res shouldBe g
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
+      ph.get().let { (res, exit) ->
+        res shouldBe h
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
     }
   }
 
-  "parMapN 7 cancels losers if a failure occurs in one of the tasks" {
+  "parMapN 8 cancels losers if a failure occurs in one of the tasks" {
     checkAll(
       Arb.throwable(),
-      Arb.element(listOf(1, 2, 3, 4, 5, 6, 7))
+      Arb.element(listOf(1, 2, 3, 4, 5, 6, 7, 8))
     ) { e, winningTask ->
 
       val intGen = Arb.int()
@@ -301,6 +300,7 @@ class ParMap8Test : ArrowFxSpec(spec = {
       val d = intGen.next()
       val f = intGen.next()
       val g = intGen.next()
+      val h = intGen.next()
 
       val s = Semaphore(0L)
       val pa = Promise<Pair<Int, ExitCase>>()
@@ -309,24 +309,27 @@ class ParMap8Test : ArrowFxSpec(spec = {
       val pd = Promise<Pair<Int, ExitCase>>()
       val pf = Promise<Pair<Int, ExitCase>>()
       val pg = Promise<Pair<Int, ExitCase>>()
+      val ph = Promise<Pair<Int, ExitCase>>()
 
-      val winner = suspend { s.acquireN(6); throw e }
+      val winner = suspend { s.acquireN(7); throw e }
       val loserA = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
       val loserB = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
       val loserC = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pc.complete(Pair(c, ex)) } }
       val loserD = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pd.complete(Pair(d, ex)) } }
       val loserF = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pf.complete(Pair(f, ex)) } }
       val loserG = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pg.complete(Pair(g, ex)) } }
+      val loserH = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> ph.complete(Pair(h, ex)) } }
 
       val r = Either.catch {
         when (winningTask) {
-          1 -> parMapN(winner, loserA, loserB, loserC, loserD, loserF, loserG) { _, _, _, _, _, _, _ -> Unit }
-          2 -> parMapN(loserA, winner, loserB, loserC, loserD, loserF, loserG) { _, _, _, _, _, _, _ -> Unit }
-          3 -> parMapN(loserA, loserB, winner, loserC, loserD, loserF, loserG) { _, _, _, _, _, _, _ -> Unit }
-          4 -> parMapN(loserA, loserB, loserC, winner, loserD, loserF, loserG) { _, _, _, _, _, _, _ -> Unit }
-          5 -> parMapN(loserA, loserB, loserC, loserD, winner, loserF, loserG) { _, _, _, _, _, _, _ -> Unit }
-          6 -> parMapN(loserA, loserB, loserC, loserD, loserF, winner, loserG) { _, _, _, _, _, _, _ -> Unit }
-          else -> parMapN(loserA, loserB, loserC, loserD, loserF, loserG, winner) { _, _, _, _, _, _, _ -> Unit }
+          1 -> parMapN(winner, loserA, loserB, loserC, loserD, loserF, loserG, loserH) { _, _, _, _, _, _, _, _ -> Unit }
+          2 -> parMapN(loserA, winner, loserB, loserC, loserD, loserF, loserG, loserH) { _, _, _, _, _, _, _, _ -> Unit }
+          3 -> parMapN(loserA, loserB, winner, loserC, loserD, loserF, loserG, loserH) { _, _, _, _, _, _, _, _ -> Unit }
+          4 -> parMapN(loserA, loserB, loserC, winner, loserD, loserF, loserG, loserH) { _, _, _, _, _, _, _, _ -> Unit }
+          5 -> parMapN(loserA, loserB, loserC, loserD, winner, loserF, loserG, loserH) { _, _, _, _, _, _, _, _ -> Unit }
+          6 -> parMapN(loserA, loserB, loserC, loserD, loserF, winner, loserG, loserH) { _, _, _, _, _, _, _, _ -> Unit }
+          7 -> parMapN(loserA, loserB, loserC, loserD, loserF, loserG, winner, loserH) { _, _, _, _, _, _, _, _ -> Unit }
+          else -> parMapN(loserA, loserB, loserC, loserD, loserF, loserG, loserH, winner) { _, _, _, _, _, _, _, _ -> Unit }
         }
       }
 
@@ -352,6 +355,10 @@ class ParMap8Test : ArrowFxSpec(spec = {
       }
       pg.get().let { (res, exit) ->
         res shouldBe g
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      ph.get().let { (res, exit) ->
+        res shouldBe h
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
       r should leftException(e)

@@ -610,7 +610,7 @@ suspend inline fun <A, B, C, D, E, F, G, H, I> parMapN(
 ): I = parMapN(Dispatchers.Default, fa, fb, fc, fd, fe, ff, fg, fh, f)
 
 /**
- * Runs [fa], [fb], [fc], [fd], [fe], [ff], [fg] in parallel on [ctx] and combines their results using the provided function.
+ * Runs [fa], [fb], [fc], [fd], [fe], [ff], [fg], [fh] in parallel on [ctx] and combines their results using the provided function.
  *
  * Coroutine context is inherited from a [CoroutineScope], additional context elements can be specified with [ctx] argument.
  * If the combined context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
