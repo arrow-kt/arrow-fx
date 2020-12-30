@@ -2,7 +2,7 @@ package arrow.fx.coroutines
 
 import java.util.concurrent.TimeUnit
 
-@Deprecated(DeprecateDuration, ReplaceWith("Duration", "kotlin.time.Duration"))
+@Deprecated(DeprecateDuration, ReplaceWith("timeUnit.toNanos(amount).nanoseconds", "kotlin.time.nanoseconds"))
 data class Duration(val amount: Long, val timeUnit: TimeUnit) {
   @Deprecated("Redundant property please use `inNanoseconds` in kotlin.time.Duration")
   val nanoseconds: Long by lazy { timeUnit.toNanos(amount) }
