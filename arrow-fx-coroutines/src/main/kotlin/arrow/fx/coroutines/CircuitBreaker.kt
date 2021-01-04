@@ -45,7 +45,7 @@ class CircuitBreaker constructor(
    * Returns a new task that upon execution will execute the given
    * task, but with the protection of this circuit breaker.
    */
-  @Deprecated("#protect is deprecated in favor of protectOrThrow", ReplaceWith("protectOrThrow"))
+  @Deprecated("#protect is being renamed to protectOrThrow", ReplaceWith("protectOrThrow(fa)"))
   suspend fun <A> protect(fa: suspend () -> A): A =
     protectOrThrow(fa)
 
