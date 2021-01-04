@@ -1,6 +1,7 @@
 package arrow.fx.coroutines
 
 import arrow.core.Either
+import arrow.core.identity
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.coroutines.CoroutineContext
@@ -156,6 +157,9 @@ sealed class Resource<out A> {
 
   fun <B> zip(other: Resource<B>): Resource<Pair<A, B>> =
     map2(other, ::Pair)
+
+  suspend inline fun <B> foldLeft(inital: B, crossinline f: (B, A) -> B): B =
+    use { f(inital, it) }
 
   class Bind<A, B>(val source: Resource<A>, val f: (A) -> Resource<B>) : Resource<B>()
 
@@ -328,12 +332,12 @@ sealed class Resource<out A> {
  * Marker for `suspend () -> A` to be marked as the [Use] action of a [Resource].
  * Offers a convenient DSL to use [Resource] for simple resources.
  *
- * ```kotlin:ank
+ * ```kotlin:ank:playground
  * import arrow.fx.coroutines.*
  *
  * class File(url: String) {
- *   fun open(): File = this
- *   fun close(): Unit {}
+ *   suspend fun open(): File = this
+ *   suspend fun close(): Unit {}
  *   override fun toString(): String = "This file contains some interesting content!"
  * }
  *
@@ -372,3 +376,124 @@ infix fun <A> Use<A>.release(release: suspend (A) -> Unit): Resource<A> =
  */
 infix fun <A> Use<A>.releaseCase(release: suspend (A, ExitCase) -> Unit): Resource<A> =
   Resource(acquire, release)
+
+/**
+ * Traverse this [Iterable] and collects the resulting `Resource<B>` of [f] into a `Resource<List<B>>`.
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.*
+ *
+ * class File(url: String) {
+ *   suspend fun open(): File = this
+ *   suspend fun close(): Unit {}
+ *   override fun toString(): String = "This file contains some interesting content!"
+ * }
+ *
+ * suspend fun openFile(uri: String): File = File(uri).open()
+ * suspend fun closeFile(file: File): Unit = file.close()
+ * suspend fun fileToString(file: File): String = file.toString()
+ *
+ * suspend fun main(): Unit {
+ *   //sampleStart
+ *   val res: List<String> = listOf(
+ *     "data.json",
+ *     "user.json",
+ *     "resource.json"
+ *   ).traverseResource { uri ->
+ *     resource {
+ *      openFile(uri)
+ *     } release { file ->
+ *       closeFile(file)
+ *     }
+ *   }.use { files ->
+ *     files.map { fileToString(it) }
+ *   }
+ *   //sampleEnd
+ *   res.forEach(::println)
+ * }
+ * ```
+ */
+inline fun <A, B> Iterable<A>.traverseResource(crossinline f: (A) -> Resource<B>): Resource<List<B>> =
+  fold(Resource.just(emptyList())) { acc: Resource<List<B>>, a: A ->
+    f(a).ap(acc.map { { b: B -> it + b } })
+  }
+
+/**
+ * Traverse this [Iterable] and flattens the resulting `Resource<List<B>>` of [f] into a `Resource<List<B>>`.
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.*
+ *
+ * class File(url: String) {
+ *   suspend fun open(): File = this
+ *   suspend fun close(): Unit {}
+ *   override fun toString(): String = "This file contains some interesting content!"
+ * }
+ *
+ * suspend fun openFile(uri: String): File = File(uri).open()
+ * suspend fun closeFile(file: File): Unit = file.close()
+ * suspend fun fileToString(file: File): String = file.toString()
+ *
+ * suspend fun main(): Unit {
+ *   //sampleStart
+ *   val res: List<String> = listOf(
+ *     "data.json",
+ *     "user.json",
+ *     "resource.json"
+ *   ).flatTraverseResource { uri ->
+ *     resource {
+ *      listOf(openFile(uri))
+ *     } release { files ->
+ *       files.forEach { closeFile(it) }
+ *     }
+ *   }.use { files ->
+ *     files.map { fileToString(it) }
+ *   }
+ *   //sampleEnd
+ *   res.forEach(::println)
+ * }
+ * ```
+ */
+inline fun <A, B> Iterable<A>.flatTraverseResource(crossinline f: (A) -> Resource<List<B>>): Resource<List<B>> =
+  traverseResource(f).map { it.flatten() }
+
+/**
+ * Sequences this [Iterable] of [Resource]s.
+ * Be advised that [Iterable.map] and [sequence] is equivalent to [traverseResource]
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.*
+ *
+ * class File(url: String) {
+ *   suspend fun open(): File = this
+ *   suspend fun close(): Unit {}
+ *   override fun toString(): String = "This file contains some interesting content!"
+ * }
+ *
+ * suspend fun openFile(uri: String): File = File(uri).open()
+ * suspend fun closeFile(file: File): Unit = file.close()
+ * suspend fun fileToString(file: File): String = file.toString()
+ *
+ * suspend fun main(): Unit {
+ *   //sampleStart
+ *   val res: List<String> = listOf(
+ *     "data.json",
+ *     "user.json",
+ *     "resource.json"
+ *   ).map { uri ->
+ *     resource {
+ *      openFile(uri)
+ *     } release { file ->
+ *       closeFile(file)
+ *     }
+ *   }.sequence().use { files ->
+ *     files.map { fileToString(it) }
+ *   }
+ *   //sampleEnd
+ *   res.forEach(::println)
+ * }
+ * ```
+ */
+@Suppress("NOTHING_TO_INLINE")
+inline fun <A> Iterable<Resource<A>>.sequence(): Resource<List<A>> =
+  traverseResource(::identity)
