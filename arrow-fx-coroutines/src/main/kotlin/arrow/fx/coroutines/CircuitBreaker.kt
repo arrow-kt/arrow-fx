@@ -163,7 +163,7 @@ class CircuitBreaker constructor(
             // Failed reset, which means we go back in the Open state with new expiry val nextTimeout
             val value: Duration = (resetTimeout * exponentialBackoffFactor)
             val nextTimeout: Duration =
-              if (/*maxResetTimeout.isFinite &&*/ value > maxResetTimeout) maxResetTimeout
+              if (maxResetTimeout.isFinite() && value > maxResetTimeout) maxResetTimeout
               else value
             val ts = System.currentTimeMillis()
             state.value = Open(ts, nextTimeout, awaitClose)
