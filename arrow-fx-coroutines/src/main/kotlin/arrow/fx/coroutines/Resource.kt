@@ -159,9 +159,6 @@ sealed class Resource<out A> {
   fun <B> zip(other: Resource<B>): Resource<Pair<A, B>> =
     map2(other, ::Pair)
 
-  suspend inline fun <B> foldLeft(inital: B, crossinline f: (B, A) -> B): B =
-    use { f(inital, it) }
-
   class Bind<A, B>(val source: Resource<A>, val f: (A) -> Resource<B>) : Resource<B>()
 
   class Allocate<A>(
@@ -439,6 +436,13 @@ inline fun <A, B> Iterable<A>.traverseResource(crossinline f: (A) -> Resource<B>
   }
 
 /**
+ * Traverses and filters nullable resources
+ * @see traverseResource
+ */
+inline fun <A, B> Iterable<A>.traverseFilterResource(crossinline f: (A) -> Resource<B?>): Resource<List<B>> =
+  traverseResource(f).map { it.mapNotNull(::identity) }
+
+/**
  * Traverse this [Iterable] and flattens the resulting `Resource<List<B>>` of [f] into a `Resource<List<B>>`.
  *
  * ```kotlin:ank:playground
@@ -476,6 +480,13 @@ inline fun <A, B> Iterable<A>.traverseResource(crossinline f: (A) -> Resource<B>
  */
 inline fun <A, B> Iterable<A>.flatTraverseResource(crossinline f: (A) -> Resource<List<B>>): Resource<List<B>> =
   traverseResource(f).map { it.flatten() }
+
+/**
+ * Traverse this [Iterable] and flattens and filters out nullable elements of the resulting `Resource<List<B?>>` in [f] into a `Resource<List<B>>`.
+ * @see flatTraverseResource
+ */
+inline fun <A, B> Iterable<A>.flatTraverseFilterResource(crossinline f: (A) -> Resource<List<B?>>): Resource<List<B>> =
+  flatTraverseResource { f(it).map { list -> list.mapNotNull(::identity) } }
 
 /**
  * Sequences this [Iterable] of [Resource]s.
