@@ -2,6 +2,7 @@ package arrow.fx.coroutines
 
 import arrow.core.Either
 import arrow.core.identity
+import java.io.Closeable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.coroutines.CoroutineContext
@@ -245,6 +246,25 @@ sealed class Resource<out A> {
      */
     fun fromExecutor(f: suspend () -> ExecutorService): Resource<CoroutineContext> =
       Resource(f) { s -> s.shutdown() }.map(ExecutorService::asCoroutineContext)
+
+    /**
+     * Creates a [Resource] from an [Closeable], which uses [Closeable.close] for releasing.
+     *
+     * ```kotlin:ank:playground
+     * import arrow.fx.coroutines.*
+     * import java.io.FileInputStream
+     *
+     * suspend fun copyFile(src: String, dest: String): Unit =
+     *   Resource.fromClosable { FileInputStream(src) }
+     *     .zip(Resource.fromClosable { FileInputStream(dest) })
+     *     .use { (a: FileInputStream, b: FileInputStream) ->
+     *        /** read from [a] and write to [b]. **/
+     *        // Both resources will be closed accordingly to their #close methods
+     *     }
+     * ```
+     */
+    fun <A : Closeable> fromClosable(f: suspend () -> A): Resource<A> =
+      Resource(f) { s -> s.close() }
 
     /**
      * Creates a single threaded [CoroutineContext] as a [Resource].
