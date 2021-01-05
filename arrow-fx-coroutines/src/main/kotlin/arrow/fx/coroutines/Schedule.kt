@@ -7,13 +7,13 @@ import arrow.core.left
 import arrow.core.right
 import arrow.fx.coroutines.Schedule.ScheduleImpl
 import kotlinx.coroutines.delay
-import kotlin.time.Duration
-import kotlin.time.seconds
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
-import kotlin.time.nanoseconds
 import kotlin.random.Random
+import kotlin.time.Duration
+import kotlin.time.nanoseconds
+import kotlin.time.seconds
 
 /**
  * # Retrying and repeating effects
@@ -438,7 +438,9 @@ sealed class Schedule<Input, Output> {
       updated { update ->
         { a: Input, s: State ->
           val step = update(a, s)
-          val d = f(step.finish.value(), step.delay)
+          val v: Output = step.finish.value()
+          val de: Duration = step.delay
+          val d: Duration = f(v, de) // fails here
           step.copy(delay = d)
         }
       }
@@ -646,9 +648,13 @@ sealed class Schedule<Input, Output> {
      *  For an example see the implementation of [spaced], [linear], [fibonacci] or [exponential]
      */
     @Suppress("UNCHECKED_CAST")
-    fun <A> delayed(delaySchedule: Schedule<A, Duration>): Schedule<A, Duration> =
-      (delaySchedule.modifyDelay { a, b -> a + b } as ScheduleImpl<Any?, A, Duration>)
-        .reconsider { _, dec -> dec.copy(finish = Eval.now(dec.delay)) }
+    fun <A> delayed(delaySchedule: Schedule<A, Duration>): Schedule<A, Duration> {
+      val a = (delaySchedule.modifyDelay { a: Duration, b: Duration -> a + b })
+      val r = (a as? ScheduleImpl<Any?, A, Duration>)
+      return r?.reconsider { _, dec ->
+        dec.copy(finish = Eval.now(dec.delay))
+      }!!
+    }
 
     /**
      * Creates a Schedule which collects all its inputs in a list.
