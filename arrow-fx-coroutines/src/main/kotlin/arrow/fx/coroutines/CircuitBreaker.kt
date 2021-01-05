@@ -12,7 +12,7 @@ import kotlin.time.nanoseconds
 class CircuitBreaker
 @Deprecated(
   "Please use the #of constructor instead",
-  ReplaceWith("of(maxFailures, resetTimeout, exponentialBackoffFactor, maxResetTimeout, onRejected, onClosed, onHalfOpen, onOpen)")
+  ReplaceWith("of(maxFailures, resetTimeout, exponentialBackoffFactor, maxResetTimeout, onRejected, onClosed, onHalfOpen, onOpen)", "arrow.fx.coroutines.CircuitBreaker.Companion.of")
 )
 private constructor(
   private val state: AtomicRefW<State>,
@@ -401,7 +401,7 @@ private constructor(
         DeprecateDuration,
         ReplaceWith("(resetTimeout.millis.milliseconds, awaitClose)", "kotlin.time.milliseconds")
       )
-      constructor(startedAt: Long, resetTimeout: arrow.fx.coroutines.Duration, awaitClose: Promise<Unit>) :
+      constructor(resetTimeout: arrow.fx.coroutines.Duration, awaitClose: Promise<Unit>) :
         this(resetTimeout.millis.milliseconds, awaitClose)
 
       override fun hashCode(): Int =
