@@ -438,9 +438,7 @@ sealed class Schedule<Input, Output> {
       updated { update ->
         { a: Input, s: State ->
           val step = update(a, s)
-          val value = step.finish.value()
-          val del = step.delay
-          val d = f(value, del)
+          val d = f(step.finish.value(), step.delay)
           step.copy(delay = d)
         }
       }
