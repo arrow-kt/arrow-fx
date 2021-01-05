@@ -10,7 +10,8 @@ import kotlin.time.Duration
 import kotlin.time.milliseconds
 import kotlin.time.nanoseconds
 
-class CircuitBreaker constructor(
+class CircuitBreaker
+private constructor(
   private val state: AtomicRefW<State>,
   private val maxFailures: Int,
   private val resetTimeout: Duration,
@@ -21,6 +22,25 @@ class CircuitBreaker constructor(
   private val onHalfOpen: suspend () -> Unit,
   private val onOpen: suspend () -> Unit
 ) {
+
+  @Deprecated(
+    "$DeprecateDuration and please use the #of constructor instead",
+    ReplaceWith(
+      "of(maxFailures, resetTimeout.millis.milliseconds, exponentialBackoffFactor, maxResetTimeout, onRejected, onClosed, onHalfOpen, onOpen)",
+      "arrow.fx.coroutines.CircuitBreaker.Companion.of"
+    )
+  )
+  constructor(
+    state: AtomicRefW<State>,
+    maxFailures: Int,
+    resetTimeout: arrow.fx.coroutines.Duration,
+    exponentialBackoffFactor: Double,
+    maxResetTimeout: Duration,
+    onRejected: suspend () -> Unit,
+    onClosed: suspend () -> Unit,
+    onHalfOpen: suspend () -> Unit,
+    onOpen: suspend () -> Unit
+  ) : this(state, maxFailures, resetTimeout.millis.milliseconds, exponentialBackoffFactor, maxResetTimeout, onRejected, onClosed, onHalfOpen, onOpen)
 
   /** Returns the current [CircuitBreaker.State], meant for debugging purposes.
    */
@@ -190,7 +210,7 @@ class CircuitBreaker constructor(
             // Failed reset, which means we go back in the Open state with new expiry val nextTimeout
             val value: Duration = (resetTimeout * exponentialBackoffFactor)
             val nextTimeout: Duration =
-              if (/*maxResetTimeout.isFinite &&*/ value > maxResetTimeout) maxResetTimeout
+              if (maxResetTimeout.isFinite() && value > maxResetTimeout) maxResetTimeout
               else value
             val ts = System.currentTimeMillis()
             state.value = Open(ts, nextTimeout, awaitClose)
@@ -423,7 +443,7 @@ class CircuitBreaker constructor(
         DeprecateDuration,
         ReplaceWith("(resetTimeout.millis.milliseconds, awaitClose)", "kotlin.time.milliseconds")
       )
-      constructor(startedAt: Long, resetTimeout: arrow.fx.coroutines.Duration, awaitClose: Promise<Unit>) :
+      constructor(resetTimeout: arrow.fx.coroutines.Duration, awaitClose: Promise<Unit>) :
         this(resetTimeout.millis.milliseconds, awaitClose)
 
       override fun hashCode(): Int =
