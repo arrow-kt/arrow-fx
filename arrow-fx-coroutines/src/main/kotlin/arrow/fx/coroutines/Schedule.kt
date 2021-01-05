@@ -7,6 +7,7 @@ import arrow.core.left
 import arrow.core.right
 import arrow.fx.coroutines.Schedule.ScheduleImpl
 import kotlinx.coroutines.delay
+import java.util.concurrent.TimeUnit
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
@@ -649,8 +650,11 @@ sealed class Schedule<Input, Output> {
      */
     @Suppress("UNCHECKED_CAST")
     fun <A> delayed(delaySchedule: Schedule<A, Duration>): Schedule<A, Duration> {
-      val a = (delaySchedule.modifyDelay { a: Duration, b: Duration -> a + b })
-      val r = (a as? ScheduleImpl<Any?, A, Duration>)
+      val a = (delaySchedule.modifyDelay { a: Duration, b: Duration ->
+        val result = (Duration(a.toLongNanoseconds(), TimeUnit.NANOSECONDS) + Duration(b.toLongNanoseconds(), TimeUnit.NANOSECONDS))
+        result.timeUnit.toNanos(result.amount).nanoseconds
+      })
+      val r = (a as? ScheduleImpl<Any?, Any?, Duration>)
       return r?.reconsider { _, dec ->
         dec.copy(finish = Eval.now(dec.delay))
       }!!
