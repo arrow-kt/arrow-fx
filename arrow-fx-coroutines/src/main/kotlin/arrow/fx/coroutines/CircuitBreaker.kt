@@ -60,7 +60,7 @@ class CircuitBreaker constructor(
   suspend fun <A> protectOrNull(fa: suspend () -> A): A? =
     try {
       protectOrThrow(fa)
-    } catch (ex: Throwable) {
+    } catch (ex: ExecutionRejected) {
       ex.nonFatalOrThrow() // throw if Fatal
       null
     }
