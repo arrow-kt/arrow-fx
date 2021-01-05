@@ -9,7 +9,7 @@ import kotlin.time.Duration
 import kotlin.time.milliseconds
 import kotlin.time.nanoseconds
 
-class CircuitBreaker constructor(
+class CircuitBreaker private constructor(
   private val state: AtomicRefW<State>,
   private val maxFailures: Int,
   private val resetTimeout: Duration,
