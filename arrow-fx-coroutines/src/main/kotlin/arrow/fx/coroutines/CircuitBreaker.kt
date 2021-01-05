@@ -10,10 +10,6 @@ import kotlin.time.milliseconds
 import kotlin.time.nanoseconds
 
 class CircuitBreaker
-@Deprecated(
-  "Please use the #of constructor instead",
-  ReplaceWith("of(maxFailures, resetTimeout, exponentialBackoffFactor, maxResetTimeout, onRejected, onClosed, onHalfOpen, onOpen)", "arrow.fx.coroutines.CircuitBreaker.Companion.of")
-)
 private constructor(
   private val state: AtomicRefW<State>,
   private val maxFailures: Int,
@@ -25,6 +21,25 @@ private constructor(
   private val onHalfOpen: suspend () -> Unit,
   private val onOpen: suspend () -> Unit
 ) {
+
+  @Deprecated(
+    "$DeprecateDuration and please use the #of constructor instead",
+    ReplaceWith(
+      "of(maxFailures, resetTimeout.millis.milliseconds, exponentialBackoffFactor, maxResetTimeout, onRejected, onClosed, onHalfOpen, onOpen)",
+      "arrow.fx.coroutines.CircuitBreaker.Companion.of"
+    )
+  )
+  constructor(
+    state: AtomicRefW<State>,
+    maxFailures: Int,
+    resetTimeout: arrow.fx.coroutines.Duration,
+    exponentialBackoffFactor: Double,
+    maxResetTimeout: Duration,
+    onRejected: suspend () -> Unit,
+    onClosed: suspend () -> Unit,
+    onHalfOpen: suspend () -> Unit,
+    onOpen: suspend () -> Unit
+  ) : this(state, maxFailures, resetTimeout.millis.milliseconds, exponentialBackoffFactor, maxResetTimeout, onRejected, onClosed, onHalfOpen, onOpen)
 
   /** Returns the current [CircuitBreaker.State], meant for debugging purposes.
    */
@@ -476,7 +491,10 @@ private constructor(
 
     @Deprecated(
       DeprecateDuration,
-      ReplaceWith("of(maxFailures, resetTimeout.millis.milliseconds, exponentialBackoffFactor, maxResetTimeout.millis.milliseconds, onRejected, onClosed, onHalfOpen, onOpen)", "kotlin.time.milliseconds")
+      ReplaceWith(
+        "of(maxFailures, resetTimeout.millis.milliseconds, exponentialBackoffFactor, maxResetTimeout.millis.milliseconds, onRejected, onClosed, onHalfOpen, onOpen)",
+        "kotlin.time.milliseconds"
+      )
     )
     suspend fun of(
       maxFailures: Int,
