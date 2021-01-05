@@ -9,7 +9,12 @@ import kotlin.time.Duration
 import kotlin.time.milliseconds
 import kotlin.time.nanoseconds
 
-class CircuitBreaker private constructor(
+class CircuitBreaker
+@Deprecated(
+  "Please use the #of constructor instead",
+  ReplaceWith("of(maxFailures, resetTimeout, exponentialBackoffFactor, maxResetTimeout, onRejected, onClosed, onHalfOpen, onOpen)")
+)
+private constructor(
   private val state: AtomicRefW<State>,
   private val maxFailures: Int,
   private val resetTimeout: Duration,
