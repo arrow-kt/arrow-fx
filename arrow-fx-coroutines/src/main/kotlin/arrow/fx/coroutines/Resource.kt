@@ -574,4 +574,3 @@ inline fun <A> Iterable<Resource<A>>.sequence(): Resource<List<A>> =
 @Suppress("NOTHING_TO_INLINE")
 inline fun <A> Iterable<Resource<Iterable<A>>>.flatSequence(): Resource<List<A>> =
   sequence().map { it.flatten() }
-
