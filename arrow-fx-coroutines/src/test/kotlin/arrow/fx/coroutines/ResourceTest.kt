@@ -75,7 +75,9 @@ class ResourceTest : ArrowFxSpec(spec = {
       Arb.list(Arb.int()),
       Arb.functionAToB<Int, List<String?>>(Arb.list(Arb.nullable(Arb.string())))
     ) { list, f ->
-      list.flatTraverseFilterResource { Resource.just(f(it)) } resourceShouldBe Resource.just(list.flatMap(f).filterNotNull())
+      list.flatTraverseFilterResource { Resource.just(f(it)) } resourceShouldBe Resource.just(
+        list.flatMap(f).filterNotNull()
+      )
     }
   }
 
@@ -116,7 +118,7 @@ class ResourceTest : ArrowFxSpec(spec = {
       val ff = list.traverseResource { Resource.just(f(it)) }
       val gg = list.traverseResource { Resource.just(g(it)) }
 
-      val result = ff.product(gg).map { (a, b) ->
+      val result = ff.zip(gg).map { (a, b) ->
         a.zip(b)
       }
 

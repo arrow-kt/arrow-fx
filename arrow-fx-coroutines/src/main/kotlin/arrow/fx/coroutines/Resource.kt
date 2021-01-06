@@ -1,9 +1,7 @@
 package arrow.fx.coroutines
 
 import arrow.core.Either
-import arrow.core.Tuple2
 import arrow.core.identity
-import arrow.core.toT
 import java.io.Closeable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -160,9 +158,6 @@ sealed class Resource<out A> {
 
   fun <B> zip(other: Resource<B>): Resource<Pair<A, B>> =
     map2(other, ::Pair)
-
-  fun <B> product(other: Resource<B>): Resource<Tuple2<A, B>> =
-    ap(other.map { b: B -> { a: A -> a toT b } })
 
   class Bind<A, B>(val source: Resource<A>, val f: (A) -> Resource<B>) : Resource<B>()
 
