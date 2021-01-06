@@ -1,7 +1,9 @@
 package arrow.fx.coroutines
 
 import arrow.core.Either
+import arrow.core.Tuple2
 import arrow.core.identity
+import arrow.core.toT
 import java.io.Closeable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -158,6 +160,9 @@ sealed class Resource<out A> {
 
   fun <B> zip(other: Resource<B>): Resource<Pair<A, B>> =
     map2(other, ::Pair)
+
+  fun <B> product(other: Resource<B>): Resource<Tuple2<A, B>> =
+    ap(other.map { b: B -> { a: A -> a toT b } })
 
   class Bind<A, B>(val source: Resource<A>, val f: (A) -> Resource<B>) : Resource<B>()
 
@@ -440,7 +445,7 @@ inline fun <A, B> Iterable<A>.traverseResource(crossinline f: (A) -> Resource<B>
  * @see traverseResource
  */
 inline fun <A, B> Iterable<A>.traverseFilterResource(crossinline f: (A) -> Resource<B?>): Resource<List<B>> =
-  traverseResource(f).map { it.mapNotNull(::identity) }
+  traverseResource(f).map { it.filterNotNull() }
 
 /**
  * Traverse this [Iterable] and flattens the resulting `Resource<List<B>>` of [f] into a `Resource<List<B>>`.
@@ -486,11 +491,11 @@ inline fun <A, B> Iterable<A>.flatTraverseResource(crossinline f: (A) -> Resourc
  * @see flatTraverseResource
  */
 inline fun <A, B> Iterable<A>.flatTraverseFilterResource(crossinline f: (A) -> Resource<List<B?>>): Resource<List<B>> =
-  flatTraverseResource { f(it).map { list -> list.mapNotNull(::identity) } }
+  flatTraverseResource { f(it).map { list -> list.filterNotNull() } }
 
 /**
  * Sequences this [Iterable] of [Resource]s.
- * Be advised that [Iterable.map] and [sequence] is equivalent to [traverseResource]
+ * [Iterable.map] and [sequence] is equivalent to [traverseResource].
  *
  * ```kotlin:ank:playground
  * import arrow.fx.coroutines.*
@@ -528,3 +533,45 @@ inline fun <A, B> Iterable<A>.flatTraverseFilterResource(crossinline f: (A) -> R
 @Suppress("NOTHING_TO_INLINE")
 inline fun <A> Iterable<Resource<A>>.sequence(): Resource<List<A>> =
   traverseResource(::identity)
+
+/**
+ * Sequences this [Iterable] and flattens the [Resource] elements.
+ * [Iterable.map] and [flatSequence] is equivalent to [flatTraverseResource].
+ *
+ * ```kotlin:ank:playground
+ * import arrow.fx.coroutines.*
+ *
+ * class File(url: String) {
+ *   suspend fun open(): File = this
+ *   suspend fun close(): Unit {}
+ *   override fun toString(): String = "This file contains some interesting content!"
+ * }
+ *
+ * suspend fun openFile(uri: String): File = File(uri).open()
+ * suspend fun closeFile(file: File): Unit = file.close()
+ * suspend fun fileToString(file: File): String = file.toString()
+ *
+ * suspend fun main(): Unit {
+ *   //sampleStart
+ *   val res: List<String> = listOf(
+ *     "data.json",
+ *     "user.json",
+ *     "resource.json"
+ *   ).map { uri ->
+ *     resource {
+ *      listOf(openFile(uri))
+ *     } release { files ->
+ *       files.forEach { closeFile(it) }
+ *     }
+ *   }.flatSequence().use { files ->
+ *     files.map { fileToString(it) }
+ *   }
+ *   //sampleEnd
+ *   res.forEach(::println)
+ * }
+ * ```
+ */
+@Suppress("NOTHING_TO_INLINE")
+inline fun <A> Iterable<Resource<Iterable<A>>>.flatSequence(): Resource<List<A>> =
+  sequence().map { it.flatten() }
+
