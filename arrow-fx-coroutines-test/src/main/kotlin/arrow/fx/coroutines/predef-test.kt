@@ -156,7 +156,7 @@ fun Arb.Companion.unit(): Arb<Unit> =
 
 fun <A, B> Arb.Companion.functionAToB(arb: Arb<B>): Arb<(A) -> B> =
   arb.map { b: B -> { _: A -> b } }
-  
+
 fun <A> Arb.Companion.nullable(arb: Arb<A>): Arb<A?> =
   Arb.Companion.choice(arb, arb.map { null })
 
