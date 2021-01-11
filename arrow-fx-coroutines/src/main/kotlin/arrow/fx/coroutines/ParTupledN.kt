@@ -163,7 +163,7 @@ suspend inline fun <A, B, C> parTupledN(
  * @param fc value to parallel map
  * @param fd value to parallel map
  *
- * @see parMapN for a function that can run on any [CoroutineContext].
+ * @see parTupledN for a function that can run on any [CoroutineContext].
  */
 suspend inline fun <A, B, C, D> parTupledN(
   crossinline fa: suspend () -> A,
@@ -174,7 +174,7 @@ suspend inline fun <A, B, C, D> parTupledN(
   parTupledN(Dispatchers.Default, fa, fb, fc, fd)
 
 /**
- * Runs [fa], [fb], [fc], [fd] in parallel on [ctx] and combines their results using the provided function.
+ * Runs [fa], [fb], [fc], [fd] in parallel on [ctx] and combines their results into [Tuple4].
  *
  * Coroutine context is inherited from a [CoroutineScope], additional context elements can be specified with [ctx] argument.
  * If the combined context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
