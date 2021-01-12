@@ -171,7 +171,7 @@ class ParTupled4Test : ArrowFxSpec(spec = {
       val pb = Promise<Pair<Int, ExitCase>>()
       val pc = Promise<Pair<Int, ExitCase>>()
 
-      val winner = suspend { s.acquire(); throw e }
+      val winner = suspend { s.acquireN(3); throw e }
       val loserA = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
       val loserB = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
       val loserC = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pc.complete(Pair(c, ex)) } }
@@ -187,6 +187,14 @@ class ParTupled4Test : ArrowFxSpec(spec = {
 
       pa.get().let { (res, exit) ->
         res shouldBe a
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pb.get().let { (res, exit) ->
+        res shouldBe b
+        exit.shouldBeInstanceOf<ExitCase.Cancelled>()
+      }
+      pc.get().let { (res, exit) ->
+        res shouldBe c
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
       r should leftException(e)
