@@ -1,6 +1,15 @@
 package arrow.fx.coroutines
 
 import arrow.core.Either
+import arrow.core.Tuple10
+import arrow.core.Tuple2
+import arrow.core.Tuple3
+import arrow.core.Tuple4
+import arrow.core.Tuple5
+import arrow.core.Tuple6
+import arrow.core.Tuple7
+import arrow.core.Tuple9
+import arrow.core.Tuple8
 import arrow.core.identity
 import java.io.Closeable
 import java.util.concurrent.ExecutorService
@@ -449,6 +458,96 @@ sealed class Resource<out A> {
           }
         }
       }
+
+    fun <B, C> tupleN(
+      b: Resource<B>,
+      c: Resource<C>
+    ): Resource<Tuple2<B, C>> =
+      mapN(b, c, ::Tuple2)
+
+    fun <B, C, D> tupleN(
+      b: Resource<B>,
+      c: Resource<C>,
+      d: Resource<D>
+    ): Resource<Tuple3<B, C, D>> =
+      mapN(b, c, d, ::Tuple3)
+
+    fun <B, C, D, E> tupleN(
+      b: Resource<B>,
+      c: Resource<C>,
+      d: Resource<D>,
+      e: Resource<E>
+    ): Resource<Tuple4<B, C, D, E>> =
+      mapN(b, c, d, e, ::Tuple4)
+
+    fun <B, C, D, E, F> tupleN(
+      b: Resource<B>,
+      c: Resource<C>,
+      d: Resource<D>,
+      e: Resource<E>,
+      f: Resource<F>
+    ): Resource<Tuple5<B, C, D, E, F>> =
+      mapN(b, c, d, e, f, ::Tuple5)
+
+    fun <B, C, D, E, F, G> tupleN(
+      b: Resource<B>,
+      c: Resource<C>,
+      d: Resource<D>,
+      e: Resource<E>,
+      f: Resource<F>,
+      g: Resource<G>
+    ): Resource<Tuple6<B, C, D, E, F, G>> =
+      mapN(b, c, d, e, f, g, ::Tuple6)
+
+    fun <B, C, D, E, F, G, H> tupleN(
+      b: Resource<B>,
+      c: Resource<C>,
+      d: Resource<D>,
+      e: Resource<E>,
+      f: Resource<F>,
+      g: Resource<G>,
+      h: Resource<H>
+    ): Resource<Tuple7<B, C, D, E, F, G, H>> =
+      mapN(b, c, d, e, f, g, h, ::Tuple7)
+
+    fun <B, C, D, E, F, G, H, I> tupleN(
+      b: Resource<B>,
+      c: Resource<C>,
+      d: Resource<D>,
+      e: Resource<E>,
+      f: Resource<F>,
+      g: Resource<G>,
+      h: Resource<H>,
+      i: Resource<I>
+    ): Resource<Tuple8<B, C, D, E, F, G, H, I>> =
+      mapN(b, c, d, e, f, g, h, i, ::Tuple8)
+
+    fun <B, C, D, E, F, G, H, I, J> tupleN(
+      b: Resource<B>,
+      c: Resource<C>,
+      d: Resource<D>,
+      e: Resource<E>,
+      f: Resource<F>,
+      g: Resource<G>,
+      h: Resource<H>,
+      i: Resource<I>,
+      j: Resource<J>
+    ): Resource<Tuple9<B, C, D, E, F, G, H, I, J>> =
+      mapN(b, c, d, e, f, g, h, i, j, ::Tuple9)
+
+    fun <B, C, D, E, F, G, H, I, J, K> tupleN(
+      b: Resource<B>,
+      c: Resource<C>,
+      d: Resource<D>,
+      e: Resource<E>,
+      f: Resource<F>,
+      g: Resource<G>,
+      h: Resource<H>,
+      i: Resource<I>,
+      j: Resource<J>,
+      k: Resource<K>
+    ): Resource<Tuple10<B, C, D, E, F, G, H, I, J, K>> =
+      mapN(b, c, d, e, f, g, h, i, j, k, ::Tuple10)
   }
 
   private suspend fun continueLoop(
@@ -576,8 +675,9 @@ inline fun <A, B> Iterable<A>.traverseResource(crossinline f: (A) -> Resource<B>
  * Traverses and filters nullable resources
  * @see traverseResource
  */
+@Suppress("UNCHECKED_CAST")
 inline fun <A, B> Iterable<A>.traverseFilterResource(crossinline f: (A) -> Resource<B?>): Resource<List<B>> =
-  traverseResource(f).map { it.filterNotNull() }
+  traverseResource(f).map { ((it as List<Any?>).filterNotNull() as List<B>) }
 
 /**
  * Traverse this [Iterable] and flattens the resulting `Resource<List<B>>` of [f] into a `Resource<List<B>>`.
@@ -622,8 +722,9 @@ inline fun <A, B> Iterable<A>.flatTraverseResource(crossinline f: (A) -> Resourc
  * Traverse this [Iterable] and flattens and filters out nullable elements of the resulting `Resource<List<B?>>` in [f] into a `Resource<List<B>>`.
  * @see flatTraverseResource
  */
+@Suppress("UNCHECKED_CAST")
 inline fun <A, B> Iterable<A>.flatTraverseFilterResource(crossinline f: (A) -> Resource<List<B?>>): Resource<List<B>> =
-  flatTraverseResource { f(it).map { list -> list.filterNotNull() } }
+  flatTraverseResource { f(it).map { list -> ((list as List<Any?>).filterNotNull() as List<B>) } }
 
 /**
  * Sequences this [Iterable] of [Resource]s.
