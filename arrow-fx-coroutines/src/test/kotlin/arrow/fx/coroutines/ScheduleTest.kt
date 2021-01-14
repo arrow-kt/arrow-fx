@@ -112,7 +112,7 @@ class ScheduleTest : ArrowFxSpec(spec = {
     } shouldBe null
   }
 
-  /*"Schedule.spaced()" {
+  "Schedule.spaced()" {
     val duration = 5.seconds
     val res = Schedule.spaced<Any>(duration).calculateSchedule(0, 500)
 
@@ -132,7 +132,7 @@ class ScheduleTest : ArrowFxSpec(spec = {
 
     res.all { it.cont } shouldBe true
     sum shouldBe fib.sum()
-  }*/
+  }
 
   "Schedule.linear()" {
     val i: Double = 10.0
@@ -146,7 +146,7 @@ class ScheduleTest : ArrowFxSpec(spec = {
     sum shouldBe exp.sum()
   }
 
-  /*"Schedule.exponential()" {
+  "Schedule.exponential()" {
     val i = 10.0
     val n = 10
     val res = Schedule.exponential<Any?>(i.seconds).calculateSchedule(0.0, n)
@@ -156,7 +156,7 @@ class ScheduleTest : ArrowFxSpec(spec = {
 
     res.all { it.cont } shouldBe true
     sum shouldBe expSum
-  }*/
+  }
 
   "repeat is stack-safe" {
     checkRepeat(Schedule.recurs(20_000), expected = 20_000)
@@ -222,11 +222,11 @@ private fun fibs(one: Double): Sequence<Double> = generateSequence(Pair(0.0, one
   Pair(b, (a + b))
 }.map { it.first }
 
-private fun exp(base: Double): Sequence<Double> = generateSequence(Pair(base, 1.0)) { (_, n) ->
+private fun exp(base: Double): Sequence<Double> = generateSequence(Pair(base, 1)) { (_, n) ->
   Pair(base * 2.0.pow(n), n + 1)
 }.map { it.first }
 
-private fun linear(base: Double): Sequence<Double> = generateSequence(Pair(base, 1.0)) { (_, n) ->
+private fun linear(base: Double): Sequence<Double> = generateSequence(Pair(base, 1L)) { (_, n) ->
   Pair((base * n), (n + 1))
 }.map { it.first }
 
