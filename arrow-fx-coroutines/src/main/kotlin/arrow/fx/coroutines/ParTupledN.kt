@@ -28,6 +28,7 @@ import kotlin.coroutines.EmptyCoroutineContext
  *
  * @see parTupledN for a function that can run on any [CoroutineContext]
  */
+@Deprecated("Use parMapN instead", ReplaceWith("parMapN(fa, fb, ::Pair)"))
 suspend inline fun <A, B> parTupledN(
   crossinline fa: suspend () -> A,
   crossinline fb: suspend () -> B
@@ -62,6 +63,7 @@ suspend inline fun <A, B> parTupledN(
  *
  * @see parTupledN for a function that ensures operations run in parallel on the [Dispatchers.Default].
  */
+@Deprecated("Use parMapN instead", ReplaceWith("parMapN(ctx, fa, fb, ::Pair)"))
 suspend inline fun <A, B> parTupledN(
   ctx: CoroutineContext = EmptyCoroutineContext,
   crossinline fa: suspend () -> A,
@@ -93,6 +95,7 @@ suspend inline fun <A, B> parTupledN(
  *
  * @see parMapN for a function that can run on any [CoroutineContext].
  */
+@Deprecated("Use parMapN instead", ReplaceWith("parMapN(fa, fb, fc, ::Triple)"))
 suspend inline fun <A, B, C> parTupledN(
   crossinline fa: suspend () -> A,
   crossinline fb: suspend () -> B,
@@ -130,6 +133,7 @@ suspend inline fun <A, B, C> parTupledN(
  *
  * @see parTupledN for a function that ensures operations run in parallel on the [Dispatchers.Default].
  */
+@Deprecated("Use parMapN instead", ReplaceWith("parMapN(ctx, fa, fb, fc, ::Triple)"))
 suspend inline fun <A, B, C> parTupledN(
   ctx: CoroutineContext = EmptyCoroutineContext,
   crossinline fa: suspend () -> A,
