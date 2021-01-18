@@ -1,3 +1,6 @@
+@file:JvmMultifileClass
+@file:JvmName("FlowExtensions")
+
 package arrow.fx.coroutines
 
 import kotlinx.coroutines.delay
@@ -17,6 +20,7 @@ import kotlinx.coroutines.flow.retryWhen
  * import kotlinx.coroutines.flow.*
  * import arrow.fx.coroutines.*
  * suspend fun main(): Unit {
+ *   var counter = 0
  *   val flow = flow {
  *    emit(a)
  *    if (++counter <= 5) throw RuntimeException("Bang!")

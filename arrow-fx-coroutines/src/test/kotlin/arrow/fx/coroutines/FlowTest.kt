@@ -10,6 +10,7 @@ import io.kotest.property.arbitrary.positiveInts
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.reduce
+import kotlinx.coroutines.test.runBlockingTest
 
 class FlowTest : ArrowFxSpec(spec = {
 
@@ -40,27 +41,29 @@ class FlowTest : ArrowFxSpec(spec = {
     }
   }
 
-  // Note: this takes 50-60 sec to run
   "Retry - schedule with delay" {
-    checkAll(Arb.int(), Arb.int(50, 100)) { a, delayMs ->
-      val timestamps = mutableListOf<Long>()
-      shouldThrow<RuntimeException> {
-        flow {
-          emit(a)
-          timestamps.add(System.currentTimeMillis())
-          throw RuntimeException("Bang!")
+    runBlockingTest {
+      checkAll(Arb.int(), Arb.int(100, 1000)) { a, delayMs ->
+        val start = currentTime
+        val timestamps = mutableListOf<Long>()
+        shouldThrow<RuntimeException> {
+          flow {
+            emit(a)
+            timestamps.add(currentTime)
+            throw RuntimeException("Bang!")
+          }
+            .retry(Schedule.recurs<Throwable>(2) and Schedule.spaced(delayMs.milliseconds))
+            .collect()
         }
-          .retry(Schedule.recurs<Throwable>(2) and Schedule.spaced(delayMs.milliseconds))
-          .collect()
+        timestamps.size shouldBe 3
+
+        // total run should be between start time + delay * 3 AND start + tolerance %
+        val min = start + (delayMs * 2).milliseconds.millis
+        val max = min + delayMs / 10
+
+        timestamps.last() shouldBeGreaterThanOrEqual min
+        timestamps.last() shouldBeLessThan max
       }
-      timestamps.size shouldBe 3
-
-      // total run should be between start time + delay * 2 AND start + tolerance %
-      val min = timestamps.first() + (delayMs.milliseconds * 2).millis
-      val max = min + delayMs / 6
-
-      timestamps.last() shouldBeGreaterThanOrEqual min
-      timestamps.last() shouldBeLessThan max
     }
   }
 })
