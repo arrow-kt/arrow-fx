@@ -118,7 +118,7 @@ suspend suspendedIOProgram(): Either<PersistenceError, ProcessedUser> =
 
 ```kotlin:ank
 suspend fun either(): Either<PersistenceError, ProcessedUser> =
-  Either.fx {
+  either {
     val user = !fetchUser()
     val processed = !user.process()
     processed
@@ -141,7 +141,7 @@ interface Persistence {
     suspend fun User.process(): Either<ProcessingError, ProcessedUser>
 
     suspend fun List<User>.process(): Either<ProcessingError, List<ProcessedUser>> =
-        Either.fx { map { !it.process() } }
+        either { map { !it.process() } }
 }
 ```
 
@@ -166,7 +166,7 @@ suspend fun <R> R.getProcessUsers(): Either<ProcessingError, List<ProcessedUser>
         where R : Repo,
               R : Persistence = fetchUsers().process()
 ```
- 
+
 ### Performance
 
 `suspend` is extremely fast in comparison to `IO<A>`, since `IO<A>` is build at runtime and `suspend` is build by the compiler.
