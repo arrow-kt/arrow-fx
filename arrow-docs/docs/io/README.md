@@ -81,6 +81,10 @@ When writing functional code style we often want to express our domain errors as
 Let's assume following domain, and compare two snippets one using `IO<Either<E, A>>` and another `suspend () -> Either<E, A>`.
 
 ```kotlin:ank
+import arrow.core.Either
+import arrow.core.Left
+import arrow.core.Right
+
 inline class Id(val id: Long)
 object PersistenceError
 
@@ -88,16 +92,18 @@ data class User(val email: String, val name: String)
 data class ProcessedUser(val id: Id, val email: String, val name: String)
 
 suspend fun fetchUser(): Either<PersistenceError, User> =
-    Right(User("simon@arrow-kt.io", "Simon"))
+  Right(User("simon@arrow-kt.io", "Simon"))
 
 suspend fun User.process(): Either<PersistenceError, ProcessedUser> =
-    if (email.contains(Regex("^(.+)@(.+)$"))) Right(ProcessedUser(UUID.V4.squuid(), email, name))
-    else Left(PersistenceError)
+  if (email.contains(Regex("^(.+)@(.+)$"))) Right(ProcessedUser(Id(1), email, name))
+  else Left(PersistenceError)
 ```
 
 ###### IO<Either<E, A>>
 
  ```kotlin:ank
+import arrow.fx.*
+
 fun ioProgram(): IO<Either<PersistenceError, ProcessedUser>> =
   IO.fx {
     val res = !IO.effect { fetchUser() }
@@ -117,7 +123,9 @@ suspend suspendedIOProgram(): Either<PersistenceError, ProcessedUser> =
 ##### suspend () -> Either<E, A>
 
 ```kotlin:ank
-suspend fun either(): Either<PersistenceError, ProcessedUser> =
+import arrow.core.computations.either
+
+suspend fun suspendProgram(): Either<PersistenceError, ProcessedUser> =
   either {
     val user = !fetchUser()
     val processed = !user.process()
@@ -132,7 +140,7 @@ They allow us to elegantly define `syntax` for a certain type. Let's see a simpl
 
 Let's reuse our previous domain of`User`, `ProcessedUser`, but let's introduce `Repo` and `Persistence` layers to mimick what could be a small app with a couple layers.
 
-```kotlin:ank:playground
+```kotlin:ank
 interface Repo {
     suspend fun fetchUsers(): List<User>
 }
@@ -173,7 +181,9 @@ suspend fun <R> R.getProcessUsers(): Either<ProcessingError, List<ProcessedUser>
 
 Let's take our previous example from ergonomics:
  
-```kotlin
+```kotlin:ank
+import arrow.fx.IO
+
 fun number(): IO<Int> = IO.just(1)
 
 fun triple(): IO<Triple<Int, Int, Int>> =

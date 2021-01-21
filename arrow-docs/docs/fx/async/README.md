@@ -77,12 +77,14 @@ suspend fun main(): Unit {
 Once the function specifies a valid return, we can observe how the returned non-blocking value is bound on the left-hand side.
 
 ```kotlin:ank:playground
-import kotlinx.coroutines.*
-import arrow.fx.coroutines.*
+import kotlinx.coroutines.delay
+import arrow.fx.coroutines.raceN
+import arrow.fx.coroutines.never
+import kotlin.time.milliseconds
 
 //sampleStart
 suspend fun loser(): Unit =
-  never<Unit>() // Never wins
+  never() // Never wins
 
 suspend fun winner(): Int {
   delay(5.milliseconds)
