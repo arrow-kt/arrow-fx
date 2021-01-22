@@ -6,10 +6,8 @@ permalink: /fx/
 
 # Arrow Fx. Typed FP for the masses
 
-Arrow Fx is a next-generation Typed FP Effects Library that makes tracked effectful programming first class in Kotlin,
-and is build on top of Kotlin's suspend system and [KotlinX Coroutines](https://kotlinlang.org/docs/reference/coroutines/coroutines-guide.html)
-This library is a functional companion library to KotlinX Coroutines, similar to how Arrow Core is a functional companion library to Kotlin Std.
-It aims to bring functional operators to KotlinX Coroutines with a companion library.
+Arrow Fx is a next-generation Typed FP Effects Library that makes tracked effectful programming first class in Kotlin built on top of Kotlin's suspend system and [KotlinX Coroutines](https://kotlinlang.org/docs/reference/coroutines/coroutines-guide.html)
+Arrow Fx is a functional companion to KotlinX Coroutines augmenting its api with well known functional operators making it easier to compose async and concurrent programs.
 
 The library brings purity, referential transparency, and direct imperative syntax to typed FP in Kotlin, and is a fun and easy tool for creating Typed Pure Functional Programs.
 

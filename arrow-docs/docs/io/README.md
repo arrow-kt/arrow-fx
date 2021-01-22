@@ -132,7 +132,9 @@ suspend fun suspendProgram(): Either<PersistenceError, ProcessedUser> =
     processed
   }
 ```
+The above two examples demonstrate how much simpler `suspend` is over its `IO` counterpart and how the `either` computation block allows us to bind values of `Either` to extract their right side all while inside `suspend`.
 
+Arrow Fx allows to intermix effects in suspension. What otherwise would have required the `EitherT` transformer over `IO` now it can just be expressed by wrapping in `either` instead
 #### suspend R.() -> A
 
 We can use extension functions to do functional dependency injection with similar semantics as `Reader` or `Kleisli`.
@@ -154,7 +156,6 @@ interface Persistence {
 ```
 
 Given the above defined layers we can easily compose them by creating a product which implements the dependencies by delegation.
-This can easily be done manually or with the help of a framework like Dagger to do this wiring automatically.
 
 ```kotlin:ank
 class DataModule(
@@ -178,6 +179,11 @@ suspend fun <R> R.getProcessUsers(): Either<ProcessingError, List<ProcessedUser>
 ### Performance
 
 `suspend` is extremely fast in comparison to `IO<A>`, since `IO<A>` is build at runtime and `suspend` is build by the compiler.
+
+Working with an ADT such as `IO<A>` implies that each composition of our program has some allocation cost.
+This happens because the IO ADT uses different data classes to move computation from the stack to the heap in order to compose them and preserve properties such as lazy evaluation semantics.
+
+In contrast, when using `suspend`, the Kotlin compiler is aware of function composition on each suspension point and can desugar and specialise the program into more efficient target code. The generated code by the Kotlin compiler is better in terms of allocations and throughput when compared to other IO ADT based impls in the JVM.
 
 Let's take our previous example from ergonomics:
  
@@ -209,9 +215,9 @@ fun triple(): IO<Triple<Int, Int, Int>> =
   }
 ```
 
-So we can see that for this simple program we allocated 6 `IO` cases of the `IO` `sealed class`.
-This is necessary so when you `unsafeRun` the `IO` program, it can be inspected to find out which branch of code needs to run. 
+We can see that for this simple program we allocated 6 `IO` cases of the `IO` `sealed class`.
+This is necessary so when `unsafeRun` is invoked the `IO` program can find the branch representing the kind of operation of `IO` that needs to be interpreted. In the example above `IO.Bind`, `IO.Map` or `IO.Just`
 
-In contrast to this `suspend` can simply be wired by the Kotlin compiler, which eliminates the need for this `sealed class` and allocations.
+In contrast, `suspend` can simply be wired by the Kotlin compiler eliminating the need for additional `sealed class` declarations and allocations keeping computations in the stack instead of maintaining value level in memory representations of our program. 
 The Kotlin compiler rewrites the suspend program to a super fast runtime which uses a switch table and mutable state machine to run the `suspend` program.
-Furthermore, the Kotlin compiler applies a bunch of optimisations that improve the speed of `suspend` even further and certains JVM .
+Furthermore, the Kotlin compiler applies other optimisations focused on the speed of `suspend` and memory usage of suspension making it suitable for hotspots and places where otherwise allocations or ADT based data types are not an option.
