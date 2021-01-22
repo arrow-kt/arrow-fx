@@ -298,11 +298,11 @@ data class ObservableK<out A>(val observable: Observable<out A>) : ObservableKOf
         emitter.setCancellable { token.value().subscribe({}, { e -> emitter.tryOnError(e) }) }
       }.k()
 
-    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(fa)"))
+    @Deprecated(DeprecateRxJava)
     fun <A> cancelable(fa: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForObservableK>): ObservableK<A> =
       cancellable(fa)
 
-    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellableF(fa)"))
+    @Deprecated(DeprecateRxJava)
     fun <A> cancelableF(fa: ((Either<Throwable, A>) -> Unit) -> ObservableKOf<CancelToken<ForObservableK>>): ObservableK<A> =
       cancellableF(fa)
 

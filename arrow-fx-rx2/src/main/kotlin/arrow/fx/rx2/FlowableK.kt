@@ -253,7 +253,7 @@ data class FlowableK<out A>(val flowable: Flowable<out A>) : FlowableKOf<A> {
         emitter.setCancellable { dispose.dispose() }
       }, mode).k()
 
-    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellable(fa)"))
+    @Deprecated(DeprecateRxJava)
     fun <A> cancelable(fa: ((Either<Throwable, A>) -> Unit) -> CancelToken<ForFlowableK>, mode: BackpressureStrategy = BackpressureStrategy.BUFFER): FlowableK<A> =
       cancellable(fa)
 
@@ -271,7 +271,7 @@ data class FlowableK<out A>(val flowable: Flowable<out A>) : FlowableKOf<A> {
         emitter.setCancellable { token.value().subscribe({}, { e -> emitter.tryOnError(e) }) }
       }, mode).k()
 
-    @Deprecated("Renaming this api for consistency", ReplaceWith("cancellableF(fa)"))
+    @Deprecated(DeprecateRxJava)
     fun <A> cancelableF(fa: ((Either<Throwable, A>) -> Unit) -> FlowableKOf<CancelToken<ForFlowableK>>, mode: BackpressureStrategy = BackpressureStrategy.BUFFER): FlowableK<A> =
       cancellableF(fa)
 
