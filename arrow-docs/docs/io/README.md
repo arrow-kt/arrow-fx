@@ -85,7 +85,7 @@ import arrow.core.Either
 import arrow.core.Left
 import arrow.core.Right
 
-inline class Id(val id: Long)
+/* inline */ class Id(val id: Long)
 object PersistenceError
 
 data class User(val email: String, val name: String)
