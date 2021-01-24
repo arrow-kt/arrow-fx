@@ -148,9 +148,9 @@ interface Repo {
 }
 
 interface Persistence {
-    suspend fun User.process(): Either<ProcessingError, ProcessedUser>
+    suspend fun User.process(): Either<PersistenceError, ProcessedUser>
 
-    suspend fun List<User>.process(): Either<ProcessingError, List<ProcessedUser>> =
+    suspend fun List<User>.process(): Either<PersistenceError, List<ProcessedUser>> =
         either { map { !it.process() } }
 }
 ```
@@ -171,7 +171,7 @@ Here we define `getProcessUsers` which can only be called where `R` is both `Rep
 /**
  * Generic top-level function based on syntax enabled by [Persistence] & [Repo] constraint
  */
-suspend fun <R> R.getProcessUsers(): Either<ProcessingError, List<ProcessedUser>>
+suspend fun <R> R.getProcessUsers(): Either<PersistenceError, List<ProcessedUser>>
         where R : Repo,
               R : Persistence = fetchUsers().process()
 ```

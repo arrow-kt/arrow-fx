@@ -81,16 +81,19 @@ import kotlinx.coroutines.delay
 import arrow.fx.coroutines.raceN
 import arrow.fx.coroutines.never
 import kotlin.time.milliseconds
+import kotlin.time.ExperimentalTime
 
 //sampleStart
 suspend fun loser(): Unit =
   never() // Never wins
 
+@ExperimentalTime
 suspend fun winner(): Int {
   delay(5.milliseconds)
   return 5
 }
 
+@ExperimentalTime
 suspend fun main(): Unit {
   val res = raceN({ loser() }, { winner() })
 
