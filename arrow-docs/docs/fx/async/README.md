@@ -111,6 +111,8 @@ All operators found in Arrow Fx check for cancellation.
 In the small example of an infinite loop below `parMapN` checks for cancellation and thus this function also check for cancellation before/and while sleeping.
 
 ```kotlin:ank
+import kotlinx.coroutines.Dispatchers
+
 tailrec suspend fun sleeper(): Unit {
   println("I am sleepy. I'm going to nap")
   parMapN(Dispatchers.IO, { Thread.currentThread().name }, { Thread.currentThread().name }, ::Pair)  // <-- cancellation check-point
