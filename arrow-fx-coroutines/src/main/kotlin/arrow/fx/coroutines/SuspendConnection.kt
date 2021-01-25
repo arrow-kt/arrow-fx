@@ -5,7 +5,6 @@ package arrow.fx.coroutines
  * This allows for clearer APIs in functions that expect a [CancelToken] to be returned.
  */
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-@Deprecated("CancelToken will be deprecated. Use suspendCoroutineCancellable for creating cancellable suspend functions.")
 inline class CancelToken(val cancel: suspend () -> Unit) {
 
   suspend fun invoke(): Unit = cancel.invoke()
