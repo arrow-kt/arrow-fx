@@ -457,7 +457,7 @@ sealed class Schedule<Input, Output> {
           val step = update(a, state)
           if (!step.cont) return Either.Right(step.finish.value())
           else {
-            delay(step.delay.nanoseconds.inMilliseconds.toLong())
+            delay(step.delayInNanos.nanoseconds.inMilliseconds.toLong())
 
             // Set state before looping again
             last = { step.finish.value() }
@@ -533,8 +533,8 @@ sealed class Schedule<Input, Output> {
       updated { update ->
         { a: Input, s: State ->
           val step = update(a, s)
-          val d = f(step.finish.value(), step.delay)
-          step.copy(delay = d)
+          val d = f(step.finish.value(), step.delayInNanos)
+          step.copy(delayInNanos = d)
         }
       }
 
@@ -625,15 +625,25 @@ sealed class Schedule<Input, Output> {
   /**
    * A single decision. Contains the decision to continue, the delay, the new state and the (lazy) result of a Schedule.
    */
-  data class Decision<out A, out B>(val cont: Boolean, val delay: Double, val state: A, val finish: Eval<B>) {
+  data class Decision<out A, out B>(val cont: Boolean, val delayInNanos: Double, val state: A, val finish: Eval<B>) {
 
     constructor(cont: Boolean, delay: Duration, state: A, finish: Eval<B>) : this(cont, delay.nanoseconds.toDouble(), state, finish)
+
+    @Deprecated(
+      "Arrow Fx Duration is deprecated use Double or kotlin.time.Duration",
+      ReplaceWith("delayInNanos.toLong().nanoseconds ", "arrow.fx.coroutines.nanoseconds")
+    )
+    val delay: Duration
+      get() = delayInNanos.toLong().oldNanoseconds
+
+    val duration: kotlin.time.Duration
+      get() = delayInNanos.nanoseconds
 
     operator fun not(): Decision<A, B> =
       copy(cont = !cont)
 
     fun <C, D> bimap(f: (A) -> C, g: (B) -> D): Decision<C, D> =
-      Decision(cont, delay, f(state), finish.map(g))
+      Decision(cont, delayInNanos, f(state), finish.map(g))
 
     fun <C> mapLeft(f: (A) -> C): Decision<C, B> =
       bimap(f, ::identity)
@@ -659,7 +669,7 @@ sealed class Schedule<Input, Output> {
     ): Decision<Pair<A, C>, Pair<B, D>> =
       Decision(
         f(cont, other.cont),
-        g(delay.toLong().oldNanoseconds, other.delay.toLong().oldNanoseconds).nanoseconds.toDouble(),
+        g(delay, other.delay).nanoseconds.toDouble(),
         Pair(state, other.state),
         finish.flatMap { first -> other.finish.map { second -> Pair(first, second) } }
       )
@@ -671,7 +681,7 @@ sealed class Schedule<Input, Output> {
       zip: (B, D) -> E
     ): Decision<Pair<A, C>, E> = Decision(
       f(cont, other.cont),
-      g(delay, other.delay),
+      g(delayInNanos, other.delayInNanos),
       Pair(state, other.state),
       finish.flatMap { first -> other.finish.map { second -> zip(first, second) } }
     )
@@ -680,7 +690,7 @@ sealed class Schedule<Input, Output> {
       if (other !is Decision<*, *>) false
       else cont == other.cont &&
         state == other.state &&
-        delay == other.delay &&
+        delayInNanos == other.delayInNanos &&
         finish.value() == other.finish.value()
 
     companion object {
@@ -812,13 +822,13 @@ sealed class Schedule<Input, Output> {
     @JvmName("delayedNanos")
     fun <A> delayed(delaySchedule: Schedule<A, Double>): Schedule<A, Double> =
       (delaySchedule.modifyNanos { a, b -> a + b } as ScheduleImpl<Any?, A, Double>)
-        .reconsider { _, dec -> dec.copy(finish = Eval.now(dec.delay)) }
+        .reconsider { _, dec -> dec.copy(finish = Eval.now(dec.delayInNanos)) }
 
     @ExperimentalTime
     @JvmName("delayedDuration")
     fun <A> delayed(delaySchedule: Schedule<A, kotlin.time.Duration>): Schedule<A, kotlin.time.Duration> =
       (delaySchedule.modify { a, b -> a + b } as ScheduleImpl<Any?, A, kotlin.time.Duration>)
-        .reconsider { _, dec -> dec.copy(finish = Eval.now(dec.delay.nanoseconds)) }
+        .reconsider { _, dec -> dec.copy(finish = Eval.now(dec.delayInNanos.nanoseconds)) }
 
     /**
      * Creates a Schedule which collects all its inputs in a list.
@@ -868,9 +878,9 @@ sealed class Schedule<Input, Output> {
       (forever<A>() as ScheduleImpl<Int, A, Int>).reconsider { _: A, decision ->
         Decision(
           cont = decision.cont,
-          delay = decision.delay,
+          delayInNanos = decision.delayInNanos,
           state = decision.state,
-          finish = Eval.now(decision.delay)
+          finish = Eval.now(decision.delayInNanos)
         )
       }
 
@@ -878,9 +888,9 @@ sealed class Schedule<Input, Output> {
       (forever<A>() as ScheduleImpl<Int, A, Int>).reconsider { _: A, decision ->
         Decision(
           cont = decision.cont,
-          delay = decision.delay,
+          delayInNanos = decision.delayInNanos,
           state = decision.state,
-          finish = Eval.now(decision.delay.nanoseconds)
+          finish = Eval.now(decision.delayInNanos.nanoseconds)
         )
       }
 
@@ -892,7 +902,7 @@ sealed class Schedule<Input, Output> {
       (forever<A>() as ScheduleImpl<Int, A, Int>).reconsider { _: A, decision ->
         Decision(
           cont = decision.cont,
-          delay = decision.delay,
+          delayInNanos = decision.delayInNanos,
           state = decision.state,
           finish = Eval.now(decision.cont)
         )
@@ -1128,7 +1138,7 @@ suspend fun <A, B, C> Schedule<Throwable, B>.retryOrElseEither(fa: suspend () ->
       dec = update(e, state)
       state = dec.state
 
-      if (dec.cont) delay(dec.delay.nanoseconds.inMilliseconds.toLong())
+      if (dec.cont) delay(dec.delayInNanos.nanoseconds.inMilliseconds.toLong())
       else return Either.Left(orElse(e.nonFatalOrThrow(), dec.finish.value()))
     }
   }
