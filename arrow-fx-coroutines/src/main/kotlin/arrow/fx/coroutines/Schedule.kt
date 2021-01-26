@@ -310,7 +310,7 @@ sealed class Schedule<Input, Output> {
    */
   abstract fun logOutput(f: suspend (output: Output) -> Unit): Schedule<Input, Output>
 
-  @Deprecated("foldM is renamed to fold. Use fold instead.", ReplaceWith("foldLazy(initial, f)"))
+  @Deprecated("foldM is renamed to foldLazy.", ReplaceWith("foldLazy(initial, f)"))
   fun <C> foldM(initial: suspend () -> C, f: suspend (acc: C, output: Output) -> C): Schedule<Input, C> =
     foldLazy(initial, f)
 
