@@ -82,7 +82,7 @@ import arrow.fx.coroutines.nanoseconds as oldNanoseconds
  * suspend fun main(): Unit {
  *   var counter = 0
  *   //sampleStart
- *   val res = (Schedule.recurs(3)).repeat {
+ *   val res = Schedule.recurs(3).repeat {
  *     println("Run: ${counter++}")
  *   }
  *   //sampleEnd
