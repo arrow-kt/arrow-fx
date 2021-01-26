@@ -249,7 +249,7 @@ sealed class Schedule<Input, Output> {
     )
 
   /**
-   * Combines with another schedule by combining the result and the delay of the [Decision] with the functions [f], [g] and a [zip] function
+   * Combines with another schedule by combining the result and the delay of the [Decision] with the [zipContinue], [zipDuration] and a [zip] functions
    */
   @ExperimentalTime
   fun <A : Input, B, C> combine(
