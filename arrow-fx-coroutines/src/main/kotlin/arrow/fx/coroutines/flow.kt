@@ -3,6 +3,7 @@
 
 package arrow.fx.coroutines
 
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
@@ -44,7 +45,7 @@ fun <A, B> Flow<A>.retry(schedule: Schedule<Throwable, B>): Flow<A> = flow {
     state = dec.state
 
     if (dec.cont) {
-      delay(dec.delayInNanos.millis)
+      delay(dec.duration.toLongMilliseconds())
       true
     } else {
       false
