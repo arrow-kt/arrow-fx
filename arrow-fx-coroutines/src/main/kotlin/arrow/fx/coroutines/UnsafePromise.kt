@@ -2,12 +2,13 @@ package arrow.fx.coroutines
 
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
  * An eager Promise implementation to bridge results across processes internally.
  * @see ForkAndForget
  */
-class UnsafePromise<A> {
+internal class UnsafePromise<A> {
 
   private sealed class State<out A> {
     object Empty : State<Nothing>()
@@ -37,9 +38,10 @@ class UnsafePromise<A> {
   }
 
   suspend fun join(): A =
-    cancellable { cb ->
-      get(cb)
-      CancelToken { remove(cb) }
+    suspendCancellableCoroutine { cont ->
+      val resumeWith = cont::resumeWith
+      get(resumeWith)
+      cont.invokeOnCancellation { remove(resumeWith) }
     }
 
   fun complete(value: Result<A>) {

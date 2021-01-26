@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.selects.select
 import kotlin.coroutines.ContinuationInterceptor
@@ -17,7 +18,7 @@ import kotlin.coroutines.EmptyCoroutineContext
  * Races the participants [fa], [fb] in parallel on the [Dispatchers.Default].
  * The winner of the race cancels the other participants.
  * Cancelling the operation cancels all participants.
- * An [uncancellable] participant will back-pressure the result of [raceN].
+ * An [NonCancellable] participant will back-pressure the result of [raceN].
  *
  * ```kotlin:ank:playground
  * import arrow.core.Either

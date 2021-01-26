@@ -9,6 +9,7 @@ internal const val ArrowExceptionMessage =
 
 internal class ArrowInternalException(override val message: String = ArrowExceptionMessage) : RuntimeException(message)
 
+@Deprecated("The Platform object from Arrow Fx Coroutines will become internal only. You should not rely on it for user code.")
 object Platform {
 
   internal fun <A> unsafeRunSync(f: suspend () -> A): A =
@@ -26,6 +27,7 @@ object Platform {
    * On top of the JVM this function uses Throwable#addSuppressed, available since Java 7. On top of JavaScript the
    * function would return a CompositeException.
    */
+  @Deprecated("The Platform object from Arrow Fx Coroutines will become internal only. You should not rely on it for user code.")
   fun composeErrors(first: Throwable, vararg rest: Throwable): Throwable {
     rest.forEach { if (it != first) first.addSuppressed(it) }
     return first
@@ -38,6 +40,7 @@ object Platform {
    * On top of the JVM this function uses Throwable#addSuppressed, available since Java 7. On top of JavaScript the
    * function would return a CompositeException.
    */
+  @Deprecated("The Platform object from Arrow Fx Coroutines will become internal only. You should not rely on it for user code.")
   fun composeErrors(first: Throwable, rest: List<Throwable>): Throwable {
     rest.forEach { if (it != first) first.addSuppressed(it) }
     return first
@@ -51,6 +54,7 @@ object Platform {
    * function would return a CompositeException.
    */
   @JvmName("composeErrorsNullable")
+  @Deprecated("The Platform object from Arrow Fx Coroutines will become internal only. You should not rely on it for user code.")
   fun composeErrors(first: Throwable?, other: Throwable?): Throwable? =
     first?.let { a ->
       other?.let { b ->
@@ -65,6 +69,7 @@ object Platform {
    * On top of the JVM this function uses Throwable#addSuppressed, available since Java 7. On top of JavaScript the
    * function would return a CompositeException.
    */
+  @Deprecated("The Platform object from Arrow Fx Coroutines will become internal only. You should not rely on it for user code.")
   fun composeErrors(first: Throwable, other: Throwable?): Throwable =
     other?.let { a ->
       a.apply { addSuppressed(first) }
@@ -77,12 +82,14 @@ object Platform {
    * On top of the JVM this function uses Throwable#addSuppressed, available since Java 7. On top of JavaScript the
    * function would return a CompositeException.
    */
+  @Deprecated("The Platform object from Arrow Fx Coroutines will become internal only. You should not rely on it for user code.")
   fun composeErrors(all: List<Throwable>): Throwable? =
     all.firstOrNull()?.let { first ->
       composeErrors(first, all.drop(1))
     }
 }
 
+@Deprecated("The AtomicRefW type from Arrow Fx Coroutines will become internal only. You should not rely on it for user code.")
 class AtomicRefW<A>(a: A) {
   private val atomicRef = atomic(a)
 
@@ -103,6 +110,7 @@ class AtomicRefW<A>(a: A) {
   override fun toString(): String = value.toString()
 }
 
+@Deprecated("The AtomicRefW type from Arrow Fx Coroutines will become internal only. You should not rely on it for user code.")
 class AtomicBooleanW(a: Boolean) {
   private val ref = atomic(a)
 
@@ -123,6 +131,7 @@ class AtomicBooleanW(a: Boolean) {
   override fun toString(): String = value.toString()
 }
 
+@Deprecated("The AtomicRefW type from Arrow Fx Coroutines will become internal only. You should not rely on it for user code.")
 class AtomicIntW(a: Int) {
   private val atomicRef = atomic(a)
 
@@ -155,6 +164,13 @@ class AtomicIntW(a: Int) {
   override fun toString(): String = value.toString()
 }
 
+@Deprecated(
+  "nonFatalOrThrow from Arrow Fx Coroutines will be removed. Use nonFatalOrThrow from Arrow Core",
+  ReplaceWith(
+    "this.nonFatalOrThrow()",
+    "arrow.core.nonFatalOrThrow"
+  )
+)
 fun Throwable.nonFatalOrThrow(): Throwable =
   when (this) {
     is VirtualMachineError, is ThreadDeath, is InterruptedException, is LinkageError -> throw this

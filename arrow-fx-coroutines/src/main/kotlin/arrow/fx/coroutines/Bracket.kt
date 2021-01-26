@@ -1,5 +1,6 @@
 package arrow.fx.coroutines
 
+import arrow.core.nonFatalOrThrow
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -13,28 +14,6 @@ sealed class ExitCase {
   data class Cancelled(val exception: CancellationException) : ExitCase()
   data class Failure(val failure: Throwable) : ExitCase()
 }
-
-/**
- * Runs [f] in an uncancellable manner.
- * If [f] gets cancelled, it will back-pressure the cancelling operation until finished.
- *
- * ```kotlin:ank:playground
- * import arrow.fx.coroutines.*
- *
- * suspend fun main(): Unit {
- *   //sampleStart
- *   val n = timeOutOrNull(10.milliseconds) {
- *     uncancellable { sleep(100.milliseconds) }
- *   } // takes 100.milliseconds, and returns null
- *
- *   //sampleEnd
- *   println("n: $n")
- * }
- * ```
- */
-@Deprecated("Use withContext(NonCancellable) from KotlinX insteed", ReplaceWith("withContext(NonCancellable) { f() }", "kotlinx.coroutines.withContext"))
-suspend inline fun <A> uncancellable(crossinline f: suspend () -> A): A =
-  withContext(NonCancellable) { f() }
 
 /**
  * Registers an [onCancel] handler after [fa].

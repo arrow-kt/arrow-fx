@@ -5,6 +5,9 @@ import arrow.core.identity
 import java.io.Closeable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.coroutines.AbstractCoroutineContextElement
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -151,13 +154,22 @@ sealed class Resource<out A> {
   fun <B> flatMap(f: (A) -> Resource<B>): Resource<B> =
     Bind(this, f)
 
+  @Deprecated(
+    "map2 is renamed to zip to be consitent with Kotlin Std's naming",
+    ReplaceWith("zip(other, combine)")
+  )
   fun <B, C> map2(other: Resource<B>, combine: (A, B) -> C): Resource<C> =
     flatMap { r ->
       other.map { r2 -> combine(r, r2) }
     }
 
+  fun <B, C> zip(other: Resource<B>, combine: (A, B) -> C): Resource<C> =
+    flatMap { r ->
+      other.map { r2 -> combine(r, r2) }
+    }
+
   fun <B> zip(other: Resource<B>): Resource<Pair<A, B>> =
-    map2(other, ::Pair)
+    zip(other, ::Pair)
 
   class Bind<A, B>(val source: Resource<A>, val f: (A) -> Resource<B>) : Resource<B>()
 
@@ -300,8 +312,7 @@ sealed class Resource<out A> {
           (r.f as (A) -> Resource<Either<A, B>>).andThen(::loop)
         )
         is Allocate -> Defer {
-          val res = r.acquire.invoke()
-          when (res) {
+          when (val res = r.acquire.invoke()) {
             is Either.Left -> {
               r.release(res, ExitCase.Completed)
               tailRecM(res.a, f)
@@ -320,7 +331,7 @@ sealed class Resource<out A> {
       c: Resource<C>,
       crossinline map: (B, C) -> D
     ): Resource<D> =
-      mapN(b, c, unit, unit, unit, unit, unit, unit, unit, unit) { b, c, d, _, _, _, _, _, _, _ ->
+      mapN(b, c, unit, unit, unit, unit, unit, unit, unit, unit) { b, c, _, _, _, _, _, _, _, _ ->
         map(b, c)
       }
 
@@ -468,7 +479,7 @@ sealed class Resource<out A> {
     when (current) {
       is Defer -> useLoop(current.resource.invoke(), use, stack)
       is Bind<*, *> ->
-        useLoop(current.source as Resource<Any?>, use, listOf(current.f as (Any?) -> Resource<Any?>) + stack)
+        useLoop(current.source, use, listOf(current.f as (Any?) -> Resource<Any?>) + stack)
       is Allocate -> bracketCase(
         acquire = current.acquire,
         use = { a ->
@@ -573,13 +584,6 @@ inline fun <A, B> Iterable<A>.traverseResource(crossinline f: (A) -> Resource<B>
   }
 
 /**
- * Traverses and filters nullable resources
- * @see traverseResource
- */
-inline fun <A, B> Iterable<A>.traverseFilterResource(crossinline f: (A) -> Resource<B?>): Resource<List<B>> =
-  traverseResource(f).map { it.filterNotNull() }
-
-/**
  * Traverse this [Iterable] and flattens the resulting `Resource<List<B>>` of [f] into a `Resource<List<B>>`.
  *
  * ```kotlin:ank:playground
@@ -617,13 +621,6 @@ inline fun <A, B> Iterable<A>.traverseFilterResource(crossinline f: (A) -> Resou
  */
 inline fun <A, B> Iterable<A>.flatTraverseResource(crossinline f: (A) -> Resource<List<B>>): Resource<List<B>> =
   traverseResource(f).map { it.flatten() }
-
-/**
- * Traverse this [Iterable] and flattens and filters out nullable elements of the resulting `Resource<List<B?>>` in [f] into a `Resource<List<B>>`.
- * @see flatTraverseResource
- */
-inline fun <A, B> Iterable<A>.flatTraverseFilterResource(crossinline f: (A) -> Resource<List<B?>>): Resource<List<B>> =
-  flatTraverseResource { f(it).map { list -> list.filterNotNull() } }
 
 /**
  * Sequences this [Iterable] of [Resource]s.
@@ -706,3 +703,28 @@ inline fun <A> Iterable<Resource<A>>.sequence(): Resource<List<A>> =
 @Suppress("NOTHING_TO_INLINE")
 inline fun <A> Iterable<Resource<Iterable<A>>>.flatSequence(): Resource<List<A>> =
   sequence().map { it.flatten() }
+
+internal fun ExecutorService.asCoroutineContext(): CoroutineContext =
+  ExecutorServiceContext(this)
+
+/**
+ * Wraps an [ExecutorService] in a [CoroutineContext] as a [ContinuationInterceptor]
+ * scheduling on the [ExecutorService] when [kotlin.coroutines.intrinsics.intercepted] is called.
+ */
+private class ExecutorServiceContext(val pool: ExecutorService) :
+  AbstractCoroutineContextElement(ContinuationInterceptor), ContinuationInterceptor {
+  override fun <T> interceptContinuation(continuation: Continuation<T>): Continuation<T> =
+    ExecutorServiceContinuation(pool, continuation.context.fold(continuation) { cont, element ->
+      if (element != this@ExecutorServiceContext && element is ContinuationInterceptor)
+        element.interceptContinuation(cont) else cont
+    })
+}
+
+/** Wrap existing continuation to resumes itself on the provided [ExecutorService] */
+private class ExecutorServiceContinuation<T>(val pool: ExecutorService, val cont: Continuation<T>) : Continuation<T> {
+  override val context: CoroutineContext = cont.context
+
+  override fun resumeWith(result: Result<T>) {
+    pool.execute { cont.resumeWith(result) }
+  }
+}

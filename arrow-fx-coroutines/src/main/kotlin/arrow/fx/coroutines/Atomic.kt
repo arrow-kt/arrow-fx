@@ -167,11 +167,11 @@ interface Atomic<A> {
    *       }
    *     )
    *   isEnabled.set(true)
-   *   println(state.get())
+   *   state.get() shouldBe ViewState(User("Simon", 27, Preference(true)))
    * }
    * ```
    */
-  fun <B> lens(get: (A) -> B, set: (A, B) -> A): arrow.fx.coroutines.Atomic<B> =
+  fun <B> lens(get: (A) -> B, set: (A, B) -> A): Atomic<B> =
     LensAtomic(this, get, set)
 
   companion object {
@@ -193,12 +193,15 @@ interface Atomic<A> {
      * }
      * ```
      */
-    suspend operator fun <A> invoke(a: A): arrow.fx.coroutines.Atomic<A> = unsafe(a)
-    fun <A> unsafe(a: A): arrow.fx.coroutines.Atomic<A> = DefaultAtomic(a)
+    suspend operator fun <A> invoke(a: A): Atomic<A> =
+      unsafe(a)
+
+    fun <A> unsafe(a: A): Atomic<A> =
+      DefaultAtomic(a)
   }
 }
 
-private class DefaultAtomic<A>(a: A) : arrow.fx.coroutines.Atomic<A> {
+private class DefaultAtomic<A>(a: A) : Atomic<A> {
 
   private val ar: AtomicRef<A> = atomic(a)
 
@@ -268,10 +271,10 @@ private class DefaultAtomic<A>(a: A) : arrow.fx.coroutines.Atomic<A> {
 }
 
 private class LensAtomic<A, B>(
-  private val underlying: arrow.fx.coroutines.Atomic<A>,
+  private val underlying: Atomic<A>,
   private val lensGet: (A) -> B,
   private val lensSet: (A, B) -> A
-) : arrow.fx.coroutines.Atomic<B> {
+) : Atomic<B> {
 
   override suspend fun setAndGet(a: B): B =
     underlying.modify { old ->
