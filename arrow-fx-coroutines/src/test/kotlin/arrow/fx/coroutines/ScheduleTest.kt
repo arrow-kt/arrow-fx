@@ -52,7 +52,7 @@ class ScheduleTest : ArrowFxSpec(spec = {
     val n = 500
     val res = Schedule.recurs<Int>(n).calculateSchedule(0, n + 1)
 
-    res.dropLast(1).map { it.delay.nanoseconds } shouldBe res.dropLast(1).map { 0L }
+    res.dropLast(1).map { it.delayInNanos.nanoseconds } shouldBe res.dropLast(1).map { 0L }
     res.dropLast(1).map { it.cont } shouldBe res.dropLast(1).map { true }
 
     res.last() eqv Schedule.Decision(false, 0.nanoseconds, n + 1, Eval.now(n + 1))
@@ -115,7 +115,7 @@ class ScheduleTest : ArrowFxSpec(spec = {
     val res = Schedule.spaced<Any>(duration).calculateSchedule(0, 500)
 
     res.map { it.cont } shouldBe res.map { true }
-    res.map { it.delay.nanoseconds } shouldBe res.map { duration.nanoseconds }
+    res.map { it.delayInNanos.nanoseconds } shouldBe res.map { duration.nanoseconds }
   }
 
   "Schedule.fibonacci()" {
@@ -124,7 +124,7 @@ class ScheduleTest : ArrowFxSpec(spec = {
     val res = Schedule.fibonacci<Any?>(i.seconds).calculateSchedule(0, n)
 
     val sum = res.fold(0L) { acc, v ->
-      acc + v.delay.inSeconds
+      acc + v.delayInNanos.inSeconds
     }
     val fib = fibs(i).drop(1).take(n)
 
@@ -137,7 +137,7 @@ class ScheduleTest : ArrowFxSpec(spec = {
     val n = 10
     val res = Schedule.linear<Any?>(i.seconds).calculateSchedule(0, n)
 
-    val sum = res.fold(0L) { acc, v -> acc + v.delay.inSeconds }
+    val sum = res.fold(0L) { acc, v -> acc + v.delayInNanos.inSeconds }
     val exp = linear(i).drop(1).take(n)
 
     res.all { it.cont } shouldBe true
@@ -149,7 +149,7 @@ class ScheduleTest : ArrowFxSpec(spec = {
     val n = 10
     val res = Schedule.exponential<Any?>(i.seconds).calculateSchedule(0, n)
 
-    val sum = res.fold(0L) { acc, v -> acc + v.delay.inSeconds }
+    val sum = res.fold(0L) { acc, v -> acc + v.delayInNanos.inSeconds }
     val expSum = exp(i).drop(1).take(n).sum()
 
     res.all { it.cont } shouldBe true
@@ -264,7 +264,7 @@ private suspend fun <B> checkRepeat(schedule: Schedule<Int, B>, expected: B): Un
 
 private infix fun <A> Schedule.Decision<Any?, A>.eqv(other: Schedule.Decision<Any?, A>): Unit {
   require(cont == other.cont) { "Decision#cont: ${this.cont} shouldBe ${other.cont}" }
-  require(delay.nanoseconds == other.delay.nanoseconds) { "Decision#delay.nanoseconds: ${this.delay.nanoseconds} shouldBe ${other.delay.nanoseconds}" }
+  require(delayInNanos.nanoseconds == other.delayInNanos.nanoseconds) { "Decision#delay.nanoseconds: ${this.delayInNanos.nanoseconds} shouldBe ${other.delayInNanos.nanoseconds}" }
   if (cont) {
     val lh = finish.value()
     val rh = other.finish.value()
