@@ -261,7 +261,7 @@ sealed class Schedule<Input, Output> {
     combineNanos(other, zipContinue, { a, b -> zipDuration(a.nanoseconds, b.nanoseconds).inNanoseconds }, zip)
 
   /**
-   * Combines with another schedule by combining the result and the delay of the [Decision] with the functions [f], [g] and a [zip] function
+   * Combines with another schedule by combining the result and the delay of the [Decision] with the functions [zipContinue], [zipDuration] and a [zip] function
    */
   abstract fun <A : Input, B, C> combineNanos(
     other: Schedule<A, B>,
@@ -281,7 +281,7 @@ sealed class Schedule<Input, Output> {
   abstract infix fun <A : Input, B> andThen(other: Schedule<A, B>): Schedule<A, Either<Output, B>>
 
   @Deprecated(
-    "modifyDelay will be replaced by modify and modifyNanos which use kotlin.time.Duration instead of arrow.fx.coroutines.Duration",
+    "modifyDelay will be replaced by modify and modifyNanos which uses kotlin.time.Duration instead of arrow.fx.coroutines.Duration",
     ReplaceWith(
       "modifyNanos { output, l -> f(output, l.toLong().nanoseconds).nanoseconds.toDouble() }",
       "arrow.fx.coroutines.nanoseconds"
@@ -413,9 +413,9 @@ sealed class Schedule<Input, Output> {
   /**
    * Adjusts the delay of a schedule's [Decision].
    */
-  @Deprecated("TODO")
+  @Deprecated("delayed is deprecated in favor of delay or delayedNanos. $DeprecatedDurationAPI")
   fun delayed(f: suspend (duration: Duration) -> Duration): Schedule<Input, Output> =
-    modifyDelay { _, duration -> f(duration) }
+    modifyNanos { _, duration -> f(duration.toLong().oldNanoseconds).nanoseconds.toDouble() }
 
   @ExperimentalTime
   fun delay(f: suspend (duration: kotlin.time.Duration) -> kotlin.time.Duration): Schedule<Input, Output> =
@@ -660,6 +660,12 @@ sealed class Schedule<Input, Output> {
    */
   data class Decision<out A, out B>(val cont: Boolean, val delayInNanos: Double, val state: A, val finish: Eval<B>) {
 
+    @Deprecated(
+      DeprecatedDurationAPI,
+      ReplaceWith(
+        "Decision(cont, delay.nanoseconds.toDouble(), state, finish)"
+      )
+    )
     constructor(cont: Boolean, delay: Duration, state: A, finish: Eval<B>) : this(
       cont,
       delay.nanoseconds.toDouble(),
@@ -668,7 +674,7 @@ sealed class Schedule<Input, Output> {
     )
 
     @Deprecated(
-      "Arrow Fx Duration is deprecated use Double or kotlin.time.Duration",
+      "delay is deprecated in favor of duration or delayInNanos. $DeprecatedDurationAPI",
       ReplaceWith("delayInNanos.toLong().nanoseconds ", "arrow.fx.coroutines.nanoseconds")
     )
     val delay: Duration
@@ -686,7 +692,7 @@ sealed class Schedule<Input, Output> {
     fun <C> mapLeft(f: (A) -> C): Decision<C, B> =
       bimap(f, ::identity)
 
-    @Deprecated("mapRight is renamed to map. Use map instead", ReplaceWith("map(g)"))
+    @Deprecated("mapRight is renamed to map", ReplaceWith("map(g)"))
     fun <D> mapRight(g: (B) -> D): Decision<A, D> =
       bimap(::identity, g)
 
@@ -694,9 +700,9 @@ sealed class Schedule<Input, Output> {
       bimap(::identity, g)
 
     @Deprecated(
-      "combineWith is deprecated in favor of combine using Long instead of arrow.fx.coroutines.Duration.",
+      "combineWith is deprecated in favor of combineNanos or combine. $DeprecatedDurationAPI",
       ReplaceWith(
-        "combine(other, f, { a, b -> g(a.nanoseconds, b.nanoseconds).nanoseconds }, ::Pair)",
+        "combineNanos(other, f, { a, b -> g(a.nanoseconds.toDouble(), b.nanoseconds.toDouble()).nanoseconds.toDouble() }, ::Pair)",
         "arrow.fx.coroutines.nanoseconds"
       )
     )
@@ -746,14 +752,14 @@ sealed class Schedule<Input, Output> {
 
     companion object {
       @Deprecated(
-        "Deprecated in favor constructor with Double or kotlin.time.Duration",
+        DeprecatedDurationAPI,
         ReplaceWith("Schedule.Decision.cont(d.nanoseconds.toDouble(), a, b)", "arrow.fx.coroutines.Schedule")
       )
       fun <A, B> cont(d: Duration, a: A, b: Eval<B>): Decision<A, B> =
         cont(d.nanoseconds.toDouble(), a, b)
 
       @Deprecated(
-        "Deprecated in favor constructor with Double or kotlin.time.Duration",
+        DeprecatedDurationAPI,
         ReplaceWith("Schedule.Decision.done(d.nanoseconds.toDouble(), a, b)", "arrow.fx.coroutines.Schedule")
       )
       fun <A, B> done(d: Duration, a: A, b: Eval<B>): Decision<A, B> =
@@ -860,7 +866,7 @@ sealed class Schedule<Input, Output> {
      */
     @Suppress("UNCHECKED_CAST")
     @Deprecated(
-      "delay with arrow.fx.coroutines.Duration is deprecated in favor of Double and kotlin.time.Duration",
+      DeprecatedDurationAPI,
       ReplaceWith(
         "Schedule.delayed(delaySchedule.map { it.nanoseconds.toDouble() }).map { it.toLong().nanoseconds }",
         "arrow.fx.coroutines.Schedule", "arrow.fx.coroutines.nanoseconds"
@@ -916,7 +922,7 @@ sealed class Schedule<Input, Output> {
      */
     @Suppress("UNCHECKED_CAST")
     @Deprecated(
-      "delay with arrow.fx.coroutines.Duration is deprecated in favor of Double and kotlin.time.Duration",
+      DeprecatedDurationAPI,
       ReplaceWith(
         "Schedule.delayInNanos<A>().map { it.toLong().nanoseconds }",
         "arrow.fx.coroutines.Schedule", "arrow.fx.coroutines.nanoseconds"
@@ -963,7 +969,7 @@ sealed class Schedule<Input, Output> {
      * Creates a Schedule that continues with a fixed delay.
      */
     @Deprecated(
-      "spaced with arrow.fx.coroutines.Duration is deprecated in favor of Double and kotlin.time.Duration",
+      DeprecatedDurationAPI,
       ReplaceWith(
         "Schedule.forever<A>().delayedNanos { d -> d + interval.nanoseconds }",
         "arrow.fx.coroutines.Schedule"
@@ -992,7 +998,7 @@ sealed class Schedule<Input, Output> {
      * Creates a Schedule that continues with increasing delay by adding the last two delays.
      */
     @Deprecated(
-      "fibonacci with arrow.fx.coroutines.Duration is deprecated in favor of Double and kotlin.time.Duration",
+      DeprecatedDurationAPI,
       ReplaceWith(
         "Schedule.delayed(Schedule.forever<A>().map { base * it })",
         "arrow.fx.coroutines.Schedule"
@@ -1026,7 +1032,7 @@ sealed class Schedule<Input, Output> {
      *  executions.
      */
     @Deprecated(
-      "linear with arrow.fx.coroutines.Duration is deprecated in favor of Double and kotlin.time.Duration",
+      DeprecatedDurationAPI,
       ReplaceWith(
         "Schedule.delayed(Schedule.forever<A>().map { base * it })",
         "arrow.fx.coroutines.Schedule"
@@ -1054,7 +1060,7 @@ sealed class Schedule<Input, Output> {
      * Delays can be calculated as [base] * factor ^ n where n is the number of executions.
      */
     @Deprecated(
-      "exponential with arrow.fx.coroutines.Duration is deprecated in favor of Double and kotlin.time.Duration",
+      DeprecatedDurationAPI,
       ReplaceWith(
         "Schedule.delayed(Schedule.forever<A>().map { base * factor.pow(it).roundToInt() })",
         "arrow.fx.coroutines.Schedule"
@@ -1192,8 +1198,11 @@ suspend fun <A, B, C> Schedule<Throwable, B>.retryOrElseEither(
       dec = update(e, state)
       state = dec.state
 
-      if (dec.cont) delay(dec.delayInNanos.nanoseconds.toLongMilliseconds())
+      if (dec.cont) delay(dec.delayInNanos.nanoseconds)
       else return Either.Left(orElse(e.nonFatalOrThrow(), dec.finish.value()))
     }
   }
 }
+
+private const val DeprecatedDurationAPI: String =
+  "arrow.fx.coroutines.Duration API in Schedule is deprecated in favor of Double and kotlin.time.Duration, and will be removed in 0.13.0."
