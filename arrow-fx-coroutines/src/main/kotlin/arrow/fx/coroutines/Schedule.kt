@@ -272,6 +272,10 @@ sealed class Schedule<Input, Output> {
   fun modifyDelay(f: suspend (Output, Duration) -> Duration): Schedule<Input, Output> =
     modifyNanos { output, l -> f(output, l.toLong().oldNanoseconds).nanoseconds.toDouble() }
 
+  @JvmName("modifyDelayDuration")
+  fun modifyDelay(f: suspend (Output, kotlin.time.Duration) -> kotlin.time.Duration): Schedule<Input, Output> =
+    modifyNanos { output, l -> f(output, l.nanoseconds).inNanoseconds }
+
   /**
    * Changes the delay of a resulting [Decision] based on the [Output] and the produced delay.
    *
@@ -397,7 +401,11 @@ sealed class Schedule<Input, Output> {
    */
   @Deprecated("TODO")
   fun delayed(f: suspend (duration: Duration) -> Duration): Schedule<Input, Output> =
-    modifyDelay { _, duration -> f(duration) }
+    modifyDelay { _, duration: Duration -> f(duration) }
+
+  @JvmName("delayedDuration")
+  fun delayed(f: suspend (duration: kotlin.time.Duration) -> kotlin.time.Duration): Schedule<Input, Output> =
+    modifyDelay { _, duration: kotlin.time.Duration -> f(duration) }
 
   fun delayedNanos(f: suspend (duration: Double) -> Double): Schedule<Input, Output> =
     modifyNanos { _, duration -> f(duration) }
@@ -457,7 +465,7 @@ sealed class Schedule<Input, Output> {
           val step = update(a, state)
           if (!step.cont) return Either.Right(step.finish.value())
           else {
-            delay(step.delayInNanos.nanoseconds.inMilliseconds.toLong())
+            delay(step.delayInNanos.nanoseconds.toLongMilliseconds())
 
             // Set state before looping again
             last = { step.finish.value() }
