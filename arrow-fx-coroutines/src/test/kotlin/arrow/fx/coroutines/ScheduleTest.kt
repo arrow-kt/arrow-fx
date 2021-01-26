@@ -6,12 +6,10 @@ import io.kotest.assertions.fail
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.withTimeoutOrNull
-import java.util.concurrent.TimeUnit
 import kotlin.math.pow
 import kotlin.time.milliseconds
 import kotlin.time.nanoseconds
 import kotlin.time.seconds
-import kotlin.time.toDuration
 
 class ScheduleTest : ArrowFxSpec(spec = {
 

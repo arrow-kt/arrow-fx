@@ -43,10 +43,14 @@ import arrow.fx.coroutines.nanoseconds as oldNanoseconds
  * A more complex schedule
  *
  * ```kotlin:ank
+ * import kotlin.time.seconds
+ * import kotlin.time.milliseconds
+ * import kotlin.time.ExperimentalTime
  * import arrow.fx.coroutines.*
  *
+ * @ExperimentalTime
  * fun <A> complexPolicy(): Schedule<A, List<A>> =
- *   Schedule.exponential<A>(10.milliseconds).whileOutput { it.nanoseconds < 60.seconds.nanoseconds }
+ *   Schedule.exponential<A>(10.milliseconds).whileOutput { it.inNanoseconds < 60.seconds.inNanoseconds }
  *     .andThen(Schedule.spaced<A>(60.seconds) and Schedule.recurs(100)).jittered()
  *     .zipRight(Schedule.identity<A>().collect())
  * ```
@@ -176,14 +180,20 @@ import arrow.fx.coroutines.nanoseconds as oldNanoseconds
  * A common algorithm to retry effectful operations, as network requests, is the exponential backoff algorithm. There is a scheduling policy that implements this algorithm and can be used as:
  *
  * ```kotlin:ank
+ * import kotlin.time.milliseconds
+ * import kotlin.time.ExperimentalTime
  * import arrow.fx.coroutines.*
  *
+ * @ExperimentalTime
  * val exponential = Schedule.exponential<Unit>(250.milliseconds)
  * ```
  */
 sealed class Schedule<Input, Output> {
 
-  abstract suspend fun <C> repeatOrElseEither(fa: suspend () -> Input, orElse: suspend (Throwable, Output?) -> C): Either<C, Output>
+  abstract suspend fun <C> repeatOrElseEither(
+    fa: suspend () -> Input,
+    orElse: suspend (Throwable, Output?) -> C
+  ): Either<C, Output>
 
   /**
    * Runs this effect once and, if it succeeded, decide using the provided policy if the effect should be repeated and if so, with how much delay.
@@ -231,7 +241,12 @@ sealed class Schedule<Input, Output> {
     f: (Boolean, Boolean) -> Boolean,
     g: (Duration, Duration) -> Duration
   ): Schedule<A, Pair<Output, B>> =
-    combineNanos(other, f, { a, b -> g(a.toLong().oldNanoseconds, b.toLong().oldNanoseconds).nanoseconds.toDouble() }, ::Pair)
+    combineNanos(
+      other,
+      f,
+      { a, b -> g(a.toLong().oldNanoseconds, b.toLong().oldNanoseconds).nanoseconds.toDouble() },
+      ::Pair
+    )
 
   /**
    * Combines with another schedule by combining the result and the delay of the [Decision] with the functions [f], [g] and a [zip] function
@@ -267,14 +282,13 @@ sealed class Schedule<Input, Output> {
 
   @Deprecated(
     "modifyDelay will be replaced by modify and modifyNanos which use kotlin.time.Duration instead of arrow.fx.coroutines.Duration",
-    ReplaceWith("modifyNanos { output, l -> f(output, l.toLong().nanoseconds).nanoseconds.toDouble() }", "arrow.fx.coroutines.nanoseconds")
+    ReplaceWith(
+      "modifyNanos { output, l -> f(output, l.toLong().nanoseconds).nanoseconds.toDouble() }",
+      "arrow.fx.coroutines.nanoseconds"
+    )
   )
   fun modifyDelay(f: suspend (Output, Duration) -> Duration): Schedule<Input, Output> =
     modifyNanos { output, l -> f(output, l.toLong().oldNanoseconds).nanoseconds.toDouble() }
-
-  @JvmName("modifyDelayDuration")
-  fun modifyDelay(f: suspend (Output, kotlin.time.Duration) -> kotlin.time.Duration): Schedule<Input, Output> =
-    modifyNanos { output, l -> f(output, l.nanoseconds).inNanoseconds }
 
   /**
    * Changes the delay of a resulting [Decision] based on the [Output] and the produced delay.
@@ -401,11 +415,11 @@ sealed class Schedule<Input, Output> {
    */
   @Deprecated("TODO")
   fun delayed(f: suspend (duration: Duration) -> Duration): Schedule<Input, Output> =
-    modifyDelay { _, duration: Duration -> f(duration) }
+    modifyDelay { _, duration -> f(duration) }
 
-  @JvmName("delayedDuration")
-  fun delayed(f: suspend (duration: kotlin.time.Duration) -> kotlin.time.Duration): Schedule<Input, Output> =
-    modifyDelay { _, duration: kotlin.time.Duration -> f(duration) }
+  @ExperimentalTime
+  fun delay(f: suspend (duration: kotlin.time.Duration) -> kotlin.time.Duration): Schedule<Input, Output> =
+    modify { _, duration -> f(duration) }
 
   fun delayedNanos(f: suspend (duration: Double) -> Double): Schedule<Input, Output> =
     modifyNanos { _, duration -> f(duration) }
@@ -414,6 +428,13 @@ sealed class Schedule<Input, Output> {
     modifyNanos { _, duration ->
       val n = genRand.invoke()
       (duration.nanoseconds * n).inNanoseconds
+    }
+
+  @JvmName("jitteredDuration")
+  fun jittered(genRand: suspend () -> kotlin.time.Duration): Schedule<Input, Output> =
+    modify { _, duration ->
+      val n = genRand.invoke()
+      duration.times(n.inNanoseconds)
     }
 
   /**
@@ -454,7 +475,10 @@ sealed class Schedule<Input, Output> {
     val update: suspend (a: Input, s: State) -> Decision<State, Output>
   ) : Schedule<Input, Output>() {
 
-    override suspend fun <C> repeatOrElseEither(fa: suspend () -> Input, orElse: suspend (Throwable, Output?) -> C): Either<C, Output> {
+    override suspend fun <C> repeatOrElseEither(
+      fa: suspend () -> Input,
+      orElse: suspend (Throwable, Output?) -> C
+    ): Either<C, Output> {
       var last: (() -> Output)? = null // We haven't seen any input yet
       var state: State = initialState.invoke()
 
@@ -465,7 +489,7 @@ sealed class Schedule<Input, Output> {
           val step = update(a, state)
           if (!step.cont) return Either.Right(step.finish.value())
           else {
-            delay(step.delayInNanos.nanoseconds.toLongMilliseconds())
+            delay(step.delayInNanos.nanoseconds)
 
             // Set state before looping again
             last = { step.finish.value() }
@@ -499,7 +523,7 @@ sealed class Schedule<Input, Output> {
       zip: (Output, B) -> C
     ): Schedule<A, C> = (other as ScheduleImpl<Any?, A, B>).let { other ->
       ScheduleImpl(suspend { Pair(initialState.invoke(), other.initialState.invoke()) }) { i, s: Pair<State, Any?> ->
-        update(i, s.first).combine(other.update(i, s.second), zipContinue, zipDuration, zip)
+        update(i, s.first).combineNanos(other.update(i, s.second), zipContinue, zipDuration, zip)
       }
     }
 
@@ -573,7 +597,7 @@ sealed class Schedule<Input, Output> {
         ScheduleImpl(suspend { Pair(initialState.invoke(), other.initialState.invoke()) }) { i, s ->
           val dec1 = update(i, s.first)
           val dec2 = other.update(dec1.finish.value(), s.second)
-          dec1.combine(dec2, { a, b -> a && b }, { a, b -> a + b }, { _, b -> b })
+          dec1.combineNanos(dec2, { a, b -> a && b }, { a, b -> a + b }, { _, b -> b })
         }
       }
 
@@ -583,7 +607,7 @@ sealed class Schedule<Input, Output> {
         ScheduleImpl(suspend { Pair(initialState.invoke(), other.initialState.invoke()) }) { i, s ->
           val dec1 = update(i.first, s.first)
           val dec2 = other.update(i.second, s.second)
-          dec1.combine(dec2, { a, b -> a && b }, { a, b -> max(a, b) }, f)
+          dec1.combineNanos(dec2, { a, b -> a && b }, { a, b -> max(a, b) }, f)
         }
       }
 
@@ -594,7 +618,8 @@ sealed class Schedule<Input, Output> {
           i.fold({
             update(it, s.first).mapLeft { state -> Pair(state, s.second) }.map { output -> output.left() }
           }, {
-            other.update(it, s.second).mapLeft { otherState -> Pair(s.first, otherState) }.map { otherOutput -> otherOutput.right() }
+            other.update(it, s.second).mapLeft { otherState -> Pair(s.first, otherState) }
+              .map { otherOutput -> otherOutput.right() }
           })
         }
       }
@@ -635,7 +660,12 @@ sealed class Schedule<Input, Output> {
    */
   data class Decision<out A, out B>(val cont: Boolean, val delayInNanos: Double, val state: A, val finish: Eval<B>) {
 
-    constructor(cont: Boolean, delay: Duration, state: A, finish: Eval<B>) : this(cont, delay.nanoseconds.toDouble(), state, finish)
+    constructor(cont: Boolean, delay: Duration, state: A, finish: Eval<B>) : this(
+      cont,
+      delay.nanoseconds.toDouble(),
+      state,
+      finish
+    )
 
     @Deprecated(
       "Arrow Fx Duration is deprecated use Double or kotlin.time.Duration",
@@ -682,7 +712,7 @@ sealed class Schedule<Input, Output> {
         finish.flatMap { first -> other.finish.map { second -> Pair(first, second) } }
       )
 
-    fun <C, D, E> combine(
+    fun <C, D, E> combineNanos(
       other: Decision<C, D>,
       f: (Boolean, Boolean) -> Boolean,
       g: (Double, Double) -> Double,
@@ -690,6 +720,19 @@ sealed class Schedule<Input, Output> {
     ): Decision<Pair<A, C>, E> = Decision(
       f(cont, other.cont),
       g(delayInNanos, other.delayInNanos),
+      Pair(state, other.state),
+      finish.flatMap { first -> other.finish.map { second -> zip(first, second) } }
+    )
+
+    @ExperimentalTime
+    fun <C, D, E> combine(
+      other: Decision<C, D>,
+      f: (Boolean, Boolean) -> Boolean,
+      g: (kotlin.time.Duration, kotlin.time.Duration) -> kotlin.time.Duration,
+      zip: (B, D) -> E
+    ): Decision<Pair<A, C>, E> = Decision(
+      f(cont, other.cont),
+      g(delayInNanos.nanoseconds, other.delayInNanos.nanoseconds).inNanoseconds,
       Pair(state, other.state),
       finish.flatMap { first -> other.finish.map { second -> zip(first, second) } }
     )
@@ -1132,7 +1175,10 @@ suspend fun <A, B> Schedule<Throwable, B>.retryOrElse(fa: suspend () -> A, orEls
  * Also offers a function to handle errors if they are encountered during retrial.
  */
 @Suppress("UNCHECKED_CAST")
-suspend fun <A, B, C> Schedule<Throwable, B>.retryOrElseEither(fa: suspend () -> A, orElse: suspend (Throwable, B) -> C): Either<C, A> {
+suspend fun <A, B, C> Schedule<Throwable, B>.retryOrElseEither(
+  fa: suspend () -> A,
+  orElse: suspend (Throwable, B) -> C
+): Either<C, A> {
   (this as ScheduleImpl<Any?, Throwable, B>)
 
   var dec: Schedule.Decision<Any?, B>
@@ -1146,7 +1192,7 @@ suspend fun <A, B, C> Schedule<Throwable, B>.retryOrElseEither(fa: suspend () ->
       dec = update(e, state)
       state = dec.state
 
-      if (dec.cont) delay(dec.delayInNanos.nanoseconds.inMilliseconds.toLong())
+      if (dec.cont) delay(dec.delayInNanos.nanoseconds.toLongMilliseconds())
       else return Either.Left(orElse(e.nonFatalOrThrow(), dec.finish.value()))
     }
   }
