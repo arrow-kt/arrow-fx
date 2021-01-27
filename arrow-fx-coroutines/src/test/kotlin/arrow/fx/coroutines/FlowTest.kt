@@ -52,13 +52,13 @@ class FlowTest : ArrowFxSpec(spec = {
             timestamps.add(currentTime)
             throw RuntimeException("Bang!")
           }
-            .retry(Schedule.recurs<Throwable>(2) and Schedule.spaced(delayMs.milliseconds))
+            .retry(Schedule.recurs<Throwable>(2) and Schedule.spaced(delayMs.toLong()))
             .collect()
         }
         timestamps.size shouldBe 3
 
         // total run should be between start time + delay * 3 AND start + tolerance %
-        val min = start + (delayMs * 2).milliseconds.millis
+        val min = start + (delayMs * 2)
         val max = min + delayMs / 10
 
         timestamps.last() shouldBeGreaterThanOrEqual min

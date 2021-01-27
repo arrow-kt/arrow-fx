@@ -378,7 +378,7 @@ sealed class Schedule<Input, Output> {
   fun jittered(genRand: suspend () -> Double): Schedule<Input, Output> =
     modifyNanos { _, duration ->
       val n = genRand.invoke()
-      (duration.nanoseconds * n).inNanoseconds
+      duration * n
     }
 
   /**
@@ -430,7 +430,7 @@ sealed class Schedule<Input, Output> {
           val step = update(a, state)
           if (!step.cont) return Either.Right(step.finish.value())
           else {
-            delay(step.duration.toLongMilliseconds())
+            delay(step.delayInMillis.toLong())
 
             // Set state before looping again
             last = { step.finish.value() }
@@ -600,8 +600,12 @@ sealed class Schedule<Input, Output> {
    */
   data class Decision<out A, out B>(val cont: Boolean, val delayInNanos: Double, val state: A, val finish: Eval<B>) {
 
+    @ExperimentalTime
     val duration: Duration
       get() = delayInNanos.nanoseconds
+
+    val delayInMillis: Double
+     get() = delayInNanos / 1_000_000
 
     operator fun not(): Decision<A, B> =
       copy(cont = !cont)
@@ -645,9 +649,11 @@ sealed class Schedule<Input, Output> {
       fun <A, B> done(d: Double, a: A, b: Eval<B>): Decision<A, B> =
         Decision(false, d, a, b)
 
+      @ExperimentalTime
       fun <A, B> cont(d: Duration, a: A, b: Eval<B>): Decision<A, B> =
         cont(d.inNanoseconds, a, b)
 
+      @ExperimentalTime
       fun <A, B> done(d: Duration, a: A, b: Eval<B>): Decision<A, B> =
         done(d.inNanoseconds, a, b)
     }
@@ -729,7 +735,7 @@ sealed class Schedule<Input, Output> {
       Schedule(suspend { arrow.fx.coroutines.never<Unit>() }) { _, _ ->
         Decision(false, 0.0, Unit, Eval.later { throw IllegalArgumentException("Impossible") })
       }
-    
+
     @Suppress("UNCHECKED_CAST")
     @JvmName("delayedNanos")
     fun <A> delayed(delaySchedule: Schedule<A, Double>): Schedule<A, Double> =
@@ -793,6 +799,7 @@ sealed class Schedule<Input, Output> {
         )
       }
 
+    @ExperimentalTime
     fun <A> duration(): Schedule<A, Duration> =
       (forever<A>() as ScheduleImpl<Int, A, Int>).reconsider { _: A, decision ->
         Decision(
@@ -816,11 +823,19 @@ sealed class Schedule<Input, Output> {
           finish = Eval.now(decision.cont)
         )
       }
-    
+
     /**
      * Creates a Schedule that continues with a fixed delay.
      *
      * @param interval fixed delay in milliseconds
+     */
+    fun <A> spaced(interval: Long): Schedule<A, Int> =
+      forever<A>().delayedNanos { d -> d + (interval * 1_000_000) }
+
+    /**
+     * Creates a Schedule that continues with a fixed delay.
+     *
+     * @param interval fixed delay in nanoseconds
      */
     fun <A> spaced(interval: Double): Schedule<A, Int> =
       forever<A>().delayedNanos { d -> d + interval }
@@ -830,6 +845,7 @@ sealed class Schedule<Input, Output> {
      *
      * @param interval fixed delay in milliseconds
      */
+    @ExperimentalTime
     fun <A> spaced(interval: Duration): Schedule<A, Int> =
       forever<A>().delayedNanos { d -> d + interval.inNanoseconds }
 
@@ -846,13 +862,14 @@ sealed class Schedule<Input, Output> {
     /**
      * Creates a Schedule that continues with increasing delay by adding the last two delays.
      */
+    @ExperimentalTime
     fun <A> fibonacci(one: Duration): Schedule<A, Duration> =
       delayed(
         unfold<A, Pair<Duration, Duration>>(Pair(0.nanoseconds, one)) { (del, acc) ->
           Pair(acc, del + acc)
         }.map { it.first }
       )
-    
+
     /**
      * Creates a Schedule which increases its delay linearly, by n * base where n is the number of
      *  executions.
@@ -864,6 +881,7 @@ sealed class Schedule<Input, Output> {
      * Creates a Schedule which increases its delay linearly, by n * base where n is the number of
      *  executions.
      */
+    @ExperimentalTime
     fun <A> linear(base: Duration): Schedule<A, Duration> =
       delayed(forever<A>().map { base * it })
 
@@ -878,6 +896,7 @@ sealed class Schedule<Input, Output> {
      * Creates a Schedule that increases its delay exponentially with a given factor and base.
      * Delays can be calculated as [base] * factor ^ n where n is the number of executions.
      */
+    @ExperimentalTime
     fun <A> exponential(base: Duration, factor: Double = 2.0): Schedule<A, Duration> =
       delayed(forever<A>().map { base * factor.pow(it).roundToInt() })
   }
@@ -993,7 +1012,7 @@ suspend fun <A, B, C> Schedule<Throwable, B>.retryOrElseEither(fa: suspend () ->
       dec = update(e, state)
       state = dec.state
 
-      if (dec.cont) delay(dec.duration.toLongMilliseconds())
+      if (dec.cont) delay(dec.delayInMillis.toLong())
       else return Either.Left(orElse(e.nonFatalOrThrow(), dec.finish.value()))
     }
   }

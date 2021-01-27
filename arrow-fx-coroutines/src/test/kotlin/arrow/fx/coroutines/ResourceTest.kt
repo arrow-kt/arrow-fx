@@ -7,9 +7,10 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.list
-import io.kotest.property.arbitrary.long
 import io.kotest.property.arbitrary.map
 import io.kotest.property.arbitrary.string
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 
 class ResourceTest : ArrowFxSpec(spec = {
 
@@ -23,17 +24,17 @@ class ResourceTest : ArrowFxSpec(spec = {
 
   "value resource is released with Complete" {
     checkAll(Arb.int()) { n ->
-      val p = Promise<ExitCase>()
+      val p = CompletableDeferred<ExitCase>()
       Resource({ n }, { _, ex -> p.complete(ex) })
         .use { Unit }
 
-      p.get() shouldBe ExitCase.Completed
+      p.await() shouldBe ExitCase.Completed
     }
   }
 
   "error resource finishes with error" {
     checkAll(Arb.throwable()) { e ->
-      val p = Promise<ExitCase>()
+      val p = CompletableDeferred<ExitCase>()
       val r = Resource<Int>({ throw e }, { _, ex -> p.complete(ex) })
 
       Either.catch {
@@ -44,40 +45,20 @@ class ResourceTest : ArrowFxSpec(spec = {
 
   "never use can be cancelled with ExitCase.Completed" {
     checkAll(Arb.int()) { n ->
-      val p = Promise<ExitCase>()
-      val start = Promise<Unit>()
+      val p = CompletableDeferred<ExitCase>()
+      val start = CompletableDeferred<Unit>()
       val r = Resource({ n }, { _, ex -> p.complete(ex) })
 
-      val f = ForkAndForget {
+      val f = async {
         r.use {
           start.complete(Unit)
           never<Int>()
         }
       }
 
-      start.get()
+      start.await()
       f.cancel()
-      p.get().shouldBeInstanceOf<ExitCase.Cancelled>()
-    }
-  }
-
-  "traverseFilterResource: identity" {
-    checkAll(
-      Arb.list(Arb.int()),
-      Arb.functionAToB<Int, String?>(Arb.nullable(Arb.string()))
-    ) { list, f ->
-      list.traverseFilterResource { Resource.just(f(it)) } resourceShouldBe Resource.just(list.mapNotNull(f))
-    }
-  }
-
-  "flatTraverseFilterResource: identity" {
-    checkAll(
-      Arb.list(Arb.int()),
-      Arb.functionAToB<Int, List<String?>>(Arb.list(Arb.nullable(Arb.string())))
-    ) { list, f ->
-      list.flatTraverseFilterResource { Resource.just(f(it)) } resourceShouldBe Resource.just(
-        list.flatMap(f).filterNotNull()
-      )
+      p.await().shouldBeInstanceOf<ExitCase.Cancelled>()
     }
   }
 
@@ -123,17 +104,6 @@ class ResourceTest : ArrowFxSpec(spec = {
       }
 
       list.traverseResource { Resource.just(f(it) to g(it)) } resourceShouldBe result
-    }
-  }
-
-  "traverseResource: sequentialComposition" {
-    checkAll(
-      Arb.list(Arb.int()),
-      Arb.functionAToB<Int, String>(Arb.string()),
-      Arb.functionAToB<String, Long>(Arb.long())
-    ) { list, f, g ->
-      list.traverseResource { Resource.just(f(it)) }
-        .map { it.map(g) } resourceShouldBe list.traverseFilterResource { Resource.just(g(f(it))) }
     }
   }
 

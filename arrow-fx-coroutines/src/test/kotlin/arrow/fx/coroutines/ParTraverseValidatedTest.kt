@@ -2,20 +2,20 @@ package arrow.fx.coroutines
 
 import arrow.core.Either
 import arrow.core.NonEmptyList
-import arrow.core.Validated
-import arrow.core.extensions.list.traverse.sequence
 import arrow.core.extensions.nonemptylist.semigroup.semigroup
-import arrow.core.extensions.validated.applicative.applicative
-import arrow.core.extensions.validated.bifunctor.mapLeft
 import arrow.core.identity
 import arrow.core.invalidNel
+import arrow.core.nonEmptyList
+import arrow.core.sequenceValidated
 import arrow.core.validNel
+import arrow.typeclasses.Semigroup
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.list
 import io.kotest.property.arbitrary.string
+import kotlinx.coroutines.CompletableDeferred
 
 class ParTraverseValidatedTest : ArrowFxSpec(spec = {
   "parTraverseValidated can traverse effect full computations" {
@@ -27,24 +27,24 @@ class ParTraverseValidatedTest : ArrowFxSpec(spec = {
   }
 
   "parTraverseValidated runs in parallel" {
-    val promiseA = Promise<Unit>()
-    val promiseB = Promise<Unit>()
-    val promiseC = Promise<Unit>()
+    val promiseA = CompletableDeferred<Unit>()
+    val promiseB = CompletableDeferred<Unit>()
+    val promiseC = CompletableDeferred<Unit>()
 
     listOf(
       suspend {
-        promiseA.get()
+        promiseA.await()
         promiseC.complete(Unit).validNel()
       },
       suspend {
-        promiseB.get()
+        promiseB.await()
         promiseA.complete(Unit).validNel()
       },
       suspend {
         promiseB.complete(Unit)
-        promiseC.get().validNel()
+        promiseC.await().validNel()
       }
-    ).parTraverseValidated(NonEmptyList.semigroup()) { it() }
+    ).parTraverseValidated(Semigroup.nonEmptyList()) { it() }
   }
 
   "parTraverseValidated results in the correct left" {
@@ -62,9 +62,7 @@ class ParTraverseValidatedTest : ArrowFxSpec(spec = {
   "parTraverseValidated identity is identity" {
     checkAll(Arb.list(Arb.validatedNel(Arb.int(), Arb.int()))) { l ->
       val res = l.parTraverseValidated(NonEmptyList.semigroup(), ::identity)
-      res shouldBe l.sequence(Validated.applicative(NonEmptyList.semigroup()))
-        // TODO Fix with Arrow Core Iterable<A>.traverseValidated
-        .mapLeft { NonEmptyList.fromListUnsafe(it.reversed()) }
+      res shouldBe l.sequenceValidated(Semigroup.nonEmptyList())
     }
   }
 

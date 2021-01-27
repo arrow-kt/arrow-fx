@@ -131,7 +131,7 @@ private constructor(
               else throw result.a
             } else {
               // N.B. this could be canceled, however we don't care
-              val now = System.currentTimeMillis()
+              val now = System.nanoTime()
               // We've gone over the permitted failures threshold,
               // so we need to open the circuit breaker
               val update = Open(now, resetTimeout, CompletableDeferred())
@@ -189,7 +189,7 @@ private constructor(
             val nextTimeout: Double =
               if (maxResetTimeout.isFinite() && value > maxResetTimeout) maxResetTimeout
               else value
-            val ts = System.currentTimeMillis()
+            val ts = System.nanoTime()
             state.value = Open(ts, nextTimeout, awaitClose)
             onOpen.invoke()
           }
@@ -453,6 +453,7 @@ private constructor(
      * @param onOpen is a callback for signaling transitions to [CircuitBreaker.State.Open].
      *
      */
+    @ExperimentalTime
     suspend fun of(
       maxFailures: Int,
       resetTimeout: Duration,
@@ -503,7 +504,6 @@ private constructor(
      * @param onOpen is a callback for signaling transitions to [CircuitBreaker.State.Open].
      *
      */
-    @ExperimentalTime
     suspend fun of(
       maxFailures: Int,
       resetTimeout: Double,

@@ -1,8 +1,6 @@
 package arrow.fx.stm
 
 import arrow.fx.coroutines.ArrowFxSpec
-import arrow.fx.coroutines.Fiber
-import arrow.fx.coroutines.ForkConnected
 import kotlin.time.microseconds
 import kotlin.time.milliseconds
 import arrow.fx.coroutines.parMapN
@@ -15,6 +13,8 @@ import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.bool
 import io.kotest.property.arbitrary.int
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -84,7 +84,7 @@ class STMTest : ArrowFxSpec(spec = {
   }
   "a suspended transaction will resume if a variable changes" {
     val tv = TVar.new(0)
-    val f = ForkConnected {
+    val f = async {
       delay(500.milliseconds)
       atomically { tv.modify { it + 1 } }
     }
@@ -100,7 +100,7 @@ class STMTest : ArrowFxSpec(spec = {
     val v1 = TVar.new(0)
     val v2 = TVar.new(0)
     val v3 = TVar.new(0)
-    val f = ForkConnected {
+    val f = async {
       delay(500.milliseconds)
       atomically { v1.modify { it + 1 } }
       delay(500.milliseconds)
@@ -149,7 +149,7 @@ class STMTest : ArrowFxSpec(spec = {
   "suspended transactions are resumed for variables accessed in orElse" {
     checkAll {
       val tv = TVar.new(0)
-      val f = ForkConnected {
+      val f = async {
         delay(10.microseconds)
         atomically { tv.modify { it + 1 } }
       }
@@ -168,18 +168,14 @@ class STMTest : ArrowFxSpec(spec = {
     checkAll {
       val tv = TVar.new(0)
       val res = TQueue.new<Int>()
-      val fibers = mutableListOf<Fiber<Any?>>()
-      for (i in 0..100) {
-        fibers.add(
-          ForkConnected {
-            atomically {
-              val r = tv.read().also { tv.write(it + 1) }
-              res.write(r)
-            }
+      (0..100).map {
+        async {
+          atomically {
+            val r = tv.read().also { tv.write(it + 1) }
+            res.write(r)
           }
-        )
-      }
-      fibers.forEach { it.join() }
+        }
+      }.awaitAll()
       atomically { res.flush() } shouldBe (0..100).toList()
     }
   }

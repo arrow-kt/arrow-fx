@@ -4,12 +4,16 @@ import arrow.core.Either
 import io.kotest.assertions.fail
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
 import kotlin.time.minutes
 
+@ExperimentalTime
 class CircuitBreakerTest : ArrowFxSpec(spec = {
 
   val dummy = RuntimeException("dummy")
@@ -73,7 +77,7 @@ class CircuitBreakerTest : ArrowFxSpec(spec = {
 
     when (val s = cb.state()) {
       is CircuitBreaker.State.Open -> {
-        s.resetTimeout shouldBe resetTimeout
+        s.resetTimeout shouldBe resetTimeout.inNanoseconds
       }
       else -> fail("Invalid state: Expect CircuitBreaker.State.Open but found $s")
     }
@@ -100,7 +104,7 @@ class CircuitBreakerTest : ArrowFxSpec(spec = {
 
     when (val s = cb.state()) {
       is CircuitBreaker.State.Open -> {
-        s.resetTimeout shouldBe resetTimeout
+        s.resetTimeout shouldBe resetTimeout.inNanoseconds
       }
       else -> fail("Invalid state: Expect CircuitBreaker.State.Open but found $s")
     }
@@ -115,28 +119,28 @@ class CircuitBreakerTest : ArrowFxSpec(spec = {
 
     when (val s = cb.state()) {
       is CircuitBreaker.State.Open -> {
-        s.resetTimeout shouldBe resetTimeout
+        s.resetTimeout shouldBe resetTimeout.inNanoseconds
       }
       else -> fail("Invalid state: Expect CircuitBreaker.State.Open but found $s")
     }
 
-    val checkHalfOpen = Promise<Unit>()
-    val delayProtectLatch = Promise<Unit>()
-    val stateAssertionLatch = Promise<Unit>()
+    val checkHalfOpen = CompletableDeferred<Unit>()
+    val delayProtectLatch = CompletableDeferred<Unit>()
+    val stateAssertionLatch = CompletableDeferred<Unit>()
 
-    ForkAndForget { // Successful tasks puts circuit breaker back in HalfOpen
+    async { // Successful tasks puts circuit breaker back in HalfOpen
       cb.protectOrThrow {
         checkHalfOpen.complete(Unit)
-        delayProtectLatch.get()
+        delayProtectLatch.await()
       } // Delay protect, to inspect HalfOpen state.
       stateAssertionLatch.complete(Unit)
     }
 
-    checkHalfOpen.get()
+    checkHalfOpen.await()
 
     when (val s = cb.state()) {
       is CircuitBreaker.State.HalfOpen -> {
-        s.resetTimeout shouldBe resetTimeout
+        s.resetTimeout shouldBe resetTimeout.inNanoseconds
       }
       else -> fail("Invalid state: Expect CircuitBreaker.State.HalfOpen but found $s")
     }
@@ -147,7 +151,7 @@ class CircuitBreakerTest : ArrowFxSpec(spec = {
 
     // Once we complete `protect`, the circuitbreaker will go back to closer state
     delayProtectLatch.complete(Unit)
-    stateAssertionLatch.get()
+    stateAssertionLatch.await()
 
     // Circuit breaker should be reset after successful task.
     cb.state() shouldBe CircuitBreaker.State.Closed(0)
@@ -179,7 +183,7 @@ class CircuitBreakerTest : ArrowFxSpec(spec = {
 
     when (val s = cb.state()) {
       is CircuitBreaker.State.Open -> {
-        s.resetTimeout shouldBe resetTimeout
+        s.resetTimeout shouldBe resetTimeout.inNanoseconds
       }
       else -> fail("Invalid state: Expect CircuitBreaker.State.Open but found $s")
     }
@@ -194,31 +198,32 @@ class CircuitBreakerTest : ArrowFxSpec(spec = {
 
     when (val s = cb.state()) {
       is CircuitBreaker.State.Open -> {
-        s.resetTimeout shouldBe resetTimeout
+        s.resetTimeout shouldBe resetTimeout.inNanoseconds
       }
       else -> fail("Invalid state: Expect CircuitBreaker.State.Open but found $s")
     }
 
-    val checkHalfOpen = Promise<Unit>()
-    val delayProtectLatch = Promise<Unit>()
-    val stateAssertionLatch = Promise<Unit>()
+    val checkHalfOpen = CompletableDeferred<Unit>()
+    val delayProtectLatch = CompletableDeferred<Unit>()
+    val stateAssertionLatch = CompletableDeferred<Unit>()
 
-    ForkAndForget { // Successful tasks puts circuit breaker back in HalfOpen
+    async { // Successful tasks puts circuit breaker back in HalfOpen
       // Delay protect, to inspect HalfOpen state.
       Either.catch {
         cb.protectOrThrow {
           checkHalfOpen.complete(Unit)
-          delayProtectLatch.get(); throw dummy
+          delayProtectLatch.await()
+          throw dummy
         }
       }
       stateAssertionLatch.complete(Unit)
     }
 
-    checkHalfOpen.get()
+    checkHalfOpen.await()
 
     when (val s = cb.state()) {
       is CircuitBreaker.State.HalfOpen -> {
-        s.resetTimeout shouldBe resetTimeout
+        s.resetTimeout shouldBe resetTimeout.inNanoseconds
       }
       else -> fail("Invalid state: Expect CircuitBreaker.State.HalfOpen but found $s")
     }
@@ -229,13 +234,13 @@ class CircuitBreakerTest : ArrowFxSpec(spec = {
 
     // Once we complete `protect`, the circuitbreaker will go back to closer state
     delayProtectLatch.complete(Unit)
-    stateAssertionLatch.get()
+    stateAssertionLatch.await()
 
     // Circuit breaker should've stayed open on failure after timeOutReset
     // resetTimeout should've applied
     when (val s = cb.state()) {
       is CircuitBreaker.State.Open -> {
-        s.resetTimeout shouldBe (resetTimeout * exponentialBackoffFactor)
+        s.resetTimeout shouldBe (resetTimeout * exponentialBackoffFactor).inNanoseconds
       }
       else -> fail("Invalid state: Expect CircuitBreaker.State.Open but found $s")
     }

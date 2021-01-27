@@ -11,7 +11,9 @@ import io.kotest.property.arbitrary.bool
 import io.kotest.property.arbitrary.element
 import io.kotest.property.arbitrary.int
 import kotlinx.coroutines.withContext
-import io.kotest.property.checkAll
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
 import java.util.concurrent.Executors
 
 class RaceNTest : ArrowFxSpec(spec = {
@@ -79,23 +81,24 @@ class RaceNTest : ArrowFxSpec(spec = {
 
   "Cancelling race 2 cancels all participants" {
     checkAll(Arb.int(), Arb.int()) { a, b ->
-      val s = Semaphore(0L)
-      val pa = Promise<Pair<Int, ExitCase>>()
-      val pb = Promise<Pair<Int, ExitCase>>()
+      val s = Channel<Unit>()
+      val pa = CompletableDeferred<Pair<Int, ExitCase>>()
+      val pb = CompletableDeferred<Pair<Int, ExitCase>>()
 
-      val loserA = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
-      val loserB = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
+      val loserA = suspend { guaranteeCase({ s.send(Unit); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
+      val loserB = suspend { guaranteeCase({ s.send(Unit); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
 
-      val f = ForkAndForget { raceN(loserA, loserB) }
+      val f = async { raceN(loserA, loserB) }
 
-      s.acquireN(2) // Suspend until all racers started
+      // Suspend until all racers started
+      repeat(2) { s.receive() }
       f.cancel()
 
-      pa.get().let { (res, exit) ->
+      pa.await().let { (res, exit) ->
         res shouldBe a
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
-      pb.get().let { (res, exit) ->
+      pb.await().let { (res, exit) ->
         res shouldBe b
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
@@ -108,18 +111,18 @@ class RaceNTest : ArrowFxSpec(spec = {
       Arb.bool(),
       Arb.int()
     ) { eith, leftWinner, a ->
-      val s = Semaphore(0L)
-      val pa = Promise<Pair<Int, ExitCase>>()
+      val s = Channel<Unit>()
+      val pa = CompletableDeferred<Pair<Int, ExitCase>>()
 
-      val winner = suspend { s.acquire(); eith.rethrow() }
-      val loserA = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
+      val winner = suspend { s.receive(); eith.rethrow() }
+      val loserA = suspend { guaranteeCase({ s.send(Unit); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
 
       val res = Either.catch {
         if (leftWinner) raceN(winner, loserA)
         else raceN(loserA, winner)
       }.map { it.merge() }
 
-      pa.get().let { (res, exit) ->
+      pa.await().let { (res, exit) ->
         res shouldBe a
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
@@ -204,29 +207,30 @@ class RaceNTest : ArrowFxSpec(spec = {
 
   "Cancelling race 3 cancels all participants" {
     checkAll(Arb.int(), Arb.int(), Arb.int()) { a, b, c ->
-      val s = Semaphore(0L)
-      val pa = Promise<Pair<Int, ExitCase>>()
-      val pb = Promise<Pair<Int, ExitCase>>()
-      val pc = Promise<Pair<Int, ExitCase>>()
+      val s = Channel<Unit>()
+      val pa = CompletableDeferred<Pair<Int, ExitCase>>()
+      val pb = CompletableDeferred<Pair<Int, ExitCase>>()
+      val pc = CompletableDeferred<Pair<Int, ExitCase>>()
 
-      val loserA = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
-      val loserB = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
-      val loserC = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pc.complete(Pair(c, ex)) } }
+      val loserA = suspend { guaranteeCase({ s.send(Unit); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
+      val loserB = suspend { guaranteeCase({ s.send(Unit); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
+      val loserC = suspend { guaranteeCase({ s.send(Unit); never<Int>() }) { ex -> pc.complete(Pair(c, ex)) } }
 
-      val f = ForkAndForget { raceN(loserA, loserB, loserC) }
+      val f = async { raceN(loserA, loserB, loserC) }
 
-      s.acquireN(3) // Suspend until all racers started
+      // Suspend until all racers started
+      repeat(3) { s.receive() }
       f.cancel()
 
-      pa.get().let { (res, exit) ->
+      pa.await().let { (res, exit) ->
         res shouldBe a
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
-      pb.get().let { (res, exit) ->
+      pb.await().let { (res, exit) ->
         res shouldBe b
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
-      pc.get().let { (res, exit) ->
+      pc.await().let { (res, exit) ->
         res shouldBe c
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
@@ -240,13 +244,13 @@ class RaceNTest : ArrowFxSpec(spec = {
       Arb.int(),
       Arb.int()
     ) { eith, leftWinner, a, b ->
-      val s = Semaphore(0L)
-      val pa = Promise<Pair<Int, ExitCase>>()
-      val pb = Promise<Pair<Int, ExitCase>>()
+      val s = Channel<Unit>()
+      val pa = CompletableDeferred<Pair<Int, ExitCase>>()
+      val pb = CompletableDeferred<Pair<Int, ExitCase>>()
 
-      val winner = suspend { s.acquireN(2); eith.rethrow() }
-      val loserA = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
-      val loserB = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
+      val winner = suspend { s.receive(); s.receive(); eith.rethrow() }
+      val loserA = suspend { guaranteeCase({ s.send(Unit); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
+      val loserB = suspend { guaranteeCase({ s.send(Unit); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
 
       val res = Either.catch {
         when (leftWinner) {
@@ -256,11 +260,11 @@ class RaceNTest : ArrowFxSpec(spec = {
         }
       }.map { it.fold(::identity, ::identity, ::identity) }
 
-      pa.get().let { (res, exit) ->
+      pa.await().let { (res, exit) ->
         res shouldBe a
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
-      pb.get().let { (res, exit) ->
+      pb.await().let { (res, exit) ->
         res shouldBe b
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }

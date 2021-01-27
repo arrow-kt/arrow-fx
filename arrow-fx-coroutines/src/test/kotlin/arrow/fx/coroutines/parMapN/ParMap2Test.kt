@@ -4,12 +4,8 @@ import arrow.core.Either
 import arrow.fx.coroutines.ArrowFxSpec
 import arrow.fx.coroutines.Atomic
 import arrow.fx.coroutines.ExitCase
-import arrow.fx.coroutines.ForkAndForget
 import arrow.fx.coroutines.NamedThreadFactory
-import arrow.fx.coroutines.Promise
 import arrow.fx.coroutines.Resource
-import arrow.fx.coroutines.Semaphore
-
 import arrow.fx.coroutines.guaranteeCase
 import arrow.fx.coroutines.leftException
 import arrow.fx.coroutines.never
@@ -26,6 +22,9 @@ import io.kotest.property.Arb
 import io.kotest.property.arbitrary.bool
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.string
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
 
@@ -74,11 +73,11 @@ class ParMap2Test : ArrowFxSpec(spec = {
   "parMapN 2 runs in parallel" {
     checkAll(Arb.int(), Arb.int()) { a, b ->
       val r = Atomic("")
-      val modifyGate = Promise<Int>()
+      val modifyGate = CompletableDeferred<Int>()
 
       parMapN(
         suspend {
-          modifyGate.get()
+          modifyGate.await()
           r.update { i -> "$i$a" }
         },
         suspend {
@@ -103,23 +102,24 @@ class ParMap2Test : ArrowFxSpec(spec = {
 
   "Cancelling parMapN 2 cancels all participants" {
     checkAll(Arb.int(), Arb.int()) { a, b ->
-      val s = Semaphore(0L)
-      val pa = Promise<Pair<Int, ExitCase>>()
-      val pb = Promise<Pair<Int, ExitCase>>()
+      val s = Channel<Unit>()
+      val pa = CompletableDeferred<Pair<Int, ExitCase>>()
+      val pb = CompletableDeferred<Pair<Int, ExitCase>>()
 
-      val loserA = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
-      val loserB = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
+      val loserA = suspend { guaranteeCase({ s.send(Unit); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
+      val loserB = suspend { guaranteeCase({ s.send(Unit); never<Int>() }) { ex -> pb.complete(Pair(b, ex)) } }
 
-      val f = ForkAndForget { parMapN(loserA, loserB) { _a, _b -> Pair(_a, _b) } }
+      val f = async { parMapN(loserA, loserB) { _a, _b -> Pair(_a, _b) } }
 
-      s.acquireN(2) // Suspend until all racers started
+      // Suspend until all racers started
+      repeat(2) { s.receive() }
       f.cancel()
 
-      pa.get().let { (res, exit) ->
+      pa.await().let { (res, exit) ->
         res shouldBe a
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
-      pb.get().let { (res, exit) ->
+      pb.await().let { (res, exit) ->
         res shouldBe b
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }
@@ -132,18 +132,18 @@ class ParMap2Test : ArrowFxSpec(spec = {
       Arb.bool(),
       Arb.int()
     ) { e, leftWinner, a ->
-      val s = Semaphore(0L)
-      val pa = Promise<Pair<Int, ExitCase>>()
+      val s = Channel<Unit>()
+      val pa = CompletableDeferred<Pair<Int, ExitCase>>()
 
-      val winner = suspend { s.acquire(); throw e }
-      val loserA = suspend { guaranteeCase({ s.release(); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
+      val winner = suspend { s.receive(); throw e }
+      val loserA = suspend { guaranteeCase({ s.send(Unit); never<Int>() }) { ex -> pa.complete(Pair(a, ex)) } }
 
       val r = Either.catch {
         if (leftWinner) parMapN(winner, loserA) { _, _ -> Unit }
         else parMapN(loserA, winner) { _, _ -> Unit }
       }
 
-      pa.get().let { (res, exit) ->
+      pa.await().let { (res, exit) ->
         res shouldBe a
         exit.shouldBeInstanceOf<ExitCase.Cancelled>()
       }

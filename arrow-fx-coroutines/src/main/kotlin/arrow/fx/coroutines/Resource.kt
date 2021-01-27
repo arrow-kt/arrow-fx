@@ -5,9 +5,6 @@ import arrow.core.identity
 import java.io.Closeable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import kotlin.coroutines.AbstractCoroutineContextElement
-import kotlin.coroutines.Continuation
-import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -326,6 +323,7 @@ sealed class Resource<out A> {
       return loop(f(a))
     }
 
+    @Suppress("NAME_SHADOWING")
     inline fun <B, C, D> mapN(
       b: Resource<B>,
       c: Resource<C>,
@@ -335,6 +333,7 @@ sealed class Resource<out A> {
         map(b, c)
       }
 
+    @Suppress("NAME_SHADOWING")
     inline fun <B, C, D, E> mapN(
       b: Resource<B>,
       c: Resource<C>,
@@ -345,6 +344,7 @@ sealed class Resource<out A> {
         map(b, c, d)
       }
 
+    @Suppress("NAME_SHADOWING")
     inline fun <B, C, D, E, F> mapN(
       b: Resource<B>,
       c: Resource<C>,
@@ -356,6 +356,7 @@ sealed class Resource<out A> {
         map(b, c, d, e)
       }
 
+    @Suppress("NAME_SHADOWING")
     inline fun <B, C, D, E, F, G> mapN(
       b: Resource<B>,
       c: Resource<C>,
@@ -368,6 +369,7 @@ sealed class Resource<out A> {
         map(b, c, d, e, f)
       }
 
+    @Suppress("NAME_SHADOWING")
     inline fun <B, C, D, E, F, G, H> mapN(
       b: Resource<B>,
       c: Resource<C>,
@@ -381,6 +383,7 @@ sealed class Resource<out A> {
         map(b, c, d, e, f, g)
       }
 
+    @Suppress("NAME_SHADOWING")
     inline fun <B, C, D, E, F, G, H, I> mapN(
       b: Resource<B>,
       c: Resource<C>,
@@ -395,6 +398,7 @@ sealed class Resource<out A> {
         map(b, c, d, e, f, g, h)
       }
 
+    @Suppress("NAME_SHADOWING")
     inline fun <B, C, D, E, F, G, H, I, J> mapN(
       b: Resource<B>,
       c: Resource<C>,
@@ -410,6 +414,7 @@ sealed class Resource<out A> {
         map(b, c, d, e, f, g, h, i)
       }
 
+    @Suppress("NAME_SHADOWING")
     inline fun <B, C, D, E, F, G, H, I, J, K> mapN(
       b: Resource<B>,
       c: Resource<C>,
@@ -523,7 +528,7 @@ sealed class Resource<out A> {
  * }
  * ```
  */
-inline class Use<A>(internal val acquire: suspend () -> A)
+class Use<A>(internal val acquire: suspend () -> A)
 
 /**
  * Marks an [acquire] operation as the [Resource.use] step of a [Resource].
@@ -703,4 +708,3 @@ inline fun <A> Iterable<Resource<A>>.sequence(): Resource<List<A>> =
 @Suppress("NOTHING_TO_INLINE")
 inline fun <A> Iterable<Resource<Iterable<A>>>.flatSequence(): Resource<List<A>> =
   sequence().map { it.flatten() }
-

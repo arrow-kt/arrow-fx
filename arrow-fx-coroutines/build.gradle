@@ -10,7 +10,6 @@ apply from: "$DOC_CREATION"
 
 dependencies {
   api "io.arrow-kt:arrow-core:$VERSION_NAME"
-  implementation project(":arrow-fx-suspend-connection")
   implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$KOTLINX_COROUTINES_VERSION"
 
   testImplementation project(":arrow-fx-coroutines-test")

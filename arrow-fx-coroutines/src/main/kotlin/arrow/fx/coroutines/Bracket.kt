@@ -239,7 +239,7 @@ suspend inline fun <A, B> bracketCase(
 @PublishedApi
 internal suspend inline fun runReleaseAndRethrow(original: Throwable, crossinline f: suspend () -> Unit): Nothing {
   try {
-    withContext(NonCancellable + SuspendConnection.uncancellable) {
+    withContext(NonCancellable) {
       f()
     }
   } catch (e: Throwable) {
