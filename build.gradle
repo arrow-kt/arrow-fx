@@ -23,8 +23,6 @@ apply from: "$ROOT_PROJECT"
 // -- Artifacts publication
 configure(subprojects
   - project("arrow-benchmarks-fx")
-  - project("arrow-benchmarks-fx:arrow-scala-benchmarks")
-  - project("arrow-benchmarks-fx:arrow-kio-benchmarks")
 ) {
   apply from: "$PUBLICATION"
 }
@@ -32,8 +30,6 @@ configure(subprojects
 // -- Gradle Animal Sniffer Plugin: https://github.com/xvik/gradle-animalsniffer-plugin
 configure(subprojects
   - project("arrow-benchmarks-fx")
-  - project("arrow-benchmarks-fx:arrow-scala-benchmarks")
-  - project("arrow-benchmarks-fx:arrow-kio-benchmarks")
   - project("arrow-fx-coroutines")
 ) {
   apply plugin: 'ru.vyarus.animalsniffer'

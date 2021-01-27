@@ -2,7 +2,5 @@ rootProject.name = 'arrow-fx-lib'
 
 include 'arrow-fx-coroutines'
 include 'arrow-fx-coroutines-test'
-include 'arrow-benchmarks-fx:arrow-scala-benchmarks'
-include 'arrow-benchmarks-fx:arrow-kio-benchmarks'
 include 'arrow-benchmarks-fx'
 include 'arrow-fx-stm'

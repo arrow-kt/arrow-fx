@@ -1,8 +1,7 @@
 package arrow.benchmarks
 
-import arrow.core.extensions.list.foldable.foldLeft
-import arrow.fx.IO
-import arrow.fx.IODispatchers
+import arrow.fx.coroutines.parMapN
+import kotlinx.coroutines.runBlocking
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.CompilerControl
 import org.openjdk.jmh.annotations.Fork
@@ -23,12 +22,11 @@ open class ParMap {
   @Param("100")
   var size: Int = 0
 
-  private fun ioHelper(): IO<Int> =
-    (0 until size).toList().foldLeft(IO { 0 }) { acc, i ->
-      IO.parMapN(IODispatchers.CommonPool, acc, IO { i }) { (a, b) -> a + b }
-    }
-
   @Benchmark
-  fun io(): Int =
-    ioHelper().unsafeRunSync()
+  fun coroutines(): Int =
+    runBlocking {
+      (0 until size).fold(0) { acc, i ->
+        parMapN({ acc }, { i }) { a, b -> a + b }
+      }
+    }
 }

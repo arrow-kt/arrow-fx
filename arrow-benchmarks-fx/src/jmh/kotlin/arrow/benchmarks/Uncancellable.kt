@@ -1,6 +1,8 @@
 package arrow.benchmarks
 
-import arrow.fx.IO
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.CompilerControl
 import org.openjdk.jmh.annotations.Fork
@@ -21,10 +23,15 @@ open class Uncancellable {
   @Param("100")
   var size: Int = 0
 
-  fun ioUncancellableLoop(i: Int): IO<Int> =
-    if (i < size) IO { i + 1 }.uncancellable().flatMap { ioUncancellableLoop(it) }
-    else IO.just(i)
+  tailrec suspend fun uncancellableLoop(i: Int): Int =
+    if (i < size) {
+      val x = withContext(NonCancellable) {
+        i + 1
+      }
+      uncancellableLoop(x)
+    } else i
 
   @Benchmark
-  fun io(): Int = ioUncancellableLoop(0).unsafeRunSync()
+  fun coroutines(): Int =
+    runBlocking { uncancellableLoop(0) }
 }
