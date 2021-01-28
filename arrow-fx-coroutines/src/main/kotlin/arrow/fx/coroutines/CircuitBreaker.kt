@@ -112,7 +112,7 @@ private constructor(
       }
       is Open -> {
         val now = System.currentTimeMillis()
-        if (now >= curr.expiresAt.millis) {
+        if (now >= curr.expiresAt) {
           // The Open state has expired, so we are letting just one
           // task to execute, while transitioning into HalfOpen
           if (!state.compareAndSet(
@@ -123,7 +123,7 @@ private constructor(
           else attemptReset(fa, curr.resetTimeoutNanos, curr.awaitClose, curr.startedAt)
         } else {
           // Open isn't expired, so we need to fail
-          val expiresInMillis = curr.expiresAt.millis - now
+          val expiresInMillis = curr.expiresAt - now
           onRejected.invoke()
           throw ExecutionRejected(
             "Rejected because the CircuitBreaker is in the Open state, attempting to close in $expiresInMillis millis",
@@ -406,13 +406,13 @@ private constructor(
        * when the `Open` state is to transition to [HalfOpen].
        *
        * It is calculated as:
-       * `startedAt + (resetTimeout `
+       * `startedAt + resetTimeout`
        */
-      val expiresAt: FxDuration = startedAt.oldMilliseconds + resetTimeout
+      val expiresAt: Long = startedAt + resetTimeout.millis
 
       override fun equals(other: Any?): Boolean =
         if (other is Open) this.startedAt == startedAt &&
-          this.resetTimeout == resetTimeout &&
+          this.resetTimeoutNanos == resetTimeoutNanos &&
           this.expiresAt == expiresAt
         else false
 
@@ -421,7 +421,7 @@ private constructor(
 
       override fun hashCode(): Int {
         var result = startedAt.hashCode()
-        result = 31 * result + resetTimeout.hashCode()
+        result = 31 * result + resetTimeoutNanos.hashCode()
         result = 31 * result + expiresAt.hashCode()
         return result
       }
