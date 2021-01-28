@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.Eval
 import arrow.core.identity
 import arrow.core.left
+import arrow.core.merge
 import arrow.core.right
 import arrow.fx.coroutines.Schedule.ScheduleImpl
 import kotlinx.coroutines.delay
@@ -1114,6 +1115,10 @@ sealed class Schedule<Input, Output> {
  * Runs this effect once and, if it succeeded, decide using the provided policy if the effect should be repeated and if so, with how much delay.
  * Returns the last output from the policy or raises an error if a repeat failed.
  */
+@Deprecated(
+  "repeat has become a concrete method on Schedule",
+  ReplaceWith("schedule.repeat(fa)")
+)
 suspend fun <A, B> repeat(
   schedule: Schedule<A, B>,
   fa: suspend () -> A
@@ -1123,16 +1128,24 @@ suspend fun <A, B> repeat(
  * Runs this effect once and, if it succeeded, decide using the provided policy if the effect should be repeated and if so, with how much delay.
  * Also offers a function to handle errors if they are encountered during repetition.
  */
+@Deprecated(
+  "repeat has become a concrete method on Schedule",
+  ReplaceWith("schedule.repeatOrElseEither(fa, orElse).merge()", "arrow.core.merge")
+)
 suspend fun <A, B> repeatOrElse(
   schedule: Schedule<A, B>,
   fa: suspend () -> A,
   orElse: suspend (Throwable, B?) -> B
-): B = schedule.repeatOrElseEither(fa, orElse).fold(::identity, ::identity)
+): B = schedule.repeatOrElseEither(fa, orElse).merge()
 
 /**
  * Runs this effect once and, if it succeeded, decide using the provided policy if the effect should be repeated and if so, with how much delay.
  * Also offers a function to handle errors if they are encountered during repetition.
  */
+@Deprecated(
+  "repeat has become a concrete method on Schedule",
+  ReplaceWith("schedule.repeatOrElseEither(fa, orElse)")
+)
 @Suppress("UNCHECKED_CAST")
 suspend fun <A, B, C> repeatOrElseEither(
   schedule: Schedule<A, B>,
@@ -1148,7 +1161,7 @@ suspend fun <A, B, C> repeatOrElseEither(
 @JvmName("deprecatedRetry")
 @Deprecated(
   "retry has become an extension of Schedule",
-  ReplaceWith("schedule.retry(fa)")
+  ReplaceWith("schedule.retry(fa)", "arrow.core.retry")
 )
 suspend fun <A, B> retry(
   schedule: Schedule<Throwable, B>,
@@ -1162,7 +1175,7 @@ suspend fun <A, B> retry(
 @JvmName("deprecatedRetryOrElse")
 @Deprecated(
   "retryOrElse has become an extension of Schedule",
-  ReplaceWith("schedule.retryOrElse(fa, orElse)")
+  ReplaceWith("schedule.retryOrElse(fa, orElse)", "arrow.core.retryOrElse")
 )
 suspend fun <A, B> retryOrElse(
   schedule: Schedule<Throwable, B>,
@@ -1178,7 +1191,7 @@ suspend fun <A, B> retryOrElse(
 @JvmName("deprecatedRetryOrElseEither")
 @Deprecated(
   "retryOrElse has become an extension of Schedule",
-  ReplaceWith("schedule.retryOrElseEither(fa, orElse)")
+  ReplaceWith("schedule.retryOrElseEither(fa, orElse)", "arrow.core.retryOrElseEither")
 )
 suspend fun <A, B, C> retryOrElseEither(
   schedule: Schedule<Throwable, B>,
