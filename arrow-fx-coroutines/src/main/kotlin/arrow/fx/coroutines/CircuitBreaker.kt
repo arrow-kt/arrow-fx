@@ -12,7 +12,6 @@ import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 import arrow.fx.coroutines.Duration as FxDuration
 import arrow.fx.coroutines.nanoseconds as oldNanoseconds
-import arrow.fx.coroutines.milliseconds as oldMilliseconds
 
 class CircuitBreaker
 private constructor(
@@ -451,7 +450,7 @@ private constructor(
        *        the exponential backoff factor for the next transition to
        *        `Open`, in case the reset attempt fails.
        */
-      constructor(resetTimeoutNanos: Double): this(resetTimeoutNanos, CompletableDeferred())
+      constructor(resetTimeoutNanos: Double) : this(resetTimeoutNanos, CompletableDeferred())
 
       @Deprecated(
         DeprecateDuration,
