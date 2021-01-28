@@ -5,9 +5,14 @@ import arrow.core.identity
 import arrow.fx.coroutines.CircuitBreaker.State.Closed
 import arrow.fx.coroutines.CircuitBreaker.State.HalfOpen
 import arrow.fx.coroutines.CircuitBreaker.State.Open
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlin.coroutines.Continuation
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 import arrow.fx.coroutines.Duration as FxDuration
+import arrow.fx.coroutines.nanoseconds as oldNanoseconds
+import arrow.fx.coroutines.milliseconds as oldMilliseconds
 
 class CircuitBreaker
 private constructor(
@@ -66,8 +71,8 @@ private constructor(
   suspend fun awaitClose(): Unit =
     when (val curr = state.value) {
       is Closed -> Unit
-      is Open -> curr.awaitClose.get()
-      is State.HalfOpen -> curr.awaitClose.get()
+      is Open -> curr.awaitClose.await()
+      is State.HalfOpen -> curr.awaitClose.await()
     }
 
   /**
@@ -107,18 +112,18 @@ private constructor(
       }
       is Open -> {
         val now = System.currentTimeMillis()
-        if (now >= curr.expiresAt) {
+        if (now >= curr.expiresAt.millis) {
           // The Open state has expired, so we are letting just one
           // task to execute, while transitioning into HalfOpen
           if (!state.compareAndSet(
               curr,
-              State.HalfOpen(curr.resetTimeout, curr.awaitClose)
+              State.HalfOpen(curr.resetTimeoutNanos, curr.awaitClose)
             )
           ) protectOrThrow(fa) // retry!
-          else attemptReset(fa, curr.resetTimeout, curr.awaitClose, curr.startedAt)
+          else attemptReset(fa, curr.resetTimeoutNanos, curr.awaitClose, curr.startedAt)
         } else {
           // Open isn't expired, so we need to fail
-          val expiresInMillis = curr.expiresAt - now
+          val expiresInMillis = curr.expiresAt.millis - now
           onRejected.invoke()
           throw ExecutionRejected(
             "Rejected because the CircuitBreaker is in the Open state, attempting to close in $expiresInMillis millis",
@@ -162,7 +167,7 @@ private constructor(
               val now = System.currentTimeMillis()
               // We've gone over the permitted failures threshold,
               // so we need to open the circuit breaker
-              val update = Open(now, resetTimeout, Promise())
+              val update = Open(now, resetTimeout, CompletableDeferred())
               if (!state.compareAndSet(curr, update)) markOrResetFailures(result) // retry
               else {
                 onOpen.invoke()
@@ -190,7 +195,7 @@ private constructor(
   private suspend fun <A> attemptReset(
     task: suspend () -> A,
     resetTimeout: Double,
-    awaitClose: Promise<Unit>,
+    awaitClose: CompletableDeferred<Unit>,
     lastStartedAt: Long
   ): A =
     bracketCase(
@@ -363,34 +368,39 @@ private constructor(
         "Closed(failures=$failures)"
     }
 
-    /** [State] of the [CircuitBreaker] in which the circuit
-     * breaker rejects all tasks with an [ExecutionRejected].
-     *
-     * Contract:
-     *  - All tasks fail fast with [ExecutionRejected].
-     *  - After the configured `resetTimeout`, the circuit breaker
-     *    enters a [HalfOpen] state, allowing one task to go through
-     *    for testing the connection.
-     *
-     * @param startedAt is the timestamp in milliseconds since the
-     *        epoch when the transition to `Open` happened.
-     *
-     * @param resetTimeout is the current `resetTimeout` that is
-     *        applied to this `Open` state, to be multiplied by the
-     *        exponential backoff factor for the next transition from
-     *        `HalfOpen` to `Open`, in case the reset attempt fails
-     *
-     * @param awaitClose is a [Promise] that will get completed
-     *        when the `CircuitBreaker` switches to the `Closed` state again
-     */
-    class Open(val startedAt: Long, val resetTimeout: Double, internal val awaitClose: Promise<Unit>) : State() {
+    class Open internal constructor(val startedAt: Long, val resetTimeoutNanos: Double, internal val awaitClose: CompletableDeferred<Unit>) : State() {
+
+      /** [State] of the [CircuitBreaker] in which the circuit
+       * breaker rejects all tasks with an [ExecutionRejected].
+       *
+       * Contract:
+       *  - All tasks fail fast with [ExecutionRejected].
+       *  - After the configured `resetTimeout`, the circuit breaker
+       *    enters a [HalfOpen] state, allowing one task to go through
+       *    for testing the connection.
+       *
+       * @param startedAt is the timestamp in milliseconds since the
+       *        epoch when the transition to `Open` happened.
+       *
+       * @param resetTimeoutNanos is the current `resetTimeout` that is
+       *        applied to this `Open` state, to be multiplied by the
+       *        exponential backoff factor for the next transition from
+       *        `HalfOpen` to `Open`, in case the reset attempt fails
+       */
+      constructor(startedAt: Long, resetTimeoutNanos: Double) : this(startedAt, resetTimeoutNanos, CompletableDeferred())
 
       @Deprecated(
         DeprecateDuration,
-        ReplaceWith("(startedAt, resetTimeout.millis.milliseconds, awaitClose)", "kotlin.time.milliseconds")
+        ReplaceWith(
+          "CircuitBreaker.State.Open(startedAt, resetTimeout.nanoseconds.toDouble())",
+          "arrow.fx.coroutines.CircuitBreaker"
+        )
       )
       constructor(startedAt: Long, resetTimeout: FxDuration, awaitClose: Promise<Unit>) :
-        this(startedAt, resetTimeout.nanoseconds.toDouble(), awaitClose)
+        this(startedAt, resetTimeout.nanoseconds.toDouble(), awaitClose.asCompletableDeferred())
+
+      @Deprecated(DeprecateDuration)
+      val resetTimeout: FxDuration = resetTimeoutNanos.toLong().oldNanoseconds
 
       /** The timestamp in milliseconds since the epoch, specifying
        * when the `Open` state is to transition to [HalfOpen].
@@ -398,7 +408,7 @@ private constructor(
        * It is calculated as:
        * `startedAt + (resetTimeout `
        */
-      val expiresAt: Long = startedAt + (resetTimeout / 1_000_000).toLong()
+      val expiresAt: FxDuration = startedAt.oldMilliseconds + resetTimeout
 
       override fun equals(other: Any?): Boolean =
         if (other is Open) this.startedAt == startedAt &&
@@ -417,49 +427,55 @@ private constructor(
       }
     }
 
-    /** [State] of the [CircuitBreaker] in which the circuit
-     * breaker has already allowed a task to go through, as a reset
-     * attempt, in order to test the connection.
-     *
-     * Contract:
-     *  - The first task when `Open` has expired is allowed through
-     *    without failing fast, just before the circuit breaker is
-     *    evolved into the `HalfOpen` state.
-     *  - All tasks attempted in `HalfOpen` fail-fast with an exception
-     *    just as in [Open] state.
-     *  - If that task attempt succeeds, the breaker is reset back to
-     *    the `Closed` state, with the `resetTimeout` and the
-     *    `failures` count also reset to initial values.
-     *  - If the first call fails, the breaker is tripped again into
-     *    the `Open` state (the `resetTimeout` is multiplied by the
-     *    exponential backoff factor).
-     *
-     * @param resetTimeout is the current `resetTimeout` that was
-     *        applied to the previous `Open` state, to be multiplied by
-     *        the exponential backoff factor for the next transition to
-     *        `Open`, in case the reset attempt fails.
-     *
-     * @param awaitClose is a [Promise] that will get completed
-     *        when the `CircuitBreaker` switches to the `Closed` state again.
-     */
-    class HalfOpen(val resetTimeout: Double, internal val awaitClose: Promise<Unit>) : State() {
+    class HalfOpen internal constructor(val resetTimeoutNanos: Double, internal val awaitClose: CompletableDeferred<Unit>) : State() {
+
+      /** [State] of the [CircuitBreaker] in which the circuit
+       * breaker has already allowed a task to go through, as a reset
+       * attempt, in order to test the connection.
+       *
+       * Contract:
+       *  - The first task when `Open` has expired is allowed through
+       *    without failing fast, just before the circuit breaker is
+       *    evolved into the `HalfOpen` state.
+       *  - All tasks attempted in `HalfOpen` fail-fast with an exception
+       *    just as in [Open] state.
+       *  - If that task attempt succeeds, the breaker is reset back to
+       *    the `Closed` state, with the `resetTimeout` and the
+       *    `failures` count also reset to initial values.
+       *  - If the first call fails, the breaker is tripped again into
+       *    the `Open` state (the `resetTimeout` is multiplied by the
+       *    exponential backoff factor).
+       *
+       * @param resetTimeoutNanos is the current `resetTimeout` that was
+       *        applied to the previous `Open` state, to be multiplied by
+       *        the exponential backoff factor for the next transition to
+       *        `Open`, in case the reset attempt fails.
+       */
+      constructor(resetTimeoutNanos: Double): this(resetTimeoutNanos, CompletableDeferred())
 
       @Deprecated(
         DeprecateDuration,
-        ReplaceWith("(resetTimeout.millis.milliseconds, awaitClose)", "kotlin.time.milliseconds")
+        ReplaceWith(
+          "CircuitBreaker.State.HalfOpen(resetTimeout.nanoseconds.toDouble())",
+          "arrow.fx.coroutines.CircuitBreaker"
+        )
       )
       constructor(resetTimeout: FxDuration, awaitClose: Promise<Unit>) :
-        this(resetTimeout.nanoseconds.toDouble(), awaitClose)
+        this(resetTimeout.nanoseconds.toDouble(), awaitClose.asCompletableDeferred())
+
+      @Deprecated(DeprecateDuration)
+      val resetTimeout: FxDuration =
+        resetTimeoutNanos.toLong().oldNanoseconds
 
       override fun hashCode(): Int =
-        resetTimeout.hashCode()
+        resetTimeoutNanos.hashCode()
 
       override fun equals(other: Any?): Boolean =
-        if (other is HalfOpen) resetTimeout == other.resetTimeout
+        if (other is HalfOpen) resetTimeoutNanos == other.resetTimeoutNanos
         else false
 
       override fun toString(): String =
-        "Closed(failures=$resetTimeout)"
+        "HalfOpen(resetTimeoutNanos=$resetTimeoutNanos)"
     }
   }
 
@@ -472,9 +488,9 @@ private constructor(
      * @param maxFailures is the maximum count for failures before
      *        opening the circuit breaker.
      *
-     * @param resetTimeout is the timeout to wait in the `Open` state
+     * @param resetTimeoutNanos is the timeout to wait in the `Open` state
      *        before attempting a close of the circuit breaker (but without
-     *        the backoff factor applied).
+     *        the backoff factor applied) in nanoseconds.
      *
      * @param exponentialBackoffFactor is a factor to use for resetting
      *        the `resetTimeout` when in the `HalfOpen` state, in case
@@ -497,7 +513,7 @@ private constructor(
      */
     suspend fun of(
       maxFailures: Int,
-      resetTimeout: Double,
+      resetTimeoutNanos: Double,
       exponentialBackoffFactor: Double = 1.0,
       maxResetTimeout: Double = Double.POSITIVE_INFINITY,
       onRejected: suspend () -> Unit = suspend { Unit },
@@ -505,11 +521,11 @@ private constructor(
       onHalfOpen: suspend () -> Unit = suspend { Unit },
       onOpen: suspend () -> Unit = suspend { Unit }
     ): CircuitBreaker? =
-      if (maxFailures >= 0 && resetTimeout > 0 && exponentialBackoffFactor > 0 && maxResetTimeout > 0) {
+      if (maxFailures >= 0 && resetTimeoutNanos > 0 && exponentialBackoffFactor > 0 && maxResetTimeout > 0) {
         CircuitBreaker(
           state = AtomicRefW(Closed(0)),
           maxFailures = maxFailures,
-          resetTimeout = resetTimeout,
+          resetTimeout = resetTimeoutNanos,
           exponentialBackoffFactor = exponentialBackoffFactor,
           maxResetTimeout = maxResetTimeout,
           onRejected = onRejected,
@@ -594,5 +610,17 @@ private constructor(
         onHalfOpen,
         onOpen
       )
+  }
+}
+
+// Temporary fix until  `Promise` is removed
+private fun <A> Promise<A>.asCompletableDeferred(): CompletableDeferred<A> {
+  val default = CompletableDeferred<A>()
+  return object : CompletableDeferred<A> by default {
+    override fun complete(value: A): Boolean {
+      suspend { this@asCompletableDeferred.complete(value) }
+        .startCoroutineUnintercepted(Continuation(Dispatchers.Default) { })
+      return default.complete(value)
+    }
   }
 }
