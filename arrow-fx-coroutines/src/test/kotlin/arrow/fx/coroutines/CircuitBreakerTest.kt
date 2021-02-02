@@ -7,9 +7,11 @@ import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
 import kotlin.time.minutes
 
+@ExperimentalTime
 class CircuitBreakerTest : ArrowFxSpec(spec = {
 
   val dummy = RuntimeException("dummy")
