@@ -48,12 +48,12 @@ class FlowTest : ArrowFxSpec(spec = {
   "Retry - schedule with delay" {
     runBlockingTest {
       checkAll(Arb.int(), Arb.int(100, 1000)) { a, delayMs ->
-        val start = currentTimeInMillis()
+        val start = currentTime
         val timestamps = mutableListOf<Long>()
         shouldThrow<RuntimeException> {
           flow {
             emit(a)
-            timestamps.add(currentTimeInMillis())
+            timestamps.add(currentTime)
             throw RuntimeException("Bang!")
           }
             .retry(Schedule.recurs<Throwable>(2) and Schedule.spaced(delayMs.milliseconds))
@@ -71,6 +71,3 @@ class FlowTest : ArrowFxSpec(spec = {
     }
   }
 })
-
-fun DelayController.currentTimeInMillis(): Long =
-  currentTime / 1_000_000
