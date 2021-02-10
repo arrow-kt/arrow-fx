@@ -59,14 +59,12 @@ import io.reactivex.subjects.ReplaySubject
 import io.reactivex.disposables.Disposable as RxDisposable
 import arrow.fx.rx2.handleErrorWith as flowableHandleErrorWith
 
-@extension
 @Deprecated(DeprecateRxJava)
 interface FlowableKFunctor : Functor<ForFlowableK> {
   override fun <A, B> FlowableKOf<A>.map(f: (A) -> B): FlowableK<B> =
     fix().map(f)
 }
 
-@extension
 @Deprecated(DeprecateRxJava)
 interface FlowableKApplicative : Applicative<ForFlowableK> {
   override fun <A, B> FlowableKOf<A>.ap(ff: FlowableKOf<(A) -> B>): FlowableK<B> =
@@ -82,7 +80,6 @@ interface FlowableKApplicative : Applicative<ForFlowableK> {
     Eval.now(fix().ap(FlowableK.defer { ff.value() }))
 }
 
-@extension
 @Deprecated(DeprecateRxJava)
 interface FlowableKMonad : Monad<ForFlowableK>, FlowableKApplicative {
   override fun <A, B> FlowableKOf<A>.ap(ff: FlowableKOf<(A) -> B>): FlowableK<B> =
@@ -101,7 +98,6 @@ interface FlowableKMonad : Monad<ForFlowableK>, FlowableKApplicative {
     Eval.now(fix().ap(FlowableK.defer { ff.value() }))
 }
 
-@extension
 @Deprecated(DeprecateRxJava)
 interface FlowableKFoldable : Foldable<ForFlowableK> {
   override fun <A, B> FlowableKOf<A>.foldLeft(b: B, f: (B, A) -> B): B =
@@ -111,7 +107,6 @@ interface FlowableKFoldable : Foldable<ForFlowableK> {
     fix().foldRight(lb, f)
 }
 
-@extension
 @Deprecated(DeprecateRxJava)
 interface FlowableKTraverse : Traverse<ForFlowableK> {
   override fun <A, B> FlowableKOf<A>.map(f: (A) -> B): FlowableK<B> =
@@ -127,7 +122,6 @@ interface FlowableKTraverse : Traverse<ForFlowableK> {
     fix().foldRight(lb, f)
 }
 
-@extension
 @Deprecated(DeprecateRxJava)
 interface FlowableKApplicativeError :
   ApplicativeError<ForFlowableK, Throwable>,
@@ -139,7 +133,6 @@ interface FlowableKApplicativeError :
     fix().flowableHandleErrorWith { f(it).fix() }
 }
 
-@extension
 @Deprecated(DeprecateRxJava)
 interface FlowableKMonadError :
   MonadError<ForFlowableK, Throwable>,
@@ -151,7 +144,6 @@ interface FlowableKMonadError :
     fix().flowableHandleErrorWith { f(it).fix() }
 }
 
-@extension
 @Deprecated(DeprecateRxJava)
 interface FlowableKMonadThrow : MonadThrow<ForFlowableK>, FlowableKMonadError
 
@@ -162,7 +154,6 @@ interface FlowableKBracket : Bracket<ForFlowableK, Throwable>, FlowableKMonadThr
     fix().bracketCase({ use(it) }, { a, e -> release(a, e) })
 }
 
-@extension
 @Deprecated(DeprecateRxJava)
 interface FlowableKMonadDefer : MonadDefer<ForFlowableK>, FlowableKBracket {
   override fun <A> defer(fa: () -> FlowableKOf<A>): FlowableK<A> =
@@ -171,7 +162,6 @@ interface FlowableKMonadDefer : MonadDefer<ForFlowableK>, FlowableKBracket {
   fun BS(): BackpressureStrategy = BackpressureStrategy.BUFFER
 }
 
-@extension
 @Deprecated(DeprecateRxJava)
 interface FlowableKAsync :
   Async<ForFlowableK>,
@@ -186,7 +176,6 @@ interface FlowableKAsync :
     fix().continueOn(ctx)
 }
 
-@extension
 @Deprecated(DeprecateRxJava)
 interface FlowableKEffect :
   Effect<ForFlowableK>,
@@ -273,7 +262,6 @@ fun FlowableK.Companion.concurrent(dispatchers: Dispatchers<ForFlowableK> = Flow
   override fun dispatchers(): Dispatchers<ForFlowableK> = dispatchers
 }
 
-@extension
 @Deprecated(DeprecateRxJava)
 interface FlowableKDispatchers : Dispatchers<ForFlowableK> {
   override fun default(): CoroutineContext =
@@ -283,7 +271,6 @@ interface FlowableKDispatchers : Dispatchers<ForFlowableK> {
     IOScheduler
 }
 
-@extension
 @Deprecated(DeprecateRxJava)
 interface FlowableKConcurrentEffect : ConcurrentEffect<ForFlowableK>, FlowableKEffect {
   override fun <A> FlowableKOf<A>.runAsyncCancellable(cb: (Either<Throwable, A>) -> FlowableKOf<Unit>): FlowableK<Disposable> =
@@ -389,7 +376,6 @@ fun FlowableK.Companion.effectMissing(): FlowableKEffect = object : FlowableKEff
   override fun BS(): BackpressureStrategy = BackpressureStrategy.MISSING
 }
 
-@extension
 @Deprecated(DeprecateRxJava)
 interface FlowableKTimer : Timer<ForFlowableK> {
   override fun sleep(duration: Duration): FlowableK<Unit> =
@@ -397,14 +383,12 @@ interface FlowableKTimer : Timer<ForFlowableK> {
       .map { Unit })
 }
 
-@extension
 @Deprecated(DeprecateRxJava)
 interface FlowableKFunctorFilter : FunctorFilter<ForFlowableK>, FlowableKFunctor {
   override fun <A, B> Kind<ForFlowableK, A>.filterMap(f: (A) -> Option<B>): FlowableK<B> =
     fix().filterMap(f)
 }
 
-@extension
 @Deprecated(DeprecateRxJava)
 interface FlowableKMonadFilter : MonadFilter<ForFlowableK>, FlowableKMonad {
   override fun <A> empty(): FlowableK<A> =
