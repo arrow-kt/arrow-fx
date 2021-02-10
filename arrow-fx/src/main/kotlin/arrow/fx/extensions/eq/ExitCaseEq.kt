@@ -1,4 +1,4 @@
-package arrow.fx.extensions.eq
+package arrow.fx.extensions.exitcase.eq
 
 import arrow.fx.IODeprecation
 import arrow.fx.extensions.ExitCaseEq
