@@ -147,7 +147,6 @@ interface FlowableKMonadError :
 @Deprecated(DeprecateRxJava)
 interface FlowableKMonadThrow : MonadThrow<ForFlowableK>, FlowableKMonadError
 
-@extension
 @Deprecated(DeprecateRxJava)
 interface FlowableKBracket : Bracket<ForFlowableK, Throwable>, FlowableKMonadThrow {
   override fun <A, B> FlowableKOf<A>.bracketCase(release: (A, ExitCase<Throwable>) -> FlowableKOf<Unit>, use: (A) -> FlowableKOf<B>): FlowableK<B> =
