@@ -31,7 +31,6 @@ import arrow.fx.typeclasses.ProcF
 import arrow.fx.Timer
 import arrow.fx.typeclasses.Concurrent
 import arrow.fx.typeclasses.Fiber
-import arrow.extension
 import arrow.fx.rx2.DeprecateRxJava
 import arrow.typeclasses.Applicative
 import arrow.typeclasses.ApplicativeError
