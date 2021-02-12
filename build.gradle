@@ -49,16 +49,3 @@ configure(subprojects
     signature 'net.sf.androidscents.signature:android-api-level-21:5.0.1_r2@signature'
   }
 }
-
-configure(
-  [project("arrow-fx-coroutines"),
-   project("arrow-fx-coroutines-kotlinx-coroutines"),
-   project("arrow-fx-coroutines-test"),
-   project("arrow-fx-stm")]
-) {
-  apply plugin: "org.jetbrains.kotlin.jvm"
-  apply plugin: "org.jlleitschuh.gradle.ktlint"
-
-  apply from: "$SUB_PROJECT"
-  apply from: "$DOC_CREATION"
-}
