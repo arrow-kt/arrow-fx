@@ -512,7 +512,7 @@ sealed class Schedule<F, Input, Output> : ScheduleOf<F, Input, Output> {
             this@ScheduleImpl.update(i, s).flatMap { dec ->
               if (dec.cont) just(dec.bimap({ it.left() }, { it.left() }))
               else M.fx.monad {
-                val newState = other.initialState()
+                val newState = other.initialState.bind()
                 val newDec = other.update(i, newState).bind()
                 newDec.bimap({ it.right() }, { it.right() })
               }
