@@ -65,7 +65,7 @@ class QueueTest : ArrowFxSpec(iterations = 100) {
 
             val succeed = q.tryOfferAll(listOf(500) + l.toList()).bind()
             val res = q.takeAll().bind()
-            val head = join()
+            val head = join.bind()
             Tuple3(succeed, res, head)
           }.equalUnderTheLaw(IO.just(Tuple3(true, l.toList(), 500)))
         }
