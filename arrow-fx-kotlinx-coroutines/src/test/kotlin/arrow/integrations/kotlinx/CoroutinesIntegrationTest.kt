@@ -224,7 +224,7 @@ class CoroutinesIntegrationTest : UnitSpec() {
         IO.fx {
           val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
           val (join, _) = IO.effect { i }.forkScoped(scope).bind()
-          join.invoke()
+          join.bind()
         }.equalUnderTheLaw(IO.just(i), IO.eqK().liftEq(Int.eq()))
       }
     }
