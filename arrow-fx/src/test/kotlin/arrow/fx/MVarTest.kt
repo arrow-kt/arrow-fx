@@ -261,7 +261,7 @@ class MVarTest : ArrowFxSpec() {
           val channel = mvar.empty<Int>().bind()
           val (count, reads, writes) = testStackSequential(channel)
           writes.fork().bind()
-          val r = reads.invoke()
+          val r = reads.bind()
           effect { r shouldBe count }.bind()
         }.equalUnderTheLaw(IO.unit, IO.eq())
       }
@@ -271,7 +271,7 @@ class MVarTest : ArrowFxSpec() {
           val channel = mvar.empty<Int>().bind()
           val (count, reads, writes) = testStackSequential(channel)
           val fr = reads.fork().bind()
-          writes.invoke()
+          writes.bind()
           val r = fr.join().bind()
           effect { r shouldBe count }.bind()
         }.equalUnderTheLaw(IO.unit, IO.eq())

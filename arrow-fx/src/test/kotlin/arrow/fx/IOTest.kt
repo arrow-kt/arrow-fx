@@ -766,7 +766,7 @@ class IOTest : ArrowFxSpec() {
           use = { wrappedInfiniteLoop }
         ).fork().bind()
         sleep(100.milliseconds).bind()
-        cancel.invoke()
+        cancel.bind()
         val result = p.get().bind()
         effect { result shouldBe ExitCase.Cancelled }.bind()
       }.suspended()
@@ -785,7 +785,7 @@ class IOTest : ArrowFxSpec() {
           )
         }.fork().bind()
         sleep(2.seconds).bind()
-        cancel.invoke()
+        cancel.bind()
         p.get().bind()
       }.unsafeRunSync().shouldBeInstanceOf<arrow.fx.coroutines.ExitCase>()
     }
@@ -799,7 +799,7 @@ class IOTest : ArrowFxSpec() {
         ).suspended()
       }
       delay(2.kSeconds)
-      disp.invoke()
+      disp.bind()
       withTimeoutOrNull(5.kSeconds) { p.get() } shouldBe ExitCase.Cancelled
     }
   }

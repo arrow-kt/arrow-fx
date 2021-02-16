@@ -276,7 +276,7 @@ class QueueTest : ArrowFxSpec(iterations = 100) {
             val (_, cancel) = q.take().fork().bind()
             sleep(50.milliseconds).bind()
             val res = q.takeAll().bind()
-            cancel.invoke()
+            cancel.bind()
             res
           }.equalUnderTheLaw(IO.just(emptyList()))
         }
@@ -289,7 +289,7 @@ class QueueTest : ArrowFxSpec(iterations = 100) {
             val (_, cancel) = q.take().fork().bind()
             sleep(50.milliseconds).bind()
             val res = q.peekAll().bind()
-            cancel.invoke()
+            cancel.bind()
             res
           }.equalUnderTheLaw(IO.just(emptyList()))
         }
@@ -306,7 +306,7 @@ class QueueTest : ArrowFxSpec(iterations = 100) {
             IO.sleep(50.milliseconds).bind() // Give take callbacks a chance to register
 
             q.offerAll(l.toList()).bind()
-            cancel.invoke()
+            cancel.bind()
             q.peekAll().bind()
           }.equalUnderTheLaw(IO.just(l.toList().drop(1)))
         }
@@ -356,7 +356,7 @@ class QueueTest : ArrowFxSpec(iterations = 100) {
             val (join, _) = q.take().fork().bind()
             val succeed = q.tryOfferAll(1, 2).bind()
             val a = q.take().bind()
-            val b = join.invoke()
+            val b = join.bind()
             Tuple2(succeed, setOf(a, b))
           }.equalUnderTheLaw(IO.just(Tuple2(true, setOf(1, 2))))
         }
@@ -414,7 +414,7 @@ class QueueTest : ArrowFxSpec(iterations = 100) {
             IO.sleep(50.milliseconds).bind()
             q.offerAll(1, 2).bind()
             val a = q.take().bind()
-            val b = join.invoke()
+            val b = join.bind()
             setOf(a, b)
           }.equalUnderTheLaw(IO.just(setOf(1, 2)))
         }
@@ -428,7 +428,7 @@ class QueueTest : ArrowFxSpec(iterations = 100) {
             IO.sleep(50.milliseconds).bind()
             val succeed = q.tryOfferAll(1, 2).bind()
             val a = q.take().bind()
-            val b = join.invoke()
+            val b = join.bind()
             Tuple2(succeed, setOf(a, b))
           }.equalUnderTheLaw(IO.just(Tuple2(true, setOf(1, 2))))
         }
@@ -557,7 +557,7 @@ class QueueTest : ArrowFxSpec(iterations = 100) {
             val (join, _) = q.offer(t.b).fork(ctx).bind()
             val first = q.take().bind()
             val second = q.take().bind()
-            join.invoke() // Check if fiber completed
+            join.bind() // Check if fiber completed
             Tuple2(first, second)
           }.equalUnderTheLaw(IO.just(t))
         }
@@ -573,8 +573,8 @@ class QueueTest : ArrowFxSpec(iterations = 100) {
             val first = q.take().bind()
             val second = q.take().bind()
             val third = q.take().bind()
-            join.invoke() // Check if fiber completed
-            join2.invoke() // Check if fiber completed
+            join.bind() // Check if fiber completed
+            join2.bind() // Check if fiber completed
             setOf(first, second, third)
           }.equalUnderTheLaw(IO.just(setOf(t.a, t.b, t.c)))
         }
