@@ -171,95 +171,95 @@ class CoroutinesIntegrationTest : UnitSpec() {
           promise.get().bind()
         }.equalUnderTheLaw(IO.just(i), IO.eqK(500.milliseconds).liftEq(Int.eq()))
       }
+    }
 
-      "unsafeRunScoped can cancel even for infinite asyncs" {
+    "unsafeRunScoped can cancel even for infinite asyncs" {
+      IO.fx {
+        val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
+        val promise = Promise<Int>().bind()
+        effect {
+          IO(all) { -1 }.flatMap { IO.async<Int> { } }.onCancel(promise.complete(1)).unsafeRunScoped(scope) { }
+        }.bind()
+        sleep(500.milliseconds).effectMap { scope.cancel() }.bind()
+        promise.get().bind()
+      }.equalUnderTheLaw(IO.just(1), IO.eqK(2.seconds).liftEq(Int.eq()))
+    }
+
+    "should complete when running a pure value with unsafeRunScoped" {
+      forAll(Gen.int()) { i ->
+        val scope = TestCoroutineScope(TestCoroutineDispatcher())
+        IO.async<Int> { cb ->
+          IO.just(i).unsafeRunScoped(scope) { either ->
+            either.fold({ fail("") }, { cb(it.right()) })
+          }
+        }.equalUnderTheLaw(IO.just(i), IO.eqK().liftEq(Int.eq()))
+      }
+    }
+
+    "unsafeRunScoped doesn't start if scope is cancelled" {
+      forAll(Gen.int()) { i ->
+        val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
+        val ref = AtomicRefW<Int?>(i)
+        scope.cancel()
+        IO { ref.value = null }.unsafeRunScoped(scope) {}
+        ref.value == i
+      }
+    }
+
+    // --------------- forkScoped ---------------
+
+    "forkScoped can cancel even for infinite asyncs" {
+      IO.fx {
+        val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
+        val promise = Promise<Int>().bind()
+
+        val (_, _) = IO.never.onCancel(promise.complete(1)).forkScoped(scope).bind()
+        sleep(500.milliseconds).effectMap { scope.cancel() }.bind()
+        promise.get().bind()
+      }.shouldBeEq(IO.just(1), IO.eqK().liftEq(Int.eq()))
+    }
+
+    "forkScoped should complete when running a pure value" {
+      forAll(Gen.int()) { i ->
         IO.fx {
           val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
-          val promise = Promise<Int>().bind()
-          effect {
-            IO(all) { -1 }.flatMap { IO.async<Int> { } }.onCancel(promise.complete(1)).unsafeRunScoped(scope) { }
-          }.bind()
-          sleep(500.milliseconds).effectMap { scope.cancel() }.bind()
-          promise.get().bind()
-        }.equalUnderTheLaw(IO.just(1), IO.eqK(2.seconds).liftEq(Int.eq()))
+          val (join, _) = IO.effect { i }.forkScoped(scope).bind()
+          join.invoke()
+        }.equalUnderTheLaw(IO.just(i), IO.eqK().liftEq(Int.eq()))
       }
+    }
 
-      "should complete when running a pure value with unsafeRunScoped" {
-        forAll(Gen.int()) { i ->
-          val scope = TestCoroutineScope(TestCoroutineDispatcher())
-          IO.async<Int> { cb ->
-            IO.just(i).unsafeRunScoped(scope) { either ->
-              either.fold({ fail("") }, { cb(it.right()) })
-            }
-          }.equalUnderTheLaw(IO.just(i), IO.eqK().liftEq(Int.eq()))
-        }
-      }
+    "forkScoped should cancel correctly" {
+      IO.fx {
+        val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
+        val startLatch = Promise<Unit>().bind()
+        val promise = Promise<ExitCase<Throwable>>().bind()
 
-      "unsafeRunScoped doesn't start if scope is cancelled" {
-        forAll(Gen.int()) { i ->
+        IO.unit.bracketCase(
+          use = { startLatch.complete(Unit).followedBy(IO.never) },
+          release = { _, ex -> promise.complete(ex) }
+        ).forkScoped(scope).bind()
+
+        startLatch.get().bind()
+
+        effect { scope.cancel() }.bind()
+
+        promise.get().bind()
+      }.equalUnderTheLaw(IO.just(ExitCase.Cancelled), IO.eqK().liftEq(ExitCase.eq(Eq.any())))
+    }
+
+    "forkScoped doesn't start if scope is cancelled" {
+      forAll(Gen.int()) { i ->
+        IO.fx {
           val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
           val ref = AtomicRefW<Int?>(i)
           scope.cancel()
-          IO { ref.value = null }.unsafeRunScoped(scope) {}
-          ref.value == i
-        }
-      }
+          IO {
+            ref.value = null
+          }.forkScoped(scope).bind()
 
-      // --------------- forkScoped ---------------
-
-      "forkScoped can cancel even for infinite asyncs" {
-        IO.fx {
-          val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
-          val promise = Promise<Int>().bind()
-
-          val (_, _) = IO.never.onCancel(promise.complete(1)).forkScoped(scope).bind()
-          sleep(500.milliseconds).effectMap { scope.cancel() }.bind()
-          promise.get().bind()
-        }.shouldBeEq(IO.just(1), IO.eqK().liftEq(Int.eq()))
-      }
-
-      "forkScoped should complete when running a pure value" {
-        forAll(Gen.int()) { i ->
-          IO.fx {
-            val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
-            val (join, _) = IO.effect { i }.forkScoped(scope).bind()
-            join.invoke()
-          }.equalUnderTheLaw(IO.just(i), IO.eqK().liftEq(Int.eq()))
-        }
-      }
-
-      "forkScoped should cancel correctly" {
-        IO.fx {
-          val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
-          val startLatch = Promise<Unit>().bind()
-          val promise = Promise<ExitCase<Throwable>>().bind()
-
-          IO.unit.bracketCase(
-            use = { startLatch.complete(Unit).followedBy(IO.never) },
-            release = { _, ex -> promise.complete(ex) }
-          ).forkScoped(scope).bind()
-
-          startLatch.get().bind()
-
-          effect { scope.cancel() }.bind()
-
-          promise.get().bind()
-        }.equalUnderTheLaw(IO.just(ExitCase.Cancelled), IO.eqK().liftEq(ExitCase.eq(Eq.any())))
-      }
-
-      "forkScoped doesn't start if scope is cancelled" {
-        forAll(Gen.int()) { i ->
-          IO.fx {
-            val scope = TestCoroutineScope(Job() + TestCoroutineDispatcher())
-            val ref = AtomicRefW<Int?>(i)
-            scope.cancel()
-            IO {
-              ref.value = null
-            }.forkScoped(scope).bind()
-
-            ref.value
-          }.equalUnderTheLaw(IO.just<Int?>(i), IO.eqK().liftEq(Int.eq().nullable()))
-        }
+          ref.value
+        }.equalUnderTheLaw(IO.just<Int?>(i), IO.eqK().liftEq(Int.eq().nullable()))
       }
     }
   }

@@ -291,7 +291,7 @@ object ConcurrentLaws {
 
         async<Unit> { cb -> latch.get(cb) }.bind()
 
-        cancel.invoke()
+        cancel.bind()
         release.get().bind()
       }.equalUnderTheLaw(just(i), EQ)
     }
@@ -309,7 +309,7 @@ object ConcurrentLaws {
 
         asyncF<Unit> { cb -> latch.get().map { cb(Right(it)) } }.bind()
 
-        cancel.invoke()
+        cancel.bind()
         release.get().bind()
       }.equalUnderTheLaw(just(i), EQ)
     }
@@ -751,7 +751,7 @@ object ConcurrentLaws {
           .onError { onErrorRun.set(true) }
           .fork(ctx).bind()
 
-        completed.invoke()
+        completed.bind()
 
         startLatch.get().bind() toT onErrorRun.get().bind()
       }.equalUnderTheLaw(just(i toT false), EQ)
