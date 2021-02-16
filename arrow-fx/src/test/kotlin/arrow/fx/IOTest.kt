@@ -799,7 +799,7 @@ class IOTest : ArrowFxSpec() {
         ).suspended()
       }
       delay(2.kSeconds)
-      disp.bind()
+      disp.invoke()
       withTimeoutOrNull(5.kSeconds) { p.get() } shouldBe ExitCase.Cancelled
     }
   }
