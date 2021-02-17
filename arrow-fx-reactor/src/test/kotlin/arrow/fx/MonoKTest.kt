@@ -81,12 +81,12 @@ class MonoKTest : UnitSpec() {
         val a = Mono.just(0L)
           .delayElement(Duration.ofSeconds(2), Schedulers.newSingle("newThread"))
           .k()
-          .invoke()
+          .bind()
         threadRef = Thread.currentThread()
         val b = Mono.just(a)
           .subscribeOn(Schedulers.newSingle("anotherThread"))
           .k()
-          .invoke()
+          .bind()
         b
       }.value()
 
