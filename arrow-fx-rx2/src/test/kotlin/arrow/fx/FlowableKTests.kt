@@ -100,7 +100,7 @@ class FlowableKTests : RxJavaSpec() {
 
     "Multi-thread Flowables finish correctly" {
       val value: Flowable<Long> = FlowableK.fx {
-        val a = Flowable.timer(2, TimeUnit.SECONDS).k().invoke()
+        val a = Flowable.timer(2, TimeUnit.SECONDS).k().bind()
         a
       }.value()
       val test: TestSubscriber<Long> = value.test()
@@ -110,7 +110,7 @@ class FlowableKTests : RxJavaSpec() {
 
     "Flowable cancellation forces binding to cancel without completing too" {
       val value: Flowable<Long> = FlowableK.fx {
-        val a = Flowable.timer(3, TimeUnit.SECONDS).k().invoke()
+        val a = Flowable.timer(3, TimeUnit.SECONDS).k().bind()
         a
       }.value()
       val test: TestSubscriber<Long> = value.doOnSubscribe { subscription ->
